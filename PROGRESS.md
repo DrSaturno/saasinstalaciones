@@ -1,6 +1,6 @@
 # Instala Pro — Estado del proyecto
 
-> Última sesión: 2026-07-20 · Próximo paso: **Paso 10 — Calificaciones**
+> Última sesión: 2026-07-20 · Próximo paso: **Paso 11 — Bolsa de zona + notificaciones**
 > Deploy a Vercel: en progreso (env vars configuradas)
 
 Registro de avance para retomar la construcción. El plan completo (16 secciones,
@@ -17,7 +17,7 @@ ej. 2000 estaciones de servicio). Tres áreas en una sola app Next.js:
 
 - **Tablero maestro** (`platform_admin`) — nosotros: ABM de empresas.
 - **Empresa** (`company_manager`) — el cliente: proyectos, puntos, órdenes, equipo.
-- **Instalador** (`installer`) — PWA mobile offline-first (todavía no construida).
+- **Instalador** (`installer`) — PWA mobile offline-first.
 
 Fusiona dos proyectos legacy (`../proyecto1*` y `../proyecto2*`), que quedan
 **solo como referencia de lógica** — no se copia código.
@@ -39,7 +39,7 @@ TanStack Query/Table/Virtual · next-intl (pendiente, Paso 12) · Vitest · pnpm
 cd instalapro
 pnpm install          # node-linker=hoisted, ver nota de entorno abajo
 pnpm dev              # http://localhost:3000
-pnpm test             # 11 tests del parser CSV
+pnpm test             # 15 tests
 pnpm build            # verificación completa de tipos
 ```
 Requiere `instalapro/.env.local` con las 3 claves de Supabase (URL, anon,
@@ -53,7 +53,7 @@ service_role). Si se pierde, regenerarlo desde el dashboard del proyecto.
 | instalador1/2/3@demo.dev | installer |
 
 Datos demo: 1 empresa, 1 proyecto ("Refacción Estaciones Norte"), 20 puntos,
-20 órdenes en varios estados, 1 calificación.
+20 órdenes en varios estados, 2 calificaciones.
 
 ---
 
@@ -116,8 +116,8 @@ Datos demo: 1 empresa, 1 proyecto ("Refacción Estaciones Norte"), 20 puntos,
   offline del Paso 9. Manifest PWA (`app/manifest.ts`) + íconos 192/512,
   standalone, start_url `/tasks`. **Verificado E2E:** ciclo iniciar→avance→
   terminar con historial; **RLS aísla al instalador** (Iván ve solo sus 11
-  órdenes, 0 ajenas). Nota: DEM-00006 quedó en_revision y DEM-00007 en_proceso
-  por los tests (estados válidos, no reversibles).
+  órdenes, 0 ajenas). Nota: DEM-00006 se finalizó y calificó en el Paso 10;
+  DEM-00007 quedó en_proceso por los tests.
 
 - [x] **9 — Offline del instalador.** Cola de mutaciones en Dexie
   (`lib/offline/`): db, `sync.ts` (enqueue + flush idempotente vía cliente
@@ -132,23 +132,27 @@ Datos demo: 1 empresa, 1 proyecto ("Refacción Estaciones Norte"), 20 puntos,
   refleja lo encolado hasta sincronizar (el status sí, optimista). SW se prueba
   en prod (Vercel), no en dev.
 
-## Próximo: Paso 10 — Calificaciones
+- [x] **10 — Calificaciones.** `rateInstaller` valida con Zod, reautentica al
+  manager y deriva `company_id` + instalador desde la orden finalizada. Al
+  aprobar desde `en_revision` se abre un diálogo con 1-5 estrellas y comentario
+  opcional; también se puede calificar después desde la orden finalizada. El
+  rating y su cantidad aparecen en roster y selector de asignación. Nueva vista
+  mobile-first `/profile` con promedio global, zonas, especialidades y últimas
+  reseñas. `StarRating` accesible y reutilizable. **Verificado E2E a 375 px:**
+  DEM-00006 → finalizada + 5 estrellas → promedio de Iván 5.0 (1) y reseña
+  visible en su perfil. El shell responsive se corrigió tras detectar overflow.
+  **Pendiente antes de producción:** aplicar manualmente la migración
+  `20260720000003_rating_integrity.sql`, que impide calificar a un instalador
+  distinto del asignado aunque se saltee la UI.
 
-Cerrar el ciclo de confianza. La tabla `ratings` ya existe (unique por order,
-1-5 estrellas, trigger que recalcula `installers.rating_avg/rating_count`).
-A construir:
-1. Al aprobar una orden (en_revision→finalizada), el manager puede calificar
-   al instalador (estrellas + comentario opcional). Server Action.
-2. Mostrar el rating del instalador en el roster (`/team`, ya muestra ★) y al
-   asignar órdenes. Ya se lee en `fetchActiveRoster`/`fetchRoster`.
-3. Vista de reputación del instalador en su `/profile`.
+## Próximo: Paso 11 — Bolsa de zona + notificaciones
 
-Reutilizar: patrón `requireManager`, el trigger ya mantiene el promedio.
+Construir broadcasts por zona, postulaciones y aceptación; luego campanita
+in-app y Web Push para nuevos trabajos, asignaciones y avances.
 
 ## Pasos siguientes (resumen)
-7 — Invitaciones y roster · 8 — PWA instalador (tareas + avances online) ·
-9 — Offline (Serwist + Dexie) · 10 — Calificaciones · 11 — Bolsa de zona +
-notificaciones · 12 — i18n pt-BR · 13 — Landing + pulido · 14 — Deploy + `/cyber-neo`.
+11 — Bolsa de zona + notificaciones · 12 — i18n pt-BR · 13 — Landing +
+pulido · 14 — Deploy + `/cyber-neo`.
 
 ---
 

@@ -1,22 +1,36 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { transitionOrder, assignInstaller } from "@/lib/actions/orders";
 import { ORDER_TRANSITIONS, TRANSITION_LABEL, isTerminal } from "@/lib/domain/transitions";
 import { ORDER_STATUS } from "@/lib/domain/status";
 import { Button } from "@/components/ui/button";
+import { RatingDialog } from "@/components/company/rating-dialog";
+import { StarRating } from "@/components/shared/star-rating";
 import type { OrderStatus } from "@/types/database";
 
 type Props = {
   orderId: string;
   status: OrderStatus;
   installerId: string | null;
-  roster: { id: string; name: string }[];
+  roster: {
+    id: string;
+    name: string;
+    ratingAvg: number;
+    ratingCount: number;
+  }[];
+  rating: { stars: number; comment: string | null } | null;
 };
 
-export function OrderActions({ orderId, status, installerId, roster }: Props) {
+export function OrderActions({
+  orderId,
+  status,
+  installerId,
+  roster,
+  rating,
+}: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const targets = ORDER_TRANSITIONS[status] ?? [];
@@ -64,6 +78,9 @@ export function OrderActions({ orderId, status, installerId, roster }: Props) {
             {roster.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.name}
+                {r.ratingCount > 0
+                  ? ` · ★ ${r.ratingAvg.toFixed(1)} (${r.ratingCount})`
+                  : " · Sin calificaciones"}
               </option>
             ))}
           </select>
@@ -81,19 +98,50 @@ export function OrderActions({ orderId, status, installerId, roster }: Props) {
         ) : (
           <div className="mt-2 flex flex-col gap-2">
             {targets.map((to) => (
-              <Button
-                key={to}
-                variant={to === "cancelada" ? "outline" : "default"}
-                disabled={pending}
-                onClick={() => doTransition(to)}
-                className="justify-start"
-              >
-                {TRANSITION_LABEL[to]}
-              </Button>
+              to === "finalizada" && installerId ? (
+                <RatingDialog key={to} orderId={orderId} mode="finalize" />
+              ) : (
+                <Button
+                  key={to}
+                  variant={to === "cancelada" ? "outline" : "default"}
+                  disabled={pending}
+                  onClick={() => doTransition(to)}
+                  className="justify-start"
+                >
+                  {TRANSITION_LABEL[to]}
+                </Button>
+              )
             ))}
           </div>
         )}
       </div>
+
+      {status === "finalizada" && installerId ? (
+        <div className="border-t pt-5">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            Calificación
+          </h3>
+          {rating ? (
+            <div className="mt-2">
+              <StarRating value={rating.stars} size="sm" />
+              {rating.comment ? (
+                <p className="mt-2 text-sm leading-relaxed">{rating.comment}</p>
+              ) : (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Sin comentario.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="mt-2">
+              <p className="mb-3 text-sm text-muted-foreground">
+                Esta orden todavía no fue calificada.
+              </p>
+              <RatingDialog orderId={orderId} mode="rate" />
+            </div>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -102,7 +102,9 @@ export async function fetchAllOrders(
 /** Instaladores del roster activo, para el selector de asignación. */
 export async function fetchActiveRoster(
   supabase: SupabaseClient<Database>,
-): Promise<{ id: string; name: string }[]> {
+): Promise<
+  { id: string; name: string; ratingAvg: number; ratingCount: number }[]
+> {
   const { data: roster } = await supabase
     .from("company_installers")
     .select("installer_id")
@@ -110,9 +112,23 @@ export async function fetchActiveRoster(
   const ids = (roster ?? []).map((r) => r.installer_id);
   if (ids.length === 0) return [];
 
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, full_name")
-    .in("id", ids);
-  return (profiles ?? []).map((p) => ({ id: p.id, name: p.full_name }));
+  const [{ data: profiles }, { data: installers }] = await Promise.all([
+    supabase.from("profiles").select("id, full_name").in("id", ids),
+    supabase
+      .from("installers")
+      .select("id, rating_avg, rating_count")
+      .in("id", ids),
+  ]);
+  const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
+  const installerById = new Map((installers ?? []).map((i) => [i.id, i]));
+
+  return ids.map((id) => {
+    const installer = installerById.get(id);
+    return {
+      id,
+      name: profileById.get(id)?.full_name ?? "Instalador",
+      ratingAvg: Number(installer?.rating_avg ?? 0),
+      ratingCount: installer?.rating_count ?? 0,
+    };
+  });
 }

@@ -42,7 +42,13 @@ export default async function OrderDetailPage({
     .single();
   if (!order) notFound();
 
-  const [{ data: site }, { data: project }, { data: updates }, roster] =
+  const [
+    { data: site },
+    { data: project },
+    { data: updates },
+    { data: rating },
+    roster,
+  ] =
     await Promise.all([
       supabase
         .from("sites")
@@ -55,6 +61,11 @@ export default async function OrderDetailPage({
         .select("id, type, note, created_at")
         .eq("order_id", id)
         .order("created_at", { ascending: false }),
+      supabase
+        .from("ratings")
+        .select("stars, comment")
+        .eq("order_id", id)
+        .maybeSingle(),
       fetchActiveRoster(supabase),
     ]);
 
@@ -156,6 +167,7 @@ export default async function OrderDetailPage({
               status={order.status as OrderStatus}
               installerId={order.assigned_installer_id}
               roster={roster}
+              rating={rating}
             />
           </CardContent>
         </Card>
