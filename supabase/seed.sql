@@ -19,14 +19,20 @@ create or replace function pg_temp.seed_user(
   p_id uuid, p_email text, p_meta jsonb
 ) returns void language plpgsql as $$
 begin
+  -- Las columnas de token DEBEN ir en '' y no NULL: GoTrue las lee como
+  -- string de Go y un NULL rompe el login con "Database error querying schema".
   insert into auth.users (
     instance_id, id, aud, role, email, encrypted_password,
     email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
-    created_at, updated_at
+    created_at, updated_at,
+    confirmation_token, recovery_token, email_change,
+    email_change_token_new, email_change_token_current,
+    phone_change, phone_change_token, reauthentication_token
   ) values (
     '00000000-0000-0000-0000-000000000000', p_id, 'authenticated', 'authenticated',
     p_email, extensions.crypt('InstalaPro2026!', extensions.gen_salt('bf')),
-    now(), '{"provider":"email","providers":["email"]}', p_meta, now(), now()
+    now(), '{"provider":"email","providers":["email"]}', p_meta, now(), now(),
+    '', '', '', '', '', '', '', ''
   ) on conflict (id) do nothing;
 
   insert into auth.identities (
