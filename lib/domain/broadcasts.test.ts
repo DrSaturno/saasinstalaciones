@@ -47,4 +47,14 @@ describe("broadcast schemas", () => {
       }).success,
     ).toBe(false);
   });
+
+  it("acepta UUID históricos de Postgres aunque no declaren versión RFC", () => {
+    expect(
+      resolveApplicationSchema.safeParse({
+        broadcastId: "33333333-3333-3333-3333-333333333333",
+        installerId: "a0000000-0000-0000-0000-000000000005",
+        orderIds: ["44444444-4444-4444-4444-444444444444"],
+      }).success,
+    ).toBe(true);
+  });
 });

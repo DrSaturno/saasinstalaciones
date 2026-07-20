@@ -158,20 +158,22 @@ Datos demo: 1 empresa, 1 proyecto ("Refacción Estaciones Norte"), 20 puntos,
   `push_sent_at`; si VAPID no está configurado, la app sigue completa in-app.
   **Verificado:** 19 tests, TypeScript, lint 0 errores, build de producción; E2E
   escritorio de `/broadcasts` y E2E a 375 px de `/jobs`, incluida postulación real
-  de `instalador3`, sin errores de consola. **Pendiente de infraestructura:**
-  aplicar la migración 00004, configurar VAPID y desplegar la Edge Function.
+  de `instalador3`, sin errores de consola. La migración 00004 ya fue aplicada.
+  **E2E posterior a migración:** Carlos fue aceptado, se sumó al roster,
+  `DEM-00009` se asignó en la misma transacción, la búsqueda cerró en 1/1 cupos
+  y recibió las dos notificaciones esperadas; el marcado como leído también fue
+  verificado. Durante esta prueba se corrigió la validación para aceptar UUID
+  históricos de Postgres sin bits RFC de versión. **Pendiente de infraestructura:**
+  guardar los secretos VAPID preparados, desplegar la Edge Function y configurar
+  la clave pública en Vercel.
 
 ## Activación pendiente del Paso 11
 
-1. Aplicar `supabase/migrations/20260720000004_broadcasts_notifications.sql`
-   en el SQL Editor (sin traducción automática del navegador).
-2. Generar una pareja VAPID una sola vez con
-   `npx web-push generate-vapid-keys`; guardar la privada como secreto.
-3. En Vercel definir `NEXT_PUBLIC_VAPID_PUBLIC_KEY` y volver a desplegar.
-4. En Supabase Edge Functions definir `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y
-   `VAPID_SUBJECT` (por ejemplo `mailto:soporte@dominio.com`).
-5. Autenticarse con Supabase CLI y ejecutar:
+1. En Supabase Edge Functions guardar los valores ya preparados para
+   `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT`.
+2. Desplegar `send-event-push`, preparado en el editor web, o ejecutar:
    `npx supabase functions deploy send-event-push --project-ref rpdjjvcmtcpvmwrjqhke --use-api`.
+3. En Vercel definir `NEXT_PUBLIC_VAPID_PUBLIC_KEY` y volver a desplegar.
 
 Después de esto, verificar aceptar/rechazar la postulación demo desde empresa y
 el push real en un dispositivo. La bandeja in-app queda activa apenas se aplica
