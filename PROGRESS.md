@@ -1,6 +1,6 @@
 # Instala Pro — Estado del proyecto
 
-> Última sesión: 2026-07-20 · Próximo paso: **Paso 8 — PWA del instalador**
+> Última sesión: 2026-07-20 · Próximo paso: **Paso 9 — Offline del instalador**
 > Deploy a Vercel: en progreso (env vars configuradas)
 
 Registro de avance para retomar la construcción. El plan completo (16 secciones,
@@ -106,21 +106,33 @@ Datos demo: 1 empresa, 1 proyecto ("Refacción Estaciones Norte"), 20 puntos,
   invitar → aceptar como instalador3 → se une al roster → quitar → reactivar,
   todo OK. Datos demo restaurados a 2 instaladores.
 
-## Próximo: Paso 8 — PWA del instalador (online)
+- [x] **8 — PWA del instalador (online).** Área installer mobile-first.
+  `/tasks`: órdenes asignadas ordenadas por accionabilidad (RLS filtra por
+  `assigned_installer_id`). `/tasks/[id]`: detalle con "Cómo llegar" (Maps),
+  iniciar trabajo (planificada→en_proceso + checkin), cargar avances/bloqueos
+  con foto opcional (`order_updates`, foto al bucket `evidence`), marcar
+  terminado (en_proceso→en_revision + done). `lib/actions/tasks.ts`: mutaciones
+  **idempotentes** (updateId uuid del cliente, upsert ignoreDuplicates) para el
+  offline del Paso 9. Manifest PWA (`app/manifest.ts`) + íconos 192/512,
+  standalone, start_url `/tasks`. **Verificado E2E:** ciclo iniciar→avance→
+  terminar con historial; **RLS aísla al instalador** (Iván ve solo sus 11
+  órdenes, 0 ajenas). Nota: DEM-00006 quedó en_revision y DEM-00007 en_proceso
+  por los tests (estados válidos, no reversibles).
 
-El área del instalador, mobile-first (diseñar a 375px). Por ahora ONLINE (el
-offline con Serwist+Dexie es el Paso 9). A construir:
-1. `/tasks`: lista de órdenes asignadas al instalador logueado (RLS
-   `work_orders_installer_read` ya filtra por `assigned_installer_id`).
-2. Detalle de tarea: ver el punto, iniciar trabajo, cargar avances
-   (`order_updates`: checkin/progress/blocker/done) con foto opcional.
-3. El instalador mueve la orden en_proceso → en_revision al terminar
-   (transiciones del instalador; el manager aprueba a finalizada).
-4. Manifest PWA + íconos (instalable). Service worker offline recién en Paso 9.
+## Próximo: Paso 9 — Offline del instalador (Serwist + Dexie)
 
-Ojo regla #5: las mutaciones del instalador deben ser idempotentes (uuid
-generado en cliente) para cuando llegue el offline. `order_updates.id` ya se
-genera en cliente por diseño.
+Que el instalador trabaje sin señal (regla #5: mutaciones idempotentes, ya
+listas). A construir:
+1. Service worker con Serwist: cachear el app-shell del área installer y las
+   tareas asignadas para verlas offline.
+2. Cola de mutaciones en Dexie (`lib/offline/sync.ts`): los avances y
+   transiciones se encolan con su uuid y se reenvían al recuperar conexión.
+   El upsert ignoreDuplicates de `addUpdate` ya hace el reenvío seguro.
+3. Indicador de estado (online/offline, pendientes de sincronizar).
+4. Subida de fotos diferida (guardar el blob en Dexie, subir al reconectar).
+
+Ojo: el service worker no debe cachear rutas de otras áreas ni respuestas
+autenticadas de forma insegura. Scope al área installer.
 
 ## Pasos siguientes (resumen)
 7 — Invitaciones y roster · 8 — PWA instalador (tareas + avances online) ·

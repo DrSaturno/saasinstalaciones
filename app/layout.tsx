@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Fragment_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "./providers";
@@ -19,6 +19,19 @@ export const metadata: Metadata = {
   title: "Instala Pro",
   description:
     "Gestión de equipos de instalación de gráfica de gran formato para proyectos masivos.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Instala Pro",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#2597d0",
+  width: "device-width",
+  initialScale: 1,
+  // El área installer se usa en la calle: evitar zoom accidental al tocar inputs.
+  maximumScale: 1,
 };
 
 export default function RootLayout({
