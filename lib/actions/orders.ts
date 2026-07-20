@@ -183,7 +183,7 @@ export async function transitionOrder(
   note?: string,
 ): Promise<ActionState> {
   try {
-    const { supabase, companyId, user } = await requireManager();
+    const { supabase, companyId } = await requireManager();
 
     const { data: order } = await supabase
       .from("work_orders")

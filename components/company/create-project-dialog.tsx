@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createProject, type ActionState } from "@/lib/actions/projects";
@@ -21,16 +21,20 @@ const initial: ActionState = { error: null };
 
 export function CreateProjectDialog() {
   const [open, setOpen] = useState(false);
-  const [state, formAction, pending] = useActionState(createProject, initial);
   const router = useRouter();
 
-  useEffect(() => {
-    if (state.ok) {
+  const [state, formAction, pending] = useActionState(
+    async (previous: ActionState, formData: FormData) => {
+      const next = await createProject(previous, formData);
+      if (next.ok) {
       setOpen(false);
       toast.success("Proyecto creado");
       router.refresh();
-    }
-  }, [state.ok, router]);
+      }
+      return next;
+    },
+    initial,
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

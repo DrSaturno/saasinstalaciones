@@ -1,14 +1,35 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { flush, pendingCount } from "./sync";
+
+function subscribeOnlineState(onStoreChange: () => void) {
+  window.addEventListener("online", onStoreChange);
+  window.addEventListener("offline", onStoreChange);
+  return () => {
+    window.removeEventListener("online", onStoreChange);
+    window.removeEventListener("offline", onStoreChange);
+  };
+}
+
+function getOnlineSnapshot() {
+  return navigator.onLine;
+}
+
+function getOnlineServerSnapshot() {
+  return true;
+}
 
 /**
  * Estado de conexión + cola de sincronización del instalador.
  * Auto-flush al montar, al recuperar conexión y tras cada mutación local.
  */
 export function useSync() {
-  const [online, setOnline] = useState(true);
+  const online = useSyncExternalStore(
+    subscribeOnlineState,
+    getOnlineSnapshot,
+    getOnlineServerSnapshot,
+  );
   const [pending, setPending] = useState(0);
   const [syncing, setSyncing] = useState(false);
 
@@ -28,14 +49,12 @@ export function useSync() {
   }, [refresh]);
 
   useEffect(() => {
-    setOnline(navigator.onLine);
-    refresh();
+    pendingCount().then((count) => {
+      setPending(count);
+      if (count > 0 && navigator.onLine) runFlush();
+    });
 
-    const onOnline = () => {
-      setOnline(true);
-      runFlush();
-    };
-    const onOffline = () => setOnline(false);
+    const onOnline = () => runFlush();
     // Otras pestañas / componentes avisan que encolaron algo.
     const onQueued = () => {
       refresh();
@@ -43,7 +62,6 @@ export function useSync() {
     };
 
     window.addEventListener("online", onOnline);
-    window.addEventListener("offline", onOffline);
     window.addEventListener("instalapro:queued", onQueued);
 
     // Reintento periódico por si un flush falló a mitad.
@@ -51,7 +69,6 @@ export function useSync() {
 
     return () => {
       window.removeEventListener("online", onOnline);
-      window.removeEventListener("offline", onOffline);
       window.removeEventListener("instalapro:queued", onQueued);
       clearInterval(interval);
     };
