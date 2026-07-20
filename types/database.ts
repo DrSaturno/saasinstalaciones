@@ -382,6 +382,10 @@ export interface Database {
         Args: { p_token: string };
         Returns: void;
       };
+      invitation_preview: {
+        Args: { p_token: string };
+        Returns: { company_name: string; email: string; valid: boolean }[];
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
