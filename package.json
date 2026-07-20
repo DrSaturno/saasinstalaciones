@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
@@ -37,6 +40,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@rolldown/binding-win32-x64-msvc": "^1.2.0",
     "@serwist/next": "^9.5.11",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
