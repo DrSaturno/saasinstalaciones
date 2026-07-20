@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser, ROLE_HOME } from "@/lib/auth";
 import { AppShell } from "@/components/shared/app-shell";
+import { SyncIndicator } from "@/components/installer/sync-indicator";
+import { ServiceWorkerRegister } from "@/components/installer/service-worker-register";
 
 const NAV = [
   { href: "/tasks", label: "Mis tareas" },
@@ -19,6 +21,8 @@ export default async function InstallerLayout({
 
   return (
     <AppShell area="Instalador" nav={NAV} userName={user.fullName}>
+      <ServiceWorkerRegister />
+      <SyncIndicator />
       {children}
     </AppShell>
   );

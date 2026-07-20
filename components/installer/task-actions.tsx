@@ -3,11 +3,12 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { createClient } from "@/lib/supabase/client";
-import { startTask, finishTask, addUpdate } from "@/lib/actions/tasks";
+import { enqueue } from "@/lib/offline/sync";
+import { notifyQueued } from "@/lib/offline/use-sync";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { OrderStatus } from "@/types/database";
+import type { PendingPhoto } from "@/lib/offline/db";
 
 type Props = {
   orderId: string;
@@ -15,47 +16,53 @@ type Props = {
   status: OrderStatus;
 };
 
-/** Sube las fotos elegidas al bucket evidence y devuelve sus paths. */
-async function uploadPhotos(
-  companyId: string,
-  orderId: string,
-  files: File[],
-): Promise<string[]> {
-  if (files.length === 0) return [];
-  const supabase = createClient();
-  const paths: string[] = [];
-  for (const file of files) {
-    // Path convención: company_id/order_id/archivo (ver policies evidence_*).
-    const path = `${companyId}/${orderId}/${crypto.randomUUID()}-${file.name}`;
-    const { error } = await supabase.storage
-      .from("evidence")
-      .upload(path, file, { upsert: false });
-    if (error) throw new Error(`No se pudo subir ${file.name}: ${error.message}`);
-    paths.push(path);
-  }
-  return paths;
+function makePhotos(companyId: string, orderId: string, files: File[]): PendingPhoto[] {
+  return files.map((file) => ({
+    id: crypto.randomUUID(),
+    orderId,
+    companyId,
+    fileName: file.name,
+    blob: file,
+  }));
 }
 
-export function TaskActions({ orderId, companyId, status }: Props) {
+export function TaskActions({ orderId, companyId, status: initialStatus }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [status, setStatus] = useState<OrderStatus>(initialStatus);
   const [note, setNote] = useState("");
   const [files, setFiles] = useState<File[]>([]);
 
-  const refresh = () => {
+  const online = () => typeof navigator !== "undefined" && navigator.onLine;
+
+  const done = (msg: string) => {
     setNote("");
     setFiles([]);
-    router.refresh();
+    notifyQueued();
+    toast.success(online() ? msg : `${msg} · se enviará al recuperar señal`);
+    // Online: refrescamos para traer el historial real. Offline: no-op (la UI
+    // ya se movió de forma optimista con setStatus).
+    if (online()) setTimeout(() => router.refresh(), 400);
   };
 
   const start = () => {
     startTransition(async () => {
-      const res = await startTask(orderId, crypto.randomUUID());
-      if (res.error) toast.error(res.error);
-      else {
-        toast.success("Trabajo iniciado");
-        refresh();
-      }
+      await enqueue({
+        id: crypto.randomUUID(),
+        kind: "update",
+        orderId,
+        companyId,
+        updateType: "checkin",
+        note: "Trabajo iniciado",
+      });
+      await enqueue({
+        id: crypto.randomUUID(),
+        kind: "transition",
+        orderId,
+        toStatus: "en_proceso",
+      });
+      setStatus("en_proceso");
+      done("Trabajo iniciado");
     });
   };
 
@@ -64,44 +71,50 @@ export function TaskActions({ orderId, companyId, status }: Props) {
       toast.error("Escribí una nota o adjuntá una foto.");
       return;
     }
+    const photos = makePhotos(companyId, orderId, files);
     startTransition(async () => {
-      try {
-        const photos = await uploadPhotos(companyId, orderId, files);
-        const res = await addUpdate({
+      await enqueue(
+        {
+          id: crypto.randomUUID(),
+          kind: "update",
           orderId,
-          updateId: crypto.randomUUID(),
-          type,
+          companyId,
+          updateType: type,
           note: note.trim(),
-          photos,
-        });
-        if (res.error) toast.error(res.error);
-        else {
-          toast.success(type === "blocker" ? "Bloqueo registrado" : "Avance registrado");
-          refresh();
-        }
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Error al subir fotos");
-      }
+          photoIds: photos.map((p) => p.id),
+        },
+        photos,
+      );
+      done(type === "blocker" ? "Bloqueo registrado" : "Avance registrado");
     });
   };
 
   const finish = () => {
+    const photos = makePhotos(companyId, orderId, files);
     startTransition(async () => {
-      try {
-        const photos = await uploadPhotos(companyId, orderId, files);
-        const res = await finishTask(orderId, crypto.randomUUID(), note.trim(), photos);
-        if (res.error) toast.error(res.error);
-        else {
-          toast.success("Enviado a revisión");
-          refresh();
-        }
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Error al subir fotos");
-      }
+      await enqueue(
+        {
+          id: crypto.randomUUID(),
+          kind: "update",
+          orderId,
+          companyId,
+          updateType: "done",
+          note: note.trim() || "Trabajo terminado",
+          photoIds: photos.map((p) => p.id),
+        },
+        photos,
+      );
+      await enqueue({
+        id: crypto.randomUUID(),
+        kind: "transition",
+        orderId,
+        toStatus: "en_revision",
+      });
+      setStatus("en_revision");
+      done("Enviado a revisión");
     });
   };
 
-  // planificada → arrancar
   if (status === "planificada") {
     return (
       <Button onClick={start} disabled={pending} className="w-full" size="lg">
@@ -110,7 +123,6 @@ export function TaskActions({ orderId, companyId, status }: Props) {
     );
   }
 
-  // en_proceso → cargar avances / terminar
   if (status === "en_proceso") {
     return (
       <div className="flex flex-col gap-4">
@@ -146,7 +158,6 @@ export function TaskActions({ orderId, companyId, status }: Props) {
     );
   }
 
-  // en_revision → esperar aprobación
   if (status === "en_revision") {
     return (
       <p className="text-sm text-muted-foreground">
@@ -155,7 +166,6 @@ export function TaskActions({ orderId, companyId, status }: Props) {
     );
   }
 
-  // pendiente/relevamiento (asignada pero no planificada) / cerradas
   return (
     <p className="text-sm text-muted-foreground">
       {status === "finalizada"
@@ -175,21 +185,19 @@ function FilePicker({
   disabled: boolean;
 }) {
   return (
-    <div>
-      <label className="flex cursor-pointer items-center justify-center rounded-lg border border-dashed border-input py-3 text-sm text-muted-foreground transition-colors hover:border-primary/40">
-        <input
-          type="file"
-          accept="image/*"
-          capture="environment"
-          multiple
-          disabled={disabled}
-          className="hidden"
-          onChange={(e) => onChange([...(e.target.files ?? [])])}
-        />
-        {files.length > 0
-          ? `${files.length} foto${files.length === 1 ? "" : "s"} lista${files.length === 1 ? "" : "s"}`
-          : "Sacar o adjuntar fotos"}
-      </label>
-    </div>
+    <label className="flex cursor-pointer items-center justify-center rounded-lg border border-dashed border-input py-3 text-sm text-muted-foreground transition-colors hover:border-primary/40">
+      <input
+        type="file"
+        accept="image/*"
+        capture="environment"
+        multiple
+        disabled={disabled}
+        className="hidden"
+        onChange={(e) => onChange([...(e.target.files ?? [])])}
+      />
+      {files.length > 0
+        ? `${files.length} foto${files.length === 1 ? "" : "s"} lista${files.length === 1 ? "" : "s"}`
+        : "Sacar o adjuntar fotos"}
+    </label>
   );
 }

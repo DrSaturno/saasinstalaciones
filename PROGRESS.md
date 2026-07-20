@@ -1,6 +1,6 @@
 # Instala Pro — Estado del proyecto
 
-> Última sesión: 2026-07-20 · Próximo paso: **Paso 9 — Offline del instalador**
+> Última sesión: 2026-07-20 · Próximo paso: **Paso 10 — Calificaciones**
 > Deploy a Vercel: en progreso (env vars configuradas)
 
 Registro de avance para retomar la construcción. El plan completo (16 secciones,
@@ -119,20 +119,31 @@ Datos demo: 1 empresa, 1 proyecto ("Refacción Estaciones Norte"), 20 puntos,
   órdenes, 0 ajenas). Nota: DEM-00006 quedó en_revision y DEM-00007 en_proceso
   por los tests (estados válidos, no reversibles).
 
-## Próximo: Paso 9 — Offline del instalador (Serwist + Dexie)
+- [x] **9 — Offline del instalador.** Cola de mutaciones en Dexie
+  (`lib/offline/`): db, `sync.ts` (enqueue + flush idempotente vía cliente
+  browser Supabase, RLS aplica), `use-sync.ts` (hook online/offline + auto-flush
+  al reconectar/intervalo). `task-actions` reescrito: encola en vez de Server
+  Action, UI optimista (setStatus local). Fotos diferidas (blob en Dexie, sube
+  al reconectar). `SyncIndicator` en el shell installer. **SW propio**
+  (`public/sw.js`, NO Serwist: no soporta Turbopack) con SWR para estáticos y
+  network-first para navegaciones `/tasks`; registrado sólo en prod y área
+  installer. **Verificado E2E:** offline→cargar avance→queda en outbox IndexedDB
+  →online→auto-flush→llega a la DB. Nota: el historial server-rendered no
+  refleja lo encolado hasta sincronizar (el status sí, optimista). SW se prueba
+  en prod (Vercel), no en dev.
 
-Que el instalador trabaje sin señal (regla #5: mutaciones idempotentes, ya
-listas). A construir:
-1. Service worker con Serwist: cachear el app-shell del área installer y las
-   tareas asignadas para verlas offline.
-2. Cola de mutaciones en Dexie (`lib/offline/sync.ts`): los avances y
-   transiciones se encolan con su uuid y se reenvían al recuperar conexión.
-   El upsert ignoreDuplicates de `addUpdate` ya hace el reenvío seguro.
-3. Indicador de estado (online/offline, pendientes de sincronizar).
-4. Subida de fotos diferida (guardar el blob en Dexie, subir al reconectar).
+## Próximo: Paso 10 — Calificaciones
 
-Ojo: el service worker no debe cachear rutas de otras áreas ni respuestas
-autenticadas de forma insegura. Scope al área installer.
+Cerrar el ciclo de confianza. La tabla `ratings` ya existe (unique por order,
+1-5 estrellas, trigger que recalcula `installers.rating_avg/rating_count`).
+A construir:
+1. Al aprobar una orden (en_revision→finalizada), el manager puede calificar
+   al instalador (estrellas + comentario opcional). Server Action.
+2. Mostrar el rating del instalador en el roster (`/team`, ya muestra ★) y al
+   asignar órdenes. Ya se lee en `fetchActiveRoster`/`fetchRoster`.
+3. Vista de reputación del instalador en su `/profile`.
+
+Reutilizar: patrón `requireManager`, el trigger ya mantiene el promedio.
 
 ## Pasos siguientes (resumen)
 7 — Invitaciones y roster · 8 — PWA instalador (tareas + avances online) ·
