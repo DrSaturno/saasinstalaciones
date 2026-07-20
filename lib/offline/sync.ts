@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { requestPushDelivery } from "@/lib/push/events";
 import type { OrderStatus } from "@/types/database";
 import { db, type OutboxItem, type PendingPhoto } from "./db";
 
@@ -77,6 +78,8 @@ export async function flush(): Promise<number> {
             { onConflict: "id", ignoreDuplicates: true },
           );
           if (error) throw error;
+
+          await requestPushDelivery(supabase, "update_received", item.id);
 
           // Limpieza: quitar blobs ya subidos.
           for (const photoId of item.photoIds ?? []) await db.photos.delete(photoId);

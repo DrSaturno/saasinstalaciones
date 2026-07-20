@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser, ROLE_HOME } from "@/lib/auth";
 import { AppShell } from "@/components/shared/app-shell";
+import { ServiceWorkerRegister } from "@/components/installer/service-worker-register";
 
 const NAV = [
   { href: "/dashboard", label: "Inicio" },
@@ -20,7 +21,8 @@ export default async function CompanyLayout({
   if (user.role !== "company_manager") redirect(ROLE_HOME[user.role]);
 
   return (
-    <AppShell area="Empresa" nav={NAV} userName={user.fullName}>
+    <AppShell area="Empresa" nav={NAV} userName={user.fullName} showNotifications>
+      <ServiceWorkerRegister />
       {children}
     </AppShell>
   );

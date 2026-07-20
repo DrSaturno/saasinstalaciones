@@ -20,7 +20,7 @@ export default async function InstallerLayout({
   if (user.role !== "installer") redirect(ROLE_HOME[user.role]);
 
   return (
-    <AppShell area="Instalador" nav={NAV} userName={user.fullName}>
+    <AppShell area="Instalador" nav={NAV} userName={user.fullName} showNotifications>
       <ServiceWorkerRegister />
       <SyncIndicator />
       {children}

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { canTransition } from "@/lib/domain/transitions";
+import { requestPushDelivery } from "@/lib/push/events";
 import type { OrderStatus, OrderUpdateType } from "@/types/database";
 
 async function requireInstaller() {
@@ -97,6 +98,8 @@ export async function addUpdate(input: {
       { onConflict: "id", ignoreDuplicates: true },
     );
     if (error) return { error: error.message };
+
+    await requestPushDelivery(supabase, "update_received", parsed.data.updateId);
 
     revalidatePath(`/tasks/${parsed.data.orderId}`);
   } catch (e) {

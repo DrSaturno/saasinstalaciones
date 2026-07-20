@@ -50,7 +50,8 @@ Estilo: claro y aireado, bordes sutiles en vez de sombras, radius 10-14px, chips
 |----------|-------------|
 | NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY | Cliente Supabase (RLS aplica) |
 | SUPABASE_SERVICE_ROLE_KEY | Solo server, solo /api/master |
-| NEXT_PUBLIC_VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY | Web Push |
+| NEXT_PUBLIC_VAPID_PUBLIC_KEY | Clave pública Web Push en Next/Vercel |
+| VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT | Secretos de la Edge Function de Supabase; nunca en Next |
 | RESEND_API_KEY | Emails de invitación |
 
 ## Reglas No Negociables

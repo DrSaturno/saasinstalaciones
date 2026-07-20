@@ -1,6 +1,6 @@
 # Instala Pro — Estado del proyecto
 
-> Última sesión: 2026-07-20 · Próximo paso: **Paso 11 — Bolsa de zona + notificaciones**
+> Última sesión: 2026-07-20 · Próximo paso: **activar infraestructura del Paso 11**
 > Deploy a Vercel: en progreso (env vars configuradas)
 
 Registro de avance para retomar la construcción. El plan completo (16 secciones,
@@ -39,7 +39,7 @@ TanStack Query/Table/Virtual · next-intl (pendiente, Paso 12) · Vitest · pnpm
 cd instalapro
 pnpm install          # node-linker=hoisted, ver nota de entorno abajo
 pnpm dev              # http://localhost:3000
-pnpm test             # 15 tests
+pnpm test             # 19 tests
 pnpm build            # verificación completa de tipos
 ```
 Requiere `instalapro/.env.local` con las 3 claves de Supabase (URL, anon,
@@ -141,18 +141,44 @@ Datos demo: 1 empresa, 1 proyecto ("Refacción Estaciones Norte"), 20 puntos,
   reseñas. `StarRating` accesible y reutilizable. **Verificado E2E a 375 px:**
   DEM-00006 → finalizada + 5 estrellas → promedio de Iván 5.0 (1) y reseña
   visible en su perfil. El shell responsive se corrigió tras detectar overflow.
-  **Pendiente antes de producción:** aplicar manualmente la migración
-  `20260720000003_rating_integrity.sql`, que impide calificar a un instalador
-  distinto del asignado aunque se saltee la UI.
+  La migración `20260720000003_rating_integrity.sql` fue aplicada y confirma en
+  DB que no se puede calificar a un instalador distinto del asignado.
 
-## Próximo: Paso 11 — Bolsa de zona + notificaciones
+- [x] **11 — Bolsa de zona + notificaciones (código).** `/broadcasts` funciona
+  como tablero operativo de empresa: alta/edición/cierre de búsquedas por zona,
+  pipeline de candidatos y aceptación atómica que suma al roster y puede asignar
+  órdenes del proyecto. `/jobs` es la experiencia mobile-first del instalador,
+  filtrada por RLS según sus zonas, con postulación idempotente por clave compuesta
+  e historial de resolución. La migración `20260720000004_broadcasts_notifications.sql`
+  endurece postulaciones, conserva la lectura tras cerrar, agrega RPCs atómicas y
+  genera notificaciones para nuevas búsquedas, postulaciones, asignaciones y
+  avances. Campanita realtime compartida, marcado leído y suscripciones Web Push.
+  El push se despacha en la Edge Function `send-event-push`: revalida actor y
+  recurso antes de usar service role, limpia endpoints vencidos y deduplica con
+  `push_sent_at`; si VAPID no está configurado, la app sigue completa in-app.
+  **Verificado:** 19 tests, TypeScript, lint 0 errores, build de producción; E2E
+  escritorio de `/broadcasts` y E2E a 375 px de `/jobs`, incluida postulación real
+  de `instalador3`, sin errores de consola. **Pendiente de infraestructura:**
+  aplicar la migración 00004, configurar VAPID y desplegar la Edge Function.
 
-Construir broadcasts por zona, postulaciones y aceptación; luego campanita
-in-app y Web Push para nuevos trabajos, asignaciones y avances.
+## Activación pendiente del Paso 11
+
+1. Aplicar `supabase/migrations/20260720000004_broadcasts_notifications.sql`
+   en el SQL Editor (sin traducción automática del navegador).
+2. Generar una pareja VAPID una sola vez con
+   `npx web-push generate-vapid-keys`; guardar la privada como secreto.
+3. En Vercel definir `NEXT_PUBLIC_VAPID_PUBLIC_KEY` y volver a desplegar.
+4. En Supabase Edge Functions definir `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y
+   `VAPID_SUBJECT` (por ejemplo `mailto:soporte@dominio.com`).
+5. Autenticarse con Supabase CLI y ejecutar:
+   `npx supabase functions deploy send-event-push --project-ref rpdjjvcmtcpvmwrjqhke --use-api`.
+
+Después de esto, verificar aceptar/rechazar la postulación demo desde empresa y
+el push real en un dispositivo. La bandeja in-app queda activa apenas se aplica
+la migración, aun antes de configurar VAPID.
 
 ## Pasos siguientes (resumen)
-11 — Bolsa de zona + notificaciones · 12 — i18n pt-BR · 13 — Landing +
-pulido · 14 — Deploy + `/cyber-neo`.
+12 — i18n pt-BR · 13 — Landing + pulido · 14 — Deploy + `/cyber-neo`.
 
 ---
 

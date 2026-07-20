@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { logoutAction } from "@/lib/actions/session";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Button } from "@/components/ui/button";
 
 export type NavItem = { href: string; label: string };
@@ -13,11 +15,13 @@ export function AppShell({
   area,
   nav,
   userName,
+  showNotifications = false,
   children,
 }: {
   area: string;
   nav: NavItem[];
   userName: string;
+  showNotifications?: boolean;
   children: React.ReactNode;
 }) {
   const navigation = nav.map((item) => (
@@ -49,6 +53,11 @@ export function AppShell({
             </nav>
           </div>
           <div className="flex shrink-0 items-center gap-3">
+            {showNotifications ? (
+              <Suspense fallback={<span className="size-7" />}>
+                <NotificationBell />
+              </Suspense>
+            ) : null}
             <span className="hidden text-sm text-muted-foreground lg:inline">
               {userName}
             </span>

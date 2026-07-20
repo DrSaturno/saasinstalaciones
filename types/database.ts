@@ -344,6 +344,7 @@ export interface Database {
           body: string;
           data: Json;
           read_at: string | null;
+          push_sent_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -354,6 +355,7 @@ export interface Database {
           body?: string;
           data?: Json;
           read_at?: string | null;
+          push_sent_at?: string | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["notifications"]["Insert"]>;
@@ -385,6 +387,26 @@ export interface Database {
       invitation_preview: {
         Args: { p_token: string };
         Returns: { company_name: string; email: string; valid: boolean }[];
+      };
+      accept_broadcast_application: {
+        Args: {
+          p_broadcast_id: string;
+          p_installer_id: string;
+          p_order_ids?: string[];
+        };
+        Returns: void;
+      };
+      reject_broadcast_application: {
+        Args: { p_broadcast_id: string; p_installer_id: string };
+        Returns: void;
+      };
+      close_broadcast: {
+        Args: { p_broadcast_id: string };
+        Returns: void;
+      };
+      installer_can_read_broadcast: {
+        Args: { p_broadcast_id: string };
+        Returns: boolean;
       };
     };
     Enums: Record<string, never>;

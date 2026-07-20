@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { canTransition } from "@/lib/domain/transitions";
+import { requestPushDelivery } from "@/lib/push/events";
 import type { OrderStatus, TablesInsert } from "@/types/database";
 
 /** Toda acción de empresa resuelve company_id desde la sesión, nunca del cliente. */
@@ -259,6 +260,10 @@ export async function assignInstaller(
       .eq("id", orderId)
       .eq("company_id", companyId);
     if (error) return { error: error.message };
+
+    if (installerId) {
+      await requestPushDelivery(supabase, "order_assigned", orderId, installerId);
+    }
 
     revalidatePath("/orders");
     revalidatePath(`/orders/${orderId}`);

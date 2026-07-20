@@ -12,7 +12,7 @@
  *  - Todo lo demás (incluido Supabase, otro origen): pasa directo a la red. Las
  *    mutaciones offline las maneja la cola en Dexie, no el SW.
  */
-const VERSION = "v1";
+const VERSION = "v2";
 const STATIC_CACHE = `static-${VERSION}`;
 const PAGE_CACHE = `pages-${VERSION}`;
 
@@ -86,7 +86,45 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Sólo cacheamos navegaciones del área instalador.
-  if (request.mode === "navigate" && url.pathname.startsWith("/tasks")) {
+  if (
+    request.mode === "navigate" &&
+    ["/tasks", "/jobs", "/profile"].some((path) => url.pathname.startsWith(path))
+  ) {
     event.respondWith(networkFirst(request, PAGE_CACHE));
   }
+});
+
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+  let payload;
+  try {
+    payload = event.data.json();
+  } catch {
+    payload = { title: "Instala Pro", body: event.data.text(), url: "/" };
+  }
+  event.waitUntil(
+    self.registration.showNotification(payload.title || "Instala Pro", {
+      body: payload.body || "Tenés una novedad.",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      data: { url: payload.url || "/" },
+      tag: payload.tag || undefined,
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || "/", self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if (client.url.startsWith(self.location.origin) && "focus" in client) {
+          client.navigate(target);
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(target);
+    }),
+  );
 });
