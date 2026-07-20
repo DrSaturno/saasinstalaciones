@@ -4,26 +4,7 @@
 -- =============================================================
 
 -- -------------------------------------------------------------
--- 1. Helpers de auth (SECURITY DEFINER para no recursar RLS)
--- -------------------------------------------------------------
-create or replace function public.auth_role()
-returns text
-language sql stable security definer
-set search_path = public
-as $$
-  select role from public.profiles where id = auth.uid()
-$$;
-
-create or replace function public.auth_company()
-returns uuid
-language sql stable security definer
-set search_path = public
-as $$
-  select company_id from public.profiles where id = auth.uid()
-$$;
-
--- -------------------------------------------------------------
--- 2. Tablas
+-- 1. Tablas
 -- -------------------------------------------------------------
 create table public.companies (
   id uuid primary key default gen_random_uuid(),
@@ -193,6 +174,28 @@ create table public.push_subscriptions (
   created_at timestamptz not null default now(),
   primary key (user_id, endpoint)
 );
+
+-- -------------------------------------------------------------
+-- 2. Helpers de auth (SECURITY DEFINER para no recursar RLS)
+--    Van después de las tablas: Postgres intenta inlinear/validar
+--    funciones SQL simples en CREATE FUNCTION y falla si la tabla
+--    referenciada todavía no existe.
+-- -------------------------------------------------------------
+create or replace function public.auth_role()
+returns text
+language sql stable security definer
+set search_path = public
+as $$
+  select role from public.profiles where id = auth.uid()
+$$;
+
+create or replace function public.auth_company()
+returns uuid
+language sql stable security definer
+set search_path = public
+as $$
+  select company_id from public.profiles where id = auth.uid()
+$$;
 
 -- -------------------------------------------------------------
 -- 3. Triggers de dominio
