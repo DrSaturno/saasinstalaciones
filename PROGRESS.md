@@ -1,6 +1,6 @@
 # Instala Pro — Estado del proyecto
 
-> Última sesión: 2026-07-20 · Próximo paso: **Paso 7 — Invitaciones y roster**
+> Última sesión: 2026-07-20 · Próximo paso: **Paso 8 — PWA del instalador**
 > Deploy a Vercel: en progreso (env vars configuradas)
 
 Registro de avance para retomar la construcción. El plan completo (16 secciones,
@@ -95,17 +95,32 @@ Datos demo: 1 empresa, 1 proyecto ("Refacción Estaciones Norte"), 20 puntos,
   (DEM-00021..25 correlativos). Nota: DEM-00007 quedó en_proceso/Iván por el test
   (las transiciones no son reversibles por diseño).
 
-## Próximo: Paso 7 — Invitaciones y roster
+- [x] **7 — Invitaciones y roster.** Vista `/team`: roster activo (nombre,
+  zonas, rating, órdenes abiertas), invitaciones pendientes, invitar/quitar/
+  reactivar (`lib/actions/team.ts`). `inviteInstaller` genera link compartible
+  `/invite/<token>` (dedup por email pendiente); quitar del equipo libera las
+  órdenes no terminadas. Página pública `/invite/[token]` maneja token inválido,
+  sin sesión, rol equivocado e instalador (acepta vía RPC `accept_invitation`).
+  **Migración `20260720000002_invitation_preview` aplicada** (función security-
+  definer que muestra la empresa sin exponer `invitations`). **Verificado E2E:**
+  invitar → aceptar como instalador3 → se une al roster → quitar → reactivar,
+  todo OK. Datos demo restaurados a 2 instaladores.
 
-Construir el equipo de instaladores de cada empresa:
-1. Invitar instaladores por email (tabla `invitations`, token, RESEND_API_KEY).
-2. Aceptar invitación → crea profile installer + fila en `installers` +
-   `company_installers` (la función `accept_invitation` ya existe en la DB).
-3. Vista `/team`: roster activo, invitaciones pendientes, quitar del equipo.
-4. Estados del roster: invited → active → removed.
+## Próximo: Paso 8 — PWA del instalador (online)
 
-Reutilizar: patrón `requireManager` (`lib/actions/orders.ts`), la tabla, los
-diálogos. El selector de instalador de órdenes ya lee de `fetchActiveRoster`.
+El área del instalador, mobile-first (diseñar a 375px). Por ahora ONLINE (el
+offline con Serwist+Dexie es el Paso 9). A construir:
+1. `/tasks`: lista de órdenes asignadas al instalador logueado (RLS
+   `work_orders_installer_read` ya filtra por `assigned_installer_id`).
+2. Detalle de tarea: ver el punto, iniciar trabajo, cargar avances
+   (`order_updates`: checkin/progress/blocker/done) con foto opcional.
+3. El instalador mueve la orden en_proceso → en_revision al terminar
+   (transiciones del instalador; el manager aprueba a finalizada).
+4. Manifest PWA + íconos (instalable). Service worker offline recién en Paso 9.
+
+Ojo regla #5: las mutaciones del instalador deben ser idempotentes (uuid
+generado en cliente) para cuando llegue el offline. `order_updates.id` ya se
+genera en cliente por diseño.
 
 ## Pasos siguientes (resumen)
 7 — Invitaciones y roster · 8 — PWA instalador (tareas + avances online) ·
