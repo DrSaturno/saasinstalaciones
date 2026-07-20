@@ -1,6 +1,7 @@
 # Instala Pro — Estado del proyecto
 
 > Última sesión: 2026-07-20 · Próximo paso: **Paso 6 — Órdenes de trabajo**
+> Deploy a Vercel: en progreso (env vars configuradas)
 
 Registro de avance para retomar la construcción. El plan completo (16 secciones,
 14 pasos) está en [`../BLUEPRINT.md`](../BLUEPRINT.md). Las reglas del proyecto
