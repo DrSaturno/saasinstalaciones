@@ -55,6 +55,10 @@ export async function proxy(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
+  // Las rutas /api se guardan a sí mismas y responden JSON (401/403).
+  // Redirigirlas a /login devolvería HTML a un cliente que espera JSON.
+  if (path.startsWith("/api/")) return response;
+
   // Sin sesión: solo rutas públicas.
   if (!user) {
     if (isPublic(path)) return response;
