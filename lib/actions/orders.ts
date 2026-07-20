@@ -1,0 +1,269 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth";
+import { canTransition } from "@/lib/domain/transitions";
+import type { OrderStatus, TablesInsert } from "@/types/database";
+
+/** Toda acción de empresa resuelve company_id desde la sesión, nunca del cliente. */
+async function requireManager() {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "company_manager" || !user.companyId) {
+    throw new Error("Acceso denegado");
+  }
+  return { user, supabase: await createClient(), companyId: user.companyId };
+}
+
+export type ActionState = { error: string | null; ok?: boolean };
+
+// ---------------------------------------------------------------------------
+// Crear orden individual
+// ---------------------------------------------------------------------------
+
+const createOrderSchema = z.object({
+  siteId: z.string().uuid("Punto inválido"),
+  title: z.string().min(2, "El título es muy corto").max(200),
+  description: z.string().max(2000).optional().default(""),
+  scheduledDate: z.string().optional(),
+});
+
+export async function createOrder(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = createOrderSchema.safeParse({
+    siteId: formData.get("siteId"),
+    title: formData.get("title"),
+    description: formData.get("description") ?? "",
+    scheduledDate: formData.get("scheduledDate") || undefined,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+  }
+
+  try {
+    const { supabase, companyId, user } = await requireManager();
+
+    // El punto debe ser de esta empresa: resolvemos project_id desde él,
+    // nunca confiamos en un project_id que venga del cliente.
+    const { data: site } = await supabase
+      .from("sites")
+      .select("id, project_id, company_id")
+      .eq("id", parsed.data.siteId)
+      .eq("company_id", companyId)
+      .single();
+    if (!site) return { error: "Punto no encontrado" };
+
+    const { error } = await supabase.from("work_orders").insert({
+      company_id: companyId,
+      project_id: site.project_id,
+      site_id: site.id,
+      title: parsed.data.title,
+      description: parsed.data.description,
+      scheduled_date: parsed.data.scheduledDate || null,
+      created_by: user.id,
+      // order_number lo asigna el trigger work_orders_assign_number.
+    });
+    if (error) return { error: error.message };
+
+    revalidatePath("/orders");
+    revalidatePath(`/projects/${site.project_id}`);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Error inesperado" };
+  }
+  return { error: null, ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Crear órdenes masivas: una por punto de un proyecto
+// ---------------------------------------------------------------------------
+
+export type BulkResult = {
+  error: string | null;
+  created: number;
+  skipped: number;
+};
+
+const BATCH_SIZE = 500;
+
+/**
+ * Crea una orden por cada punto del proyecto que todavía no tenga una orden
+ * abierta (evita duplicar trabajo si se corre dos veces).
+ */
+export async function createOrdersForProject(
+  projectId: string,
+  titleTemplate: string,
+): Promise<BulkResult> {
+  let ctx;
+  try {
+    ctx = await requireManager();
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Error", created: 0, skipped: 0 };
+  }
+  const { supabase, companyId, user } = ctx;
+
+  const title = titleTemplate.trim() || "Instalación";
+
+  const { data: project } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("id", projectId)
+    .eq("company_id", companyId)
+    .single();
+  if (!project) {
+    return { error: "Proyecto no encontrado", created: 0, skipped: 0 };
+  }
+
+  // Todos los puntos del proyecto (paginado: PostgREST corta en 1000).
+  const siteIds: string[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase
+      .from("sites")
+      .select("id")
+      .eq("project_id", projectId)
+      .range(from, from + 999);
+    if (error || !data) break;
+    siteIds.push(...data.map((s) => s.id));
+    if (data.length < 1000) break;
+  }
+
+  // Puntos que YA tienen una orden no cancelada: los salteamos.
+  const withOrders = new Set<string>();
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase
+      .from("work_orders")
+      .select("site_id")
+      .eq("project_id", projectId)
+      .neq("status", "cancelada")
+      .range(from, from + 999);
+    if (error || !data) break;
+    for (const o of data) withOrders.add(o.site_id);
+    if (data.length < 1000) break;
+  }
+
+  const toCreate = siteIds.filter((id) => !withOrders.has(id));
+  const skipped = siteIds.length - toCreate.length;
+
+  const rows: TablesInsert<"work_orders">[] = toCreate.map((siteId) => ({
+    company_id: companyId,
+    project_id: projectId,
+    site_id: siteId,
+    title,
+    created_by: user.id,
+  }));
+
+  let created = 0;
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const batch = rows.slice(i, i + BATCH_SIZE);
+    const { error } = await supabase.from("work_orders").insert(batch);
+    if (error) {
+      return {
+        error: `Se crearon ${created} órdenes y falló el lote siguiente: ${error.message}`,
+        created,
+        skipped,
+      };
+    }
+    created += batch.length;
+  }
+
+  revalidatePath("/orders");
+  revalidatePath(`/projects/${projectId}`);
+  return { error: null, created, skipped };
+}
+
+// ---------------------------------------------------------------------------
+// Máquina de estados: única vía para cambiar el status (regla no negociable #4)
+// ---------------------------------------------------------------------------
+
+export async function transitionOrder(
+  orderId: string,
+  toStatus: OrderStatus,
+  note?: string,
+): Promise<ActionState> {
+  try {
+    const { supabase, companyId, user } = await requireManager();
+
+    const { data: order } = await supabase
+      .from("work_orders")
+      .select("id, status, project_id")
+      .eq("id", orderId)
+      .eq("company_id", companyId)
+      .single();
+    if (!order) return { error: "Orden no encontrada" };
+
+    // Validamos acá para dar un error claro; el trigger valida igual en la DB.
+    if (!canTransition(order.status, toStatus)) {
+      return {
+        error: `No se puede pasar de "${order.status}" a "${toStatus}".`,
+      };
+    }
+
+    const { error } = await supabase
+      .from("work_orders")
+      .update({ status: toStatus })
+      .eq("id", orderId)
+      .eq("company_id", companyId);
+    if (error) return { error: error.message };
+
+    // Rastro en el historial (order_updates). id generado en server acá:
+    // esta acción no es de área installer, no necesita idempotencia offline.
+    await supabase.from("order_updates").insert({
+      id: crypto.randomUUID(),
+      order_id: orderId,
+      company_id: companyId,
+      type: "system",
+      note: note?.trim()
+        ? `Estado → ${toStatus}: ${note.trim()}`
+        : `Estado → ${toStatus}`,
+    });
+
+    revalidatePath("/orders");
+    revalidatePath(`/orders/${orderId}`);
+    revalidatePath(`/projects/${order.project_id}`);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Error inesperado" };
+  }
+  return { error: null, ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Asignar instalador (del roster de la empresa)
+// ---------------------------------------------------------------------------
+
+export async function assignInstaller(
+  orderId: string,
+  installerId: string | null,
+): Promise<ActionState> {
+  try {
+    const { supabase, companyId } = await requireManager();
+
+    // Si se asigna alguien, debe estar en el roster activo de la empresa.
+    if (installerId) {
+      const { data: roster } = await supabase
+        .from("company_installers")
+        .select("installer_id")
+        .eq("company_id", companyId)
+        .eq("installer_id", installerId)
+        .eq("status", "active")
+        .single();
+      if (!roster) {
+        return { error: "Ese instalador no está en tu equipo activo." };
+      }
+    }
+
+    const { error } = await supabase
+      .from("work_orders")
+      .update({ assigned_installer_id: installerId })
+      .eq("id", orderId)
+      .eq("company_id", companyId);
+    if (error) return { error: error.message };
+
+    revalidatePath("/orders");
+    revalidatePath(`/orders/${orderId}`);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Error inesperado" };
+  }
+  return { error: null, ok: true };
+}

@@ -1,6 +1,6 @@
 # Instala Pro — Estado del proyecto
 
-> Última sesión: 2026-07-20 · Próximo paso: **Paso 6 — Órdenes de trabajo**
+> Última sesión: 2026-07-20 · Próximo paso: **Paso 7 — Invitaciones y roster**
 > Deploy a Vercel: en progreso (env vars configuradas)
 
 Registro de avance para retomar la construcción. El plan completo (16 secciones,
@@ -82,20 +82,30 @@ Datos demo: 1 empresa, 1 proyecto ("Refacción Estaciones Norte"), 20 puntos,
   KPIs. **Importación de 2000 puntos verificada** (2020 en tabla, 24 en DOM,
   búsqueda y filtros instantáneos). 11 tests del parser.
 
-## Próximo: Paso 6 — Órdenes de trabajo
+- [x] **6 — Órdenes de trabajo.** Vista `/orders` con tabla virtualizada,
+  resumen por estado y filtros (estado, instalador, búsqueda). Detalle de orden
+  con punto, historial (`order_updates`) y panel de acciones. Creación masiva
+  "una por punto" en lotes (idempotente: saltea puntos con orden abierta) y
+  creación individual. **Máquina de estados** vía `lib/actions/orders.ts`
+  (`transitionOrder`) que espeja `lib/domain/transitions.ts`. Asignación de
+  instalador validada contra el roster activo. **Verificado:** transición
+  pendiente→planificada→en_proceso con historial, asignación persistida, y el
+  trigger de la DB **rechaza saltos ilegales** (planificada→finalizada = 400) —
+  la regla #4 se cumple aunque se saltee la UI. Generación masiva probada
+  (DEM-00021..25 correlativos). Nota: DEM-00007 quedó en_proceso/Iván por el test
+  (las transiciones no son reversibles por diseño).
 
-El corazón del sistema (lógica de proyecto1). A construir:
-1. Crear órdenes: individual y **masiva "una por punto"** de un proyecto.
-2. **Máquina de estados** con validación server-side vía una acción
-   `transitionOrder` (el trigger `validate_order_transition` ya existe en la DB;
-   la regla no negociable #4 dice que el status solo cambia por ahí, nunca por
-   update directo). Estados: pendiente → relevamiento → planificada → en_proceso
-   → en_revision → finalizada | cancelada.
-3. Asignación de instalador desde el roster de la empresa.
-4. Vista `/orders` con filtros por estado/instalador y detalle de orden.
+## Próximo: Paso 7 — Invitaciones y roster
 
-Reutilizar: `components/shared/status-badge.tsx`, `lib/domain/status.ts`,
-`lib/actions/projects.ts` (patrón `requireManager`), la tabla virtualizada.
+Construir el equipo de instaladores de cada empresa:
+1. Invitar instaladores por email (tabla `invitations`, token, RESEND_API_KEY).
+2. Aceptar invitación → crea profile installer + fila en `installers` +
+   `company_installers` (la función `accept_invitation` ya existe en la DB).
+3. Vista `/team`: roster activo, invitaciones pendientes, quitar del equipo.
+4. Estados del roster: invited → active → removed.
+
+Reutilizar: patrón `requireManager` (`lib/actions/orders.ts`), la tabla, los
+diálogos. El selector de instalador de órdenes ya lee de `fetchActiveRoster`.
 
 ## Pasos siguientes (resumen)
 7 — Invitaciones y roster · 8 — PWA instalador (tareas + avances online) ·

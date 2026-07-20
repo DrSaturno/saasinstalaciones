@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchAllSites } from "@/lib/data/sites";
 import { SitesTable } from "@/components/company/sites-table";
 import { ImportSitesDialog } from "@/components/company/import-sites-dialog";
+import { CreateOrdersDialog } from "@/components/company/create-orders-dialog";
 import { PROJECT_STATUS } from "@/lib/domain/status";
 import { Badge } from "@/components/ui/badge";
 
@@ -56,6 +57,7 @@ export default async function ProjectDetailPage({
             </p>
           </div>
           <ImportSitesDialog projectId={project.id} />
+          <CreateOrdersDialog projectId={project.id} siteCount={sites.length} />
         </div>
       </div>
 
