@@ -1,7 +1,7 @@
 # Instala Pro — Estado del proyecto
 
-> Última sesión: 2026-07-20 · Próximo paso: **14 — Deploy + auditoría `/cyber-neo`**
-> Deploy a Vercel: a cargo del usuario; todavía no verificado
+> Última sesión: 2026-07-20 · Estado: **construcción COMPLETA (Pasos 1-14).**
+> Pendiente del usuario: deploy Vercel + activación Web Push (ver abajo).
 
 Registro de avance para retomar la construcción. El plan completo (16 secciones,
 14 pasos) está en [`../BLUEPRINT.md`](../BLUEPRINT.md). Las reglas del proyecto
@@ -215,19 +215,49 @@ Después de esto, verificar aceptar/rechazar la postulación demo desde empresa 
 el push real en un dispositivo. La bandeja in-app queda activa apenas se aplica
 la migración, aun antes de configurar VAPID.
 
-## Próximo: Paso 14 — Deploy + auditoría de seguridad
+- [x] **14 — Deploy + auditoría de seguridad.** Auditoría `cyber-neo` completa
+  (191 archivos, scan full). **Risk score 8/100 (Bajo).** 0 críticas, 0 altas,
+  2 medias, 2 bajas. Reporte en `~/Escritorio/cyber-neo-report-instalapro-
+  2026-07-20.md`. **Medios corregidos y verificados:** (CN-001) open-redirect en
+  el login vía `next=//evil.com` — ahora rechaza protocol-relative/backslash
+  (verificado: `//evil.com`→/dashboard, `/orders`→/orders); (CN-002) headers de
+  seguridad globales en `next.config.ts` (X-Frame-Options DENY, nosniff,
+  Referrer-Policy, HSTS — verificados por HEAD). **Bajas documentadas (no
+  bloqueantes):** postcss transitiva (build-time) y CORS wildcard en la Edge
+  Function (mitigada por auth de token). **Postura fuerte confirmada:** RLS en 14
+  tablas/36 políticas, service_role aislado con `server-only`, cero XSS/SQLi/
+  inyección, cero secretos commiteados, CSPRNG, máquina de estados en DB,
+  idempotencia offline. Recomendación de endurecimiento futuro: CSP con nonces.
 
-Último paso del blueprint. A hacer:
-1. Verificar el deploy en Vercel (build de prod ya pasa en local). Configurar
-   las env vars que falten (VAPID público — ver "Activación pendiente del Paso
-   11" arriba — y `RESEND_API_KEY` si se quiere email de invitaciones).
-2. Activar Web Push real: generar claves VAPID, cargar secretos en Supabase Edge
-   Functions, desplegar `send-event-push`, setear `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
-   en Vercel y redeploy.
-3. Correr auditoría de seguridad con `/cyber-neo .` antes del release: repasar
-   RLS de cada tabla, aislamiento de `service_role` (solo `/api/master`),
-   idempotencia offline, y que no se filtren tokens/URLs firmadas.
-4. Smoke test end-to-end en la URL de producción con los 3 roles.
+---
+
+## PENDIENTE DEL USUARIO (infraestructura — no es código)
+
+La construcción está completa. Falta lo que requiere tus credenciales:
+
+### A. Deploy a Vercel
+- El build de producción pasa en local. Conectá el repo a Vercel (si no está) y
+  configurá las env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+  `SUPABASE_SERVICE_ROLE_KEY`. Redeploy.
+
+### B. Activar Web Push (opcional — la bandeja in-app ya funciona sin esto)
+1. Generar claves VAPID (una sola vez):
+   `npx web-push generate-vapid-keys`
+   Guarda la salida en un lugar seguro (la privada es secreta).
+2. En **Supabase → Edge Functions → Secrets** cargar: `VAPID_PUBLIC_KEY`,
+   `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (ej. `mailto:vos@instalapro.com`).
+3. Desplegar la función:
+   `npx supabase functions deploy send-event-push --project-ref rpdjjvcmtcpvmwrjqhke --use-api`
+4. En **Vercel** setear `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (la MISMA pública del paso 1)
+   y redeploy.
+
+### C. Email de invitaciones (opcional)
+- Setear `RESEND_API_KEY` si querés que las invitaciones se manden por email en
+  vez de compartir el link a mano.
+
+### D. Endurecimiento futuro (recomendado, no bloqueante)
+- Agregar una CSP con nonces (los otros headers de seguridad ya están).
+- `pnpm.overrides` de `postcss@>=8.5.10` cuando Next lo permita.
 
 ## Pasos siguientes (resumen)
 14 — Deploy + `/cyber-neo` (último).

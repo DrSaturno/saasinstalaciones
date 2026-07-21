@@ -63,6 +63,12 @@ export async function loginAction(
     maxAge: 60 * 60 * 24 * 365,
   });
 
-  const dest = parsed.data.next?.startsWith("/") ? parsed.data.next : ROLE_HOME[role];
-  redirect(dest);
+  // Solo rutas internas: rechazar protocol-relative (//evil.com) y backslash
+  // (/\evil.com), que el navegador resolvería como destinos externos.
+  const candidate = parsed.data.next;
+  const safeNext =
+    candidate?.startsWith("/") &&
+    !candidate.startsWith("//") &&
+    !candidate.startsWith("/\\");
+  redirect(safeNext ? candidate! : ROLE_HOME[role]);
 }
