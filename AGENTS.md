@@ -25,7 +25,7 @@ Next.js 16 (App Router) + TypeScript strict + Tailwind v4 + shadcn/ui (radix-nov
 
 - `app/(master)|(company)|(installer)/` — tres apps por route group; `proxy.ts` (el middleware de Next 16) resuelve `profiles.role` y enruta.
 - Lecturas: Server Components + cliente server Supabase. Mutaciones: Server Actions con Zod. `/api` solo para push, webhooks y tablero maestro.
-- `lib/supabase/admin.ts` (service_role) SOLO se importa en `app/api/master/**`. Importarlo en otro lado es un bug de seguridad.
+- `lib/supabase/admin.ts` (service_role) SOLO se importa en `app/api/master/**` y en `lib/actions/invite-signup.ts` (alta de instalador por invitación: crea el usuario con rol fijo `installer` server-side, el cliente nunca controla el rol). Importarlo en cualquier otro lado es un bug de seguridad.
 - Área installer: mutaciones pasan por `lib/offline/sync.ts` (cola Dexie, idempotente por uuid generado en cliente).
 - `supabase/migrations/` es la única fuente de verdad del schema. Nada de cambios manuales en el dashboard.
 

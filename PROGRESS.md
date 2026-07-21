@@ -2,6 +2,8 @@
 
 > Última sesión: 2026-07-21 · Estado: **producto desplegado (Pasos 1-14 completos).**
 > Web Push activo; email integrado, pendiente un remitente Resend verificado.
+> Post-14: alta de instalador por invitación (auto-registro) implementada y
+> verificada E2E — ver "Mejoras post-lanzamiento" más abajo.
 
 Registro de avance para retomar la construcción. El plan completo (16 secciones,
 14 pasos) está en [`../BLUEPRINT.md`](../BLUEPRINT.md). Las reglas del proyecto
@@ -259,6 +261,24 @@ Datos demo: 1 empresa, 1 proyecto ("Refacción Estaciones Norte"), 20 puntos,
   Vercel `RESEND_FROM_EMAIL` (por ejemplo,
   `Instala Pro <invitaciones@tu-dominio.com>`), seguido de un redeploy.
 - **Validación:** 27 tests, TypeScript, lint sin errores y build de producción.
+
+### Mejoras post-lanzamiento
+
+- **Auto-registro de instalador por invitación (2026-07-21).** Antes, un
+  instalador sin cuenta que abría `/invite/<token>` era mandado a "Iniciar
+  sesión" — callejón sin salida (no tenía usuario). Ahora esa pantalla muestra
+  un **formulario de alta** (nombre + contraseña; el email viene de la
+  invitación, bloqueado). Al enviar: `signUpInstaller` (Server Action en
+  `lib/actions/invite-signup.ts`) crea el usuario vía `admin.createUser` con
+  **rol fijo `installer` server-side** (el cliente nunca controla el rol → sin
+  escalación de privilegios), lo loguea y acepta la invitación con la RPC
+  `accept_invitation` ya vetada; redirige a `/tasks`. Quien ya tiene cuenta usa
+  el link "¿Ya tenés cuenta? Iniciar sesión". `admin.ts` ahora se permite
+  también en ese archivo (documentado en AGENTS.md). **Verificado E2E:** alta
+  real de un instalador de prueba → landing en `/tasks` con su nombre, y en DB
+  `profiles.role=installer`, fila `installers`, `company_installers.status=active`
+  e invitación `accepted`; cuenta de prueba eliminada sin huérfanos. 27 tests,
+  build y lint OK; paridad i18n es/pt.
 
 ### D. Endurecimiento futuro (recomendado, no bloqueante)
 - Agregar una CSP con nonces (los otros headers de seguridad ya están).

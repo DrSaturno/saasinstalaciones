@@ -3,8 +3,8 @@ import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { AcceptInvitation } from "@/components/invite/accept-invitation";
+import { InstallerSignupForm } from "@/components/invite/installer-signup-form";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 function InvitationFrame({ children }: { children: React.ReactNode }) {
   return (
@@ -50,7 +50,8 @@ export default async function InvitePage({
     );
   }
 
-  // Sin sesión: mandamos a login y volvemos acá tras iniciar sesión.
+  // Sin sesión: primera vez → alta de instalador. Quien ya tenga cuenta usa
+  // el link a login (y vuelve acá logueado para ver el botón de aceptar).
   if (!user) {
     return (
       <InvitationFrame>
@@ -58,11 +59,20 @@ export default async function InvitePage({
           {t("title", { company: invite.company_name })}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          {t("loginDescription")}
+          {t("signupDescription")}
         </p>
-        <Button asChild className="mt-6 w-full">
-          <Link href={`/login?next=/invite/${token}`}>{t("login")}</Link>
-        </Button>
+        <div className="mt-6">
+          <InstallerSignupForm token={token} email={invite.email} />
+        </div>
+        <p className="mt-4 text-center text-sm text-muted-foreground">
+          {t("haveAccount")}{" "}
+          <Link
+            href={`/login?next=/invite/${token}`}
+            className="text-primary underline-offset-4 hover:underline"
+          >
+            {t("login")}
+          </Link>
+        </p>
       </InvitationFrame>
     );
   }
