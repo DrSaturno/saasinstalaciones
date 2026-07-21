@@ -241,15 +241,21 @@ La construcción está completa. Falta lo que requiere tus credenciales:
   `SUPABASE_SERVICE_ROLE_KEY`. Redeploy.
 
 ### B. Activar Web Push (opcional — la bandeja in-app ya funciona sin esto)
-1. Generar claves VAPID (una sola vez):
-   `npx web-push generate-vapid-keys`
-   Guarda la salida en un lugar seguro (la privada es secreta).
-2. En **Supabase → Edge Functions → Secrets** cargar: `VAPID_PUBLIC_KEY`,
-   `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (ej. `mailto:vos@instalapro.com`).
-3. Desplegar la función:
+1. ✅ Claves VAPID generadas (2026-07-21), guardadas en
+   `~/Escritorio/vapid-keys-instalapro.txt` (no commiteado).
+2. ✅ Cargadas en **Supabase → Edge Functions → Secrets**: `VAPID_PUBLIC_KEY`,
+   `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`.
+3. ⏳ **Pendiente:** desplegar la función (requiere login CLI del usuario, la
+   conexión Supabase de la sesión ve otra cuenta):
    `npx supabase functions deploy send-event-push --project-ref rpdjjvcmtcpvmwrjqhke --use-api`
-4. En **Vercel** setear `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (la MISMA pública del paso 1)
-   y redeploy.
+4. ✅ Cargada en **Vercel**: `NEXT_PUBLIC_VAPID_PUBLIC_KEY`. Verificado en prod
+   (2026-07-21) que el toggle de push seguía "Pendiente de configuración" —
+   causa: Next.js hornea las vars `NEXT_PUBLIC_*` en el build, y no hubo
+   deploy nuevo desde que se cargó la variable. Este commit dispara el
+   redeploy que la toma. Si tras el redeploy sigue sin activarse, revisar que
+   el nombre literal de la variable en Vercel sea exactamente
+   `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (riesgo: traducción automática del navegador
+   puede alterar visualmente nombres al pegarlos).
 
 ### C. Email de invitaciones (opcional)
 - Setear `RESEND_API_KEY` si querés que las invitaciones se manden por email en
