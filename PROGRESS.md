@@ -248,14 +248,15 @@ La construcción está completa. Falta lo que requiere tus credenciales:
 3. ⏳ **Pendiente:** desplegar la función (requiere login CLI del usuario, la
    conexión Supabase de la sesión ve otra cuenta):
    `npx supabase functions deploy send-event-push --project-ref rpdjjvcmtcpvmwrjqhke --use-api`
-4. ✅ Cargada en **Vercel**: `NEXT_PUBLIC_VAPID_PUBLIC_KEY`. Verificado en prod
-   (2026-07-21) que el toggle de push seguía "Pendiente de configuración" —
-   causa: Next.js hornea las vars `NEXT_PUBLIC_*` en el build, y no hubo
-   deploy nuevo desde que se cargó la variable. Este commit dispara el
-   redeploy que la toma. Si tras el redeploy sigue sin activarse, revisar que
-   el nombre literal de la variable en Vercel sea exactamente
-   `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (riesgo: traducción automática del navegador
-   puede alterar visualmente nombres al pegarlos).
+4. ✅ **RESUELTO Y VERIFICADO (2026-07-21).** La variable estaba cargada en
+   Vercel sin el prefijo (`VAPID_PUBLIC_KEY`), así que Next no la exponía al
+   cliente y el toggle quedaba "Pendiente de configuración". Se recreó como
+   `NEXT_PUBLIC_VAPID_PUBLIC_KEY` y se redeployó (commit `32e87eb`). Verificado
+   en prod: el payload RSC de `/dashboard` ahora trae `"vapidPublicKey":"BIVqG5…"`
+   (antes `null`) y el botón "Activar" quedó habilitado. Lección: toda env var
+   que el navegador deba leer necesita el prefijo `NEXT_PUBLIC_`; cambiarla en
+   Vercel exige redeploy. La clave se lee en un Server Component y viaja como
+   prop en el HTML/RSC, no en los chunks JS (a diferencia del ref de Supabase).
 
 ### C. Email de invitaciones (opcional)
 - Setear `RESEND_API_KEY` si querés que las invitaciones se manden por email en
