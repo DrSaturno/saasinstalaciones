@@ -2,8 +2,9 @@
 
 > Última sesión: 2026-07-21 · Estado: **producto desplegado y en producción
 > (Pasos 1-14 completos + mejoras post-lanzamiento).**
-> Último commit en `main`: `2212ae1` — ya deployado en Vercel (dpl READY,
-> verificado en `saasinstalaciones.vercel.app`).
+> Último cambio funcional en `main`: `2212ae1` — ya deployado en Vercel
+> (dpl READY, verificado en `saasinstalaciones.vercel.app`). Handoff
+> reconciliado con Supabase el 2026-07-21.
 
 Registro de avance para retomar la construcción. El plan completo (16 secciones,
 14 pasos) está en [`../BLUEPRINT.md`](../BLUEPRINT.md). Las reglas del proyecto
@@ -15,22 +16,16 @@ y quién lo tiene que hacer (vos vs. la IA).
 
 ## ⏳ Pendientes para retomar (lo único que falta)
 
-1. **Correr `supabase/seed_demo_bulk.sql` en el SQL Editor de Supabase.**
-   Ya está escrito, corregido (el bug de tipo `date + bigint` se arregló con
-   `::int`) y es idempotente (seguro correrlo más de una vez). Agrega 40
-   órdenes nuevas cubriendo los 7 estados de la máquina de estados (el seed
-   base solo usa 4), para que `gerente@demo.dev` vea variedad real en
-   `/orders`. **Acción del usuario:** pegar el archivo completo en el SQL
-   Editor del proyecto Supabase "Se Instala Pro" (con la traducción de Chrome
-   desactivada) y ejecutar. Al final corre una verificación con el conteo de
-   órdenes por estado.
-2. **Dominio verificado en Resend + `RESEND_FROM_EMAIL` en Vercel** (opcional
+1. **Dominio verificado en Resend + `RESEND_FROM_EMAIL` en Vercel** (opcional
    — el link manual de invitación funciona sin esto). Ver sección C más abajo.
-3. **Confirmar una recepción real de Web Push** cuando algún instalador real
+2. **Confirmar una recepción real de Web Push** cuando algún instalador real
    active notificaciones desde su navegador (opcional — la bandeja in-app ya
    funciona sin esto).
 
-Nada de lo anterior bloquea el uso del producto; son mejoras de comodidad.
+La carga masiva de datos demo ya no está pendiente: el 2026-07-21 se verificaron
+en Supabase los 40 puntos `SHELL-0021..0060` y sus 40 órdenes, con presencia de
+los 7 estados. Nada de lo anterior bloquea el uso del producto; son mejoras de
+comodidad.
 
 ---
 
@@ -286,6 +281,13 @@ Datos demo: 1 empresa, 1 proyecto ("Refacción Estaciones Norte"), 20 puntos,
 - **Validación:** 27 tests, TypeScript, lint sin errores y build de producción.
 
 ### Mejoras post-lanzamiento
+
+- **Carga masiva demo — COMPLETA Y VERIFICADA (2026-07-21).**
+  `supabase/seed_demo_bulk.sql` ya fue ejecutado. Consulta de control contra
+  Supabase: 40 puntos `SHELL-0021..0060`, 40 órdenes asociadas y cobertura de
+  `pendiente`, `relevamiento`, `planificada`, `en_proceso`, `en_revision`,
+  `finalizada` y `cancelada`. El script permanece idempotente para futuras
+  reconstrucciones del entorno demo.
 
 - **Auto-registro de instalador por invitación — EN PRODUCCIÓN (2026-07-21,
   commit `2212ae1`).** Antes, un instalador sin cuenta que abría
