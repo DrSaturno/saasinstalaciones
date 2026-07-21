@@ -1,6 +1,6 @@
 # Instala Pro — Estado del proyecto
 
-> Última sesión: 2026-07-20 · Próximo paso: **aplicar la migración i18n del Paso 12**
+> Última sesión: 2026-07-20 · Próximo paso: **13 — Landing + pulido**
 > Deploy a Vercel: a cargo del usuario; todavía no verificado
 
 Registro de avance para retomar la construcción. El plan completo (16 secciones,
@@ -167,7 +167,7 @@ Datos demo: 1 empresa, 1 proyecto ("Refacción Estaciones Norte"), 20 puntos,
   generar y guardar secretos VAPID, desplegar la Edge Function y configurar
   la clave pública en Vercel.
 
-- [x] **12 — i18n es-AR + pt-BR (código).** `next-intl` quedó integrado en el
+- [x] **12 — i18n es-AR + pt-BR.** `next-intl` quedó integrado en el
   layout raíz, metadata y manifest; todos los textos visibles de las áreas
   pública, maestra, empresa e instalador viven en catálogos equivalentes
   `messages/es.json` y `messages/pt.json`. El selector compartido persiste la
@@ -181,8 +181,10 @@ Datos demo: 1 empresa, 1 proyecto ("Refacción Estaciones Norte"), 20 puntos,
   lint sin errores y build de producción; E2E real en los tres roles, persistencia
   tras recarga y nuevo login, `lang="pt-BR"`, fechas localizadas y viewport de
   375 px sin overflow. Las cuentas demo fueron restauradas a español al terminar.
-  **Pendiente de infraestructura:** aplicar la migración 00005 en Supabase y
-  verificar una notificación nueva para un destinatario en portugués.
+  **Migración 00005 aplicada y verificada en Supabase:** un evento temporal para
+  `instalador3@demo.dev` generó `Novo trabalho na sua região` con `data.locale = pt`.
+  El broadcast y las notificaciones temporales se eliminaron, y el perfil volvió
+  a `es`; la prueba terminó sin residuos.
 
 ## Activación pendiente del Paso 11
 
@@ -195,16 +197,6 @@ Datos demo: 1 empresa, 1 proyecto ("Refacción Estaciones Norte"), 20 puntos,
 Después de esto, verificar aceptar/rechazar la postulación demo desde empresa y
 el push real en un dispositivo. La bandeja in-app queda activa apenas se aplica
 la migración, aun antes de configurar VAPID.
-
-## Activación pendiente del Paso 12
-
-1. Abrir en GitHub la vista **Raw** de
-   `supabase/migrations/20260720000005_i18n_notifications.sql` y copiarla completa.
-2. Ejecutarla una sola vez en el SQL Editor del proyecto Supabase
-   `rpdjjvcmtcpvmwrjqhke`, con la traducción automática del navegador desactivada.
-3. Cambiar una cuenta demo a portugués y generar una notificación nueva para
-   confirmar que título y cuerpo se guardan en portugués. La UI ya localiza menú,
-   fechas y estados sin depender de esta migración.
 
 ## Pasos siguientes (resumen)
 13 — Landing + pulido · 14 — Deploy + `/cyber-neo`.
