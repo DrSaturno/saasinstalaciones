@@ -1,13 +1,36 @@
 # Instala Pro — Estado del proyecto
 
-> Última sesión: 2026-07-21 · Estado: **producto desplegado (Pasos 1-14 completos).**
-> Web Push activo; email integrado, pendiente un remitente Resend verificado.
-> Post-14: alta de instalador por invitación (auto-registro) implementada y
-> verificada E2E — ver "Mejoras post-lanzamiento" más abajo.
+> Última sesión: 2026-07-21 · Estado: **producto desplegado y en producción
+> (Pasos 1-14 completos + mejoras post-lanzamiento).**
+> Último commit en `main`: `2212ae1` — ya deployado en Vercel (dpl READY,
+> verificado en `saasinstalaciones.vercel.app`).
 
 Registro de avance para retomar la construcción. El plan completo (16 secciones,
 14 pasos) está en [`../BLUEPRINT.md`](../BLUEPRINT.md). Las reglas del proyecto
 están en [`AGENTS.md`](AGENTS.md).
+
+**Si retomás esta sesión con otra IA o herramienta:** leé primero esta sección
+y la de "Pendientes para retomar" más abajo — ahí está todo lo que falta hacer
+y quién lo tiene que hacer (vos vs. la IA).
+
+## ⏳ Pendientes para retomar (lo único que falta)
+
+1. **Correr `supabase/seed_demo_bulk.sql` en el SQL Editor de Supabase.**
+   Ya está escrito, corregido (el bug de tipo `date + bigint` se arregló con
+   `::int`) y es idempotente (seguro correrlo más de una vez). Agrega 40
+   órdenes nuevas cubriendo los 7 estados de la máquina de estados (el seed
+   base solo usa 4), para que `gerente@demo.dev` vea variedad real en
+   `/orders`. **Acción del usuario:** pegar el archivo completo en el SQL
+   Editor del proyecto Supabase "Se Instala Pro" (con la traducción de Chrome
+   desactivada) y ejecutar. Al final corre una verificación con el conteo de
+   órdenes por estado.
+2. **Dominio verificado en Resend + `RESEND_FROM_EMAIL` en Vercel** (opcional
+   — el link manual de invitación funciona sin esto). Ver sección C más abajo.
+3. **Confirmar una recepción real de Web Push** cuando algún instalador real
+   active notificaciones desde su navegador (opcional — la bandeja in-app ya
+   funciona sin esto).
+
+Nada de lo anterior bloquea el uso del producto; son mejoras de comodidad.
 
 ---
 
@@ -264,29 +287,34 @@ Datos demo: 1 empresa, 1 proyecto ("Refacción Estaciones Norte"), 20 puntos,
 
 ### Mejoras post-lanzamiento
 
-- **Auto-registro de instalador por invitación (2026-07-21).** Antes, un
-  instalador sin cuenta que abría `/invite/<token>` era mandado a "Iniciar
-  sesión" — callejón sin salida (no tenía usuario). Ahora esa pantalla muestra
-  un **formulario de alta** (nombre + contraseña; el email viene de la
-  invitación, bloqueado). Al enviar: `signUpInstaller` (Server Action en
-  `lib/actions/invite-signup.ts`) crea el usuario vía `admin.createUser` con
-  **rol fijo `installer` server-side** (el cliente nunca controla el rol → sin
-  escalación de privilegios), lo loguea y acepta la invitación con la RPC
-  `accept_invitation` ya vetada; redirige a `/tasks`. Quien ya tiene cuenta usa
-  el link "¿Ya tenés cuenta? Iniciar sesión". `admin.ts` ahora se permite
-  también en ese archivo (documentado en AGENTS.md). **Verificado E2E:** alta
-  real de un instalador de prueba → landing en `/tasks` con su nombre, y en DB
+- **Auto-registro de instalador por invitación — EN PRODUCCIÓN (2026-07-21,
+  commit `2212ae1`).** Antes, un instalador sin cuenta que abría
+  `/invite/<token>` era mandado a "Iniciar sesión" — callejón sin salida (no
+  tenía usuario). Ahora esa pantalla muestra un **formulario de alta** (nombre
+  + contraseña; el email viene de la invitación, bloqueado). Al enviar:
+  `signUpInstaller` (Server Action en `lib/actions/invite-signup.ts`) crea el
+  usuario vía `admin.createUser` con **rol fijo `installer` server-side** (el
+  cliente nunca controla el rol → sin escalación de privilegios), lo loguea y
+  acepta la invitación con la RPC `accept_invitation` ya vetada; redirige a
+  `/tasks`. Quien ya tiene cuenta usa el link "¿Ya tenés cuenta? Iniciar
+  sesión". `admin.ts` ahora se permite también en ese archivo (documentado en
+  AGENTS.md). **Verificado E2E dos veces:** (1) en local, alta real de un
+  instalador de prueba → landing en `/tasks` con su nombre, y en DB
   `profiles.role=installer`, fila `installers`, `company_installers.status=active`
-  e invitación `accepted`; cuenta de prueba eliminada sin huérfanos. 27 tests,
-  build y lint OK; paridad i18n es/pt.
+  e invitación `accepted`, cuenta de prueba eliminada sin huérfanos; (2) en
+  **producción**, tras el deploy (`dpl_5uYkVYch1JP5d9JS551i4tipBWqE`, READY),
+  se confirmó que `saasinstalaciones.vercel.app/invite/<token>` sirve el
+  formulario de alta correcto; invitación de prueba creada y eliminada por API
+  REST sin dejar residuos. 27 tests, build y lint OK; paridad i18n es/pt
+  (517=517 claves).
 
 ### D. Endurecimiento futuro (recomendado, no bloqueante)
 - Agregar una CSP con nonces (los otros headers de seguridad ya están).
 - `pnpm.overrides` de `postcss@>=8.5.10` cuando Next lo permita.
 
 ## Pasos siguientes (resumen)
-Producto base terminado. Siguiente acción externa: configurar el remitente Resend;
-cuando haya un dispositivo suscripto, confirmar una recepción Web Push real.
+Producto terminado y desplegado. Ver "⏳ Pendientes para retomar" al principio
+de este documento para la lista completa y actualizada.
 
 ---
 
