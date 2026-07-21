@@ -365,7 +365,18 @@
     "email": "Email del instalador",
     "creating": "Creando…",
     "submit": "Crear invitación",
-    "created": "Invitación creada"
+    "created": "Invitación creada",
+    "sent": "Invitación enviada por email",
+    "sentDescription": "Enviamos la invitación a {email}. También podés compartir este link manualmente.",
+    "emailFailed": "La invitación se creó, pero el email no pudo enviarse. Compartí el link manualmente."
+  },
+  "InvitationEmail": {
+    "subject": "{company} te invitó a Instala Pro",
+    "heading": "Te invitaron a Instala Pro",
+    "body": "{company} quiere sumarte a su equipo de instaladores en Instala Pro.",
+    "cta": "Aceptar invitación",
+    "expires": "Este enlace vence en 7 días.",
+    "fallback": "Si el botón no funciona, copiá y pegá el siguiente enlace en tu navegador."
   },
   "PendingInvitations": {
     "title": "Invitaciones pendientes",

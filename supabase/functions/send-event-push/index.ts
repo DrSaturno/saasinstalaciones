@@ -1,5 +1,7 @@
-import { createClient } from "@supabase/supabase-js";
-import webpush from "web-push";
+/// <reference types="npm:@types/web-push@3.6.4" />
+
+import { createClient } from "npm:@supabase/supabase-js@2.110.7";
+import webpush from "npm:web-push@3.6.7";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",

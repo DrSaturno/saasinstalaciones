@@ -34,7 +34,7 @@ Next.js 16 (App Router) + TypeScript strict + Tailwind v4 + shadcn/ui (radix-nov
 1. Un componente por archivo, máx 300 líneas.
 2. Imports con `@/`. Sin barrel exports.
 3. Server Components por defecto; `"use client"` solo con interactividad real.
-4. Todo string visible via next-intl (`messages/es.json` + `pt.json`). Cero texto hardcodeado (excepto hasta que se configure i18n en el Paso 12).
+4. Todo string visible via next-intl (`messages/es.json` + `pt.json`). Cero texto hardcodeado.
 5. Toda tabla de dominio nueva lleva `company_id` + política RLS en la misma migración.
 
 ## Design System
@@ -53,6 +53,8 @@ Estilo: claro y aireado, bordes sutiles en vez de sombras, radius 10-14px, chips
 | NEXT_PUBLIC_VAPID_PUBLIC_KEY | Clave pública Web Push en Next/Vercel |
 | VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT | Secretos de la Edge Function de Supabase; nunca en Next |
 | RESEND_API_KEY | Emails de invitación |
+| RESEND_FROM_EMAIL | Remitente Resend de un dominio verificado |
+| APP_URL | Origen público usado en links de invitación por email |
 
 ## Reglas No Negociables
 

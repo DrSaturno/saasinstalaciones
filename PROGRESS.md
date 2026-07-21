@@ -1,7 +1,7 @@
 # Instala Pro — Estado del proyecto
 
-> Última sesión: 2026-07-20 · Estado: **construcción COMPLETA (Pasos 1-14).**
-> Pendiente del usuario: deploy Vercel + activación Web Push (ver abajo).
+> Última sesión: 2026-07-21 · Estado: **producto desplegado (Pasos 1-14 completos).**
+> Web Push activo; email integrado, pendiente un remitente Resend verificado.
 
 Registro de avance para retomar la construcción. El plan completo (16 secciones,
 14 pasos) está en [`../BLUEPRINT.md`](../BLUEPRINT.md). Las reglas del proyecto
@@ -32,14 +32,14 @@ TanStack Query/Table/Virtual · next-intl (es-AR/pt-BR) · Vitest · pnpm.
 
 - **Repo:** https://github.com/DrSaturno/saasinstalaciones (rama `main`)
 - **Supabase:** proyecto `rpdjjvcmtcpvmwrjqhke` (URL en `.env.local`, NO commiteado)
-- **Deploy:** todavía no (Vercel — Paso 14)
+- **Producción:** https://saasinstalaciones.vercel.app
 
 ### Cómo levantar en local
 ```bash
 cd instalapro
 pnpm install          # node-linker=hoisted, ver nota de entorno abajo
 pnpm dev              # http://localhost:3000
-pnpm test             # 23 tests
+pnpm test             # 27 tests
 pnpm build            # verificación completa de tipos
 ```
 Requiere `instalapro/.env.local` con las 3 claves de Supabase (URL, anon,
@@ -163,9 +163,11 @@ Datos demo: 1 empresa, 1 proyecto ("Refacción Estaciones Norte"), 20 puntos,
   `DEM-00009` se asignó en la misma transacción, la búsqueda cerró en 1/1 cupos
   y recibió las dos notificaciones esperadas; el marcado como leído también fue
   verificado. Durante esta prueba se corrigió la validación para aceptar UUID
-  históricos de Postgres sin bits RFC de versión. **Pendiente de infraestructura:**
-  generar y guardar secretos VAPID, desplegar la Edge Function y configurar
-  la clave pública en Vercel.
+  históricos de Postgres sin bits RFC de versión. **Web Push activado y probado
+  en producción el 2026-07-21:** Edge Function `send-event-push` ACTIVE, secretos
+  VAPID correctos en Supabase y clave pública disponible en Vercel. Un smoke test
+  autenticado recorrió trigger → notificación → función (HTTP 200), marcó el
+  aviso como procesado y eliminó todos los datos temporales.
 
 - [x] **12 — i18n es-AR + pt-BR.** `next-intl` quedó integrado en el
   layout raíz, metadata y manifest; todos los textos visibles de las áreas
@@ -203,18 +205,6 @@ Datos demo: 1 empresa, 1 proyecto ("Refacción Estaciones Norte"), 20 puntos,
   localizado para usuario autenticado, sin overflow a 375px ni en desktop, sin
   errores de consola, manifest sirviendo los 3 iconos. Cuentas demo sin cambios.
 
-## Activación pendiente del Paso 11
-
-1. Generar un nuevo par de claves VAPID y guardar en Supabase Edge Functions
-   `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT`.
-2. Desplegar `send-event-push`, preparado en el editor web, o ejecutar:
-   `npx supabase functions deploy send-event-push --project-ref rpdjjvcmtcpvmwrjqhke --use-api`.
-3. En Vercel definir `NEXT_PUBLIC_VAPID_PUBLIC_KEY` y volver a desplegar.
-
-Después de esto, verificar aceptar/rechazar la postulación demo desde empresa y
-el push real en un dispositivo. La bandeja in-app queda activa apenas se aplica
-la migración, aun antes de configurar VAPID.
-
 - [x] **14 — Deploy + auditoría de seguridad.** Auditoría `cyber-neo` completa
   (191 archivos, scan full). **Risk score 8/100 (Bajo).** 0 críticas, 0 altas,
   2 medias, 2 bajas. Reporte en `~/Escritorio/cyber-neo-report-instalapro-
@@ -227,27 +217,24 @@ la migración, aun antes de configurar VAPID.
   Function (mitigada por auth de token). **Postura fuerte confirmada:** RLS en 14
   tablas/36 políticas, service_role aislado con `server-only`, cero XSS/SQLi/
   inyección, cero secretos commiteados, CSPRNG, máquina de estados en DB,
-  idempotencia offline. Recomendación de endurecimiento futuro: CSP con nonces.
+  idempotencia offline. Producción activa en `saasinstalaciones.vercel.app`.
+  Recomendación de endurecimiento futuro: CSP con nonces.
 
 ---
 
-## PENDIENTE DEL USUARIO (infraestructura — no es código)
-
-La construcción está completa. Falta lo que requiere tus credenciales:
+## Estado de producción y pendientes opcionales
 
 ### A. Deploy a Vercel
-- El build de producción pasa en local. Conectá el repo a Vercel (si no está) y
-  configurá las env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
-  `SUPABASE_SERVICE_ROLE_KEY`. Redeploy.
+- ✅ Proyecto conectado, variables Supabase configuradas y producción activa en
+  `https://saasinstalaciones.vercel.app`.
 
 ### B. Activar Web Push (opcional — la bandeja in-app ya funciona sin esto)
 1. ✅ Claves VAPID generadas (2026-07-21), guardadas en
    `~/Escritorio/vapid-keys-instalapro.txt` (no commiteado).
 2. ✅ Cargadas en **Supabase → Edge Functions → Secrets**: `VAPID_PUBLIC_KEY`,
    `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`.
-3. ⏳ **Pendiente:** desplegar la función (requiere login CLI del usuario, la
-   conexión Supabase de la sesión ve otra cuenta):
-   `npx supabase functions deploy send-event-push --project-ref rpdjjvcmtcpvmwrjqhke --use-api`
+3. ✅ Edge Function `send-event-push` desplegada (versión 1, estado ACTIVE).
+   Se corrigieron sus imports para Deno usando paquetes `npm:` versionados.
 4. ✅ **RESUELTO Y VERIFICADO (2026-07-21).** La variable estaba cargada en
    Vercel sin el prefijo (`VAPID_PUBLIC_KEY`), así que Next no la exponía al
    cliente y el toggle quedaba "Pendiente de configuración". Se recreó como
@@ -257,17 +244,29 @@ La construcción está completa. Falta lo que requiere tus credenciales:
    que el navegador deba leer necesita el prefijo `NEXT_PUBLIC_`; cambiarla en
    Vercel exige redeploy. La clave se lee en un Server Component y viaja como
    prop en el HTML/RSC, no en los chunks JS (a diferencia del ref de Supabase).
+5. ✅ Smoke test backend autenticado: HTTP 200, una notificación procesada,
+   `delivered: 0` porque las cuentas demo todavía no tienen dispositivos
+   suscriptos. Datos temporales eliminados. `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT`
+   se retiraron de Vercel; sólo permanecen donde corresponden, en Supabase.
 
 ### C. Email de invitaciones (opcional)
-- Setear `RESEND_API_KEY` si querés que las invitaciones se manden por email en
-  vez de compartir el link a mano.
+- ✅ Integración Resend implementada en la Server Action: contenido es/pt,
+  HTML escapado, clave de idempotencia por invitación y fallback al link manual
+  ante falta de configuración o error del proveedor. La UI informa si el email
+  fue enviado o si hay que compartir el link. `APP_URL` ya está configurada en
+  Vercel y `RESEND_API_KEY` existe como secreto.
+- ⏳ Para activar el envío real falta verificar un dominio en Resend y definir en
+  Vercel `RESEND_FROM_EMAIL` (por ejemplo,
+  `Instala Pro <invitaciones@tu-dominio.com>`), seguido de un redeploy.
+- **Validación:** 27 tests, TypeScript, lint sin errores y build de producción.
 
 ### D. Endurecimiento futuro (recomendado, no bloqueante)
 - Agregar una CSP con nonces (los otros headers de seguridad ya están).
 - `pnpm.overrides` de `postcss@>=8.5.10` cuando Next lo permita.
 
 ## Pasos siguientes (resumen)
-14 — Deploy + `/cyber-neo` (último).
+Producto base terminado. Siguiente acción externa: configurar el remitente Resend;
+cuando haya un dispositivo suscripto, confirmar una recepción Web Push real.
 
 ---
 

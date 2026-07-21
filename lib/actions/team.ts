@@ -5,6 +5,12 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
+import {
+  invitationUrl,
+  sendInvitationEmail,
+  type InvitationEmailStatus,
+} from "@/lib/email/invitations";
+import { INTL_LOCALE } from "@/i18n/config";
 import type { RosterStatus } from "@/types/database";
 
 async function requireManager() {
@@ -17,11 +23,15 @@ async function requireManager() {
 
 const emailSchema = z.string().email("Email inválido");
 
-export type InviteResult = { error: string | null; token?: string };
+export type InviteResult = {
+  error: string | null;
+  token?: string;
+  emailStatus?: InvitationEmailStatus;
+};
 
 /**
- * Crea una invitación para un instalador. Devuelve el token para armar el link
- * que el manager comparte (el envío por email es best-effort/pendiente).
+ * Crea una invitación para un instalador y envía el email como best effort.
+ * El token siempre vuelve al manager para conservar el flujo manual de respaldo.
  */
 export async function inviteInstaller(email: string): Promise<InviteResult> {
   const t = await getTranslations("Errors");
@@ -31,31 +41,53 @@ export async function inviteInstaller(email: string): Promise<InviteResult> {
   }
 
   try {
-    const { supabase, companyId } = await requireManager();
+    const { user, supabase, companyId } = await requireManager();
 
-    // Evitar invitaciones pendientes duplicadas al mismo email.
-    const { data: existing } = await supabase
-      .from("invitations")
-      .select("token")
-      .eq("company_id", companyId)
-      .eq("email", parsed.data)
-      .eq("status", "pending")
-      .maybeSingle();
-    if (existing) {
-      return { error: null, token: existing.token };
+    const [{ data: existing }, { data: company }, emailT] = await Promise.all([
+      supabase
+        .from("invitations")
+        .select("token")
+        .eq("company_id", companyId)
+        .eq("email", parsed.data)
+        .eq("status", "pending")
+        .maybeSingle(),
+      supabase.from("companies").select("name").eq("id", companyId).single(),
+      getTranslations({
+        locale: INTL_LOCALE[user.locale],
+        namespace: "InvitationEmail",
+      }),
+    ]);
+
+    let token = existing?.token;
+    if (!token) {
+      const { data, error } = await supabase
+        .from("invitations")
+        .insert({ company_id: companyId, email: parsed.data })
+        .select("token")
+        .single();
+      if (error || !data) {
+        return { error: t("createInvitation") };
+      }
+      token = data.token;
     }
 
-    const { data, error } = await supabase
-      .from("invitations")
-      .insert({ company_id: companyId, email: parsed.data })
-      .select("token")
-      .single();
-    if (error || !data) {
-      return { error: t("createInvitation") };
-    }
+    const companyName = company?.name ?? "Instala Pro";
+    const emailStatus = await sendInvitationEmail({
+      to: parsed.data,
+      token,
+      invitationUrl: invitationUrl(token),
+      copy: {
+        subject: emailT("subject", { company: companyName }),
+        heading: emailT("heading"),
+        body: emailT("body", { company: companyName }),
+        cta: emailT("cta"),
+        expires: emailT("expires"),
+        fallback: emailT("fallback"),
+      },
+    });
 
     revalidatePath("/team");
-    return { error: null, token: data.token };
+    return { error: null, token, emailStatus };
   } catch {
     return { error: t("unexpected") };
   }

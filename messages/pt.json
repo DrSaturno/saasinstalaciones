@@ -365,7 +365,18 @@
     "email": "E-mail do instalador",
     "creating": "Criando…",
     "submit": "Criar convite",
-    "created": "Convite criado"
+    "created": "Convite criado",
+    "sent": "Convite enviado por e-mail",
+    "sentDescription": "Enviamos o convite para {email}. Você também pode compartilhar este link manualmente.",
+    "emailFailed": "O convite foi criado, mas o e-mail não pôde ser enviado. Compartilhe o link manualmente."
+  },
+  "InvitationEmail": {
+    "subject": "{company} convidou você para o Instala Pro",
+    "heading": "Você recebeu um convite para o Instala Pro",
+    "body": "{company} quer adicionar você à equipe de instaladores no Instala Pro.",
+    "cta": "Aceitar convite",
+    "expires": "Este link expira em 7 dias.",
+    "fallback": "Se o botão não funcionar, copie e cole o link abaixo no navegador."
   },
   "PendingInvitations": {
     "title": "Convites pendentes",

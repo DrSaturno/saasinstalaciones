@@ -24,6 +24,7 @@ export function InviteInstallerDialog() {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [link, setLink] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -35,7 +36,14 @@ export function InviteInstallerDialog() {
         return;
       }
       setLink(`${window.location.origin}/invite/${res.token}`);
-      toast.success(t("created"));
+      setEmailSent(res.emailStatus === "sent");
+      if (res.emailStatus === "sent") {
+        toast.success(t("sent"));
+      } else if (res.emailStatus === "failed") {
+        toast.warning(t("emailFailed"));
+      } else {
+        toast.success(t("created"));
+      }
       router.refresh();
     });
   };
@@ -44,6 +52,7 @@ export function InviteInstallerDialog() {
     setOpen(false);
     setEmail("");
     setLink(null);
+    setEmailSent(false);
   };
 
   return (
@@ -57,7 +66,7 @@ export function InviteInstallerDialog() {
             <DialogHeader>
               <DialogTitle>{t("readyTitle")}</DialogTitle>
               <DialogDescription>
-                {t("readyDescription")}
+                {emailSent ? t("sentDescription", { email }) : t("readyDescription")}
               </DialogDescription>
             </DialogHeader>
             <div className="rounded-xl border bg-muted/40 p-3">
