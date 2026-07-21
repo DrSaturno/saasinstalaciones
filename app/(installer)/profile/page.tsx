@@ -3,7 +3,9 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { getCurrentUser, ROLE_HOME } from "@/lib/auth";
 import { fetchInstallerReputation } from "@/lib/data/ratings";
 import { createClient } from "@/lib/supabase/server";
+import { fetchInstallerAvailability } from "@/lib/data/availability";
 import { StarRating } from "@/components/shared/star-rating";
+import { AvailabilitySettings } from "@/components/installer/availability-settings";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -23,7 +25,10 @@ export default async function InstallerProfilePage() {
   if (user.role !== "installer") redirect(ROLE_HOME[user.role]);
 
   const supabase = await createClient();
-  const reputation = await fetchInstallerReputation(supabase, user.id);
+  const [reputation, availability] = await Promise.all([
+    fetchInstallerReputation(supabase, user.id),
+    fetchInstallerAvailability(supabase, user.id),
+  ]);
 
   if (!reputation) {
     return (
@@ -116,6 +121,11 @@ export default async function InstallerProfilePage() {
           </CardContent>
         </Card>
       ) : null}
+
+      <AvailabilitySettings
+        companies={availability}
+        initialEnabled={reputation.available}
+      />
 
       <section className="mt-8">
         <div className="flex items-end justify-between gap-3">

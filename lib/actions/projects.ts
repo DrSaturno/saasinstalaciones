@@ -6,6 +6,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { parseCsv, normalizeHeader } from "@/lib/csv";
+import { projectInputSchema } from "@/lib/domain/projects";
 import type { TablesInsert } from "@/types/database";
 
 /** Toda acción de empresa resuelve company_id desde la sesión, nunca del cliente. */
@@ -17,28 +18,29 @@ async function requireManager() {
   return { user, supabase: await createClient(), companyId: user.companyId };
 }
 
-const projectSchema = z.object({
-  name: z.string().min(2, "El nombre es muy corto").max(150),
-  clientName: z.string().max(150).optional().default(""),
-  description: z.string().max(2000).optional().default(""),
-  startsAt: z.string().optional(),
-  endsAt: z.string().optional(),
-});
-
 export type ActionState = { error: string | null; ok?: boolean };
+
+function parseProjectForm(formData: FormData) {
+  return projectInputSchema.safeParse({
+    name: formData.get("name"),
+    clientName: formData.get("clientName"),
+    description: formData.get("description") ?? "",
+    startsAt: formData.get("startsAt") ?? "",
+    endsAt: formData.get("endsAt") ?? "",
+    country: formData.get("country"),
+    zones: formData.getAll("zones"),
+    plannedInstallations: formData.get("plannedInstallations"),
+    billingMode: formData.get("billingMode"),
+    contractAmount: formData.get("contractAmount") ?? "",
+  });
+}
 
 export async function createProject(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
   const t = await getTranslations("Errors");
-  const parsed = projectSchema.safeParse({
-    name: formData.get("name"),
-    clientName: formData.get("clientName") ?? "",
-    description: formData.get("description") ?? "",
-    startsAt: formData.get("startsAt") || undefined,
-    endsAt: formData.get("endsAt") || undefined,
-  });
+  const parsed = parseProjectForm(formData);
   if (!parsed.success) {
     return { error: t("invalidData") };
   }
@@ -51,8 +53,15 @@ export async function createProject(
       client_name: parsed.data.clientName,
       description: parsed.data.description,
       status: "active",
-      starts_at: parsed.data.startsAt || null,
-      ends_at: parsed.data.endsAt || null,
+      starts_at: parsed.data.startsAt,
+      ends_at: parsed.data.endsAt,
+      country: parsed.data.country,
+      zones: parsed.data.zones,
+      planned_installations: parsed.data.plannedInstallations,
+      billing_mode: parsed.data.billingMode,
+      contract_amount:
+        parsed.data.billingMode === "project" ? parsed.data.contractAmount : null,
+      currency: parsed.data.country === "BR" ? "BRL" : "ARS",
     });
     if (error) return { error: error.message };
   } catch {
@@ -60,6 +69,59 @@ export async function createProject(
   }
 
   revalidatePath("/projects");
+  revalidatePath("/dashboard");
+  return { error: null, ok: true };
+}
+
+export async function updateProject(
+  projectId: string,
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const t = await getTranslations("Errors");
+  const parsed = parseProjectForm(formData);
+  if (!parsed.success) return { error: t("invalidData") };
+
+  try {
+    const { supabase, companyId } = await requireManager();
+    const [{ data: current }, { data: sites }] = await Promise.all([
+      supabase.from("projects").select("contract_amount, country").eq("id", projectId).eq("company_id", companyId).single(),
+      supabase.from("sites").select("zone").eq("project_id", projectId).eq("company_id", companyId),
+    ]);
+    if (!current) return { error: t("projectNotFound") };
+    if ((sites ?? []).length > 0 && current.country !== parsed.data.country) return { error: t("projectCountryLocked") };
+    const zonesInUse = [...new Set((sites ?? []).map((site) => site.zone).filter(Boolean))];
+    if (zonesInUse.some((zone) => !parsed.data.zones.includes(zone))) return { error: t("projectZonesInUse") };
+    const { data, error } = await supabase
+      .from("projects")
+      .update({
+        name: parsed.data.name,
+        client_name: parsed.data.clientName,
+        description: parsed.data.description,
+        starts_at: parsed.data.startsAt,
+        ends_at: parsed.data.endsAt,
+        country: parsed.data.country,
+        zones: parsed.data.zones,
+        planned_installations: parsed.data.plannedInstallations,
+        billing_mode: parsed.data.billingMode,
+        contract_amount:
+          parsed.data.billingMode === "project" ? parsed.data.contractAmount : current.contract_amount,
+        currency: parsed.data.country === "BR" ? "BRL" : "ARS",
+      })
+      .eq("id", projectId)
+      .eq("company_id", companyId)
+      .select("id")
+      .single();
+    if (error || !data) return { error: t("projectNotFound") };
+  } catch {
+    return { error: t("unexpected") };
+  }
+
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/projects");
+  revalidatePath("/orders");
+  revalidatePath("/dashboard");
+  revalidatePath("/finance");
   return { error: null, ok: true };
 }
 
@@ -134,7 +196,7 @@ export async function importSites(
   // pero así damos un error claro en vez de un insert vacío).
   const { data: project } = await supabase
     .from("projects")
-    .select("id")
+    .select("id, country, zones")
     .eq("id", projectId)
     .eq("company_id", companyId)
     .single();
@@ -173,12 +235,18 @@ export async function importSites(
     const get = (field: string) =>
       indexOf[field] !== undefined ? (cells[indexOf[field]] ?? "") : "";
 
+    const importedZone = get("zone").trim();
+    const importedState = get("state").trim();
+    const zone = importedZone ||
+      (project.country === "BR" ? importedState.toUpperCase() : "") ||
+      (project.zones.length === 1 ? project.zones[0] : "");
+
     const parsed = siteRowSchema.safeParse({
       name: get("name"),
       address: get("address"),
       city: get("city"),
-      state: get("state"),
-      zone: get("zone"),
+      state: importedState || (project.country === "BR" ? zone : ""),
+      zone,
       externalRef: get("externalRef") || undefined,
     });
 
@@ -187,6 +255,14 @@ export async function importSites(
       skipped.push({
         row: i + 2,
         reason: t("missingName"),
+      });
+      return;
+    }
+
+    if (!project.zones.includes(parsed.data.zone)) {
+      skipped.push({
+        row: i + 2,
+        reason: t("siteZoneOutsideProject", { zone: parsed.data.zone || "—" }),
       });
       return;
     }

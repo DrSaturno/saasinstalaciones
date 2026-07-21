@@ -15,9 +15,9 @@ export default async function InstallerLayout({
   if (user.role !== "installer") redirect(ROLE_HOME[user.role]);
   const t = await getTranslations("Navigation");
   const nav = [
-    { href: "/tasks", label: t("tasks") },
-    { href: "/jobs", label: t("jobs") },
-    { href: "/profile", label: t("profile") },
+    { href: "/tasks", label: t("tasks"), icon: "tasks" as const },
+    { href: "/jobs", label: t("jobs"), icon: "jobs" as const },
+    { href: "/profile", label: t("profile"), icon: "profile" as const },
   ];
 
   return (

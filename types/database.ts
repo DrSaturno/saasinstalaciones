@@ -25,6 +25,7 @@ export type OrderStatus =
 export type OrderSource = "roster" | "broadcast";
 export type OrderPriority = "baja" | "media" | "alta" | "urgente";
 export type OrderCurrency = "ARS" | "BRL";
+export type BillingMode = "project" | "per_installation";
 export type OrderUpdateType = "checkin" | "progress" | "blocker" | "done" | "system";
 export type InvitationStatus = "pending" | "accepted" | "expired";
 export type RosterStatus = "invited" | "active" | "removed";
@@ -159,7 +160,14 @@ export interface Database {
           status: ProjectStatus;
           starts_at: string | null;
           ends_at: string | null;
+          country: Country;
+          zones: string[];
+          planned_installations: number;
+          billing_mode: BillingMode;
+          contract_amount: number | null;
+          currency: OrderCurrency;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
@@ -170,7 +178,14 @@ export interface Database {
           status?: ProjectStatus;
           starts_at?: string | null;
           ends_at?: string | null;
+          country?: Country;
+          zones?: string[];
+          planned_installations?: number;
+          billing_mode?: BillingMode;
+          contract_amount?: number | null;
+          currency?: OrderCurrency;
           created_at?: string;
+          updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["projects"]["Insert"]>;
         Relationships: [];
@@ -189,7 +204,18 @@ export interface Database {
           lng: number | null;
           status: SiteStatus;
           external_ref: string | null;
+          archived_at: string | null;
+          contact_name: string;
+          contact_phone: string;
+          contact_email: string;
+          opening_hours: string;
+          access_notes: string;
+          parking_notes: string;
+          technical_notes: string;
+          risk_notes: string;
+          permanent_notes: string;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
@@ -204,7 +230,18 @@ export interface Database {
           lng?: number | null;
           status?: SiteStatus;
           external_ref?: string | null;
+          archived_at?: string | null;
+          contact_name?: string;
+          contact_phone?: string;
+          contact_email?: string;
+          opening_hours?: string;
+          access_notes?: string;
+          parking_notes?: string;
+          technical_notes?: string;
+          risk_notes?: string;
+          permanent_notes?: string;
           created_at?: string;
+          updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["sites"]["Insert"]>;
         Relationships: [];
@@ -233,6 +270,7 @@ export interface Database {
           created_by: string | null;
           created_at: string;
           updated_at: string;
+          finalized_at: string | null;
         };
         Insert: {
           id?: string;
@@ -257,6 +295,7 @@ export interface Database {
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
+          finalized_at?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["work_orders"]["Insert"]>;
         Relationships: [];
@@ -287,6 +326,32 @@ export interface Database {
         Update: Partial<
           Database["public"]["Tables"]["order_attachments"]["Insert"]
         >;
+        Relationships: [];
+      };
+      site_attachments: {
+        Row: {
+          id: string;
+          site_id: string;
+          company_id: string;
+          storage_path: string;
+          file_name: string;
+          mime_type: string;
+          size_bytes: number;
+          uploaded_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          site_id: string;
+          company_id: string;
+          storage_path: string;
+          file_name: string;
+          mime_type: string;
+          size_bytes: number;
+          uploaded_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["site_attachments"]["Insert"]>;
         Relationships: [];
       };
       order_updates: {
@@ -423,6 +488,116 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["push_subscriptions"]["Insert"]>;
         Relationships: [];
       };
+      order_sequences: {
+        Row: {
+          company_id: string;
+          zone_code: string;
+          current_value: number;
+          updated_at: string;
+        };
+        Insert: {
+          company_id: string;
+          zone_code: string;
+          current_value: number;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["order_sequences"]["Insert"]>;
+        Relationships: [];
+      };
+      installer_weekly_availability: {
+        Row: {
+          id: string;
+          company_id: string;
+          installer_id: string;
+          weekday: number;
+          starts_at: string;
+          ends_at: string;
+          timezone: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          installer_id: string;
+          weekday: number;
+          starts_at: string;
+          ends_at: string;
+          timezone?: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["installer_weekly_availability"]["Insert"]>;
+        Relationships: [];
+      };
+      installer_unavailability: {
+        Row: {
+          id: string;
+          company_id: string;
+          installer_id: string;
+          starts_at: string;
+          ends_at: string;
+          reason: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          installer_id: string;
+          starts_at: string;
+          ends_at: string;
+          reason: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["installer_unavailability"]["Insert"]>;
+        Relationships: [];
+      };
+      calendar_connections: {
+        Row: {
+          id: string;
+          company_id: string;
+          user_id: string;
+          google_email: string;
+          calendar_id: string;
+          encrypted_access_token: string;
+          encrypted_refresh_token: string;
+          token_expires_at: string | null;
+          connected_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          user_id: string;
+          google_email?: string;
+          calendar_id?: string;
+          encrypted_access_token: string;
+          encrypted_refresh_token: string;
+          token_expires_at?: string | null;
+          connected_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["calendar_connections"]["Insert"]>;
+        Relationships: [];
+      };
+      calendar_order_events: {
+        Row: {
+          id: string;
+          company_id: string;
+          connection_id: string;
+          order_id: string;
+          google_event_id: string;
+          last_synced_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          connection_id: string;
+          order_id: string;
+          google_event_id: string;
+          last_synced_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["calendar_order_events"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -453,6 +628,10 @@ export interface Database {
       installer_can_read_broadcast: {
         Args: { p_broadcast_id: string };
         Returns: boolean;
+      };
+      replace_installer_weekly_availability: {
+        Args: { p_company_id: string; p_entries: Json };
+        Returns: void;
       };
     };
     Enums: Record<string, never>;

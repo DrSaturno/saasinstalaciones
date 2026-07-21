@@ -1,5 +1,85 @@
 # Instala Pro — Estado del proyecto
 
+## ACTUALIZACIÓN AUTORITATIVA — ampliación operativa (2026-07-21)
+
+> Esta sección reemplaza el resumen antiguo de “producto terminado” para la
+> próxima sesión. El código de la ampliación está completo, las migraciones
+> están aplicadas en Supabase y el próximo paso externo es configurar Google
+> Calendar en el entorno y desplegar desde GitHub/Vercel.
+
+### Alcance completado en esta sesión
+
+- **Dashboard de empresa reconstruido:** seis métricas solicitadas (proyectos
+  activos, órdenes pendientes, trabajos de hoy, completadas hoy, tasa diaria y
+  tasa general), clima por zona, estado de Google Calendar, progreso por
+  proyecto, órdenes del día, desempeño por zona y disponibilidad/carga de los
+  instaladores. Proyectos y órdenes enlazan a sus detalles.
+- **Proyectos ampliados:** cliente, cantidad contratada, fechas, descripción,
+  país AR/BR, zonas múltiples, modalidad `project`/`per_installation`, importe
+  global y moneda. La modalidad puede cambiar sin borrar importes históricos;
+  país y zonas en uso quedan protegidos cuando ya existen instalaciones.
+- **Administración de instalaciones:** el botón ahora es “Adm. instalaciones”;
+  permite ajustar la cantidad contratada, agregar una locación, importar CSV y
+  generar órdenes. Las locaciones con historial se archivan; sólo una vacía se
+  elimina definitivamente.
+- **Ficha permanente del local:** contacto, horarios, acceso, estacionamiento,
+  datos técnicos, riesgos, notas, coordenadas, Google Maps, fotos/PDF privados,
+  avance histórico y listado enlazable de todas sus órdenes.
+- **Órdenes:** filtros por estado, zona, instalador, intervalo de fechas e
+  importe mayor/menor. Los importes se habilitan sólo para cobro por instalación.
+  Numeración atómica por región: `AMBA-13000`, `INT-700` y `BR-SP-00001`.
+- **Disponibilidad de instaladores:** activación global, horario semanal por
+  empresa y ausencias justificadas con fecha/hora. El dashboard calcula el
+  estado actual usando ambos niveles.
+- **Finanzas operativas:** contratado, realizado, pendiente, ticket promedio,
+  variación de 30 días, evolución mensual, proyecto/zona/instalador, separación
+  ARS/BRL y exportación CSV. Los contratos globales se distribuyen sólo para
+  análisis sin duplicar el total autorizado.
+- **Menú lateral colapsable:** 248/72 px en escritorio, overlay en móvil y
+  preferencia persistida localmente; navegación equivalente en es/pt.
+- **Google Calendar unidireccional:** OAuth web con `state` anti-CSRF, acceso
+  offline, tokens cifrados AES-256-GCM, alta/actualización idempotente de eventos
+  y retiro de eventos de órdenes canceladas. Se controla desde el dashboard.
+- **Clima:** Open-Meteo con cache de 30 minutos, temperatura, lluvia, viento y
+  severidad para hasta cuatro zonas operativas.
+
+### Base de datos y migraciones
+
+- `20260722000001_operational_foundation.sql` — aplicada al proyecto vinculado.
+- `20260722000002_normalize_argentina_zones.sql` — aplicada; normalizó los datos
+  ficticios `AR-BA-AMBA`/`AR-CBA` a `AMBA`/`Interior` y renumeró las órdenes.
+- Historial local/remoto alineado hasta `20260722000002`.
+- Las órdenes existentes eran ficticias y fueron renumeradas según autorización
+  del usuario. Verificación visual: `AMBA-13000` e `INT-700` presentes.
+
+### Verificación realizada
+
+- TypeScript strict: OK.
+- Vitest: **48 pruebas** (incluye finanzas, zonas, disponibilidad, ficha y
+  cifrado de tokens).
+- ESLint: 0 errores/advertencias.
+- `next build`: OK, incluidas `/dashboard`, `/finance`, ficha de local y las dos
+  rutas OAuth.
+- Playwright desktop + 375×812: dashboard, finanzas, proyecto, edición, Adm.
+  instalaciones, ficha con Maps/archivos y filtros de órdenes verificados.
+
+### Pendientes externos para la próxima sesión
+
+1. **Google Calendar:** crear/seleccionar proyecto en Google Cloud, habilitar
+   Calendar API, crear cliente OAuth web, registrar el redirect exacto
+   `https://TU-DOMINIO/api/google-calendar/callback` y cargar en Vercel
+   `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` y
+   `GOOGLE_TOKEN_ENCRYPTION_KEY`. También confirmar `APP_URL`. Sin estas claves
+   el dashboard muestra correctamente “pendiente de configuración”.
+2. **Resend:** sigue sin haber dominio verificado; `RESEND_FROM_EMAIL` continúa
+   pendiente. El enlace manual de invitación sigue funcionando.
+3. **Deploy:** los cambios se publican a GitHub `main`; Vercel queda a cargo del
+   usuario, como acordado. Agregar allí las variables nuevas antes del redeploy.
+4. **Entorno:** actualizar Node local/Vercel a 22+ cuando sea posible; Supabase
+   ya anuncia la futura baja de soporte para Node 20.
+
+Las variables necesarias, sin secretos, quedaron enumeradas en `.env.example`.
+
 > Última sesión: 2026-07-21 · Estado: **producto desplegado y en producción
 > (Pasos 1-14 completos + mejoras post-lanzamiento).**
 > Último cambio funcional en `main`: `db58d21` — ficha avanzada de órdenes.

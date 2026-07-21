@@ -13,8 +13,8 @@ export default async function MasterLayout({
   if (user.role !== "platform_admin") redirect(ROLE_HOME[user.role]);
   const t = await getTranslations("Navigation");
   const nav = [
-    { href: "/master", label: t("overview") },
-    { href: "/master/companies", label: t("companies") },
+    { href: "/master", label: t("overview"), icon: "dashboard" as const },
+    { href: "/master/companies", label: t("companies"), icon: "companies" as const },
   ];
 
   return (

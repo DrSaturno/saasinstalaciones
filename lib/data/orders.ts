@@ -10,6 +10,10 @@ export type OrderRow = {
   title: string;
   status: OrderStatus;
   scheduled_date: string | null;
+  scheduled_end_date: string | null;
+  finalized_at: string | null;
+  amount: number | null;
+  currency: Database["public"]["Tables"]["work_orders"]["Row"]["currency"];
   created_at: string;
   site_name: string;
   site_city: string;
@@ -28,6 +32,10 @@ type RawOrder = {
   title: string;
   status: OrderStatus;
   scheduled_date: string | null;
+  scheduled_end_date: string | null;
+  finalized_at: string | null;
+  amount: number | null;
+  currency: Database["public"]["Tables"]["work_orders"]["Row"]["currency"];
   created_at: string;
   project_id: string;
   assigned_installer_id: string | null;
@@ -45,6 +53,10 @@ function shape(
     title: o.title,
     status: o.status,
     scheduled_date: o.scheduled_date,
+    scheduled_end_date: o.scheduled_end_date,
+    finalized_at: o.finalized_at,
+    amount: o.amount,
+    currency: o.currency,
     created_at: o.created_at,
     site_name: o.sites?.name ?? "—",
     site_city: o.sites?.city ?? "",
@@ -74,7 +86,7 @@ export async function fetchAllOrders(
     let query = supabase
       .from("work_orders")
       .select(
-        "id, order_number, title, status, scheduled_date, created_at, project_id, assigned_installer_id, sites(name, city, zone), projects(name)",
+        "id, order_number, title, status, scheduled_date, scheduled_end_date, finalized_at, amount, currency, created_at, project_id, assigned_installer_id, sites(name, city, zone), projects(name)",
       )
       .order("created_at", { ascending: false })
       .range(from, from + PAGE - 1);

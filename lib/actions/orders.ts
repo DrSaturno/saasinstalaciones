@@ -78,14 +78,13 @@ export async function createOrder(
 
     // El punto debe ser de esta empresa: resolvemos project_id desde él,
     // nunca confiamos en un project_id que venga del cliente.
-    const [siteResult, companyResult, rosterResult] = await Promise.all([
+    const [siteResult, rosterResult] = await Promise.all([
       supabase
         .from("sites")
-        .select("id, project_id, company_id")
+        .select("id, project_id, company_id, archived_at")
         .eq("id", parsed.data.siteId)
         .eq("company_id", companyId)
         .single(),
-      supabase.from("companies").select("country").eq("id", companyId).single(),
       parsed.data.installerId
         ? supabase
             .from("company_installers")
@@ -97,10 +96,18 @@ export async function createOrder(
         : Promise.resolve({ data: null }),
     ]);
     const site = siteResult.data;
-    if (!site) return { error: t("siteNotFound") };
+    if (!site || site.archived_at) return { error: t("siteNotFound") };
     if (parsed.data.installerId && !rosterResult.data) {
       return { error: t("installerNotActive") };
     }
+
+    const { data: project } = await supabase
+      .from("projects")
+      .select("billing_mode, currency")
+      .eq("id", site.project_id)
+      .eq("company_id", companyId)
+      .single();
+    if (!project) return { error: t("projectNotFound") };
 
     const { data: order, error } = await supabase
       .from("work_orders")
@@ -118,8 +125,8 @@ export async function createOrder(
         requires_freight: parsed.data.requiresFreight,
         freight_details: parsed.data.freightDetails,
         logistics_notes: parsed.data.logisticsNotes,
-        amount: parsed.data.amount,
-        currency: companyResult.data?.country === "BR" ? "BRL" : "ARS",
+        amount: project.billing_mode === "per_installation" ? parsed.data.amount : null,
+        currency: project.currency,
         assigned_installer_id: parsed.data.installerId,
         created_by: user.id,
         // order_number lo asigna el trigger work_orders_assign_number.
@@ -177,6 +184,7 @@ export async function getOrderFormSites(
         .select("id, name, address, city, state, zone, external_ref")
         .eq("project_id", projectId)
         .eq("company_id", companyId)
+        .is("archived_at", null)
         .order("name")
         .range(from, from + 999);
       if (error) return { error: error.message, sites: [] };
@@ -290,7 +298,7 @@ export async function createOrdersForProject(
 
   const { data: project } = await supabase
     .from("projects")
-    .select("id")
+    .select("id, currency")
     .eq("id", projectId)
     .eq("company_id", companyId)
     .single();
@@ -305,6 +313,7 @@ export async function createOrdersForProject(
       .from("sites")
       .select("id")
       .eq("project_id", projectId)
+      .is("archived_at", null)
       .range(from, from + 999);
     if (error || !data) break;
     siteIds.push(...data.map((s) => s.id));
@@ -333,6 +342,7 @@ export async function createOrdersForProject(
     project_id: projectId,
     site_id: siteId,
     title,
+    currency: project.currency,
     created_by: user.id,
   }));
 

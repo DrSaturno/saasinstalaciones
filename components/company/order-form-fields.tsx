@@ -53,6 +53,8 @@ export function OrderFormFields({
   const [loadingSites, startLoadingSites] = useTransition();
 
   const project = projects.find((item) => item.id === projectId) ?? null;
+  const orderCurrency = project?.currency ?? currency;
+  const amountEnabled = project?.billingMode === "per_installation";
   const site = sites.find((item) => item.id === siteId) ?? null;
   const installer = roster.find((item) => item.id === installerId) ?? null;
 
@@ -60,6 +62,7 @@ export function OrderFormFields({
     setProjectId(value);
     setSiteId("");
     setSites([]);
+    setAmount("");
     if (!value) return;
     startLoadingSites(async () => {
       const result = await getOrderFormSites(value);
@@ -208,20 +211,20 @@ export function OrderFormFields({
         </OrderFormSection>
 
         <OrderFormSection number="04" title={t("sections.budget.title")} description={t("sections.budget.description")}>
-          <div className="max-w-sm">
+          {amountEnabled ? <div className="max-w-sm">
             <Label htmlFor="order-amount">{t("amount")}</Label>
             <div className="relative mt-2">
-              <span className="absolute inset-y-0 left-3 flex items-center font-mono text-xs text-muted-foreground">{currency}</span>
+              <span className="absolute inset-y-0 left-3 flex items-center font-mono text-xs text-muted-foreground">{orderCurrency}</span>
               <Input id="order-amount" name="amount" type="number" min="0" step="0.01" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0,00" className="pl-14 font-mono text-lg" disabled={disabled} />
             </div>
             <p className="mt-1.5 text-xs text-muted-foreground">{t("amountHelp")}</p>
-          </div>
+          </div> : <div className="rounded-xl border bg-muted/30 p-4 text-sm text-muted-foreground">{project ? t("projectBillingHelp") : t("chooseProjectForBudget")}</div>}
+          {!amountEnabled ? <input type="hidden" name="amount" value="" /> : null}
           <OrderFilesField files={files} disabled={disabled} onAdd={onAddFiles} onRemove={onRemoveFile} />
         </OrderFormSection>
       </div>
 
-      <OrderFormSummary project={project} site={site} installerName={installer?.name ?? null} amount={amount} currency={currency} />
+      <OrderFormSummary project={project} site={site} installerName={installer?.name ?? null} amount={amountEnabled ? amount : ""} currency={orderCurrency} />
     </div>
   );
 }
-

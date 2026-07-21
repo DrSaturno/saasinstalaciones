@@ -1,85 +1,49 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent } from "@/components/ui/card";
+import { DashboardInsights } from "@/components/company/dashboard-insights";
+import { DashboardMetrics } from "@/components/company/dashboard-metrics";
+import { DashboardOperations } from "@/components/company/dashboard-operations";
+import { DashboardProjects } from "@/components/company/dashboard-projects";
+import { DashboardTodayOrders } from "@/components/company/dashboard-today-orders";
 import { Button } from "@/components/ui/button";
-import { StatusBadge } from "@/components/shared/status-badge";
-import { ORDER_STATUS } from "@/lib/domain/status";
-import type { OrderStatus } from "@/types/database";
+import { fetchDashboardOverview } from "@/lib/data/dashboard";
+import { createClient } from "@/lib/supabase/server";
+import { fetchZoneForecasts } from "@/lib/weather/forecast";
+import { googleCalendarConfigured } from "@/lib/google-calendar/config";
+import type { Country } from "@/types/database";
 
 export default async function CompanyDashboard() {
-  const t = await getTranslations("Dashboard");
-  const supabase = await createClient();
-
-  const [{ count: projectCount }, { count: siteCount }, { data: orders }] =
-    await Promise.all([
-      supabase
-        .from("projects")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "active"),
-      supabase.from("sites").select("*", { count: "exact", head: true }),
-      supabase.from("work_orders").select("status"),
-    ]);
-
-  const byStatus = (orders ?? []).reduce<Record<string, number>>((acc, o) => {
-    acc[o.status] = (acc[o.status] ?? 0) + 1;
-    return acc;
-  }, {});
-  const openOrders = (orders ?? []).filter(
-    (o) => o.status !== "finalizada" && o.status !== "cancelada",
-  ).length;
+  const [t, supabase] = await Promise.all([
+    getTranslations("Dashboard"),
+    createClient(),
+  ]);
+  const [{ data: company }, { data: calendar }] = await Promise.all([
+    supabase.from("companies").select("country").limit(1).maybeSingle(),
+    supabase.from("calendar_connections").select("google_email").limit(1).maybeSingle(),
+  ]);
+  const overview = await fetchDashboardOverview(supabase, (company?.country ?? "AR") as Country);
+  const forecasts = await fetchZoneForecasts(overview.weatherZones);
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <div className="flex items-center justify-between">
+    <main className="mx-auto max-w-[1480px] space-y-6">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">{t("title")}</h1>
-          <p className="mt-1 text-muted-foreground">
-            {t("description")}
-          </p>
+          <p className="font-mono text-xs font-semibold uppercase tracking-[0.18em] text-primary">{t("eyebrow")}</p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t("description")}</p>
         </div>
-        <Button asChild>
-          <Link href="/projects">{t("viewProjects")}</Link>
-        </Button>
-      </div>
+        <Button asChild variant="outline"><Link href="/orders">{t("viewOrders")}</Link></Button>
+      </header>
 
-      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {[
-          { value: projectCount ?? 0, label: t("activeProjects") },
-          { value: siteCount ?? 0, label: t("totalSites") },
-          { value: openOrders, label: t("openOrders") },
-          { value: byStatus.finalizada ?? 0, label: t("completedOrders") },
-        ].map((kpi) => (
-          <Card key={kpi.label}>
-            <CardContent className="pt-6">
-              <p className="font-mono text-2xl font-medium">{kpi.value}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{kpi.label}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <DashboardMetrics metrics={overview.metrics} />
+      <DashboardOperations forecasts={forecasts} calendarEmail={calendar?.google_email ?? null} calendarConfigured={googleCalendarConfigured()} />
 
-      <h2 className="mt-10 text-sm font-medium text-muted-foreground">
-        {t("ordersByStatus")}
-      </h2>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {(Object.keys(ORDER_STATUS) as OrderStatus[])
-          .filter((s) => (byStatus[s] ?? 0) > 0)
-          .map((status) => (
-            <div
-              key={status}
-              className="flex items-center gap-2 rounded-xl border bg-card px-3 py-2"
-            >
-              <StatusBadge status={status} kind="order" />
-              <span className="font-mono text-sm">{byStatus[status]}</span>
-            </div>
-          ))}
-        {openOrders === 0 && (byStatus.finalizada ?? 0) === 0 && (
-          <p className="text-sm text-muted-foreground">
-            {t("empty")}
-          </p>
-        )}
-      </div>
-    </div>
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <DashboardProjects projects={overview.projects} />
+        <DashboardTodayOrders orders={overview.todayOrders} />
+      </section>
+
+      <DashboardInsights regions={overview.regions} installers={overview.installers} />
+    </main>
   );
 }
