@@ -23,6 +23,8 @@ export type OrderStatus =
   | "finalizada"
   | "cancelada";
 export type OrderSource = "roster" | "broadcast";
+export type OrderPriority = "baja" | "media" | "alta" | "urgente";
+export type OrderCurrency = "ARS" | "BRL";
 export type OrderUpdateType = "checkin" | "progress" | "blocker" | "done" | "system";
 export type InvitationStatus = "pending" | "accepted" | "expired";
 export type RosterStatus = "invited" | "active" | "removed";
@@ -218,6 +220,14 @@ export interface Database {
           description: string;
           status: OrderStatus;
           scheduled_date: string | null;
+          scheduled_end_date: string | null;
+          priority: OrderPriority;
+          indoor: boolean;
+          requires_freight: boolean;
+          freight_details: string;
+          logistics_notes: string;
+          amount: number | null;
+          currency: OrderCurrency;
           assigned_installer_id: string | null;
           source: OrderSource;
           created_by: string | null;
@@ -234,6 +244,14 @@ export interface Database {
           description?: string;
           status?: OrderStatus;
           scheduled_date?: string | null;
+          scheduled_end_date?: string | null;
+          priority?: OrderPriority;
+          indoor?: boolean;
+          requires_freight?: boolean;
+          freight_details?: string;
+          logistics_notes?: string;
+          amount?: number | null;
+          currency?: OrderCurrency;
           assigned_installer_id?: string | null;
           source?: OrderSource;
           created_by?: string | null;
@@ -241,6 +259,34 @@ export interface Database {
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["work_orders"]["Insert"]>;
+        Relationships: [];
+      };
+      order_attachments: {
+        Row: {
+          id: string;
+          order_id: string;
+          company_id: string;
+          storage_path: string;
+          file_name: string;
+          mime_type: string;
+          size_bytes: number;
+          uploaded_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          company_id: string;
+          storage_path: string;
+          file_name: string;
+          mime_type: string;
+          size_bytes: number;
+          uploaded_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["order_attachments"]["Insert"]
+        >;
         Relationships: [];
       };
       order_updates: {

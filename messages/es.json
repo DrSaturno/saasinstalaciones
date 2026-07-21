@@ -190,6 +190,19 @@
     "zone": "Zona",
     "code": "Código",
     "scheduled": "Agendada",
+    "planning": "Planificación y operación",
+    "endDate": "Fecha final",
+    "priority": "Prioridad",
+    "indoor": "Lugar techado",
+    "freight": "Requiere flete",
+    "freightDetails": "Detalle del flete",
+    "logistics": "Requisitos logísticos",
+    "amount": "Importe",
+    "yes": "Sí",
+    "no": "No",
+    "notDefined": "Sin definir",
+    "attachments": "Material adjunto",
+    "openAttachment": "Abrir {name}",
     "history": "Historial",
     "emptyHistory": "Sin movimientos todavía."
   },
@@ -216,6 +229,18 @@
     "back": "← Mis tareas",
     "noAddress": "Sin dirección",
     "directions": "Cómo llegar →",
+    "planning": "Ficha de trabajo",
+    "scheduled": "Inicio",
+    "endDate": "Final estimado",
+    "priority": "Prioridad",
+    "indoor": "Lugar techado",
+    "freight": "Requiere flete",
+    "logistics": "Indicaciones operativas",
+    "yes": "Sí",
+    "no": "No",
+    "notDefined": "Sin definir",
+    "attachments": "Material de referencia",
+    "openAttachment": "Abrir {name}",
     "history": "Historial",
     "photos": "{count, plural, =1 {# foto} other {# fotos}}"
   },
@@ -289,6 +314,87 @@
     "allExist": "Todos los puntos ya tienen una orden.",
     "noSites": "No hay puntos para generar órdenes.",
     "created": "{created, plural, =1 {# orden creada} other {# órdenes creadas}}{skipped, plural, =0 {} other { · # puntos ya tenían}}"
+  },
+  "CreateOrder": {
+    "trigger": "Nueva orden",
+    "eyebrow": "Ficha operativa",
+    "title": "Crear orden de trabajo",
+    "subtitle": "Centralizá ubicación, planificación, responsable, logística, presupuesto y material de referencia.",
+    "sections": {
+      "location": {
+        "title": "Orden y ubicación",
+        "description": "Elegí el proyecto y el punto real donde se realizará el trabajo."
+      },
+      "schedule": {
+        "title": "Planificación y entorno",
+        "description": "Definí fechas, prioridad y condiciones del lugar."
+      },
+      "operation": {
+        "title": "Equipo y operación",
+        "description": "Asigná un responsable del equipo y dejá claras las necesidades logísticas."
+      },
+      "budget": {
+        "title": "Presupuesto y material",
+        "description": "Registrá el importe y adjuntá fotos, planos o instrucciones en PDF."
+      }
+    },
+    "project": "Proyecto / cliente",
+    "chooseProject": "Seleccionar proyecto…",
+    "site": "Punto de instalación",
+    "chooseSite": "Seleccionar punto…",
+    "loadingSites": "Cargando puntos…",
+    "noAddress": "Sin dirección cargada",
+    "workTitle": "Título del trabajo o servicio",
+    "workTitlePlaceholder": "Ej.: Instalación de gráfica exterior",
+    "initialStatus": "Estado inicial",
+    "startDate": "Fecha de inicio",
+    "endDate": "Fecha final",
+    "priority": "Prioridad",
+    "priorities": {
+      "baja": "Baja",
+      "media": "Media",
+      "alta": "Alta",
+      "urgente": "Urgente"
+    },
+    "indoor": "Lugar techado",
+    "indoorHelp": "El trabajo queda protegido de lluvia y otras condiciones climáticas.",
+    "installer": "Instalador responsable",
+    "unassigned": "Sin asignar por ahora",
+    "emptyRoster": "No hay instaladores activos. Podés crear la orden y asignarla más tarde.",
+    "description": "Descripción del trabajo",
+    "descriptionPlaceholder": "Alcance, materiales, terminaciones y resultado esperado…",
+    "logistics": "Requisitos logísticos",
+    "logisticsPlaceholder": "Grúa, altura, permisos, herramientas o acceso especial…",
+    "freight": "Requiere flete",
+    "freightHelp": "Indicá si hay que coordinar traslado de materiales.",
+    "freightDetails": "Detalle del flete",
+    "freightPlaceholder": "Origen, destino, sucursal o instrucciones…",
+    "amount": "Importe total",
+    "amountHelp": "Queda registrado como presupuesto de la orden.",
+    "files": {
+      "drop": "Arrastrá archivos o hacé clic para elegir",
+      "help": "Imágenes o PDF · hasta 10 archivos de 10 MB cada uno",
+      "remove": "Quitar {name}",
+      "invalid": "{count, plural, =1 {Un archivo no es válido} other {# archivos no son válidos}}. Usá imágenes o PDF de hasta 10 MB.",
+      "limit": "Podés adjuntar hasta {count} archivos."
+    },
+    "summary": {
+      "eyebrow": "Vista previa",
+      "title": "Resumen de la orden",
+      "project": "Proyecto",
+      "site": "Punto",
+      "installer": "Responsable",
+      "amount": "Importe",
+      "notSelected": "Sin seleccionar",
+      "unassigned": "Sin asignar",
+      "notDefined": "Sin definir"
+    },
+    "cancel": "Cancelar",
+    "creating": "Creando orden…",
+    "submit": "Crear orden de trabajo",
+    "success": "Orden {number} creada",
+    "partialFiles": "La orden se creó. Archivos cargados: {uploaded}; sin cargar: {failed}.",
+    "unknownError": "No se pudo crear la orden."
   },
   "SitesTable": {
     "all": "Todos",

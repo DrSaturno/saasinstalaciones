@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { fetchActiveRoster } from "@/lib/data/orders";
+import { fetchOrderAttachments } from "@/lib/data/order-attachments";
 import { OrderActions } from "@/components/company/order-actions";
+import { OrderAttachments } from "@/components/shared/order-attachments";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { OrderStatus, OrderUpdateType } from "@/types/database";
@@ -14,9 +16,10 @@ export default async function OrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, statusT, format] = await Promise.all([
+  const [t, statusT, createOrderT, format] = await Promise.all([
     getTranslations("OrderDetail"),
     getTranslations("Status"),
+    getTranslations("CreateOrder"),
     getFormatter(),
   ]);
   const supabase = await createClient();
@@ -24,7 +27,7 @@ export default async function OrderDetailPage({
   const { data: order } = await supabase
     .from("work_orders")
     .select(
-      "id, order_number, title, description, status, scheduled_date, assigned_installer_id, created_at, project_id, site_id",
+      "id, order_number, title, description, status, scheduled_date, scheduled_end_date, priority, indoor, requires_freight, freight_details, logistics_notes, amount, currency, assigned_installer_id, created_at, project_id, site_id",
     )
     .eq("id", id)
     .single();
@@ -36,6 +39,7 @@ export default async function OrderDetailPage({
     { data: updates },
     { data: rating },
     roster,
+    attachments,
   ] =
     await Promise.all([
       supabase
@@ -55,7 +59,16 @@ export default async function OrderDetailPage({
         .eq("order_id", id)
         .maybeSingle(),
       fetchActiveRoster(supabase),
+      fetchOrderAttachments(supabase, id),
     ]);
+
+  const amount =
+    order.amount === null
+      ? t("notDefined")
+      : format.number(Number(order.amount), {
+          style: "currency",
+          currency: order.currency,
+        });
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -119,6 +132,68 @@ export default async function OrderDetailPage({
               )}
             </CardContent>
           </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <h2 className="text-sm font-medium text-muted-foreground">
+                {t("planning")}
+              </h2>
+              <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <dt className="text-xs text-muted-foreground">{t("scheduled")}</dt>
+                  <dd className="mt-1 font-mono text-sm">
+                    {order.scheduled_date ?? t("notDefined")}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">{t("endDate")}</dt>
+                  <dd className="mt-1 font-mono text-sm">
+                    {order.scheduled_end_date ?? t("notDefined")}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">{t("priority")}</dt>
+                  <dd className="mt-1 text-sm font-medium">
+                    {createOrderT(`priorities.${order.priority}`)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">{t("indoor")}</dt>
+                  <dd className="mt-1 text-sm font-medium">
+                    {order.indoor ? t("yes") : t("no")}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">{t("freight")}</dt>
+                  <dd className="mt-1 text-sm font-medium">
+                    {order.requires_freight ? t("yes") : t("no")}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">{t("amount")}</dt>
+                  <dd className="mt-1 font-mono text-sm font-semibold">{amount}</dd>
+                </div>
+              </dl>
+              {order.freight_details ? (
+                <div className="mt-5 border-t pt-4">
+                  <p className="text-xs text-muted-foreground">{t("freightDetails")}</p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm">{order.freight_details}</p>
+                </div>
+              ) : null}
+              {order.logistics_notes ? (
+                <div className="mt-4 border-t pt-4">
+                  <p className="text-xs text-muted-foreground">{t("logistics")}</p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm">{order.logistics_notes}</p>
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+
+          <OrderAttachments
+            attachments={attachments}
+            title={t("attachments")}
+            openLabel={(name) => t("openAttachment", { name })}
+          />
 
           {/* Historial */}
           <Card>

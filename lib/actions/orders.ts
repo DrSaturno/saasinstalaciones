@@ -2,9 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
-import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
+import {
+  orderAttachmentRegistrationSchema,
+  orderIntakeSchema,
+  databaseIdSchema,
+  type OrderAttachmentRegistration,
+} from "@/lib/domain/order-intake";
 import { canTransition } from "@/lib/domain/transitions";
 import { requestPushDelivery } from "@/lib/push/events";
 import type { OrderStatus, TablesInsert } from "@/types/database";
@@ -19,28 +24,50 @@ async function requireManager() {
 }
 
 export type ActionState = { error: string | null; ok?: boolean };
+export type CreateOrderResult = ActionState & {
+  orderId?: string;
+  companyId?: string;
+  orderNumber?: string;
+};
+
+export type OrderFormSite = {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  zone: string;
+  externalRef: string | null;
+};
+
+export type OrderFormSitesResult = {
+  error: string | null;
+  sites: OrderFormSite[];
+};
 
 // ---------------------------------------------------------------------------
 // Crear orden individual
 // ---------------------------------------------------------------------------
 
-const createOrderSchema = z.object({
-  siteId: z.string().uuid("Punto inválido"),
-  title: z.string().min(2, "El título es muy corto").max(200),
-  description: z.string().max(2000).optional().default(""),
-  scheduledDate: z.string().optional(),
-});
-
 export async function createOrder(
   _prev: ActionState,
   formData: FormData,
-): Promise<ActionState> {
+): Promise<CreateOrderResult> {
   const t = await getTranslations("Errors");
-  const parsed = createOrderSchema.safeParse({
+  const parsed = orderIntakeSchema.safeParse({
     siteId: formData.get("siteId"),
     title: formData.get("title"),
     description: formData.get("description") ?? "",
-    scheduledDate: formData.get("scheduledDate") || undefined,
+    status: formData.get("status") ?? "pendiente",
+    scheduledDate: formData.get("scheduledDate") ?? "",
+    scheduledEndDate: formData.get("scheduledEndDate") ?? "",
+    priority: formData.get("priority") ?? "media",
+    indoor: formData.get("indoor") === "on",
+    requiresFreight: formData.get("requiresFreight") === "on",
+    freightDetails: formData.get("freightDetails") ?? "",
+    logisticsNotes: formData.get("logisticsNotes") ?? "",
+    amount: formData.get("amount") ?? "",
+    installerId: formData.get("installerId") ?? "",
   });
   if (!parsed.success) {
     return { error: t("invalidData") };
@@ -51,32 +78,180 @@ export async function createOrder(
 
     // El punto debe ser de esta empresa: resolvemos project_id desde él,
     // nunca confiamos en un project_id que venga del cliente.
-    const { data: site } = await supabase
-      .from("sites")
-      .select("id, project_id, company_id")
-      .eq("id", parsed.data.siteId)
-      .eq("company_id", companyId)
-      .single();
+    const [siteResult, companyResult, rosterResult] = await Promise.all([
+      supabase
+        .from("sites")
+        .select("id, project_id, company_id")
+        .eq("id", parsed.data.siteId)
+        .eq("company_id", companyId)
+        .single(),
+      supabase.from("companies").select("country").eq("id", companyId).single(),
+      parsed.data.installerId
+        ? supabase
+            .from("company_installers")
+            .select("installer_id")
+            .eq("company_id", companyId)
+            .eq("installer_id", parsed.data.installerId)
+            .eq("status", "active")
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+    const site = siteResult.data;
     if (!site) return { error: t("siteNotFound") };
+    if (parsed.data.installerId && !rosterResult.data) {
+      return { error: t("installerNotActive") };
+    }
 
-    const { error } = await supabase.from("work_orders").insert({
-      company_id: companyId,
-      project_id: site.project_id,
-      site_id: site.id,
-      title: parsed.data.title,
-      description: parsed.data.description,
-      scheduled_date: parsed.data.scheduledDate || null,
-      created_by: user.id,
-      // order_number lo asigna el trigger work_orders_assign_number.
-    });
-    if (error) return { error: error.message };
+    const { data: order, error } = await supabase
+      .from("work_orders")
+      .insert({
+        company_id: companyId,
+        project_id: site.project_id,
+        site_id: site.id,
+        title: parsed.data.title,
+        description: parsed.data.description,
+        status: parsed.data.status,
+        scheduled_date: parsed.data.scheduledDate,
+        scheduled_end_date: parsed.data.scheduledEndDate,
+        priority: parsed.data.priority,
+        indoor: parsed.data.indoor,
+        requires_freight: parsed.data.requiresFreight,
+        freight_details: parsed.data.freightDetails,
+        logistics_notes: parsed.data.logisticsNotes,
+        amount: parsed.data.amount,
+        currency: companyResult.data?.country === "BR" ? "BRL" : "ARS",
+        assigned_installer_id: parsed.data.installerId,
+        created_by: user.id,
+        // order_number lo asigna el trigger work_orders_assign_number.
+      })
+      .select("id, order_number")
+      .single();
+    if (error || !order) return { error: error?.message ?? t("unexpected") };
+
+    if (parsed.data.installerId) {
+      await requestPushDelivery(
+        supabase,
+        "order_assigned",
+        order.id,
+        parsed.data.installerId,
+      );
+    }
 
     revalidatePath("/orders");
     revalidatePath(`/projects/${site.project_id}`);
+    return {
+      error: null,
+      ok: true,
+      orderId: order.id,
+      companyId,
+      orderNumber: order.order_number,
+    };
   } catch {
     return { error: t("unexpected") };
   }
-  return { error: null, ok: true };
+}
+
+/** Carga bajo demanda los puntos del proyecto para no serializar miles al abrir /orders. */
+export async function getOrderFormSites(
+  projectId: string,
+): Promise<OrderFormSitesResult> {
+  const t = await getTranslations("Errors");
+  if (!databaseIdSchema.safeParse(projectId).success) {
+    return { error: t("invalidData"), sites: [] };
+  }
+
+  try {
+    const { supabase, companyId } = await requireManager();
+    const { data: project } = await supabase
+      .from("projects")
+      .select("id")
+      .eq("id", projectId)
+      .eq("company_id", companyId)
+      .single();
+    if (!project) return { error: t("projectNotFound"), sites: [] };
+
+    const sites: OrderFormSite[] = [];
+    for (let from = 0; ; from += 1_000) {
+      const { data, error } = await supabase
+        .from("sites")
+        .select("id, name, address, city, state, zone, external_ref")
+        .eq("project_id", projectId)
+        .eq("company_id", companyId)
+        .order("name")
+        .range(from, from + 999);
+      if (error) return { error: error.message, sites: [] };
+      const page = data ?? [];
+      sites.push(
+        ...page.map((site) => ({
+          id: site.id,
+          name: site.name,
+          address: site.address,
+          city: site.city,
+          state: site.state,
+          zone: site.zone,
+          externalRef: site.external_ref,
+        })),
+      );
+      if (page.length < 1_000) break;
+    }
+    return { error: null, sites };
+  } catch {
+    return { error: t("unexpected"), sites: [] };
+  }
+}
+
+export async function registerOrderAttachments(
+  orderId: string,
+  attachments: OrderAttachmentRegistration[],
+): Promise<ActionState> {
+  const t = await getTranslations("Errors");
+  const idResult = databaseIdSchema.safeParse(orderId);
+  const filesResult = orderAttachmentRegistrationSchema.safeParse(attachments);
+  if (!idResult.success || !filesResult.success) {
+    return { error: t("invalidData") };
+  }
+
+  try {
+    const { supabase, companyId, user } = await requireManager();
+    const { data: order } = await supabase
+      .from("work_orders")
+      .select("id")
+      .eq("id", idResult.data)
+      .eq("company_id", companyId)
+      .single();
+    if (!order) return { error: t("orderNotFound") };
+
+    const expectedPrefix = `${companyId}/${order.id}/`;
+    if (
+      filesResult.data.some(
+        (attachment) => !attachment.storagePath.startsWith(expectedPrefix),
+      )
+    ) {
+      return { error: t("invalidData") };
+    }
+
+    const rows: TablesInsert<"order_attachments">[] = filesResult.data.map(
+      (attachment) => ({
+        order_id: order.id,
+        company_id: companyId,
+        storage_path: attachment.storagePath,
+        file_name: attachment.fileName,
+        mime_type: attachment.mimeType,
+        size_bytes: attachment.sizeBytes,
+        uploaded_by: user.id,
+      }),
+    );
+    const { error } = await supabase.from("order_attachments").upsert(rows, {
+      onConflict: "order_id,storage_path",
+      ignoreDuplicates: true,
+    });
+    if (error) return { error: error.message };
+
+    revalidatePath(`/orders/${order.id}`);
+    return { error: null, ok: true };
+  } catch {
+    return { error: t("unexpected") };
+  }
 }
 
 // ---------------------------------------------------------------------------

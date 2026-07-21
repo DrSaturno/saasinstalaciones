@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
+import { fetchOrderAttachments } from "@/lib/data/order-attachments";
 import { TaskActions } from "@/components/installer/task-actions";
+import { OrderAttachments } from "@/components/shared/order-attachments";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { OrderStatus, OrderUpdateType } from "@/types/database";
@@ -13,9 +15,10 @@ export default async function TaskDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, statusT, format] = await Promise.all([
+  const [t, statusT, createOrderT, format] = await Promise.all([
     getTranslations("TaskDetail"),
     getTranslations("Status"),
+    getTranslations("CreateOrder"),
     getFormatter(),
   ]);
   const supabase = await createClient();
@@ -23,13 +26,13 @@ export default async function TaskDetailPage({
   const { data: order } = await supabase
     .from("work_orders")
     .select(
-      "id, order_number, title, description, status, scheduled_date, company_id, site_id",
+      "id, order_number, title, description, status, scheduled_date, scheduled_end_date, priority, indoor, requires_freight, freight_details, logistics_notes, company_id, site_id",
     )
     .eq("id", id)
     .single();
   if (!order) notFound();
 
-  const [{ data: site }, { data: updates }] = await Promise.all([
+  const [{ data: site }, { data: updates }, attachments] = await Promise.all([
     supabase
       .from("sites")
       .select("name, address, city, state, zone, lat, lng")
@@ -40,6 +43,7 @@ export default async function TaskDetailPage({
       .select("id, type, note, photos, created_at")
       .eq("order_id", id)
       .order("created_at", { ascending: false }),
+    fetchOrderAttachments(supabase, id),
   ]);
 
   const mapsUrl = site
@@ -90,6 +94,58 @@ export default async function TaskDetailPage({
           )}
         </CardContent>
       </Card>
+
+      <Card className="mt-4">
+        <CardContent className="pt-6">
+          <h2 className="text-sm font-medium text-muted-foreground">{t("planning")}</h2>
+          <dl className="mt-4 grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <dt className="text-xs text-muted-foreground">{t("scheduled")}</dt>
+              <dd className="mt-1 font-mono">
+                {order.scheduled_date ?? t("notDefined")}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">{t("endDate")}</dt>
+              <dd className="mt-1 font-mono">
+                {order.scheduled_end_date ?? t("notDefined")}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">{t("priority")}</dt>
+              <dd className="mt-1 font-medium">
+                {createOrderT(`priorities.${order.priority}`)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">{t("indoor")}</dt>
+              <dd className="mt-1 font-medium">{order.indoor ? t("yes") : t("no")}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">{t("freight")}</dt>
+              <dd className="mt-1 font-medium">
+                {order.requires_freight ? t("yes") : t("no")}
+              </dd>
+            </div>
+          </dl>
+          {order.freight_details || order.logistics_notes ? (
+            <div className="mt-4 border-t pt-4">
+              <p className="text-xs text-muted-foreground">{t("logistics")}</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm">
+                {[order.freight_details, order.logistics_notes].filter(Boolean).join("\n")}
+              </p>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <div className="mt-4">
+        <OrderAttachments
+          attachments={attachments}
+          title={t("attachments")}
+          openLabel={(name) => t("openAttachment", { name })}
+        />
+      </div>
 
       {/* Acciones */}
       <Card className="mt-4">
