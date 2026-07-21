@@ -1,12 +1,7 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { getCurrentUser, ROLE_HOME } from "@/lib/auth";
 import { AppShell } from "@/components/shared/app-shell";
-
-const NAV = [
-  { href: "/master", label: "Resumen" },
-  { href: "/master/companies", label: "Empresas" },
-  { href: "/master/installers", label: "Instaladores" },
-];
 
 export default async function MasterLayout({
   children,
@@ -16,9 +11,19 @@ export default async function MasterLayout({
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (user.role !== "platform_admin") redirect(ROLE_HOME[user.role]);
+  const t = await getTranslations("Navigation");
+  const nav = [
+    { href: "/master", label: t("overview") },
+    { href: "/master/companies", label: t("companies") },
+  ];
 
   return (
-    <AppShell area="Tablero maestro" nav={NAV} userName={user.fullName}>
+    <AppShell
+      area={t("masterArea")}
+      nav={nav}
+      userName={user.fullName}
+      locale={user.locale}
+    >
       {children}
     </AppShell>
   );

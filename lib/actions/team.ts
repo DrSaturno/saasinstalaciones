@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
@@ -23,9 +24,10 @@ export type InviteResult = { error: string | null; token?: string };
  * que el manager comparte (el envío por email es best-effort/pendiente).
  */
 export async function inviteInstaller(email: string): Promise<InviteResult> {
+  const t = await getTranslations("Errors");
   const parsed = emailSchema.safeParse(email.trim().toLowerCase());
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Email inválido" };
+    return { error: t("invalidEmail") };
   }
 
   try {
@@ -49,19 +51,20 @@ export async function inviteInstaller(email: string): Promise<InviteResult> {
       .select("token")
       .single();
     if (error || !data) {
-      return { error: error?.message ?? "No se pudo crear la invitación" };
+      return { error: t("createInvitation") };
     }
 
     revalidatePath("/team");
     return { error: null, token: data.token };
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error inesperado" };
+  } catch {
+    return { error: t("unexpected") };
   }
 }
 
 export type ActionState = { error: string | null; ok?: boolean };
 
 export async function cancelInvitation(invitationId: string): Promise<ActionState> {
+  const t = await getTranslations("Errors");
   try {
     const { supabase, companyId } = await requireManager();
     const { error } = await supabase
@@ -71,8 +74,8 @@ export async function cancelInvitation(invitationId: string): Promise<ActionStat
       .eq("company_id", companyId);
     if (error) return { error: error.message };
     revalidatePath("/team");
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error inesperado" };
+  } catch {
+    return { error: t("unexpected") };
   }
   return { error: null, ok: true };
 }
@@ -82,6 +85,7 @@ export async function setRosterStatus(
   installerId: string,
   status: Extract<RosterStatus, "active" | "removed">,
 ): Promise<ActionState> {
+  const t = await getTranslations("Errors");
   try {
     const { supabase, companyId } = await requireManager();
 
@@ -104,8 +108,8 @@ export async function setRosterStatus(
 
     revalidatePath("/team");
     revalidatePath("/orders");
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error inesperado" };
+  } catch {
+    return { error: t("unexpected") };
   }
   return { error: null, ok: true };
 }

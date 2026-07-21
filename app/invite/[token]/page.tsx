@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { AcceptInvitation } from "@/components/invite/accept-invitation";
@@ -28,6 +29,7 @@ export default async function InvitePage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
+  const t = await getTranslations("Invitation");
   const supabase = await createClient();
 
   const { data: preview } = await supabase.rpc("invitation_preview", {
@@ -40,10 +42,9 @@ export default async function InvitePage({
   if (!invite || !invite.valid) {
     return (
       <InvitationFrame>
-        <h1 className="text-lg font-medium">Invitación no válida</h1>
+        <h1 className="text-lg font-medium">{t("invalidTitle")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          El link venció o ya fue usado. Pedile a la empresa que te envíe una
-          invitación nueva.
+          {t("invalidDescription")}
         </p>
       </InvitationFrame>
     );
@@ -54,13 +55,13 @@ export default async function InvitePage({
     return (
       <InvitationFrame>
         <h1 className="text-lg font-medium">
-          {invite.company_name} te invitó a su equipo
+          {t("title", { company: invite.company_name })}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Iniciá sesión con tu cuenta de instalador para aceptar.
+          {t("loginDescription")}
         </p>
         <Button asChild className="mt-6 w-full">
-          <Link href={`/login?next=/invite/${token}`}>Iniciar sesión</Link>
+          <Link href={`/login?next=/invite/${token}`}>{t("login")}</Link>
         </Button>
       </InvitationFrame>
     );
@@ -71,11 +72,10 @@ export default async function InvitePage({
     return (
       <InvitationFrame>
         <h1 className="text-lg font-medium">
-          {invite.company_name} te invitó a su equipo
+          {t("title", { company: invite.company_name })}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Esta invitación es para una cuenta de instalador, pero iniciaste sesión
-          con otro tipo de cuenta.
+          {t("wrongRole")}
         </p>
       </InvitationFrame>
     );
@@ -84,10 +84,10 @@ export default async function InvitePage({
   return (
     <InvitationFrame>
       <h1 className="text-lg font-medium">
-        {invite.company_name} te invitó a su equipo
+        {t("title", { company: invite.company_name })}
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Al unirte vas a poder recibir órdenes de trabajo de esta empresa.
+        {t("joinDescription")}
       </p>
       <div className="mt-6">
         <AcceptInvitation token={token} />

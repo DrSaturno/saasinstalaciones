@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { CreateProjectDialog } from "@/components/company/create-project-dialog";
 import { PROJECT_STATUS } from "@/lib/domain/status";
@@ -6,6 +7,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export default async function ProjectsPage() {
+  const [t, statusT] = await Promise.all([
+    getTranslations("Projects"),
+    getTranslations("Status"),
+  ]);
   const supabase = await createClient();
 
   // RLS filtra por empresa: no hace falta (ni conviene) filtrar acá.
@@ -30,9 +35,9 @@ export default async function ProjectsPage() {
     <div className="mx-auto max-w-6xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Proyectos</h1>
+          <h1 className="text-2xl font-bold">{t("title")}</h1>
           <p className="mt-1 text-muted-foreground">
-            Cada proyecto agrupa sus puntos de instalación y órdenes de trabajo.
+            {t("description")}
           </p>
         </div>
         <CreateProjectDialog />
@@ -42,8 +47,7 @@ export default async function ProjectsPage() {
         <Card className="mt-8">
           <CardContent className="py-16 text-center">
             <p className="text-muted-foreground">
-              Todavía no tenés proyectos. Creá el primero para empezar a cargar
-              puntos de instalación.
+              {t("empty")}
             </p>
           </CardContent>
         </Card>
@@ -61,7 +65,7 @@ export default async function ProjectsPage() {
                     <div className="flex items-start justify-between gap-2">
                       <h2 className="font-medium">{project.name}</h2>
                       <Badge variant="secondary" className="shrink-0">
-                        {PROJECT_STATUS[project.status].label}
+                        {statusT(PROJECT_STATUS[project.status].key)}
                       </Badge>
                     </div>
                     {project.client_name && (
@@ -78,7 +82,7 @@ export default async function ProjectsPage() {
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        puntos · {stats.done} finalizados
+                        {t("progress", { total: stats.total, done: stats.done })}
                       </p>
                       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
                         <div

@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { requirePlatformAdmin, generateTempPassword } from "../_guard";
 
@@ -60,6 +61,7 @@ export async function GET() {
 
 /** POST /api/master/companies — alta de empresa + su primer gerente. */
 export async function POST(request: NextRequest) {
+  const t = await getTranslations("Errors");
   const guard = await requirePlatformAdmin();
   if (guard.error) return guard.error;
   const { admin } = guard;
@@ -67,7 +69,7 @@ export async function POST(request: NextRequest) {
   const parsed = createCompanySchema.safeParse(await request.json());
   if (!parsed.success) {
     return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? "Datos inválidos" },
+      { error: t("invalidData") },
       { status: 400 },
     );
   }
@@ -81,7 +83,7 @@ export async function POST(request: NextRequest) {
 
   if (companyError || !company) {
     return NextResponse.json(
-      { error: companyError?.message ?? "No se pudo crear la empresa" },
+      { error: t("createCompany") },
       { status: 500 },
     );
   }
@@ -103,7 +105,7 @@ export async function POST(request: NextRequest) {
     // Rollback: sin gerente la empresa queda huérfana.
     await admin.from("companies").delete().eq("id", company.id);
     return NextResponse.json(
-      { error: `No se pudo crear el usuario: ${userError.message}` },
+      { error: t("createCompany") },
       { status: 500 },
     );
   }

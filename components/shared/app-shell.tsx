@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { useTranslations } from "next-intl";
 import { logoutAction } from "@/lib/actions/session";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { LocaleSwitcher } from "@/components/shared/locale-switcher";
 import { Button } from "@/components/ui/button";
+import type { Locale } from "@/types/database";
 
 export type NavItem = { href: string; label: string };
 
@@ -15,15 +18,18 @@ export function AppShell({
   area,
   nav,
   userName,
+  locale,
   showNotifications = false,
   children,
 }: {
   area: string;
   nav: NavItem[];
   userName: string;
+  locale: Locale;
   showNotifications?: boolean;
   children: React.ReactNode;
 }) {
+  const t = useTranslations("Navigation");
   const navigation = nav.map((item) => (
     <Link
       key={item.href}
@@ -58,12 +64,13 @@ export function AppShell({
                 <NotificationBell />
               </Suspense>
             ) : null}
+            <LocaleSwitcher locale={locale} />
             <span className="hidden text-sm text-muted-foreground lg:inline">
               {userName}
             </span>
             <form action={logoutAction}>
               <Button type="submit" variant="outline" size="sm">
-                Salir
+                {t("logout")}
               </Button>
             </form>
           </div>

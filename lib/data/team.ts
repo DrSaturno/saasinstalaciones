@@ -1,4 +1,7 @@
+import "server-only";
+
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getTranslations } from "next-intl/server";
 import type { Database, RosterStatus } from "@/types/database";
 
 export type RosterMember = {
@@ -29,6 +32,7 @@ export type PendingInvitation = {
 export async function fetchRoster(
   supabase: SupabaseClient<Database>,
 ): Promise<RosterMember[]> {
+  const t = await getTranslations("DataFallbacks");
   const { data: roster } = await supabase
     .from("company_installers")
     .select("installer_id, status, joined_at")
@@ -68,7 +72,7 @@ export async function fetchRoster(
     const inst = instById.get(r.installer_id);
     return {
       installerId: r.installer_id,
-      name: nameById.get(r.installer_id) ?? "Instalador",
+      name: nameById.get(r.installer_id) ?? t("installer"),
       status: r.status,
       joinedAt: r.joined_at,
       zones: inst?.zones ?? [],

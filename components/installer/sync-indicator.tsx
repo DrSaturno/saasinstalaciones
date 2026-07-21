@@ -1,6 +1,7 @@
 "use client";
 
 import { useSync } from "@/lib/offline/use-sync";
+import { useTranslations } from "next-intl";
 
 /**
  * Barra fina que muestra el estado de conexión y cuántos avances quedan por
@@ -8,6 +9,7 @@ import { useSync } from "@/lib/offline/use-sync";
  * pendiente), para no molestar en el caso normal.
  */
 export function SyncIndicator() {
+  const t = useTranslations("SyncIndicator");
   const { online, pending, syncing } = useSync();
 
   if (online && pending === 0) return null;
@@ -23,13 +25,15 @@ export function SyncIndicator() {
       <span className={`h-2 w-2 rounded-full ${dot}`} />
       {!online ? (
         <span>
-          Sin conexión
-          {pending > 0 ? ` · ${pending} sin enviar` : " · seguí trabajando"}
+          {t("offline")}
+          {pending > 0
+            ? ` · ${t("notSent", { count: pending })}`
+            : ` · ${t("keepWorking")}`}
         </span>
       ) : syncing ? (
-        <span>Sincronizando…</span>
+        <span>{t("syncing")}</span>
       ) : (
-        <span>{pending} avance{pending === 1 ? "" : "s"} por sincronizar</span>
+        <span>{t("pending", { count: pending })}</span>
       )}
     </div>
   );

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +26,9 @@ import {
 type CreateResult = { company: { id: string; name: string }; tempPassword: string };
 
 export function CreateCompanyDialog() {
+  const t = useTranslations("CreateCompany");
+  const common = useTranslations("Common");
+  const errors = useTranslations("Errors");
   const [open, setOpen] = useState(false);
   const [country, setCountry] = useState<"AR" | "BR">("AR");
   const [created, setCreated] = useState<
@@ -47,13 +51,13 @@ export function CreateCompanyDialog() {
         body: JSON.stringify(payload),
       });
       const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "No se pudo crear la empresa");
+      if (!res.ok) throw new Error(body.error ?? errors("createCompany"));
       return { ...(body as CreateResult), managerEmail: payload.managerEmail };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["master"] });
       setCreated(result);
-      toast.success(`Empresa "${result.company.name}" creada`);
+      toast.success(t("createdToast", { name: result.company.name }));
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -68,23 +72,22 @@ export function CreateCompanyDialog() {
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? setOpen(true) : close())}>
       <DialogTrigger asChild>
-        <Button>Nueva empresa</Button>
+        <Button>{t("trigger")}</Button>
       </DialogTrigger>
       <DialogContent>
         {created ? (
           <>
             <DialogHeader>
-              <DialogTitle>Empresa creada</DialogTitle>
+              <DialogTitle>{t("createdTitle")}</DialogTitle>
               <DialogDescription>
-                Compartí estas credenciales con el responsable. La contraseña se
-                muestra una sola vez.
+                {t("createdDescription")}
               </DialogDescription>
             </DialogHeader>
             <div className="rounded-xl border bg-muted/40 p-4">
-              <p className="text-xs text-muted-foreground">Email</p>
+              <p className="text-xs text-muted-foreground">{common("email")}</p>
               <p className="font-mono text-sm">{created.managerEmail}</p>
               <p className="mt-3 text-xs text-muted-foreground">
-                Contraseña temporal
+                {t("tempPassword")}
               </p>
               <p className="font-mono text-sm">{created.tempPassword}</p>
             </div>
@@ -92,21 +95,24 @@ export function CreateCompanyDialog() {
               variant="outline"
               onClick={() => {
                 navigator.clipboard.writeText(
-                  `Email: ${created.managerEmail}\nContraseña: ${created.tempPassword}`,
+                  t("clipboard", {
+                    email: created.managerEmail,
+                    password: created.tempPassword,
+                  }),
                 );
-                toast.success("Credenciales copiadas");
+                toast.success(t("copied"));
               }}
             >
-              Copiar credenciales
+              {t("copy")}
             </Button>
-            <Button onClick={close}>Listo</Button>
+            <Button onClick={close}>{common("done")}</Button>
           </>
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle>Nueva empresa</DialogTitle>
+              <DialogTitle>{t("title")}</DialogTitle>
               <DialogDescription>
-                Se crea la empresa y el usuario de su responsable de proyecto.
+                {t("description")}
               </DialogDescription>
             </DialogHeader>
             <form
@@ -114,12 +120,12 @@ export function CreateCompanyDialog() {
               className="flex flex-col gap-4"
             >
               <div className="flex flex-col gap-2">
-                <Label htmlFor="name">Razón social</Label>
+                <Label htmlFor="name">{t("businessName")}</Label>
                 <Input id="name" name="name" placeholder="Alltak Brasil Ltda." required />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="country">País</Label>
+                  <Label htmlFor="country">{t("country")}</Label>
                   <Select
                     value={country}
                     onValueChange={(v) => setCountry(v as "AR" | "BR")}
@@ -134,7 +140,7 @@ export function CreateCompanyDialog() {
                   </Select>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="orderPrefix">Prefijo de órdenes</Label>
+                  <Label htmlFor="orderPrefix">{t("orderPrefix")}</Label>
                   <Input
                     id="orderPrefix"
                     name="orderPrefix"
@@ -147,11 +153,11 @@ export function CreateCompanyDialog() {
                 </div>
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="managerName">Responsable</Label>
-                <Input id="managerName" name="managerName" placeholder="Nombre y apellido" required />
+                <Label htmlFor="managerName">{t("manager")}</Label>
+                <Input id="managerName" name="managerName" placeholder={t("managerPlaceholder")} required />
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="managerEmail">Email del responsable</Label>
+                <Label htmlFor="managerEmail">{t("managerEmail")}</Label>
                 <Input
                   id="managerEmail"
                   name="managerEmail"
@@ -161,7 +167,7 @@ export function CreateCompanyDialog() {
                 />
               </div>
               <Button type="submit" disabled={createCompany.isPending} className="mt-2">
-                {createCompany.isPending ? "Creando…" : "Crear empresa"}
+                {createCompany.isPending ? t("creating") : t("submit")}
               </Button>
             </form>
           </>

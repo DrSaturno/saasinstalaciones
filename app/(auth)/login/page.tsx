@@ -1,9 +1,11 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { LoginForm } from "./login-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function LoginPage() {
+  const t = useTranslations("Login");
   return (
     <main className="flex flex-1 items-center justify-center px-6 py-16">
       <div className="w-full max-w-sm">
@@ -14,7 +16,7 @@ export default function LoginPage() {
         </div>
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">Ingresá a tu cuenta</CardTitle>
+            <CardTitle className="text-xl">{t("title")}</CardTitle>
           </CardHeader>
           <CardContent>
             <Suspense fallback={null}>

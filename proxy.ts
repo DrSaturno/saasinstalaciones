@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/types/database";
 import type { UserRole } from "@/types/database";
+import { isProfileLocale, LOCALE_COOKIE } from "@/i18n/config";
 
 const ROLE_HOME: Record<UserRole, string> = {
   platform_admin: "/master",
@@ -71,12 +72,12 @@ export async function proxy(request: NextRequest) {
   // Con sesión: resolvemos el rol.
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, locale")
     .eq("id", user.id)
     .single();
 
   const role = profile?.role as UserRole | undefined;
-  if (!role) {
+  if (!profile || !role) {
     // Usuario sin perfil (estado inconsistente): a login limpio.
     const url = request.nextUrl.clone();
     url.pathname = "/login";
@@ -84,6 +85,15 @@ export async function proxy(request: NextRequest) {
   }
 
   const home = ROLE_HOME[role];
+  if (isProfileLocale(profile.locale)) {
+    response.cookies.set(LOCALE_COOKIE, profile.locale, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+    });
+  }
 
   // Logueado en login o landing → a su home.
   if (path === "/login" || path === "/") {

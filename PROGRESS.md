@@ -1,7 +1,7 @@
 # Instala Pro — Estado del proyecto
 
-> Última sesión: 2026-07-20 · Próximo paso: **activar infraestructura del Paso 11**
-> Deploy a Vercel: en progreso (env vars configuradas)
+> Última sesión: 2026-07-20 · Próximo paso: **aplicar la migración i18n del Paso 12**
+> Deploy a Vercel: a cargo del usuario; todavía no verificado
 
 Registro de avance para retomar la construcción. El plan completo (16 secciones,
 14 pasos) está en [`../BLUEPRINT.md`](../BLUEPRINT.md). Las reglas del proyecto
@@ -26,7 +26,7 @@ Fusiona dos proyectos legacy (`../proyecto1*` y `../proyecto2*`), que quedan
 
 Next.js 16 (App Router, Turbopack) · TypeScript strict · Tailwind v4 ·
 shadcn/ui (radix-nova) · Supabase (Postgres + RLS + Auth + Storage) ·
-TanStack Query/Table/Virtual · next-intl (pendiente, Paso 12) · Vitest · pnpm.
+TanStack Query/Table/Virtual · next-intl (es-AR/pt-BR) · Vitest · pnpm.
 
 ## Infraestructura
 
@@ -39,7 +39,7 @@ TanStack Query/Table/Virtual · next-intl (pendiente, Paso 12) · Vitest · pnpm
 cd instalapro
 pnpm install          # node-linker=hoisted, ver nota de entorno abajo
 pnpm dev              # http://localhost:3000
-pnpm test             # 19 tests
+pnpm test             # 23 tests
 pnpm build            # verificación completa de tipos
 ```
 Requiere `instalapro/.env.local` con las 3 claves de Supabase (URL, anon,
@@ -164,12 +164,29 @@ Datos demo: 1 empresa, 1 proyecto ("Refacción Estaciones Norte"), 20 puntos,
   y recibió las dos notificaciones esperadas; el marcado como leído también fue
   verificado. Durante esta prueba se corrigió la validación para aceptar UUID
   históricos de Postgres sin bits RFC de versión. **Pendiente de infraestructura:**
-  guardar los secretos VAPID preparados, desplegar la Edge Function y configurar
+  generar y guardar secretos VAPID, desplegar la Edge Function y configurar
   la clave pública en Vercel.
+
+- [x] **12 — i18n es-AR + pt-BR (código).** `next-intl` quedó integrado en el
+  layout raíz, metadata y manifest; todos los textos visibles de las áreas
+  pública, maestra, empresa e instalador viven en catálogos equivalentes
+  `messages/es.json` y `messages/pt.json`. El selector compartido persiste la
+  preferencia en `profiles.locale`, sincroniza una cookie HttpOnly y la recupera
+  incluso después de cerrar sesión y volver a entrar. Estados, errores de Server
+  Actions y API, fechas y textos accesibles también se localizan. La migración
+  `20260720000005_i18n_notifications.sql` genera en español o portugués las
+  notificaciones creadas por triggers/RPC según el perfil destinatario. Se quitó
+  además del menú maestro el enlace muerto a `/master/installers`, que provocaba
+  404 de precarga. **Verificado:** paridad de catálogos, 23 tests, TypeScript,
+  lint sin errores y build de producción; E2E real en los tres roles, persistencia
+  tras recarga y nuevo login, `lang="pt-BR"`, fechas localizadas y viewport de
+  375 px sin overflow. Las cuentas demo fueron restauradas a español al terminar.
+  **Pendiente de infraestructura:** aplicar la migración 00005 en Supabase y
+  verificar una notificación nueva para un destinatario en portugués.
 
 ## Activación pendiente del Paso 11
 
-1. En Supabase Edge Functions guardar los valores ya preparados para
+1. Generar un nuevo par de claves VAPID y guardar en Supabase Edge Functions
    `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT`.
 2. Desplegar `send-event-push`, preparado en el editor web, o ejecutar:
    `npx supabase functions deploy send-event-push --project-ref rpdjjvcmtcpvmwrjqhke --use-api`.
@@ -179,8 +196,18 @@ Después de esto, verificar aceptar/rechazar la postulación demo desde empresa 
 el push real en un dispositivo. La bandeja in-app queda activa apenas se aplica
 la migración, aun antes de configurar VAPID.
 
+## Activación pendiente del Paso 12
+
+1. Abrir en GitHub la vista **Raw** de
+   `supabase/migrations/20260720000005_i18n_notifications.sql` y copiarla completa.
+2. Ejecutarla una sola vez en el SQL Editor del proyecto Supabase
+   `rpdjjvcmtcpvmwrjqhke`, con la traducción automática del navegador desactivada.
+3. Cambiar una cuenta demo a portugués y generar una notificación nueva para
+   confirmar que título y cuerpo se guardan en portugués. La UI ya localiza menú,
+   fechas y estados sin depender de esta migración.
+
 ## Pasos siguientes (resumen)
-12 — i18n pt-BR · 13 — Landing + pulido · 14 — Deploy + `/cyber-neo`.
+13 — Landing + pulido · 14 — Deploy + `/cyber-neo`.
 
 ---
 

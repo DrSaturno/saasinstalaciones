@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { createProject, type ActionState } from "@/lib/actions/projects";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import {
 const initial: ActionState = { error: null };
 
 export function CreateProjectDialog() {
+  const t = useTranslations("CreateProject");
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
@@ -28,7 +30,7 @@ export function CreateProjectDialog() {
       const next = await createProject(previous, formData);
       if (next.ok) {
       setOpen(false);
-      toast.success("Proyecto creado");
+      toast.success(t("success"));
       router.refresh();
       }
       return next;
@@ -39,41 +41,41 @@ export function CreateProjectDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Nuevo proyecto</Button>
+        <Button>{t("trigger")}</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Nuevo proyecto</DialogTitle>
+          <DialogTitle>{t("title")}</DialogTitle>
           <DialogDescription>
-            Después vas a poder importar sus puntos de instalación.
+            {t("description")}
           </DialogDescription>
         </DialogHeader>
         <form action={formAction} className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="name">Nombre del proyecto</Label>
+            <Label htmlFor="name">{t("name")}</Label>
             <Input
               id="name"
               name="name"
-              placeholder="Refacción Estaciones Shell 2026"
+              placeholder={t("namePlaceholder")}
               required
             />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="clientName">Cliente</Label>
-            <Input id="clientName" name="clientName" placeholder="Shell Argentina" />
+            <Label htmlFor="clientName">{t("client")}</Label>
+            <Input id="clientName" name="clientName" placeholder={t("clientPlaceholder")} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="startsAt">Inicio</Label>
+              <Label htmlFor="startsAt">{t("start")}</Label>
               <Input id="startsAt" name="startsAt" type="date" />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="endsAt">Fin estimado</Label>
+              <Label htmlFor="endsAt">{t("end")}</Label>
               <Input id="endsAt" name="endsAt" type="date" />
             </div>
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="description">Descripción</Label>
+            <Label htmlFor="description">{t("projectDescription")}</Label>
             <Textarea id="description" name="description" rows={3} />
           </div>
           {state.error && (
@@ -82,7 +84,7 @@ export function CreateProjectDialog() {
             </p>
           )}
           <Button type="submit" disabled={pending} className="mt-2">
-            {pending ? "Creando…" : "Crear proyecto"}
+            {pending ? t("creating") : t("submit")}
           </Button>
         </form>
       </DialogContent>

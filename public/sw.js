@@ -104,7 +104,7 @@ self.addEventListener("push", (event) => {
   }
   event.waitUntil(
     self.registration.showNotification(payload.title || "Instala Pro", {
-      body: payload.body || "Tenés una novedad.",
+      body: payload.body || "",
       icon: "/icons/icon-192.png",
       badge: "/icons/icon-192.png",
       data: { url: payload.url || "/" },

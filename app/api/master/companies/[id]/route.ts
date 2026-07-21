@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { requirePlatformAdmin } from "../../_guard";
 
@@ -14,6 +15,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const t = await getTranslations("Errors");
   const guard = await requirePlatformAdmin();
   if (guard.error) return guard.error;
   const { admin } = guard;
@@ -21,7 +23,7 @@ export async function PATCH(
   const { id } = await params;
   const parsed = patchSchema.safeParse(await request.json());
   if (!parsed.success) {
-    return NextResponse.json({ error: "Estado inválido" }, { status: 400 });
+    return NextResponse.json({ error: t("invalidData") }, { status: 400 });
   }
 
   const { data, error } = await admin
@@ -32,7 +34,7 @@ export async function PATCH(
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: t("updateCompany") }, { status: 500 });
   }
 
   return NextResponse.json({ company: data });

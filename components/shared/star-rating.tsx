@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 const STARS = [1, 2, 3, 4, 5] as const;
 
@@ -24,15 +25,17 @@ export function StarRating({
   onChange,
   disabled = false,
   size = "md",
-  label = `${value} de 5 estrellas`,
+  label,
 }: StarRatingProps) {
+  const t = useTranslations("StarRating");
   const editable = Boolean(onChange);
+  const accessibleLabel = label ?? t("summary", { value });
 
   return (
     <div
       className={cn("inline-flex items-center", SIZE_CLASS[size])}
       role={editable ? "group" : "img"}
-      aria-label={label}
+      aria-label={accessibleLabel}
     >
       {STARS.map((star) => {
         const filled = star <= Math.round(value);
@@ -41,7 +44,7 @@ export function StarRating({
             key={star}
             type="button"
             disabled={disabled}
-            aria-label={`${star} ${star === 1 ? "estrella" : "estrellas"}`}
+            aria-label={t("star", { count: star })}
             aria-pressed={star === value}
             onClick={() => onChange?.(star)}
             className={cn(

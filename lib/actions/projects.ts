@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
@@ -30,6 +31,7 @@ export async function createProject(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const t = await getTranslations("Errors");
   const parsed = projectSchema.safeParse({
     name: formData.get("name"),
     clientName: formData.get("clientName") ?? "",
@@ -38,7 +40,7 @@ export async function createProject(
     endsAt: formData.get("endsAt") || undefined,
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+    return { error: t("invalidData") };
   }
 
   try {
@@ -53,8 +55,8 @@ export async function createProject(
       ends_at: parsed.data.endsAt || null,
     });
     if (error) return { error: error.message };
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error inesperado" };
+  } catch {
+    return { error: t("unexpected") };
   }
 
   revalidatePath("/projects");
@@ -65,6 +67,7 @@ export async function updateProjectStatus(
   projectId: string,
   status: "draft" | "active" | "paused" | "done",
 ): Promise<ActionState> {
+  const t = await getTranslations("Errors");
   try {
     const { supabase, companyId } = await requireManager();
     const { error } = await supabase
@@ -73,8 +76,8 @@ export async function updateProjectStatus(
       .eq("id", projectId)
       .eq("company_id", companyId);
     if (error) return { error: error.message };
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error inesperado" };
+  } catch {
+    return { error: t("unexpected") };
   }
   revalidatePath("/projects");
   return { error: null, ok: true };
@@ -114,12 +117,13 @@ export async function importSites(
   projectId: string,
   csvText: string,
 ): Promise<ImportResult> {
+  const t = await getTranslations("Errors");
   let ctx;
   try {
     ctx = await requireManager();
-  } catch (e) {
+  } catch {
     return {
-      error: e instanceof Error ? e.message : "Error",
+      error: t("accessDenied"),
       inserted: 0,
       skipped: [],
     };
@@ -135,13 +139,13 @@ export async function importSites(
     .eq("company_id", companyId)
     .single();
   if (!project) {
-    return { error: "Proyecto no encontrado", inserted: 0, skipped: [] };
+    return { error: t("projectNotFound"), inserted: 0, skipped: [] };
   }
 
   const rows = parseCsv(csvText);
   if (rows.length < 2) {
     return {
-      error: "El archivo no tiene filas de datos (¿falta el encabezado?)",
+      error: t("csvNoRows"),
       inserted: 0,
       skipped: [],
     };
@@ -156,7 +160,7 @@ export async function importSites(
   }
   if (indexOf.name === undefined) {
     return {
-      error: `No se encontró la columna de nombre. Encabezados leídos: ${rows[0].join(", ")}`,
+      error: t("csvMissingName", { headers: rows[0].join(", ") }),
       inserted: 0,
       skipped: [],
     };
@@ -182,7 +186,7 @@ export async function importSites(
       // +2: fila 1 es el encabezado y las filas se cuentan desde 1.
       skipped.push({
         row: i + 2,
-        reason: parsed.error.issues[0]?.message ?? "Fila inválida",
+        reason: t("missingName"),
       });
       return;
     }
@@ -206,7 +210,7 @@ export async function importSites(
     const { error } = await supabase.from("sites").insert(batch);
     if (error) {
       return {
-        error: `Se importaron ${inserted} puntos y falló el lote siguiente: ${error.message}`,
+        error: t("importBatch", { count: inserted, error: error.message }),
         inserted,
         skipped,
       };

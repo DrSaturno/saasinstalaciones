@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { MapPin, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { applyToBroadcast } from "@/lib/actions/broadcasts";
 import type { InstallerJob } from "@/lib/data/broadcasts";
@@ -26,12 +27,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 const STATUS = {
-  applied: { label: "Postulado", className: "bg-lavender text-foreground" },
-  accepted: { label: "Aceptado", className: "bg-success/15 text-success" },
-  rejected: { label: "No seleccionado", className: "bg-muted text-muted-foreground" },
+  applied: { className: "bg-lavender text-foreground" },
+  accepted: { className: "bg-success/15 text-success" },
+  rejected: { className: "bg-muted text-muted-foreground" },
 } as const;
 
 export function JobCard({ job }: { job: InstallerJob }) {
+  const t = useTranslations("JobCard");
+  const statusT = useTranslations("Status");
+  const format = useFormatter();
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [pending, startTransition] = useTransition();
@@ -44,7 +48,7 @@ export function JobCard({ job }: { job: InstallerJob }) {
       toast.error(result.error);
       return;
     }
-    toast.success("Postulación enviada");
+    toast.success(t("sent"));
     setOpen(false);
     router.refresh();
   });
@@ -55,23 +59,27 @@ export function JobCard({ job }: { job: InstallerJob }) {
         <CardHeader>
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1 font-mono text-xs text-primary"><MapPin className="size-3" />{job.zone}</span>
-            {application ? <Badge className={application.className}>{application.label}</Badge> : null}
+            {application && job.applicationStatus ? (
+              <Badge className={application.className}>
+                {statusT(`application.${job.applicationStatus}`)}
+              </Badge>
+            ) : null}
           </div>
           <CardTitle className="mt-2 text-base">{job.title}</CardTitle>
         </CardHeader>
         <CardContent>
           {job.description ? <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">{job.description}</p> : null}
           <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5"><Users className="size-3.5" />{job.slots} {job.slots === 1 ? "cupo" : "cupos"}</span>
-            <span>{new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "short" }).format(new Date(job.createdAt))}</span>
+            <span className="inline-flex items-center gap-1.5"><Users className="size-3.5" />{t("slots", { count: job.slots })}</span>
+            <span>{format.dateTime(new Date(job.createdAt), { day: "numeric", month: "short" })}</span>
           </div>
         </CardContent>
         {job.status === "open" ? (
           <CardFooter>
             {job.applicationStatus ? (
-              <p className="text-xs text-muted-foreground">La empresa ya recibió tu postulación.</p>
+              <p className="text-xs text-muted-foreground">{t("received")}</p>
             ) : (
-              <Button className="w-full" onClick={() => setOpen(true)}>Quiero postularme</Button>
+              <Button className="w-full" onClick={() => setOpen(true)}>{t("apply")}</Button>
             )}
           </CardFooter>
         ) : null}
@@ -80,23 +88,23 @@ export function JobCard({ job }: { job: InstallerJob }) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Postularme</DialogTitle>
+            <DialogTitle>{t("title")}</DialogTitle>
             <DialogDescription>{job.title} · {job.zone}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4">
             <div className="grid gap-2">
-              <Label htmlFor={`job-message-${job.id}`}>Mensaje opcional</Label>
+              <Label htmlFor={`job-message-${job.id}`}>{t("message")}</Label>
               <Textarea
                 id={`job-message-${job.id}`}
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
                 maxLength={600}
                 rows={5}
-                placeholder="Contá brevemente tu experiencia o disponibilidad…"
+                placeholder={t("messagePlaceholder")}
               />
               <span className="text-right font-mono text-xs text-muted-foreground">{message.length}/600</span>
             </div>
-            <Button onClick={submit} disabled={pending}>{pending ? "Enviando…" : "Enviar postulación"}</Button>
+            <Button onClick={submit} disabled={pending}>{pending ? t("sending") : t("submit")}</Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { acceptApplication } from "@/lib/actions/broadcasts";
 import type { BroadcastOrderOption } from "@/lib/data/broadcasts";
@@ -26,6 +27,7 @@ export function AcceptApplicationDialog({
   installerName: string;
   orders: BroadcastOrderOption[];
 }) {
+  const t = useTranslations("AcceptApplication");
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [pending, startTransition] = useTransition();
@@ -38,7 +40,7 @@ export function AcceptApplicationDialog({
         toast.error(result.error);
         return;
       }
-      toast.success(`${installerName} se sumó al equipo`);
+      toast.success(t("success", { name: installerName }));
       setOpen(false);
       router.refresh();
     });
@@ -46,17 +48,17 @@ export function AcceptApplicationDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild><Button size="sm">Aceptar</Button></DialogTrigger>
+      <DialogTrigger asChild><Button size="sm">{t("trigger")}</Button></DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Aceptar a {installerName}</DialogTitle>
+          <DialogTitle>{t("title", { name: installerName })}</DialogTitle>
           <DialogDescription>
-            Se agregará al equipo. También podés asignarle órdenes disponibles ahora.
+            {t("description")}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-3">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Órdenes opcionales · {selected.length} seleccionadas
+            {t("optionalOrders", { count: selected.length })}
           </p>
           <div className="max-h-64 overflow-y-auto rounded-lg border">
             {orders.length ? orders.map((order) => (
@@ -73,9 +75,9 @@ export function AcceptApplicationDialog({
                   <span className="block truncate text-xs text-muted-foreground">{order.title}</span>
                 </span>
               </label>
-            )) : <p className="p-5 text-center text-sm text-muted-foreground">No hay órdenes libres en este proyecto.</p>}
+            )) : <p className="p-5 text-center text-sm text-muted-foreground">{t("empty")}</p>}
           </div>
-          <Button onClick={submit} disabled={pending}>{pending ? "Aceptando…" : "Confirmar aceptación"}</Button>
+          <Button onClick={submit} disabled={pending}>{pending ? t("accepting") : t("submit")}</Button>
         </div>
       </DialogContent>
     </Dialog>

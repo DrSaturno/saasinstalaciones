@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { useTranslations } from "next-intl";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ORDER_STATUS } from "@/lib/domain/status";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,8 @@ const ROW_HEIGHT = 56;
 const STATUS_ORDER = Object.keys(ORDER_STATUS) as OrderStatus[];
 
 export function OrdersTable({ orders }: { orders: OrderRow[] }) {
+  const t = useTranslations("OrdersTable");
+  const statusT = useTranslations("Status");
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all");
@@ -83,7 +86,7 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
               : "bg-card hover:border-primary/40"
           }`}
         >
-          Todas <span className="font-mono">{orders.length}</span>
+          {t("all")} <span className="font-mono">{orders.length}</span>
         </button>
         {STATUS_ORDER.filter((s) => counts[s] > 0).map((status) => (
           <button
@@ -100,7 +103,7 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
                 : undefined
             }
           >
-            {ORDER_STATUS[status].label}{" "}
+            {statusT(ORDER_STATUS[status].key)}{" "}
             <span className="font-mono">{counts[status]}</span>
           </button>
         ))}
@@ -109,7 +112,7 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
       {/* Filtros */}
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <Input
-          placeholder="Buscar por N°, título, punto, ciudad o proyecto…"
+          placeholder={t("search")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm"
@@ -120,8 +123,8 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
             onChange={(e) => setInstallerFilter(e.target.value)}
             className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm"
           >
-            <option value="all">Todos los instaladores</option>
-            {hasUnassigned && <option value="unassigned">Sin asignar</option>}
+            <option value="all">{t("allInstallers")}</option>
+            {hasUnassigned && <option value="unassigned">{t("unassigned")}</option>}
             {installers.map(([id, name]) => (
               <option key={id} value={id}>
                 {name}
@@ -130,25 +133,25 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
           </select>
         )}
         <span className="font-mono text-xs text-muted-foreground">
-          {filtered.length} de {orders.length}
+          {t("resultCount", { filtered: filtered.length, total: orders.length })}
         </span>
       </div>
 
       {/* Tabla virtualizada */}
       <div className="mt-4 overflow-hidden rounded-xl border bg-card">
         <div className="grid grid-cols-[110px_1fr_1fr_140px_130px] gap-4 border-b bg-muted/30 px-4 py-2 text-xs font-medium text-muted-foreground">
-          <span>N° orden</span>
-          <span>Título / Punto</span>
-          <span>Proyecto</span>
-          <span>Instalador</span>
-          <span>Estado</span>
+          <span>{t("number")}</span>
+          <span>{t("titleSite")}</span>
+          <span>{t("project")}</span>
+          <span>{t("installer")}</span>
+          <span>{t("status")}</span>
         </div>
 
         {filtered.length === 0 ? (
           <p className="py-16 text-center text-sm text-muted-foreground">
             {orders.length === 0
-              ? "Todavía no hay órdenes. Creá una desde un proyecto o un punto."
-              : "Ninguna orden coincide con el filtro."}
+              ? t("empty")
+              : t("noMatch")}
           </p>
         ) : (
           <div ref={scrollRef} className="max-h-[600px] overflow-auto">
@@ -178,7 +181,7 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
                     </span>
                     <span className="truncate text-muted-foreground">
                       {order.installer_name ?? (
-                        <span className="text-xs italic opacity-60">Sin asignar</span>
+                        <span className="text-xs italic opacity-60">{t("unassigned")}</span>
                       )}
                     </span>
                     <StatusBadge status={order.status} kind="order" />

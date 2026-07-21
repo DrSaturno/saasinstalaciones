@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { fetchAllSites } from "@/lib/data/sites";
 import { SitesTable } from "@/components/company/sites-table";
@@ -14,6 +15,10 @@ export default async function ProjectDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, statusT] = await Promise.all([
+    getTranslations("ProjectDetail"),
+    getTranslations("Status"),
+  ]);
   const supabase = await createClient();
 
   const { data: project } = await supabase
@@ -34,7 +39,7 @@ export default async function ProjectDetailPage({
         href="/projects"
         className="text-sm text-muted-foreground hover:text-foreground"
       >
-        ← Proyectos
+        {t("back")}
       </Link>
 
       <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
@@ -42,7 +47,7 @@ export default async function ProjectDetailPage({
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold">{project.name}</h1>
             <Badge variant="secondary">
-              {PROJECT_STATUS[project.status].label}
+              {statusT(PROJECT_STATUS[project.status].key)}
             </Badge>
           </div>
           {project.client_name && (
@@ -53,7 +58,7 @@ export default async function ProjectDetailPage({
           <div className="text-right">
             <p className="font-mono text-2xl">{pct}%</p>
             <p className="text-xs text-muted-foreground">
-              {done} de {sites.length} finalizados
+              {t("completed", { done, total: sites.length })}
             </p>
           </div>
           <ImportSitesDialog projectId={project.id} />

@@ -2,9 +2,10 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { transitionOrder, assignInstaller } from "@/lib/actions/orders";
-import { ORDER_TRANSITIONS, TRANSITION_LABEL, isTerminal } from "@/lib/domain/transitions";
+import { ORDER_TRANSITIONS, isTerminal } from "@/lib/domain/transitions";
 import { ORDER_STATUS } from "@/lib/domain/status";
 import { Button } from "@/components/ui/button";
 import { RatingDialog } from "@/components/company/rating-dialog";
@@ -31,6 +32,8 @@ export function OrderActions({
   roster,
   rating,
 }: Props) {
+  const t = useTranslations("OrderActions");
+  const statusT = useTranslations("Status");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const targets = ORDER_TRANSITIONS[status] ?? [];
@@ -40,7 +43,7 @@ export function OrderActions({
       const res = await transitionOrder(orderId, to);
       if (res.error) toast.error(res.error);
       else {
-        toast.success(`Orden → ${ORDER_STATUS[to].label}`);
+        toast.success(t("transitioned", { status: statusT(ORDER_STATUS[to].key) }));
         router.refresh();
       }
     });
@@ -52,7 +55,7 @@ export function OrderActions({
       const res = await assignInstaller(orderId, id);
       if (res.error) toast.error(res.error);
       else {
-        toast.success(id ? "Instalador asignado" : "Asignación quitada");
+        toast.success(id ? t("assigned") : t("unassignedToast"));
         router.refresh();
       }
     });
@@ -62,10 +65,10 @@ export function OrderActions({
     <div className="flex flex-col gap-6">
       {/* Asignación */}
       <div>
-        <h3 className="text-sm font-medium text-muted-foreground">Instalador</h3>
+        <h3 className="text-sm font-medium text-muted-foreground">{t("installer")}</h3>
         {roster.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">
-            Todavía no tenés instaladores en tu equipo.
+            {t("emptyRoster")}
           </p>
         ) : (
           <select
@@ -74,13 +77,13 @@ export function OrderActions({
             onChange={(e) => doAssign(e.target.value)}
             className="mt-2 h-9 w-full rounded-lg border border-input bg-transparent px-2 text-sm disabled:opacity-50"
           >
-            <option value="">Sin asignar</option>
+            <option value="">{t("unassigned")}</option>
             {roster.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.name}
                 {r.ratingCount > 0
                   ? ` · ★ ${r.ratingAvg.toFixed(1)} (${r.ratingCount})`
-                  : " · Sin calificaciones"}
+                  : ` · ${t("noRatings")}`}
               </option>
             ))}
           </select>
@@ -89,11 +92,12 @@ export function OrderActions({
 
       {/* Transiciones */}
       <div>
-        <h3 className="text-sm font-medium text-muted-foreground">Cambiar estado</h3>
+        <h3 className="text-sm font-medium text-muted-foreground">{t("changeStatus")}</h3>
         {isTerminal(status) ? (
           <p className="mt-2 text-sm text-muted-foreground">
-            La orden está {ORDER_STATUS[status].label.toLowerCase()}. No admite
-            más cambios.
+            {t("terminal", {
+              status: statusT(ORDER_STATUS[status].key).toLocaleLowerCase(),
+            })}
           </p>
         ) : (
           <div className="mt-2 flex flex-col gap-2">
@@ -108,7 +112,7 @@ export function OrderActions({
                   onClick={() => doTransition(to)}
                   className="justify-start"
                 >
-                  {TRANSITION_LABEL[to]}
+                  {t(`transition.${to}`)}
                 </Button>
               )
             ))}
@@ -119,7 +123,7 @@ export function OrderActions({
       {status === "finalizada" && installerId ? (
         <div className="border-t pt-5">
           <h3 className="text-sm font-medium text-muted-foreground">
-            Calificación
+            {t("rating")}
           </h3>
           {rating ? (
             <div className="mt-2">
@@ -128,14 +132,14 @@ export function OrderActions({
                 <p className="mt-2 text-sm leading-relaxed">{rating.comment}</p>
               ) : (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Sin comentario.
+                  {t("noComment")}
                 </p>
               )}
             </div>
           ) : (
             <div className="mt-2">
               <p className="mb-3 text-sm text-muted-foreground">
-                Esta orden todavía no fue calificada.
+                {t("notRated")}
               </p>
               <RatingDialog orderId={orderId} mode="rate" />
             </div>

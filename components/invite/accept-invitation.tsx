@@ -2,11 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { acceptInvitation } from "@/lib/actions/invitations";
 import { Button } from "@/components/ui/button";
 
 export function AcceptInvitation({ token }: { token: string }) {
+  const t = useTranslations("Invitation");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [done, setDone] = useState(false);
@@ -19,7 +21,7 @@ export function AcceptInvitation({ token }: { token: string }) {
         return;
       }
       setDone(true);
-      toast.success("¡Te uniste al equipo!");
+      toast.success(t("joinedToast"));
       // Damos un momento para leer el mensaje antes de ir a las tareas.
       setTimeout(() => router.push("/tasks"), 1200);
     });
@@ -28,14 +30,14 @@ export function AcceptInvitation({ token }: { token: string }) {
   if (done) {
     return (
       <p className="text-sm text-[var(--success)]">
-        Listo. Te llevamos a tus tareas…
+        {t("joined")}
       </p>
     );
   }
 
   return (
     <Button onClick={accept} disabled={pending} className="w-full">
-      {pending ? "Uniéndote…" : "Unirme al equipo"}
+      {pending ? t("joining") : t("join")}
     </Button>
   );
 }

@@ -1,10 +1,13 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { ROLE_HOME } from "@/lib/auth";
-import type { UserRole } from "@/types/database";
+import { LOCALE_COOKIE } from "@/i18n/config";
+import type { Locale, UserRole } from "@/types/database";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -18,6 +21,7 @@ export async function loginAction(
   _prev: LoginState,
   formData: FormData,
 ): Promise<LoginState> {
+  const t = await getTranslations("Errors");
   const parsed = loginSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -25,7 +29,7 @@ export async function loginAction(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+    return { error: t("invalidData") };
   }
 
   const supabase = await createClient();
@@ -35,20 +39,29 @@ export async function loginAction(
   });
 
   if (error || !data.user) {
-    return { error: "Email o contraseña incorrectos" };
+    return { error: t("invalidCredentials") };
   }
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, locale")
     .eq("id", data.user.id)
     .single();
 
   const role = profile?.role as UserRole | undefined;
-  if (!role) {
+  if (!profile || !role) {
     await supabase.auth.signOut();
-    return { error: "Tu cuenta no tiene un perfil asignado. Contactá al administrador." };
+    return { error: t("missingProfile") };
   }
+
+  const cookieStore = await cookies();
+  cookieStore.set(LOCALE_COOKIE, profile.locale as Locale, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+  });
 
   const dest = parsed.data.next?.startsWith("/") ? parsed.data.next : ROLE_HOME[role];
   redirect(dest);

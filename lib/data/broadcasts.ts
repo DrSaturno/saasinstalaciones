@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getTranslations } from "next-intl/server";
 import type {
   ApplicationStatus,
   BroadcastStatus,
@@ -69,6 +70,7 @@ export type InstallerJobsBoard = {
 export async function fetchBroadcastBoard(
   supabase: SupabaseClient<Database>,
 ): Promise<BroadcastBoard> {
+  const t = await getTranslations("DataFallbacks");
   const [{ data: broadcasts }, { data: projects }, { data: sites }] =
     await Promise.all([
       supabase
@@ -158,8 +160,8 @@ export async function fetchBroadcastBoard(
         id: broadcast.id,
         projectId: broadcast.project_id,
         projectName: broadcast.project_id
-          ? (projectNameById.get(broadcast.project_id) ?? "Proyecto")
-          : "Sin proyecto",
+          ? (projectNameById.get(broadcast.project_id) ?? t("project"))
+          : t("noProject"),
         zone: broadcast.zone,
         title: broadcast.title,
         description: broadcast.description,
@@ -173,7 +175,7 @@ export async function fetchBroadcastBoard(
           const installer = installerById.get(application.installer_id);
           return {
             installerId: application.installer_id,
-            name: nameById.get(application.installer_id) ?? "Instalador",
+            name: nameById.get(application.installer_id) ?? t("installer"),
             status: application.status,
             message: application.message,
             createdAt: application.created_at,
@@ -188,7 +190,7 @@ export async function fetchBroadcastBoard(
             id: order.id,
             orderNumber: order.order_number,
             title: order.title,
-            siteName: siteNameById.get(order.site_id) ?? "Punto",
+            siteName: siteNameById.get(order.site_id) ?? t("site"),
           })),
       };
     }),

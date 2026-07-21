@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,6 +29,9 @@ type Company = {
 };
 
 export function CompaniesTable() {
+  const t = useTranslations("CompaniesTable");
+  const errors = useTranslations("Errors");
+  const common = useTranslations("Common");
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery<{ companies: Company[] }>({
@@ -48,21 +52,21 @@ export function CompaniesTable() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "No se pudo actualizar");
+        throw new Error(body.error ?? errors("updateCompany"));
       }
       return res.json();
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["master"] });
       toast.success(
-        variables.status === "suspended" ? "Empresa suspendida" : "Empresa reactivada",
+        variables.status === "suspended" ? t("suspendedToast") : t("reactivatedToast"),
       );
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   if (error) {
-    return <p className="text-sm text-destructive">No se pudieron cargar las empresas.</p>;
+    return <p className="text-sm text-destructive">{t("loadError")}</p>;
   }
 
   const companies = data?.companies ?? [];
@@ -71,7 +75,7 @@ export function CompaniesTable() {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {isLoading ? "Cargando…" : `${companies.length} empresa${companies.length === 1 ? "" : "s"}`}
+          {isLoading ? common("loading") : t("count", { count: companies.length })}
         </p>
         <CreateCompanyDialog />
       </div>
@@ -80,13 +84,13 @@ export function CompaniesTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Empresa</TableHead>
-              <TableHead>País</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="text-right">Usuarios</TableHead>
-              <TableHead className="text-right">Proyectos</TableHead>
-              <TableHead className="text-right">Órdenes</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
+              <TableHead>{t("company")}</TableHead>
+              <TableHead>{t("country")}</TableHead>
+              <TableHead>{t("status")}</TableHead>
+              <TableHead className="text-right">{t("users")}</TableHead>
+              <TableHead className="text-right">{t("projects")}</TableHead>
+              <TableHead className="text-right">{t("orders")}</TableHead>
+              <TableHead className="text-right">{t("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -102,7 +106,7 @@ export function CompaniesTable() {
             {!isLoading && companies.length === 0 && (
               <TableRow>
                 <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
-                  Todavía no hay empresas. Creá la primera para empezar.
+                  {t("empty")}
                 </TableCell>
               </TableRow>
             )}
@@ -125,7 +129,7 @@ export function CompaniesTable() {
                         : "bg-muted text-muted-foreground"
                     }
                   >
-                    {company.status === "active" ? "Activa" : "Suspendida"}
+                    {company.status === "active" ? t("active") : t("suspended")}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right font-mono text-sm">{company.users}</TableCell>
@@ -143,7 +147,7 @@ export function CompaniesTable() {
                       })
                     }
                   >
-                    {company.status === "active" ? "Suspender" : "Reactivar"}
+                    {company.status === "active" ? t("suspend") : t("reactivate")}
                   </Button>
                 </TableCell>
               </TableRow>

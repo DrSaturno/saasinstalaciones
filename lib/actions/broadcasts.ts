@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { getCurrentUser } from "@/lib/auth";
 import {
   applicationSchema,
@@ -27,16 +28,16 @@ async function requireInstaller() {
   return { user, supabase: await createClient() };
 }
 
-function errorMessage(error: unknown, fallback = "No se pudo completar la operación") {
+function errorMessage(error: unknown, fallback: string) {
   if (!(error instanceof Error)) return fallback;
-  if (error.message.includes("duplicate key")) return "Ya existe esa postulación.";
-  return error.message || fallback;
+  return fallback;
 }
 
 export async function createBroadcast(
   _previous: BroadcastActionState,
   formData: FormData,
 ): Promise<BroadcastActionState> {
+  const t = await getTranslations("Errors");
   const parsed = createBroadcastSchema.safeParse({
     projectId: formData.get("projectId"),
     zone: formData.get("zone"),
@@ -45,7 +46,7 @@ export async function createBroadcast(
     slots: formData.get("slots"),
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+    return { error: t("invalidData") };
   }
 
   try {
@@ -56,7 +57,7 @@ export async function createBroadcast(
       .eq("id", parsed.data.projectId)
       .eq("company_id", companyId)
       .single();
-    if (!project) return { error: "Proyecto no encontrado" };
+    if (!project) return { error: t("projectNotFound") };
 
     const { data: broadcast, error } = await supabase
       .from("broadcasts")
@@ -70,13 +71,13 @@ export async function createBroadcast(
       })
       .select("id")
       .single();
-    if (error || !broadcast) return { error: error?.message ?? "No se pudo publicar" };
+    if (error || !broadcast) return { error: t("publishBroadcast") };
 
     await requestPushDelivery(supabase, "broadcast_created", broadcast.id);
     revalidatePath("/broadcasts");
     return { error: null, ok: true };
   } catch (error) {
-    return { error: errorMessage(error) };
+    return { error: errorMessage(error, t("operation")) };
   }
 }
 
@@ -86,9 +87,10 @@ export async function updateBroadcast(input: {
   description: string;
   slots: number;
 }): Promise<BroadcastActionState> {
+  const t = await getTranslations("Errors");
   const parsed = updateBroadcastSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+    return { error: t("invalidData") };
   }
 
   try {
@@ -99,7 +101,7 @@ export async function updateBroadcast(input: {
       .eq("broadcast_id", parsed.data.broadcastId)
       .eq("status", "accepted");
     if ((count ?? 0) > parsed.data.slots) {
-      return { error: "Los cupos no pueden ser menores a las aceptaciones actuales." };
+      return { error: t("slotsBelowAccepted") };
     }
 
     const { data, error } = await supabase
@@ -114,29 +116,30 @@ export async function updateBroadcast(input: {
       .eq("status", "open")
       .select("id")
       .single();
-    if (error || !data) return { error: "La búsqueda no está abierta." };
+    if (error || !data) return { error: t("broadcastClosed") };
 
     revalidatePath("/broadcasts");
     return { error: null, ok: true };
   } catch (error) {
-    return { error: errorMessage(error) };
+    return { error: errorMessage(error, t("operation")) };
   }
 }
 
 export async function closeBroadcast(
   broadcastId: string,
 ): Promise<BroadcastActionState> {
+  const t = await getTranslations("Errors");
   try {
     const { supabase } = await requireManager();
     const { error } = await supabase.rpc("close_broadcast", {
       p_broadcast_id: broadcastId,
     });
-    if (error) return { error: error.message };
+    if (error) return { error: t("operation") };
     await requestPushDelivery(supabase, "application_rejected", broadcastId);
     revalidatePath("/broadcasts");
     return { error: null, ok: true };
   } catch (error) {
-    return { error: errorMessage(error) };
+    return { error: errorMessage(error, t("operation")) };
   }
 }
 
@@ -144,9 +147,10 @@ export async function applyToBroadcast(
   broadcastId: string,
   message: string,
 ): Promise<BroadcastActionState> {
+  const t = await getTranslations("Errors");
   const parsed = applicationSchema.safeParse({ broadcastId, message });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+    return { error: t("invalidData") };
   }
 
   try {
@@ -157,8 +161,8 @@ export async function applyToBroadcast(
       message: parsed.data.message,
     });
     if (error) {
-      if (error.code === "23505") return { error: "Ya te postulaste a esta búsqueda." };
-      return { error: error.message };
+      if (error.code === "23505") return { error: t("alreadyApplied") };
+      return { error: t("operation") };
     }
 
     await requestPushDelivery(
@@ -169,7 +173,7 @@ export async function applyToBroadcast(
     revalidatePath("/jobs");
     return { error: null, ok: true };
   } catch (error) {
-    return { error: errorMessage(error) };
+    return { error: errorMessage(error, t("operation")) };
   }
 }
 
@@ -178,9 +182,10 @@ export async function acceptApplication(input: {
   installerId: string;
   orderIds: string[];
 }): Promise<BroadcastActionState> {
+  const t = await getTranslations("Errors");
   const parsed = resolveApplicationSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+    return { error: t("invalidData") };
   }
 
   try {
@@ -190,7 +195,7 @@ export async function acceptApplication(input: {
       p_installer_id: parsed.data.installerId,
       p_order_ids: parsed.data.orderIds,
     });
-    if (error) return { error: error.message };
+    if (error) return { error: t("operation") };
 
     await Promise.all([
       requestPushDelivery(
@@ -208,7 +213,7 @@ export async function acceptApplication(input: {
     revalidatePath("/orders");
     return { error: null, ok: true };
   } catch (error) {
-    return { error: errorMessage(error) };
+    return { error: errorMessage(error, t("operation")) };
   }
 }
 
@@ -216,12 +221,13 @@ export async function rejectApplication(
   broadcastId: string,
   installerId: string,
 ): Promise<BroadcastActionState> {
+  const t = await getTranslations("Errors");
   const parsed = resolveApplicationSchema.safeParse({
     broadcastId,
     installerId,
     orderIds: [],
   });
-  if (!parsed.success) return { error: "Datos inválidos" };
+  if (!parsed.success) return { error: t("invalidData") };
 
   try {
     const { supabase } = await requireManager();
@@ -229,7 +235,7 @@ export async function rejectApplication(
       p_broadcast_id: parsed.data.broadcastId,
       p_installer_id: parsed.data.installerId,
     });
-    if (error) return { error: error.message };
+    if (error) return { error: t("operation") };
     await requestPushDelivery(
       supabase,
       "application_rejected",
@@ -239,6 +245,6 @@ export async function rejectApplication(
     revalidatePath("/broadcasts");
     return { error: null, ok: true };
   } catch (error) {
-    return { error: errorMessage(error) };
+    return { error: errorMessage(error, t("operation")) };
   }
 }

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getFormatter, getTranslations } from "next-intl/server";
 import { getCurrentUser, ROLE_HOME } from "@/lib/auth";
 import { fetchInstallerReputation } from "@/lib/data/ratings";
 import { createClient } from "@/lib/supabase/server";
@@ -12,15 +13,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("es-AR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
 export default async function InstallerProfilePage() {
+  const [t, format] = await Promise.all([
+    getTranslations("Profile"),
+    getFormatter(),
+  ]);
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (user.role !== "installer") redirect(ROLE_HOME[user.role]);
@@ -31,11 +28,11 @@ export default async function InstallerProfilePage() {
   if (!reputation) {
     return (
       <div className="mx-auto max-w-2xl">
-        <h1 className="text-2xl font-bold">Mi perfil</h1>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
         <Card className="mt-6">
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              No pudimos cargar tu perfil de instalador.
+              {t("loadError")}
             </p>
           </CardContent>
         </Card>
@@ -47,11 +44,11 @@ export default async function InstallerProfilePage() {
     <div className="mx-auto max-w-2xl">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-sm text-muted-foreground">Mi perfil</p>
+          <p className="text-sm text-muted-foreground">{t("title")}</p>
           <h1 className="text-2xl font-bold">{user.fullName}</h1>
         </div>
         <Badge variant={reputation.available ? "secondary" : "outline"}>
-          {reputation.available ? "Disponible" : "No disponible"}
+          {reputation.available ? t("available") : t("unavailable")}
         </Badge>
       </div>
 
@@ -59,7 +56,7 @@ export default async function InstallerProfilePage() {
         <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-medium text-muted-foreground">
-              Reputación global
+              {t("reputation")}
             </p>
             <div className="mt-1 flex items-end gap-2">
               <span className="font-mono text-4xl font-semibold">
@@ -73,9 +70,7 @@ export default async function InstallerProfilePage() {
           <div className="sm:text-right">
             <StarRating value={reputation.ratingAvg} size="md" />
             <p className="mt-1 text-sm text-muted-foreground">
-              {reputation.ratingCount === 1
-                ? "1 trabajo calificado"
-                : `${reputation.ratingCount} trabajos calificados`}
+              {t("ratedJobs", { count: reputation.ratingCount })}
             </p>
           </div>
         </CardContent>
@@ -84,16 +79,16 @@ export default async function InstallerProfilePage() {
       {(reputation.zones.length > 0 || reputation.skills.length > 0) ? (
         <Card className="mt-4">
           <CardHeader>
-            <CardTitle>Experiencia</CardTitle>
+            <CardTitle>{t("experience")}</CardTitle>
             <CardDescription>
-              La información que usan las empresas para asignar trabajo.
+              {t("experienceDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             {reputation.zones.length > 0 ? (
               <div>
                 <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Zonas
+                  {t("zones")}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {reputation.zones.map((zone) => (
@@ -107,7 +102,7 @@ export default async function InstallerProfilePage() {
             {reputation.skills.length > 0 ? (
               <div>
                 <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Especialidades
+                  {t("skills")}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {reputation.skills.map((skill) => (
@@ -125,14 +120,14 @@ export default async function InstallerProfilePage() {
       <section className="mt-8">
         <div className="flex items-end justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">Reseñas</h2>
+            <h2 className="text-lg font-semibold">{t("reviews")}</h2>
             <p className="text-sm text-muted-foreground">
-              Opiniones recibidas al cerrar órdenes.
+              {t("reviewsDescription")}
             </p>
           </div>
           {reputation.ratingCount > reputation.reviews.length ? (
             <span className="text-xs text-muted-foreground">
-              Últimas {reputation.reviews.length}
+              {t("latest", { count: reputation.reviews.length })}
             </span>
           ) : null}
         </div>
@@ -141,8 +136,7 @@ export default async function InstallerProfilePage() {
           <Card className="mt-4">
             <CardContent className="py-10 text-center">
               <p className="text-sm text-muted-foreground">
-                Todavía no recibiste calificaciones. Van a aparecer acá cuando
-                una empresa cierre y califique uno de tus trabajos.
+                {t("emptyReviews")}
               </p>
             </CardContent>
           </Card>
@@ -157,11 +151,15 @@ export default async function InstallerProfilePage() {
                       dateTime={review.createdAt}
                       className="shrink-0 font-mono text-xs text-muted-foreground"
                     >
-                      {formatDate(review.createdAt)}
+                      {format.dateTime(new Date(review.createdAt), {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
                     </time>
                   </div>
                   <p className="mt-3 text-sm leading-relaxed">
-                    {review.comment || "Sin comentario."}
+                    {review.comment || t("noComment")}
                   </p>
                   {(review.orderNumber || review.orderTitle) ? (
                     <p className="mt-3 truncate text-xs text-muted-foreground">

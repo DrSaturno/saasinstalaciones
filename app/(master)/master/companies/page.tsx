@@ -1,11 +1,13 @@
 import { CompaniesTable } from "@/components/master/companies-table";
+import { useTranslations } from "next-intl";
 
 export default function MasterCompaniesPage() {
+  const t = useTranslations("Master");
   return (
     <div className="mx-auto max-w-6xl">
-      <h1 className="text-2xl font-bold">Empresas</h1>
+      <h1 className="text-2xl font-bold">{t("companiesTitle")}</h1>
       <p className="mt-1 text-muted-foreground">
-        Alta, suspensión y estado de las empresas que usan la plataforma.
+        {t("companiesDescription")}
       </p>
       <div className="mt-8">
         <CompaniesTable />

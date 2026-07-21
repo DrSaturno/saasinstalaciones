@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { rateInstaller } from "@/lib/actions/ratings";
 import { transitionOrder } from "@/lib/actions/orders";
@@ -24,6 +25,7 @@ type RatingDialogProps = {
 };
 
 export function RatingDialog({ orderId, mode }: RatingDialogProps) {
+  const t = useTranslations("RatingDialog");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [stars, setStars] = useState(0);
@@ -54,7 +56,7 @@ export function RatingDialog({ orderId, mode }: RatingDialogProps) {
         if (rating.error) {
           toast.error(
             finalized
-              ? `La orden se finalizó, pero no se guardó la calificación: ${rating.error}`
+              ? t("partialError", { error: rating.error })
               : rating.error,
           );
           reset();
@@ -66,9 +68,9 @@ export function RatingDialog({ orderId, mode }: RatingDialogProps) {
       toast.success(
         mode === "finalize"
           ? includeRating
-            ? "Orden aprobada y calificación guardada"
-            : "Orden aprobada"
-          : "Calificación guardada",
+            ? t("finalizedRated")
+            : t("finalized")
+          : t("rated"),
       );
       reset();
       router.refresh();
@@ -82,44 +84,44 @@ export function RatingDialog({ orderId, mode }: RatingDialogProps) {
     >
       <DialogTrigger asChild>
         <Button className="w-full justify-start">
-          {mode === "finalize" ? "Aprobar y finalizar" : "Calificar instalador"}
+          {mode === "finalize" ? t("finalizeTrigger") : t("rateTrigger")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {mode === "finalize" ? "Aprobar el trabajo" : "Calificar el trabajo"}
+            {mode === "finalize" ? t("finalizeTitle") : t("rateTitle")}
           </DialogTitle>
           <DialogDescription>
             {mode === "finalize"
-              ? "La orden quedará finalizada. Podés sumar una calificación ahora o hacerlo más tarde."
-              : "Tu opinión alimenta la reputación del instalador en toda la plataforma."}
+              ? t("finalizeDescription")
+              : t("rateDescription")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-2">
-            <Label>Calificación</Label>
+            <Label>{t("rating")}</Label>
             <StarRating
               value={stars}
               onChange={setStars}
               disabled={pending}
-              label="Elegir calificación"
+              label={t("choose")}
             />
             <p className="text-xs text-muted-foreground">
-              {stars > 0 ? `${stars} de 5 estrellas` : "Elegí de 1 a 5 estrellas"}
+              {stars > 0 ? t("stars", { count: stars }) : t("chooseStars")}
             </p>
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor={`rating-comment-${orderId}`}>Comentario opcional</Label>
+            <Label htmlFor={`rating-comment-${orderId}`}>{t("comment")}</Label>
             <Textarea
               id={`rating-comment-${orderId}`}
               value={comment}
               onChange={(event) => setComment(event.target.value)}
               maxLength={1000}
               disabled={pending}
-              placeholder="Contá cómo fue el trabajo…"
+              placeholder={t("commentPlaceholder")}
               rows={4}
             />
           </div>
@@ -131,7 +133,7 @@ export function RatingDialog({ orderId, mode }: RatingDialogProps) {
                 disabled={pending}
                 onClick={() => submit(false)}
               >
-                Aprobar sin calificar
+                {t("approveWithout")}
               </Button>
             ) : null}
             <Button
@@ -139,10 +141,10 @@ export function RatingDialog({ orderId, mode }: RatingDialogProps) {
               onClick={() => submit(true)}
             >
               {pending
-                ? "Guardando…"
+                ? t("saving")
                 : mode === "finalize"
-                  ? "Aprobar y calificar"
-                  : "Guardar calificación"}
+                  ? t("approveAndRate")
+                  : t("save")}
             </Button>
           </div>
         </div>

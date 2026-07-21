@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { createOrdersForProject } from "@/lib/actions/orders";
 import { Button } from "@/components/ui/button";
@@ -24,8 +25,9 @@ export function CreateOrdersDialog({
   projectId: string;
   siteCount: number;
 }) {
+  const t = useTranslations("CreateOrders");
   const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState("Instalación");
+  const [title, setTitle] = useState(() => t("defaultTitle"));
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -40,12 +42,12 @@ export function CreateOrdersDialog({
       if (res.created === 0) {
         toast.info(
           res.skipped > 0
-            ? "Todos los puntos ya tienen una orden."
-            : "No hay puntos para generar órdenes.",
+            ? t("allExist")
+            : t("noSites"),
         );
       } else {
         toast.success(
-          `${res.created} órdenes creadas${res.skipped > 0 ? ` · ${res.skipped} puntos ya tenían` : ""}`,
+          t("created", { created: res.created, skipped: res.skipped }),
         );
       }
       router.refresh();
@@ -55,31 +57,30 @@ export function CreateOrdersDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button disabled={siteCount === 0}>Generar órdenes</Button>
+        <Button disabled={siteCount === 0}>{t("trigger")}</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Generar órdenes de trabajo</DialogTitle>
+          <DialogTitle>{t("title")}</DialogTitle>
           <DialogDescription>
-            Se crea una orden por cada punto del proyecto que todavía no tenga
-            una. Los puntos que ya tienen orden se saltean.
+            {t("description")}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="title">Título de las órdenes</Label>
+            <Label htmlFor="title">{t("orderTitle")}</Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Instalación de gráfica"
+              placeholder={t("placeholder")}
             />
           </div>
           <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
-            El proyecto tiene <span className="font-mono">{siteCount}</span> puntos.
+            {t("siteCount", { count: siteCount })}
           </div>
           <Button onClick={run} disabled={pending}>
-            {pending ? "Generando…" : "Generar órdenes"}
+            {pending ? t("generating") : t("trigger")}
           </Button>
         </div>
       </DialogContent>

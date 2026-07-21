@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getFormatter, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { fetchActiveRoster } from "@/lib/data/orders";
 import { OrderActions } from "@/components/company/order-actions";
@@ -7,30 +8,17 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { OrderStatus, OrderUpdateType } from "@/types/database";
 
-const UPDATE_LABEL: Record<OrderUpdateType, string> = {
-  checkin: "Check-in",
-  progress: "Avance",
-  blocker: "Bloqueo",
-  done: "Trabajo terminado",
-  system: "Sistema",
-};
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString("es-AR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 export default async function OrderDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, statusT, format] = await Promise.all([
+    getTranslations("OrderDetail"),
+    getTranslations("Status"),
+    getFormatter(),
+  ]);
   const supabase = await createClient();
 
   const { data: order } = await supabase
@@ -75,7 +63,7 @@ export default async function OrderDetailPage({
         href="/orders"
         className="text-sm text-muted-foreground hover:text-foreground"
       >
-        ← Órdenes
+        {t("back")}
       </Link>
 
       <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
@@ -104,25 +92,25 @@ export default async function OrderDetailPage({
           {/* Punto */}
           <Card>
             <CardContent className="pt-6">
-              <h2 className="text-sm font-medium text-muted-foreground">Punto de instalación</h2>
+              <h2 className="text-sm font-medium text-muted-foreground">{t("site")}</h2>
               <p className="mt-2 font-medium">{site?.name}</p>
               <p className="text-sm text-muted-foreground">
-                {[site?.address, site?.city, site?.state].filter(Boolean).join(", ") || "Sin dirección"}
+                {[site?.address, site?.city, site?.state].filter(Boolean).join(", ") || t("noAddress")}
               </p>
               <div className="mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
                 {site?.zone && (
                   <span>
-                    Zona <span className="font-mono">{site.zone}</span>
+                    {t("zone")} <span className="font-mono">{site.zone}</span>
                   </span>
                 )}
                 {site?.external_ref && (
                   <span>
-                    Código <span className="font-mono">{site.external_ref}</span>
+                    {t("code")} <span className="font-mono">{site.external_ref}</span>
                   </span>
                 )}
                 {order.scheduled_date && (
                   <span>
-                    Agendada <span className="font-mono">{order.scheduled_date}</span>
+                    {t("scheduled")} <span className="font-mono">{order.scheduled_date}</span>
                   </span>
                 )}
               </div>
@@ -135,10 +123,10 @@ export default async function OrderDetailPage({
           {/* Historial */}
           <Card>
             <CardContent className="pt-6">
-              <h2 className="text-sm font-medium text-muted-foreground">Historial</h2>
+              <h2 className="text-sm font-medium text-muted-foreground">{t("history")}</h2>
               {(updates ?? []).length === 0 ? (
                 <p className="mt-3 text-sm text-muted-foreground">
-                  Sin movimientos todavía.
+                  {t("emptyHistory")}
                 </p>
               ) : (
                 <ul className="mt-4 flex flex-col gap-4">
@@ -146,9 +134,17 @@ export default async function OrderDetailPage({
                     <li key={u.id} className="flex gap-3">
                       <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary/60" />
                       <div className="min-w-0">
-                        <p className="text-sm">{u.note || UPDATE_LABEL[u.type as OrderUpdateType]}</p>
+                        <p className="text-sm">
+                          {u.note || statusT(`update.${u.type as OrderUpdateType}`)}
+                        </p>
                         <p className="font-mono text-xs text-muted-foreground">
-                          {formatDate(u.created_at)}
+                          {format.dateTime(new Date(u.created_at), {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </p>
                       </div>
                     </li>

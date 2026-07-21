@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -15,16 +16,17 @@ type Overview = {
   openOrders: number;
 };
 
-const TILES: { key: keyof Overview; label: string; hint?: string }[] = [
-  { key: "activeCompanies", label: "Empresas activas" },
-  { key: "users", label: "Usuarios" },
-  { key: "installers", label: "Instaladores" },
-  { key: "projects", label: "Proyectos" },
-  { key: "sites", label: "Puntos" },
-  { key: "openOrders", label: "Órdenes abiertas" },
-];
+const TILES = [
+  "activeCompanies",
+  "users",
+  "installers",
+  "projects",
+  "sites",
+  "openOrders",
+] as const satisfies readonly (keyof Overview)[];
 
 export function OverviewMetrics() {
+  const t = useTranslations("OverviewMetrics");
   const { data, isLoading, error } = useQuery<Overview>({
     queryKey: ["master", "overview"],
     queryFn: async () => {
@@ -37,7 +39,7 @@ export function OverviewMetrics() {
   if (error) {
     return (
       <p className="text-sm text-destructive">
-        No se pudo cargar el resumen de la plataforma.
+        {t("loadError")}
       </p>
     );
   }
@@ -45,16 +47,16 @@ export function OverviewMetrics() {
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
       {TILES.map((tile) => (
-        <Card key={tile.key}>
+        <Card key={tile}>
           <CardContent className="pt-6">
             {isLoading ? (
               <Skeleton className="h-8 w-12" />
             ) : (
               <p className="font-mono text-2xl font-medium">
-                {data?.[tile.key] ?? 0}
+                {data?.[tile] ?? 0}
               </p>
             )}
-            <p className="mt-1 text-xs text-muted-foreground">{tile.label}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t(tile)}</p>
           </CardContent>
         </Card>
       ))}

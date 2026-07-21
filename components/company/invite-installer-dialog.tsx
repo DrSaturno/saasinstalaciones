@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { inviteInstaller } from "@/lib/actions/team";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,9 @@ import {
 } from "@/components/ui/dialog";
 
 export function InviteInstallerDialog() {
+  const t = useTranslations("InviteInstaller");
+  const common = useTranslations("Common");
+  const errors = useTranslations("Errors");
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [link, setLink] = useState<string | null>(null);
@@ -27,11 +31,11 @@ export function InviteInstallerDialog() {
     startTransition(async () => {
       const res = await inviteInstaller(email);
       if (res.error || !res.token) {
-        toast.error(res.error ?? "No se pudo crear la invitación");
+        toast.error(res.error ?? errors("createInvitation"));
         return;
       }
       setLink(`${window.location.origin}/invite/${res.token}`);
-      toast.success("Invitación creada");
+      toast.success(t("created"));
       router.refresh();
     });
   };
@@ -45,16 +49,15 @@ export function InviteInstallerDialog() {
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? setOpen(true) : close())}>
       <DialogTrigger asChild>
-        <Button>Invitar instalador</Button>
+        <Button>{t("trigger")}</Button>
       </DialogTrigger>
       <DialogContent>
         {link ? (
           <>
             <DialogHeader>
-              <DialogTitle>Invitación lista</DialogTitle>
+              <DialogTitle>{t("readyTitle")}</DialogTitle>
               <DialogDescription>
-                Compartí este link con el instalador. Al abrirlo e iniciar
-                sesión, se une a tu equipo. Vence en 7 días.
+                {t("readyDescription")}
               </DialogDescription>
             </DialogHeader>
             <div className="rounded-xl border bg-muted/40 p-3">
@@ -64,24 +67,24 @@ export function InviteInstallerDialog() {
               variant="outline"
               onClick={() => {
                 navigator.clipboard.writeText(link);
-                toast.success("Link copiado");
+                toast.success(t("copied"));
               }}
             >
-              Copiar link
+              {t("copy")}
             </Button>
-            <Button onClick={close}>Listo</Button>
+            <Button onClick={close}>{common("done")}</Button>
           </>
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle>Invitar instalador</DialogTitle>
+              <DialogTitle>{t("title")}</DialogTitle>
               <DialogDescription>
-                Generamos un link de invitación para que se sume a tu equipo.
+                {t("description")}
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="email">Email del instalador</Label>
+                <Label htmlFor="email">{t("email")}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -92,7 +95,7 @@ export function InviteInstallerDialog() {
                 />
               </div>
               <Button onClick={submit} disabled={pending}>
-                {pending ? "Creando…" : "Crear invitación"}
+                {pending ? t("creating") : t("submit")}
               </Button>
             </div>
           </>

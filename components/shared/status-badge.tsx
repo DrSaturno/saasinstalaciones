@@ -1,4 +1,5 @@
 import { ORDER_STATUS, SITE_STATUS } from "@/lib/domain/status";
+import { useTranslations } from "next-intl";
 import type { OrderStatus, SiteStatus } from "@/types/database";
 
 /** Chip pastel de estado — mismo lenguaje visual para órdenes y puntos. */
@@ -9,8 +10,9 @@ export function StatusBadge({
   status: OrderStatus | SiteStatus;
   kind?: "site" | "order";
 }) {
+  const t = useTranslations("Status");
   const map = kind === "order" ? ORDER_STATUS : SITE_STATUS;
-  const style = (map as Record<string, { label: string; bg: string; fg: string }>)[
+  const style = (map as Record<string, { key: Parameters<typeof t>[0]; bg: string; fg: string }>)[
     status
   ];
   if (!style) return null;
@@ -20,7 +22,7 @@ export function StatusBadge({
       className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap"
       style={{ backgroundColor: style.bg, color: style.fg }}
     >
-      {style.label}
+      {t(style.key)}
     </span>
   );
 }

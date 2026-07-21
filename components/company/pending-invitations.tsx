@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { cancelInvitation } from "@/lib/actions/team";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,8 @@ export function PendingInvitations({
 }: {
   invitations: PendingInvitation[];
 }) {
+  const t = useTranslations("PendingInvitations");
+  const format = useFormatter();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -20,7 +23,7 @@ export function PendingInvitations({
 
   const copyLink = (token: string) => {
     navigator.clipboard.writeText(`${window.location.origin}/invite/${token}`);
-    toast.success("Link copiado");
+    toast.success(t("copied"));
   };
 
   const cancel = (id: string) => {
@@ -28,7 +31,7 @@ export function PendingInvitations({
       const res = await cancelInvitation(id);
       if (res.error) toast.error(res.error);
       else {
-        toast.success("Invitación cancelada");
+        toast.success(t("cancelled"));
         router.refresh();
       }
     });
@@ -37,7 +40,7 @@ export function PendingInvitations({
   return (
     <div>
       <h2 className="mb-3 flex items-center gap-2 text-sm font-medium text-muted-foreground">
-        Invitaciones pendientes
+        {t("title")}
         <Badge variant="secondary">{invitations.length}</Badge>
       </h2>
       <div className="divide-y rounded-xl border bg-card">
@@ -49,13 +52,21 @@ export function PendingInvitations({
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{inv.email}</p>
               <p className="font-mono text-xs text-muted-foreground">
-                {inv.expired ? "Vencida" : `Vence ${new Date(inv.expiresAt).toLocaleDateString("es-AR")}`}
+                {inv.expired
+                  ? t("expired")
+                  : t("expires", {
+                      date: format.dateTime(new Date(inv.expiresAt), {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      }),
+                    })}
               </p>
             </div>
             <div className="flex items-center gap-2">
               {!inv.expired && (
                 <Button variant="outline" size="sm" onClick={() => copyLink(inv.token)}>
-                  Copiar link
+                  {t("copy")}
                 </Button>
               )}
               <Button
@@ -64,7 +75,7 @@ export function PendingInvitations({
                 disabled={pending}
                 onClick={() => cancel(inv.id)}
               >
-                Cancelar
+                {t("cancel")}
               </Button>
             </div>
           </div>

@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   createBroadcast,
@@ -31,6 +32,7 @@ export function CreateBroadcastDialog({
   projects: ProjectOption[];
   zones: string[];
 }) {
+  const t = useTranslations("CreateBroadcast");
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const [state, action, pending] = useActionState(
@@ -38,7 +40,7 @@ export function CreateBroadcastDialog({
       const next = await createBroadcast(previous, formData);
       if (next.ok) {
         setOpen(false);
-        toast.success("Búsqueda publicada");
+        toast.success(t("published"));
         router.refresh();
       }
       return next;
@@ -50,19 +52,19 @@ export function CreateBroadcastDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button disabled={!projects.length}>
-          <Plus /> Nueva búsqueda
+          <Plus /> {t("trigger")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Publicar necesidad</DialogTitle>
+          <DialogTitle>{t("title")}</DialogTitle>
           <DialogDescription>
-            Los instaladores disponibles cuya zona coincida recibirán el aviso.
+            {t("description")}
           </DialogDescription>
         </DialogHeader>
         <form action={action} className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="broadcast-project">Proyecto</Label>
+            <Label htmlFor="broadcast-project">{t("project")}</Label>
             <select
               id="broadcast-project"
               name="projectId"
@@ -70,14 +72,14 @@ export function CreateBroadcastDialog({
               className="h-9 rounded-lg border bg-background px-3 text-sm"
               defaultValue=""
             >
-              <option value="" disabled>Elegí un proyecto</option>
+              <option value="" disabled>{t("chooseProject")}</option>
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>{project.name}</option>
               ))}
             </select>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="broadcast-zone">Zona</Label>
+            <Label htmlFor="broadcast-zone">{t("zone")}</Label>
             <Input
               id="broadcast-zone"
               name="zone"
@@ -92,20 +94,20 @@ export function CreateBroadcastDialog({
           </div>
           <div className="grid grid-cols-[1fr_90px] gap-3">
             <div className="grid gap-2">
-              <Label htmlFor="broadcast-title">Título</Label>
+              <Label htmlFor="broadcast-title">{t("searchTitle")}</Label>
               <Input id="broadcast-title" name="title" maxLength={120} required />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="broadcast-slots">Cupos</Label>
+              <Label htmlFor="broadcast-slots">{t("slots")}</Label>
               <Input id="broadcast-slots" name="slots" type="number" min={1} max={50} defaultValue={1} required />
             </div>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="broadcast-description">Detalle</Label>
-            <Textarea id="broadcast-description" name="description" maxLength={1200} rows={4} placeholder="Alcance, fechas estimadas y requisitos…" />
+            <Label htmlFor="broadcast-description">{t("detail")}</Label>
+            <Textarea id="broadcast-description" name="description" maxLength={1200} rows={4} placeholder={t("detailPlaceholder")} />
           </div>
           {state.error ? <p role="alert" className="text-sm text-destructive">{state.error}</p> : null}
-          <Button type="submit" disabled={pending}>{pending ? "Publicando…" : "Publicar búsqueda"}</Button>
+          <Button type="submit" disabled={pending}>{pending ? t("publishing") : t("submit")}</Button>
         </form>
       </DialogContent>
     </Dialog>

@@ -18,17 +18,6 @@ export const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   cancelada: [],
 };
 
-/** Etiqueta del botón de acción para cada transición destino. */
-export const TRANSITION_LABEL: Record<OrderStatus, string> = {
-  pendiente: "Volver a pendiente",
-  relevamiento: "Enviar a relevamiento",
-  planificada: "Planificar",
-  en_proceso: "Iniciar trabajo",
-  en_revision: "Enviar a revisión",
-  finalizada: "Aprobar y finalizar",
-  cancelada: "Cancelar",
-};
-
 export function canTransition(from: OrderStatus, to: OrderStatus): boolean {
   return ORDER_TRANSITIONS[from]?.includes(to) ?? false;
 }

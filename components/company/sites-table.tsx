@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { useTranslations } from "next-intl";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { SITE_STATUS, SITE_STATUS_ORDER } from "@/lib/domain/status";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,8 @@ import type { SiteStatus } from "@/types/database";
 const ROW_HEIGHT = 52;
 
 export function SitesTable({ sites }: { sites: SiteRow[] }) {
+  const t = useTranslations("SitesTable");
+  const statusT = useTranslations("Status");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<SiteStatus | "all">("all");
   const [zoneFilter, setZoneFilter] = useState<string>("all");
@@ -63,7 +66,7 @@ export function SitesTable({ sites }: { sites: SiteRow[] }) {
               : "bg-card hover:border-primary/40"
           }`}
         >
-          Todos <span className="font-mono">{sites.length}</span>
+          {t("all")} <span className="font-mono">{sites.length}</span>
         </button>
         {SITE_STATUS_ORDER.filter((s) => counts[s] > 0).map((status) => (
           <button
@@ -82,7 +85,7 @@ export function SitesTable({ sites }: { sites: SiteRow[] }) {
                 : undefined
             }
           >
-            {SITE_STATUS[status].label}{" "}
+            {statusT(SITE_STATUS[status].key)}{" "}
             <span className="font-mono">{counts[status]}</span>
           </button>
         ))}
@@ -91,7 +94,7 @@ export function SitesTable({ sites }: { sites: SiteRow[] }) {
       {/* Filtros */}
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <Input
-          placeholder="Buscar por nombre, dirección, ciudad o código…"
+          placeholder={t("search")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm"
@@ -102,7 +105,7 @@ export function SitesTable({ sites }: { sites: SiteRow[] }) {
             onChange={(e) => setZoneFilter(e.target.value)}
             className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm"
           >
-            <option value="all">Todas las zonas</option>
+            <option value="all">{t("allZones")}</option>
             {zones.map((z) => (
               <option key={z} value={z}>
                 {z}
@@ -111,25 +114,25 @@ export function SitesTable({ sites }: { sites: SiteRow[] }) {
           </select>
         )}
         <span className="font-mono text-xs text-muted-foreground">
-          {filtered.length} de {sites.length}
+          {t("resultCount", { filtered: filtered.length, total: sites.length })}
         </span>
       </div>
 
       {/* Tabla virtualizada: 2000+ filas sin penalizar el scroll */}
       <div className="mt-4 overflow-hidden rounded-xl border bg-card">
         <div className="grid grid-cols-[1fr_1fr_140px_120px_130px] gap-4 border-b bg-muted/30 px-4 py-2 text-xs font-medium text-muted-foreground">
-          <span>Punto</span>
-          <span>Dirección</span>
-          <span>Ciudad</span>
-          <span>Zona</span>
-          <span>Estado</span>
+          <span>{t("site")}</span>
+          <span>{t("address")}</span>
+          <span>{t("city")}</span>
+          <span>{t("zone")}</span>
+          <span>{t("status")}</span>
         </div>
 
         {filtered.length === 0 ? (
           <p className="py-16 text-center text-sm text-muted-foreground">
             {sites.length === 0
-              ? "Este proyecto todavía no tiene puntos. Importá un CSV para cargarlos."
-              : "Ningún punto coincide con el filtro."}
+              ? t("empty")
+              : t("noMatch")}
           </p>
         ) : (
           <div ref={scrollRef} className="max-h-[600px] overflow-auto">

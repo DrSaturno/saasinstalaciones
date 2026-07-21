@@ -1,10 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
+import { getTranslations } from "next-intl/server";
 import { fetchRoster, fetchPendingInvitations } from "@/lib/data/team";
 import { RosterTable } from "@/components/company/roster-table";
 import { PendingInvitations } from "@/components/company/pending-invitations";
 import { InviteInstallerDialog } from "@/components/company/invite-installer-dialog";
 
 export default async function TeamPage() {
+  const t = await getTranslations("Team");
   const supabase = await createClient();
   const [roster, invitations] = await Promise.all([
     fetchRoster(supabase),
@@ -15,9 +17,9 @@ export default async function TeamPage() {
     <div className="mx-auto max-w-5xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Equipo</h1>
+          <h1 className="text-2xl font-bold">{t("title")}</h1>
           <p className="mt-1 text-muted-foreground">
-            Los instaladores de tu equipo pueden recibir órdenes de trabajo.
+            {t("description")}
           </p>
         </div>
         <InviteInstallerDialog />

@@ -1,27 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getFormatter, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { TaskActions } from "@/components/installer/task-actions";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { OrderStatus, OrderUpdateType } from "@/types/database";
-
-const UPDATE_LABEL: Record<OrderUpdateType, string> = {
-  checkin: "Check-in",
-  progress: "Avance",
-  blocker: "Bloqueo",
-  done: "Terminado",
-  system: "Sistema",
-};
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString("es-AR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export default async function TaskDetailPage({
   params,
@@ -29,6 +13,11 @@ export default async function TaskDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, statusT, format] = await Promise.all([
+    getTranslations("TaskDetail"),
+    getTranslations("Status"),
+    getFormatter(),
+  ]);
   const supabase = await createClient();
 
   const { data: order } = await supabase
@@ -67,7 +56,7 @@ export default async function TaskDetailPage({
         href="/tasks"
         className="text-sm text-muted-foreground hover:text-foreground"
       >
-        ← Mis tareas
+        {t("back")}
       </Link>
 
       <div className="mt-3 flex items-center gap-3">
@@ -84,7 +73,7 @@ export default async function TaskDetailPage({
           <p className="font-medium">{site?.name}</p>
           <p className="mt-1 text-sm text-muted-foreground">
             {[site?.address, site?.city, site?.state].filter(Boolean).join(", ") ||
-              "Sin dirección"}
+              t("noAddress")}
           </p>
           {order.description && (
             <p className="mt-3 whitespace-pre-wrap text-sm">{order.description}</p>
@@ -96,7 +85,7 @@ export default async function TaskDetailPage({
               rel="noopener noreferrer"
               className="mt-3 inline-block text-sm text-primary hover:underline"
             >
-              Cómo llegar →
+              {t("directions")}
             </a>
           )}
         </CardContent>
@@ -117,7 +106,7 @@ export default async function TaskDetailPage({
       {(updates ?? []).length > 0 && (
         <Card className="mt-4">
           <CardContent className="pt-6">
-            <h2 className="text-sm font-medium text-muted-foreground">Historial</h2>
+            <h2 className="text-sm font-medium text-muted-foreground">{t("history")}</h2>
             <ul className="mt-4 flex flex-col gap-4">
               {(updates ?? []).map((u) => (
                 <li key={u.id} className="flex gap-3">
@@ -125,18 +114,22 @@ export default async function TaskDetailPage({
                   <div className="min-w-0">
                     <p className="text-sm">
                       <span className="font-medium">
-                        {UPDATE_LABEL[u.type as OrderUpdateType]}
+                        {statusT(`update.${u.type as OrderUpdateType}`)}
                       </span>
                       {u.note ? ` — ${u.note}` : ""}
                     </p>
                     {Array.isArray(u.photos) && u.photos.length > 0 && (
                       <p className="text-xs text-muted-foreground">
-                        {u.photos.length} foto
-                        {u.photos.length === 1 ? "" : "s"}
+                        {t("photos", { count: u.photos.length })}
                       </p>
                     )}
                     <p className="font-mono text-xs text-muted-foreground">
-                      {formatDate(u.created_at)}
+                      {format.dateTime(new Date(u.created_at), {
+                        day: "2-digit",
+                        month: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </p>
                   </div>
                 </li>

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -43,8 +44,9 @@ export async function markAllNotificationsRead(): Promise<void> {
 }
 
 export async function savePushSubscription(input: unknown): Promise<{ error: string | null }> {
+  const t = await getTranslations("Errors");
   const parsed = subscriptionSchema.safeParse(input);
-  if (!parsed.success) return { error: "Suscripción inválida" };
+  if (!parsed.success) return { error: t("invalidSubscription") };
   try {
     const { user, supabase } = await requireUser();
     const { error } = await supabase.from("push_subscriptions").upsert(
@@ -56,8 +58,8 @@ export async function savePushSubscription(input: unknown): Promise<{ error: str
       { onConflict: "user_id,endpoint" },
     );
     return { error: error?.message ?? null };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "No se pudo activar" };
+  } catch {
+    return { error: t("pushActivation") };
   }
 }
 

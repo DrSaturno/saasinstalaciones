@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { CalendarDays, MapPin, MoreHorizontal, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   closeBroadcast,
@@ -38,13 +39,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-const APPLICATION_LABEL = {
-  applied: "Pendiente",
-  accepted: "Aceptado",
-  rejected: "No seleccionado",
-} as const;
-
 export function BroadcastCard({ broadcast }: { broadcast: ManagerBroadcast }) {
+  const t = useTranslations("BroadcastCard");
+  const format = useFormatter();
   const [editOpen, setEditOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -57,7 +54,7 @@ export function BroadcastCard({ broadcast }: { broadcast: ManagerBroadcast }) {
         toast.error(result.error);
         return;
       }
-      toast.success("Búsqueda cerrada");
+      toast.success(t("closedToast"));
       router.refresh();
     });
   };
@@ -75,7 +72,7 @@ export function BroadcastCard({ broadcast }: { broadcast: ManagerBroadcast }) {
         return;
       }
       setEditOpen(false);
-      toast.success("Búsqueda actualizada");
+      toast.success(t("updated"));
       router.refresh();
     });
   };
@@ -85,7 +82,7 @@ export function BroadcastCard({ broadcast }: { broadcast: ManagerBroadcast }) {
       <CardHeader className="border-b">
         <div className="flex items-center gap-2">
           <Badge variant={broadcast.status === "open" ? "default" : "secondary"}>
-            {broadcast.status === "open" ? "Abierta" : "Cerrada"}
+            {broadcast.status === "open" ? t("open") : t("closed")}
           </Badge>
           <span className="font-mono text-xs text-muted-foreground">{broadcast.zone}</span>
         </div>
@@ -94,14 +91,14 @@ export function BroadcastCard({ broadcast }: { broadcast: ManagerBroadcast }) {
           <CardAction>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon-sm" aria-label="Opciones de búsqueda">
+                <Button variant="ghost" size="icon-sm" aria-label={t("options")}>
                   <MoreHorizontal />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => setEditOpen(true)}>Editar</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setEditOpen(true)}>{t("edit")}</DropdownMenuItem>
                 <DropdownMenuItem variant="destructive" disabled={pending} onSelect={close}>
-                  Cerrar búsqueda
+                  {t("close")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -112,13 +109,13 @@ export function BroadcastCard({ broadcast }: { broadcast: ManagerBroadcast }) {
         {broadcast.description ? <p className="text-sm leading-6 text-muted-foreground">{broadcast.description}</p> : null}
         <div className="mt-4 grid grid-cols-3 gap-3 rounded-lg bg-muted/60 p-3 text-xs">
           <span className="flex min-w-0 items-center gap-1.5"><MapPin className="size-3.5 text-primary" /><span className="truncate">{broadcast.projectName}</span></span>
-          <span className="flex items-center gap-1.5"><Users className="size-3.5 text-primary" />{broadcast.acceptedCount}/{broadcast.slots} cupos</span>
-          <span className="flex items-center gap-1.5"><CalendarDays className="size-3.5 text-primary" />{new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short" }).format(new Date(broadcast.createdAt))}</span>
+          <span className="flex items-center gap-1.5"><Users className="size-3.5 text-primary" />{broadcast.acceptedCount}/{t("slots", { count: broadcast.slots })}</span>
+          <span className="flex items-center gap-1.5"><CalendarDays className="size-3.5 text-primary" />{format.dateTime(new Date(broadcast.createdAt), { day: "2-digit", month: "short" })}</span>
         </div>
 
         <div className="mt-5">
           <div className="mb-2 flex items-center justify-between">
-            <h3 className="text-sm font-medium">Candidatos</h3>
+            <h3 className="text-sm font-medium">{t("candidates")}</h3>
             <span className="font-mono text-xs text-muted-foreground">{applicants.length}</span>
           </div>
           {applicants.length ? (
@@ -128,26 +125,26 @@ export function BroadcastCard({ broadcast }: { broadcast: ManagerBroadcast }) {
               ))}
             </div>
           ) : (
-            <p className="rounded-lg border border-dashed p-5 text-center text-sm text-muted-foreground">Sin postulaciones todavía.</p>
+            <p className="rounded-lg border border-dashed p-5 text-center text-sm text-muted-foreground">{t("emptyApplicants")}</p>
           )}
         </div>
       </CardContent>
       <CardFooter className="justify-between text-xs text-muted-foreground">
-        <span>{broadcast.applicants.filter((item) => item.status === "rejected").length} descartadas</span>
-        <span>{broadcast.availableOrders.length} órdenes disponibles</span>
+        <span>{t("discarded", { count: broadcast.applicants.filter((item) => item.status === "rejected").length })}</span>
+        <span>{t("availableOrders", { count: broadcast.availableOrders.length })}</span>
       </CardFooter>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar búsqueda</DialogTitle>
-            <DialogDescription>La zona y el proyecto no cambian después de publicar.</DialogDescription>
+            <DialogTitle>{t("editTitle")}</DialogTitle>
+            <DialogDescription>{t("editDescription")}</DialogDescription>
           </DialogHeader>
           <form action={save} className="grid gap-4">
-            <div className="grid gap-2"><Label htmlFor={`title-${broadcast.id}`}>Título</Label><Input id={`title-${broadcast.id}`} name="title" defaultValue={broadcast.title} maxLength={120} required /></div>
-            <div className="grid gap-2"><Label htmlFor={`slots-${broadcast.id}`}>Cupos</Label><Input id={`slots-${broadcast.id}`} name="slots" type="number" min={Math.max(1, broadcast.acceptedCount)} max={50} defaultValue={broadcast.slots} required /></div>
-            <div className="grid gap-2"><Label htmlFor={`description-${broadcast.id}`}>Detalle</Label><Textarea id={`description-${broadcast.id}`} name="description" defaultValue={broadcast.description} maxLength={1200} rows={4} /></div>
-            <Button type="submit" disabled={pending}>{pending ? "Guardando…" : "Guardar cambios"}</Button>
+            <div className="grid gap-2"><Label htmlFor={`title-${broadcast.id}`}>{t("titleLabel")}</Label><Input id={`title-${broadcast.id}`} name="title" defaultValue={broadcast.title} maxLength={120} required /></div>
+            <div className="grid gap-2"><Label htmlFor={`slots-${broadcast.id}`}>{t("slotsLabel")}</Label><Input id={`slots-${broadcast.id}`} name="slots" type="number" min={Math.max(1, broadcast.acceptedCount)} max={50} defaultValue={broadcast.slots} required /></div>
+            <div className="grid gap-2"><Label htmlFor={`description-${broadcast.id}`}>{t("detail")}</Label><Textarea id={`description-${broadcast.id}`} name="description" defaultValue={broadcast.description} maxLength={1200} rows={4} /></div>
+            <Button type="submit" disabled={pending}>{pending ? t("saving") : t("save")}</Button>
           </form>
         </DialogContent>
       </Dialog>
@@ -162,6 +159,9 @@ function ApplicantRow({
   broadcast: ManagerBroadcast;
   applicant: ManagerBroadcast["applicants"][number];
 }) {
+  const t = useTranslations("BroadcastCard");
+  const common = useTranslations("Common");
+  const statusT = useTranslations("Status");
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   const reject = () => startTransition(async () => {
@@ -170,7 +170,7 @@ function ApplicantRow({
       toast.error(result.error);
       return;
     }
-    toast.success("Postulación descartada");
+    toast.success(t("discardedToast"));
     router.refresh();
   });
 
@@ -180,16 +180,16 @@ function ApplicantRow({
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">{applicant.name}</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            <span className="text-warning">★</span> {applicant.ratingCount ? applicant.ratingAvg.toFixed(1) : "Nuevo"} · {applicant.ratingCount} reseñas
+            <span className="text-warning">★</span> {applicant.ratingCount ? applicant.ratingAvg.toFixed(1) : common("new")} · {t("reviews", { count: applicant.ratingCount })}
           </p>
         </div>
-        <Badge variant={applicant.status === "accepted" ? "default" : "outline"}>{APPLICATION_LABEL[applicant.status]}</Badge>
+        <Badge variant={applicant.status === "accepted" ? "default" : "outline"}>{statusT(`application.${applicant.status}`)}</Badge>
       </div>
       {applicant.message ? <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">“{applicant.message}”</p> : null}
       {applicant.status === "applied" && broadcast.status === "open" ? (
         <div className="mt-3 flex gap-2">
           <AcceptApplicationDialog broadcastId={broadcast.id} installerId={applicant.installerId} installerName={applicant.name} orders={broadcast.availableOrders} />
-          <Button size="sm" variant="ghost" disabled={pending} onClick={reject}>Descartar</Button>
+          <Button size="sm" variant="ghost" disabled={pending} onClick={reject}>{t("discard")}</Button>
         </div>
       ) : null}
     </div>

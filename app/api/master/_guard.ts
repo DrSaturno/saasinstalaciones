@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -12,6 +13,7 @@ export async function requirePlatformAdmin(): Promise<
   | { admin: ReturnType<typeof createAdminClient>; userId: string; error?: never }
   | { admin?: never; userId?: never; error: NextResponse }
 > {
+  const t = await getTranslations("Errors");
   const supabase = await createClient();
   const {
     data: { user },
@@ -19,7 +21,7 @@ export async function requirePlatformAdmin(): Promise<
 
   if (!user) {
     return {
-      error: NextResponse.json({ error: "No autenticado" }, { status: 401 }),
+      error: NextResponse.json({ error: t("notAuthenticated") }, { status: 401 }),
     };
   }
 
@@ -32,7 +34,7 @@ export async function requirePlatformAdmin(): Promise<
 
   if (profile?.role !== "platform_admin") {
     return {
-      error: NextResponse.json({ error: "Acceso denegado" }, { status: 403 }),
+      error: NextResponse.json({ error: t("accessDenied") }, { status: 403 }),
     };
   }
 

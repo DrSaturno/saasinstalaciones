@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { enqueue } from "@/lib/offline/sync";
 import { notifyQueued } from "@/lib/offline/use-sync";
@@ -27,6 +28,7 @@ function makePhotos(companyId: string, orderId: string, files: File[]): PendingP
 }
 
 export function TaskActions({ orderId, companyId, status: initialStatus }: Props) {
+  const t = useTranslations("TaskActions");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [status, setStatus] = useState<OrderStatus>(initialStatus);
@@ -39,7 +41,7 @@ export function TaskActions({ orderId, companyId, status: initialStatus }: Props
     setNote("");
     setFiles([]);
     notifyQueued();
-    toast.success(online() ? msg : `${msg} · se enviará al recuperar señal`);
+    toast.success(online() ? msg : t("queued", { message: msg }));
     // Online: refrescamos para traer el historial real. Offline: no-op (la UI
     // ya se movió de forma optimista con setStatus).
     if (online()) setTimeout(() => router.refresh(), 400);
@@ -53,7 +55,7 @@ export function TaskActions({ orderId, companyId, status: initialStatus }: Props
         orderId,
         companyId,
         updateType: "checkin",
-        note: "Trabajo iniciado",
+        note: t("startedNote"),
       });
       await enqueue({
         id: crypto.randomUUID(),
@@ -62,13 +64,13 @@ export function TaskActions({ orderId, companyId, status: initialStatus }: Props
         toStatus: "en_proceso",
       });
       setStatus("en_proceso");
-      done("Trabajo iniciado");
+      done(t("started"));
     });
   };
 
   const saveProgress = (type: "progress" | "blocker") => {
     if (!note.trim() && files.length === 0) {
-      toast.error("Escribí una nota o adjuntá una foto.");
+      toast.error(t("missingContent"));
       return;
     }
     const photos = makePhotos(companyId, orderId, files);
@@ -85,7 +87,7 @@ export function TaskActions({ orderId, companyId, status: initialStatus }: Props
         },
         photos,
       );
-      done(type === "blocker" ? "Bloqueo registrado" : "Avance registrado");
+      done(type === "blocker" ? t("blockerSaved") : t("progressSaved"));
     });
   };
 
@@ -99,7 +101,7 @@ export function TaskActions({ orderId, companyId, status: initialStatus }: Props
           orderId,
           companyId,
           updateType: "done",
-          note: note.trim() || "Trabajo terminado",
+          note: note.trim() || t("finishedNote"),
           photoIds: photos.map((p) => p.id),
         },
         photos,
@@ -111,14 +113,14 @@ export function TaskActions({ orderId, companyId, status: initialStatus }: Props
         toStatus: "en_revision",
       });
       setStatus("en_revision");
-      done("Enviado a revisión");
+      done(t("sentReview"));
     });
   };
 
   if (status === "planificada") {
     return (
       <Button onClick={start} disabled={pending} className="w-full" size="lg">
-        {pending ? "Iniciando…" : "Iniciar trabajo"}
+        {pending ? t("starting") : t("start")}
       </Button>
     );
   }
@@ -127,7 +129,7 @@ export function TaskActions({ orderId, companyId, status: initialStatus }: Props
     return (
       <div className="flex flex-col gap-4">
         <Textarea
-          placeholder="Contá cómo viene el trabajo…"
+          placeholder={t("notePlaceholder")}
           value={note}
           onChange={(e) => setNote(e.target.value)}
           rows={3}
@@ -140,7 +142,7 @@ export function TaskActions({ orderId, companyId, status: initialStatus }: Props
             disabled={pending}
             className="flex-1"
           >
-            Guardar avance
+            {t("saveProgress")}
           </Button>
           <Button
             variant="outline"
@@ -148,11 +150,11 @@ export function TaskActions({ orderId, companyId, status: initialStatus }: Props
             disabled={pending}
             className="flex-1"
           >
-            Reportar bloqueo
+            {t("reportBlocker")}
           </Button>
         </div>
         <Button onClick={finish} disabled={pending} size="lg">
-          {pending ? "Enviando…" : "Marcar terminado"}
+          {pending ? t("sending") : t("markDone")}
         </Button>
       </div>
     );
@@ -161,7 +163,7 @@ export function TaskActions({ orderId, companyId, status: initialStatus }: Props
   if (status === "en_revision") {
     return (
       <p className="text-sm text-muted-foreground">
-        Enviado a revisión. La empresa lo va a aprobar.
+        {t("underReview")}
       </p>
     );
   }
@@ -169,8 +171,8 @@ export function TaskActions({ orderId, companyId, status: initialStatus }: Props
   return (
     <p className="text-sm text-muted-foreground">
       {status === "finalizada"
-        ? "Trabajo finalizado. ¡Gracias!"
-        : "La empresa todavía no habilitó el inicio de este trabajo."}
+        ? t("completed")
+        : t("notReady")}
     </p>
   );
 }
@@ -184,6 +186,7 @@ function FilePicker({
   onChange: (files: File[]) => void;
   disabled: boolean;
 }) {
+  const t = useTranslations("TaskActions");
   return (
     <label className="flex cursor-pointer items-center justify-center rounded-lg border border-dashed border-input py-3 text-sm text-muted-foreground transition-colors hover:border-primary/40">
       <input
@@ -196,8 +199,8 @@ function FilePicker({
         onChange={(e) => onChange([...(e.target.files ?? [])])}
       />
       {files.length > 0
-        ? `${files.length} foto${files.length === 1 ? "" : "s"} lista${files.length === 1 ? "" : "s"}`
-        : "Sacar o adjuntar fotos"}
+        ? t("photosReady", { count: files.length })
+        : t("pickPhotos")}
     </label>
   );
 }

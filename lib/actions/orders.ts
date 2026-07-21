@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
@@ -34,6 +35,7 @@ export async function createOrder(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const t = await getTranslations("Errors");
   const parsed = createOrderSchema.safeParse({
     siteId: formData.get("siteId"),
     title: formData.get("title"),
@@ -41,7 +43,7 @@ export async function createOrder(
     scheduledDate: formData.get("scheduledDate") || undefined,
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+    return { error: t("invalidData") };
   }
 
   try {
@@ -55,7 +57,7 @@ export async function createOrder(
       .eq("id", parsed.data.siteId)
       .eq("company_id", companyId)
       .single();
-    if (!site) return { error: "Punto no encontrado" };
+    if (!site) return { error: t("siteNotFound") };
 
     const { error } = await supabase.from("work_orders").insert({
       company_id: companyId,
@@ -71,8 +73,8 @@ export async function createOrder(
 
     revalidatePath("/orders");
     revalidatePath(`/projects/${site.project_id}`);
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error inesperado" };
+  } catch {
+    return { error: t("unexpected") };
   }
   return { error: null, ok: true };
 }
@@ -97,15 +99,19 @@ export async function createOrdersForProject(
   projectId: string,
   titleTemplate: string,
 ): Promise<BulkResult> {
+  const [t, createOrdersT] = await Promise.all([
+    getTranslations("Errors"),
+    getTranslations("CreateOrders"),
+  ]);
   let ctx;
   try {
     ctx = await requireManager();
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error", created: 0, skipped: 0 };
+  } catch {
+    return { error: t("accessDenied"), created: 0, skipped: 0 };
   }
   const { supabase, companyId, user } = ctx;
 
-  const title = titleTemplate.trim() || "Instalación";
+  const title = titleTemplate.trim() || createOrdersT("defaultTitle");
 
   const { data: project } = await supabase
     .from("projects")
@@ -114,7 +120,7 @@ export async function createOrdersForProject(
     .eq("company_id", companyId)
     .single();
   if (!project) {
-    return { error: "Proyecto no encontrado", created: 0, skipped: 0 };
+    return { error: t("projectNotFound"), created: 0, skipped: 0 };
   }
 
   // Todos los puntos del proyecto (paginado: PostgREST corta en 1000).
@@ -161,7 +167,7 @@ export async function createOrdersForProject(
     const { error } = await supabase.from("work_orders").insert(batch);
     if (error) {
       return {
-        error: `Se crearon ${created} órdenes y falló el lote siguiente: ${error.message}`,
+        error: t("orderBatch", { count: created, error: error.message }),
         created,
         skipped,
       };
@@ -183,6 +189,10 @@ export async function transitionOrder(
   toStatus: OrderStatus,
   note?: string,
 ): Promise<ActionState> {
+  const [t, statusT] = await Promise.all([
+    getTranslations("Errors"),
+    getTranslations("Status"),
+  ]);
   try {
     const { supabase, companyId } = await requireManager();
 
@@ -192,12 +202,15 @@ export async function transitionOrder(
       .eq("id", orderId)
       .eq("company_id", companyId)
       .single();
-    if (!order) return { error: "Orden no encontrada" };
+    if (!order) return { error: t("orderNotFound") };
 
     // Validamos acá para dar un error claro; el trigger valida igual en la DB.
     if (!canTransition(order.status, toStatus)) {
       return {
-        error: `No se puede pasar de "${order.status}" a "${toStatus}".`,
+        error: t("invalidOrderTransition", {
+          from: statusT(`order.${order.status}`),
+          to: statusT(`order.${toStatus}`),
+        }),
       };
     }
 
@@ -216,15 +229,18 @@ export async function transitionOrder(
       company_id: companyId,
       type: "system",
       note: note?.trim()
-        ? `Estado → ${toStatus}: ${note.trim()}`
-        : `Estado → ${toStatus}`,
+        ? t("systemStatusChangeNote", {
+            status: statusT(`order.${toStatus}`),
+            note: note.trim(),
+          })
+        : t("systemStatusChange", { status: statusT(`order.${toStatus}`) }),
     });
 
     revalidatePath("/orders");
     revalidatePath(`/orders/${orderId}`);
     revalidatePath(`/projects/${order.project_id}`);
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error inesperado" };
+  } catch {
+    return { error: t("unexpected") };
   }
   return { error: null, ok: true };
 }
@@ -237,6 +253,7 @@ export async function assignInstaller(
   orderId: string,
   installerId: string | null,
 ): Promise<ActionState> {
+  const t = await getTranslations("Errors");
   try {
     const { supabase, companyId } = await requireManager();
 
@@ -250,7 +267,7 @@ export async function assignInstaller(
         .eq("status", "active")
         .single();
       if (!roster) {
-        return { error: "Ese instalador no está en tu equipo activo." };
+        return { error: t("installerNotActive") };
       }
     }
 
@@ -267,8 +284,8 @@ export async function assignInstaller(
 
     revalidatePath("/orders");
     revalidatePath(`/orders/${orderId}`);
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error inesperado" };
+  } catch {
+    return { error: t("unexpected") };
   }
   return { error: null, ok: true };
 }

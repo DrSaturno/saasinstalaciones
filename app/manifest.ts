@@ -1,16 +1,21 @@
 import type { MetadataRoute } from "next";
+import { getLocale, getTranslations } from "next-intl/server";
 
-export default function manifest(): MetadataRoute.Manifest {
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const [locale, t] = await Promise.all([
+    getLocale(),
+    getTranslations("Metadata"),
+  ]);
   return {
     name: "Instala Pro",
     short_name: "Instala Pro",
-    description: "Gestión de instalaciones para equipos de campo.",
+    description: t("manifestDescription"),
     start_url: "/tasks",
     display: "standalone",
     background_color: "#fafafa",
     theme_color: "#2597d0",
     orientation: "portrait",
-    lang: "es",
+    lang: locale,
     icons: [
       {
         src: "/icons/icon-192.png",

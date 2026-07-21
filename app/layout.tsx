@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Fragment_Mono } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "./providers";
 import "./globals.css";
@@ -15,16 +17,18 @@ const fragmentMono = Fragment_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Instala Pro",
-  description:
-    "Gestión de equipos de instalación de gráfica de gran formato para proyectos masivos.",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("Metadata");
+  return {
     title: "Instala Pro",
-  },
-};
+    description: t("description"),
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: "Instala Pro",
+    },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#2597d0",
@@ -34,18 +38,22 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+
   return (
     <html
-      lang="es"
+      lang={locale}
       className={`${inter.variable} ${fragmentMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
-        <Providers>{children}</Providers>
+        <NextIntlClientProvider>
+          <Providers>{children}</Providers>
+        </NextIntlClientProvider>
         <Toaster />
       </body>
     </html>

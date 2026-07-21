@@ -1,4 +1,7 @@
+import "server-only";
+
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getTranslations } from "next-intl/server";
 import type { Database, OrderStatus } from "@/types/database";
 
 export type OrderRow = {
@@ -105,6 +108,7 @@ export async function fetchActiveRoster(
 ): Promise<
   { id: string; name: string; ratingAvg: number; ratingCount: number }[]
 > {
+  const t = await getTranslations("DataFallbacks");
   const { data: roster } = await supabase
     .from("company_installers")
     .select("installer_id")
@@ -126,7 +130,7 @@ export async function fetchActiveRoster(
     const installer = installerById.get(id);
     return {
       id,
-      name: profileById.get(id)?.full_name ?? "Instalador",
+      name: profileById.get(id)?.full_name ?? t("installer"),
       ratingAvg: Number(installer?.rating_avg ?? 0),
       ratingCount: installer?.rating_count ?? 0,
     };

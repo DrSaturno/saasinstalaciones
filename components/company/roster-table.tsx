@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { setRosterStatus } from "@/lib/actions/team";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import {
 import type { RosterMember } from "@/lib/data/team";
 
 export function RosterTable({ members }: { members: RosterMember[] }) {
+  const t = useTranslations("Roster");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -32,7 +34,9 @@ export function RosterTable({ members }: { members: RosterMember[] }) {
         return;
       }
       toast.success(
-        status === "removed" ? `${name} salió del equipo` : `${name} reactivado`,
+        status === "removed"
+          ? t("removed", { name })
+          : t("reactivated", { name }),
       );
       router.refresh();
     });
@@ -45,7 +49,7 @@ export function RosterTable({ members }: { members: RosterMember[] }) {
     return (
       <div className="rounded-xl border bg-card py-16 text-center">
         <p className="text-sm text-muted-foreground">
-          Todavía no tenés instaladores en tu equipo. Invitá al primero.
+          {t("empty")}
         </p>
       </div>
     );
@@ -71,7 +75,7 @@ export function RosterTable({ members }: { members: RosterMember[] }) {
             disabled={pending}
             onClick={() => change(m.installerId, "active", m.name)}
           >
-            Reactivar
+            {t("reactivate")}
           </Button>
         ) : (
           <Button
@@ -80,7 +84,7 @@ export function RosterTable({ members }: { members: RosterMember[] }) {
             disabled={pending}
             onClick={() => change(m.installerId, "removed", m.name)}
           >
-            Quitar
+            {t("remove")}
           </Button>
         )}
       </TableCell>
@@ -93,11 +97,11 @@ export function RosterTable({ members }: { members: RosterMember[] }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Instalador</TableHead>
-              <TableHead>Zonas</TableHead>
-              <TableHead className="text-right">Rating</TableHead>
-              <TableHead className="text-right">Órdenes abiertas</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
+              <TableHead>{t("installer")}</TableHead>
+              <TableHead>{t("zones")}</TableHead>
+              <TableHead className="text-right">{t("rating")}</TableHead>
+              <TableHead className="text-right">{t("openOrders")}</TableHead>
+              <TableHead className="text-right">{t("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -111,7 +115,7 @@ export function RosterTable({ members }: { members: RosterMember[] }) {
       {removed.length > 0 && (
         <div>
           <h2 className="mb-3 flex items-center gap-2 text-sm font-medium text-muted-foreground">
-            Fuera del equipo
+            {t("outside")}
             <Badge variant="secondary">{removed.length}</Badge>
           </h2>
           <div className="overflow-x-auto rounded-xl border bg-card opacity-70">

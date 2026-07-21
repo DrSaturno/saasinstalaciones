@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
@@ -27,6 +28,7 @@ async function installerTransition(
   orderId: string,
   toStatus: OrderStatus,
 ): Promise<ActionState> {
+  const t = await getTranslations("Errors");
   const { supabase, user } = await requireInstaller();
 
   const { data: order } = await supabase
@@ -35,11 +37,11 @@ async function installerTransition(
     .eq("id", orderId)
     .single();
   if (!order || order.assigned_installer_id !== user.id) {
-    return { error: "Esta orden no está asignada a vos." };
+    return { error: t("orderNotAssigned") };
   }
   if (order.status === toStatus) return { error: null, ok: true }; // idempotente
   if (!canTransition(order.status, toStatus)) {
-    return { error: "No podés hacer ese cambio en este momento." };
+    return { error: t("invalidTransition") };
   }
 
   const { error } = await supabase
@@ -69,8 +71,9 @@ export async function addUpdate(input: {
   note?: string;
   photos?: string[];
 }): Promise<ActionState> {
+  const t = await getTranslations("Errors");
   const parsed = updateSchema.safeParse(input);
-  if (!parsed.success) return { error: "Datos de avance inválidos" };
+  if (!parsed.success) return { error: t("invalidUpdate") };
 
   try {
     const { supabase, user } = await requireInstaller();
@@ -81,7 +84,7 @@ export async function addUpdate(input: {
       .eq("id", parsed.data.orderId)
       .single();
     if (!order || order.assigned_installer_id !== user.id) {
-      return { error: "Esta orden no está asignada a vos." };
+      return { error: t("orderNotAssigned") };
     }
 
     const { error } = await supabase.from("order_updates").upsert(
@@ -102,8 +105,8 @@ export async function addUpdate(input: {
     await requestPushDelivery(supabase, "update_received", parsed.data.updateId);
 
     revalidatePath(`/tasks/${parsed.data.orderId}`);
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error inesperado" };
+  } catch {
+    return { error: t("unexpected") };
   }
   return { error: null, ok: true };
 }
@@ -113,15 +116,19 @@ export async function startTask(
   orderId: string,
   checkinId: string,
 ): Promise<ActionState> {
+  const [t, taskT] = await Promise.all([
+    getTranslations("Errors"),
+    getTranslations("TaskActions"),
+  ]);
   try {
     const res = await installerTransition(orderId, "en_proceso");
     if (res.error) return res;
-    await addUpdate({ orderId, updateId: checkinId, type: "checkin", note: "Trabajo iniciado" });
+    await addUpdate({ orderId, updateId: checkinId, type: "checkin", note: taskT("startedNote") });
     revalidatePath("/tasks");
     revalidatePath(`/tasks/${orderId}`);
     return { error: null, ok: true };
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error inesperado" };
+  } catch {
+    return { error: t("unexpected") };
   }
 }
 
@@ -132,14 +139,18 @@ export async function finishTask(
   note?: string,
   photos?: string[],
 ): Promise<ActionState> {
+  const [t, taskT] = await Promise.all([
+    getTranslations("Errors"),
+    getTranslations("TaskActions"),
+  ]);
   try {
-    await addUpdate({ orderId, updateId: doneId, type: "done", note: note ?? "Trabajo terminado", photos });
+    await addUpdate({ orderId, updateId: doneId, type: "done", note: note ?? taskT("finishedNote"), photos });
     const res = await installerTransition(orderId, "en_revision");
     if (res.error) return res;
     revalidatePath("/tasks");
     revalidatePath(`/tasks/${orderId}`);
     return { error: null, ok: true };
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error inesperado" };
+  } catch {
+    return { error: t("unexpected") };
   }
 }

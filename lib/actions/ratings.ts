@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { getCurrentUser } from "@/lib/auth";
 import { ratingInputSchema } from "@/lib/domain/ratings";
 import { createClient } from "@/lib/supabase/server";
@@ -25,9 +26,10 @@ export async function rateInstaller(
   stars: number,
   comment: string,
 ): Promise<RatingActionState> {
+  const t = await getTranslations("Errors");
   const parsed = ratingInputSchema.safeParse({ orderId, stars, comment });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+    return { error: t("invalidData") };
   }
 
   try {
@@ -39,12 +41,12 @@ export async function rateInstaller(
       .eq("company_id", companyId)
       .single();
 
-    if (!order) return { error: "Orden no encontrada" };
+    if (!order) return { error: t("orderNotFound") };
     if (order.status !== "finalizada") {
-      return { error: "La orden debe estar finalizada antes de calificar" };
+      return { error: t("orderMustBeCompleted") };
     }
     if (!order.assigned_installer_id) {
-      return { error: "La orden no tiene un instalador asignado" };
+      return { error: t("orderWithoutInstaller") };
     }
 
     const { data: existing } = await supabase
@@ -52,7 +54,7 @@ export async function rateInstaller(
       .select("id")
       .eq("order_id", order.id)
       .maybeSingle();
-    if (existing) return { error: "Esta orden ya fue calificada" };
+    if (existing) return { error: t("alreadyRated") };
 
     const { error } = await supabase.from("ratings").insert({
       order_id: order.id,
@@ -63,7 +65,7 @@ export async function rateInstaller(
     });
     if (error) {
       if (error.code === "23505") {
-        return { error: "Esta orden ya fue calificada" };
+        return { error: t("alreadyRated") };
       }
       return { error: error.message };
     }
@@ -72,9 +74,9 @@ export async function rateInstaller(
     revalidatePath("/team");
     revalidatePath("/profile");
     return { error: null, ok: true };
-  } catch (error) {
+  } catch {
     return {
-      error: error instanceof Error ? error.message : "Error inesperado",
+      error: t("unexpected"),
     };
   }
 }

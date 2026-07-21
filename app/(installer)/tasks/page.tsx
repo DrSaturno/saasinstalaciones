@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { fetchMyTasks } from "@/lib/data/tasks";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { isTerminal } from "@/lib/domain/transitions";
 
 export default async function InstallerTasks() {
+  const t = await getTranslations("InstallerTasks");
   const supabase = await createClient();
   const tasks = await fetchMyTasks(supabase);
 
@@ -13,15 +15,15 @@ export default async function InstallerTasks() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-bold">Mis tareas</h1>
+      <h1 className="text-2xl font-bold">{t("title")}</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Las órdenes asignadas a vos.
+        {t("description")}
       </p>
 
       {tasks.length === 0 ? (
         <div className="mt-8 rounded-xl border bg-card py-16 text-center">
           <p className="text-sm text-muted-foreground">
-            No tenés tareas asignadas por ahora.
+            {t("empty")}
           </p>
         </div>
       ) : (
@@ -33,7 +35,7 @@ export default async function InstallerTasks() {
           {closed.length > 0 && (
             <>
               <h2 className="mt-6 text-sm font-medium text-muted-foreground">
-                Cerradas
+                {t("closed")}
               </h2>
               {closed.map((t) => (
                 <TaskCard key={t.id} task={t} muted />
