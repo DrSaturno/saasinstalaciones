@@ -1,6 +1,6 @@
 # Instala Pro — Estado del proyecto
 
-> Última sesión: 2026-07-20 · Próximo paso: **13 — Landing + pulido**
+> Última sesión: 2026-07-20 · Próximo paso: **14 — Deploy + auditoría `/cyber-neo`**
 > Deploy a Vercel: a cargo del usuario; todavía no verificado
 
 Registro de avance para retomar la construcción. El plan completo (16 secciones,
@@ -186,6 +186,23 @@ Datos demo: 1 empresa, 1 proyecto ("Refacción Estaciones Norte"), 20 puntos,
   El broadcast y las notificaciones temporales se eliminaron, y el perfil volvió
   a `es`; la prueba terminó sin residuos.
 
+- [x] **13 — Landing + pulido.** Landing pública rediseñada y presentable a un
+  prospecto (`app/page.tsx`): header con marca + selector de idioma + Ingresar,
+  hero con badge/CTAs, sección "para quién", 3 pilares (empresa/instalador/
+  control), grid de 6 features, CTA final (mailto ventas) y footer. Todo vía
+  `next-intl` (namespace `Landing` ampliado en es+pt, con paridad testeada).
+  **Estados globales nuevos:** `app/error.tsx` (boundary localizado con
+  reintento), `app/not-found.tsx` (404 localizado), `app/global-error.tsx`
+  (fallback último con diccionario embebido es/pt — única excepción a la regla
+  #4, documentada). **Skeletons de carga** por área: `(company)/loading.tsx`,
+  `(installer)/loading.tsx`, `(master)/loading.tsx`. **Iconos PWA finales:**
+  grilla 3×3 de puntos sobre la marca (192/512 + apple-touch-icon 180),
+  enlazados en metadata (`icon`, `apple`). Namespace `AppStates` en es+pt.
+  **Verificado E2E:** 23 tests (incluye paridad i18n), lint 0 errores, build de
+  producción; landing en es y pt (`lang="pt-BR"`, textos traducidos), 404
+  localizado para usuario autenticado, sin overflow a 375px ni en desktop, sin
+  errores de consola, manifest sirviendo los 3 iconos. Cuentas demo sin cambios.
+
 ## Activación pendiente del Paso 11
 
 1. Generar un nuevo par de claves VAPID y guardar en Supabase Edge Functions
@@ -198,8 +215,22 @@ Después de esto, verificar aceptar/rechazar la postulación demo desde empresa 
 el push real en un dispositivo. La bandeja in-app queda activa apenas se aplica
 la migración, aun antes de configurar VAPID.
 
+## Próximo: Paso 14 — Deploy + auditoría de seguridad
+
+Último paso del blueprint. A hacer:
+1. Verificar el deploy en Vercel (build de prod ya pasa en local). Configurar
+   las env vars que falten (VAPID público — ver "Activación pendiente del Paso
+   11" arriba — y `RESEND_API_KEY` si se quiere email de invitaciones).
+2. Activar Web Push real: generar claves VAPID, cargar secretos en Supabase Edge
+   Functions, desplegar `send-event-push`, setear `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
+   en Vercel y redeploy.
+3. Correr auditoría de seguridad con `/cyber-neo .` antes del release: repasar
+   RLS de cada tabla, aislamiento de `service_role` (solo `/api/master`),
+   idempotencia offline, y que no se filtren tokens/URLs firmadas.
+4. Smoke test end-to-end en la URL de producción con los 3 roles.
+
 ## Pasos siguientes (resumen)
-13 — Landing + pulido · 14 — Deploy + `/cyber-neo`.
+14 — Deploy + `/cyber-neo` (último).
 
 ---
 
