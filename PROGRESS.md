@@ -2,9 +2,9 @@
 
 > Última sesión: 2026-07-21 · Estado: **producto desplegado y en producción
 > (Pasos 1-14 completos + mejoras post-lanzamiento).**
-> Último cambio funcional en `main`: `2212ae1` — ya deployado en Vercel
-> (dpl READY, verificado en `saasinstalaciones.vercel.app`). Handoff
-> reconciliado con Supabase el 2026-07-21.
+> Último cambio funcional en `main`: `db58d21` — ficha avanzada de órdenes.
+> Migraciones aplicadas en Supabase y deploy de producción
+> `dpl_CA7KUAQADrog4Jef8RnnsshACU94` READY en Vercel.
 
 Registro de avance para retomar la construcción. El plan completo (16 secciones,
 14 pasos) está en [`../BLUEPRINT.md`](../BLUEPRINT.md). Las reglas del proyecto
@@ -59,7 +59,7 @@ TanStack Query/Table/Virtual · next-intl (es-AR/pt-BR) · Vitest · pnpm.
 cd instalapro
 pnpm install          # node-linker=hoisted, ver nota de entorno abajo
 pnpm dev              # http://localhost:3000
-pnpm test             # 27 tests
+pnpm test             # 34 tests
 pnpm build            # verificación completa de tipos
 ```
 Requiere `instalapro/.env.local` con las 3 claves de Supabase (URL, anon,
@@ -278,9 +278,36 @@ Datos demo: 1 empresa, 1 proyecto ("Refacción Estaciones Norte"), 20 puntos,
 - ⏳ Para activar el envío real falta verificar un dominio en Resend y definir en
   Vercel `RESEND_FROM_EMAIL` (por ejemplo,
   `Instala Pro <invitaciones@tu-dominio.com>`), seguido de un redeploy.
-- **Validación:** 27 tests, TypeScript, lint sin errores y build de producción.
+- **Validación:** 34 tests, TypeScript, lint sin errores y build de producción.
 
 ### Mejoras post-lanzamiento
+
+- **Ficha avanzada de órdenes — EN PRODUCCIÓN (2026-07-21, commit `db58d21`).**
+  Se tomó `../proyecto1 ANTIGRAVITY-PRUEBA-2-main` como referencia funcional
+  (sin copiar código) y se reemplazó el alta mínima por una ficha operativa
+  completa en `/orders`: proyecto/cliente y punto, título, estado inicial
+  controlado, fechas de inicio/fin, prioridad, lugar techado, descripción,
+  requisitos logísticos, flete y detalle, importe con moneda ARS/BRL, y hasta
+  10 imágenes/PDF de 10 MB. El selector permite elegir **un instalador
+  responsable** exclusivamente del roster activo; se mantiene ese único
+  responsable porque la PWA, RLS, historial y calificación de cada orden están
+  ligados a una persona. La asignación inicial ahora genera la misma
+  notificación in-app que una asignación posterior.
+
+  Los adjuntos suben directo al bucket privado `evidence` para no pasar archivos
+  grandes por Server Actions/Vercel, se registran en `order_attachments` con
+  `company_id`, FK compuesta y RLS de manager/instalador asignado, y se muestran
+  con URLs firmadas tanto en el detalle de empresa como en `/tasks/[id]`.
+  Migraciones `20260721000001_order_intake.sql` y
+  `20260721000002_order_assignment_on_create.sql` aplicadas. También se
+  reconciliaron en `supabase_migrations.schema_migrations` las cinco migraciones
+  anteriores que estaban aplicadas manualmente, por lo que `supabase db push`
+  vuelve a ser la vía normal de despliegue.
+
+  **Verificado E2E:** desktop y 375 px, carga proyecto→60 puntos, alta real con
+  Iván, planificación, flete, importe `$ 125.000,50`, imagen privada visible y
+  notificación creada. Orden, archivo y notificación QA eliminados sin residuos.
+  34 tests, TypeScript, lint 0 errores y build de producción OK.
 
 - **Carga masiva demo — COMPLETA Y VERIFICADA (2026-07-21).**
   `supabase/seed_demo_bulk.sql` ya fue ejecutado. Consulta de control contra
@@ -332,7 +359,8 @@ de este documento para la lista completa y actualizada.
 - **Seed de auth:** al insertar en `auth.users` a mano, las columnas de token van
   en `''` y no `NULL`, o el login falla con "Database error querying schema".
   Ya corregido en `supabase/seed.sql`.
-- **Migraciones:** se aplican a mano en el SQL Editor de Supabase (el MCP de
-  Supabase de la sesión no ve este proyecto). Copiar desde la vista raw de GitHub.
+- **Migraciones:** la CLI está vinculada al proyecto `rpdjjvcmtcpvmwrjqhke` y
+  el historial remoto ya fue reconciliado. Usar `supabase db push --linked`;
+  recurrir al SQL Editor sólo si la CLI pierde autenticación.
 - **Vitest:** config en `.mts` (no `.ts`) por resolución ESM/CJS en este entorno.
 - El proxy deja pasar `/api/*` sin redirigir a login (responden su propio JSON).
