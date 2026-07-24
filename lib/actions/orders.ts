@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import {
@@ -473,4 +474,44 @@ export async function assignInstaller(
     return { error: t("unexpected") };
   }
   return { error: null, ok: true };
+}
+
+const rescheduleSchema = z.object({
+  orderId: z.string().uuid(),
+  scheduledDate: z.iso.date(),
+  scheduledEndDate: z.union([z.iso.date(), z.literal("")]),
+}).refine(
+  (value) => !value.scheduledEndDate || value.scheduledEndDate >= value.scheduledDate,
+  { path: ["scheduledEndDate"] },
+);
+
+export async function rescheduleOrder(input: {
+  orderId: string;
+  scheduledDate: string;
+  scheduledEndDate: string;
+}): Promise<ActionState> {
+  const t = await getTranslations("Errors");
+  const parsed = rescheduleSchema.safeParse(input);
+  if (!parsed.success) return { error: t("invalidData") };
+  try {
+    const { supabase, companyId } = await requireManager();
+    const { data: order, error } = await supabase
+      .from("work_orders")
+      .update({
+        scheduled_date: parsed.data.scheduledDate,
+        scheduled_end_date: parsed.data.scheduledEndDate || null,
+      })
+      .eq("id", parsed.data.orderId)
+      .eq("company_id", companyId)
+      .select("project_id")
+      .single();
+    if (error || !order) return { error: error?.message ?? t("orderNotFound") };
+    revalidatePath("/dashboard");
+    revalidatePath("/orders");
+    revalidatePath(`/orders/${parsed.data.orderId}`);
+    revalidatePath(`/projects/${order.project_id}`);
+    return { error: null, ok: true };
+  } catch {
+    return { error: t("unexpected") };
+  }
 }

@@ -1,5 +1,65 @@
 # Instala Pro — Estado del proyecto
 
+## ACTUALIZACIÓN AUTORITATIVA — tablero gerencial (`rama1`, 2026-07-24)
+
+> Trabajo aislado de `main` en la rama `rama1`. Esta sección es el punto de
+> reanudación para el nuevo tablero del gerente/administrador del cliente.
+
+### Implementado
+
+- **Pulso operativo accionable:** alertas enlazables por órdenes atrasadas,
+  próximas sin asignar, proyectos con desvío, instaladores no disponibles,
+  trabajos esperando aprobación e incidencias prioritarias. Suma alertas de
+  clima por zona; no incluye controles de documentación (punto 8 excluido por
+  pedido del usuario).
+- **Semáforo y pronóstico de proyectos:** en término, en riesgo, atrasado o
+  pausado; compara avance real/planificado, proyecta fecha de cierre y calcula
+  cuántas instalaciones semanales hacen falta para cumplir.
+- **Agenda y capacidad:** próximos siete días, trabajos/asignaciones/cierres por
+  día, carga versus instaladores disponibles, jornadas libres y días
+  sobrecargados.
+- **SLA:** cumplimiento en fecha, tiempo hasta asignación/finalización, demora
+  promedio, reprogramaciones, cancelaciones y comparación mensual. La ficha de
+  orden permite reprogramar y la base registra el historial automáticamente.
+- **Calidad e incidencias:** registro y resolución en la ficha de orden con tipo,
+  prioridad, detalle y necesidad de revisita. El tablero muestra incidencias
+  abiertas y tasa de resolución en primera visita.
+- **Desempeño de instaladores:** cierres, puntualidad, primera resolución,
+  duración promedio, reprogramaciones, incidencias, disponibilidad y rating.
+- **Mapa Google operativo:** trabajos de los próximos siete días, selector de
+  locación, estado, enlace a la orden y apertura en Google Maps; informa además
+  la capacidad disponible.
+- **Pulso financiero:** contratado, realizado, pendiente, crecimiento y
+  proyección mensual separados por ARS/BRL, con acceso al módulo financiero.
+- **Acciones rápidas:** accesos a proyecto, orden urgente, asignación,
+  reprogramación, aprobación y reporte financiero.
+- **Responsive e i18n:** interfaz verificada en escritorio y 375×812, sin
+  desborde horizontal, con textos completos en español y portugués.
+
+### Base de datos pendiente de aplicar
+
+- Migración nueva:
+  `supabase/migrations/20260724000001_manager_dashboard.sql`.
+- Agrega metadatos automáticos a `work_orders` (`assigned_at`,
+  `original_scheduled_date`, `reschedule_count`, `visit_count`) y la tabla
+  multi-tenant `order_incidents`, con RLS para gerente e instalador.
+- Prueba estructural de RLS:
+  `supabase/tests/order_incidents_rls.test.sql`.
+- `supabase db push --linked --dry-run` confirmó que sólo está pendiente esa
+  migración. No se aplicó remotamente: el usuario pidió recibir la query para
+  ejecutarla en SQL Editor.
+
+### Verificación de esta rama
+
+- TypeScript strict: OK.
+- ESLint: 0 errores/advertencias.
+- Vitest: **52 pruebas en 12 archivos**.
+- `next build`: OK.
+- Playwright: dashboard y ficha de incidencias en escritorio/móvil, sin errores
+  de consola. Hasta aplicar la migración, el dashboard remoto no puede leer los
+  nuevos campos de órdenes y muestra esas métricas vacías.
+- Vercel no fue modificado.
+
 ## ACTUALIZACIÓN AUTORITATIVA — ampliación operativa (2026-07-21)
 
 > Esta sección reemplaza el resumen antiguo de “producto terminado” para la

@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchActiveRoster } from "@/lib/data/orders";
 import { fetchOrderAttachments } from "@/lib/data/order-attachments";
 import { OrderActions } from "@/components/company/order-actions";
+import { OrderIncidents } from "@/components/company/order-incidents";
 import { OrderAttachments } from "@/components/shared/order-attachments";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,6 +39,7 @@ export default async function OrderDetailPage({
     { data: project },
     { data: updates },
     { data: rating },
+    { data: incidents },
     roster,
     attachments,
   ] =
@@ -58,6 +60,11 @@ export default async function OrderDetailPage({
         .select("stars, comment")
         .eq("order_id", id)
         .maybeSingle(),
+      supabase
+        .from("order_incidents")
+        .select("id, category, severity, description, requires_revisit, status, created_at")
+        .eq("order_id", id)
+        .order("created_at", { ascending: false }),
       fetchActiveRoster(supabase),
       fetchOrderAttachments(supabase, id),
     ]);
@@ -195,6 +202,8 @@ export default async function OrderDetailPage({
             openLabel={(name) => t("openAttachment", { name })}
           />
 
+          <OrderIncidents orderId={order.id} incidents={incidents ?? []} />
+
           {/* Historial */}
           <Card>
             <CardContent className="pt-6">
@@ -237,6 +246,8 @@ export default async function OrderDetailPage({
               orderId={order.id}
               status={order.status as OrderStatus}
               installerId={order.assigned_installer_id}
+              scheduledDate={order.scheduled_date}
+              scheduledEndDate={order.scheduled_end_date}
               roster={roster}
               rating={rating}
             />

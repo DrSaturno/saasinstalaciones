@@ -24,11 +24,11 @@ export function DashboardMetrics({ metrics }: { metrics: DashboardOverview["metr
   ];
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+    <div className="grid grid-cols-2 gap-3 xl:grid-cols-6">
       {items.map((item, index) => {
         const Icon = metricIcons[index];
         return (
-          <Card key={item.label} className="min-h-32 justify-between py-4">
+          <Card key={item.label} className="min-h-28 justify-between py-4 sm:min-h-32">
             <CardContent className="flex h-full flex-col justify-between gap-4 px-4">
               <Icon className="size-4 text-primary" aria-hidden="true" />
               <div>

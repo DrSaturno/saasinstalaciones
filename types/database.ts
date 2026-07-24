@@ -27,6 +27,18 @@ export type OrderPriority = "baja" | "media" | "alta" | "urgente";
 export type OrderCurrency = "ARS" | "BRL";
 export type BillingMode = "project" | "per_installation";
 export type OrderUpdateType = "checkin" | "progress" | "blocker" | "done" | "system";
+export type IncidentCategory =
+  | "failed_visit"
+  | "missing_materials"
+  | "client_absent"
+  | "technical_issue"
+  | "revisit_required"
+  | "complaint"
+  | "rejected_work"
+  | "incomplete_work"
+  | "other";
+export type IncidentSeverity = "low" | "medium" | "high" | "critical";
+export type IncidentStatus = "open" | "resolved";
 export type InvitationStatus = "pending" | "accepted" | "expired";
 export type RosterStatus = "invited" | "active" | "removed";
 export type BroadcastStatus = "open" | "closed";
@@ -266,6 +278,10 @@ export interface Database {
           amount: number | null;
           currency: OrderCurrency;
           assigned_installer_id: string | null;
+          assigned_at: string | null;
+          original_scheduled_date: string | null;
+          reschedule_count: number;
+          visit_count: number;
           source: OrderSource;
           created_by: string | null;
           created_at: string;
@@ -291,6 +307,10 @@ export interface Database {
           amount?: number | null;
           currency?: OrderCurrency;
           assigned_installer_id?: string | null;
+          assigned_at?: string | null;
+          original_scheduled_date?: string | null;
+          reschedule_count?: number;
+          visit_count?: number;
           source?: OrderSource;
           created_by?: string | null;
           created_at?: string;
@@ -298,6 +318,40 @@ export interface Database {
           finalized_at?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["work_orders"]["Insert"]>;
+        Relationships: [];
+      };
+      order_incidents: {
+        Row: {
+          id: string;
+          order_id: string;
+          company_id: string;
+          category: IncidentCategory;
+          severity: IncidentSeverity;
+          description: string;
+          requires_revisit: boolean;
+          status: IncidentStatus;
+          created_by: string | null;
+          resolved_by: string | null;
+          resolved_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          company_id: string;
+          category: IncidentCategory;
+          severity?: IncidentSeverity;
+          description?: string;
+          requires_revisit?: boolean;
+          status?: IncidentStatus;
+          created_by?: string | null;
+          resolved_by?: string | null;
+          resolved_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["order_incidents"]["Insert"]>;
         Relationships: [];
       };
       order_attachments: {

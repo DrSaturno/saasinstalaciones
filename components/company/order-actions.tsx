@@ -1,10 +1,10 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { transitionOrder, assignInstaller } from "@/lib/actions/orders";
+import { transitionOrder, assignInstaller, rescheduleOrder } from "@/lib/actions/orders";
 import { ORDER_TRANSITIONS, isTerminal } from "@/lib/domain/transitions";
 import { ORDER_STATUS } from "@/lib/domain/status";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,8 @@ type Props = {
   orderId: string;
   status: OrderStatus;
   installerId: string | null;
+  scheduledDate: string | null;
+  scheduledEndDate: string | null;
   roster: {
     id: string;
     name: string;
@@ -29,6 +31,8 @@ export function OrderActions({
   orderId,
   status,
   installerId,
+  scheduledDate,
+  scheduledEndDate,
   roster,
   rating,
 }: Props) {
@@ -36,6 +40,8 @@ export function OrderActions({
   const statusT = useTranslations("Status");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [startDate, setStartDate] = useState(scheduledDate ?? "");
+  const [endDate, setEndDate] = useState(scheduledEndDate ?? "");
   const targets = ORDER_TRANSITIONS[status] ?? [];
 
   const doTransition = (to: OrderStatus) => {
@@ -56,6 +62,18 @@ export function OrderActions({
       if (res.error) toast.error(res.error);
       else {
         toast.success(id ? t("assigned") : t("unassignedToast"));
+        router.refresh();
+      }
+    });
+  };
+
+  const doReschedule = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    startTransition(async () => {
+      const res = await rescheduleOrder({ orderId, scheduledDate: startDate, scheduledEndDate: endDate });
+      if (res.error) toast.error(res.error);
+      else {
+        toast.success(t("rescheduledToast"));
         router.refresh();
       }
     });
@@ -89,6 +107,15 @@ export function OrderActions({
           </select>
         )}
       </div>
+
+      <form onSubmit={doReschedule} className="border-t pt-5">
+        <h3 className="text-sm font-medium text-muted-foreground">{t("schedule")}</h3>
+        <div className="mt-2 grid gap-2">
+          <label className="grid gap-1 text-xs text-muted-foreground">{t("startDate")}<input type="date" required value={startDate} onChange={(event) => setStartDate(event.target.value)} className="h-9 rounded-lg border border-input bg-transparent px-2 text-sm" /></label>
+          <label className="grid gap-1 text-xs text-muted-foreground">{t("endDate")}<input type="date" min={startDate} value={endDate} onChange={(event) => setEndDate(event.target.value)} className="h-9 rounded-lg border border-input bg-transparent px-2 text-sm" /></label>
+          <Button type="submit" size="sm" variant="outline" disabled={pending || !startDate}>{t("saveSchedule")}</Button>
+        </div>
+      </form>
 
       {/* Transiciones */}
       <div>
