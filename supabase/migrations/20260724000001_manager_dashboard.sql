@@ -133,7 +133,6 @@ create policy order_incidents_company_all on public.order_incidents
     public.auth_role() = 'company_manager'
     and company_id = public.auth_company()
   );
-
 create policy order_incidents_installer_read on public.order_incidents
   for select using (
     exists (
@@ -156,4 +155,3 @@ create policy order_incidents_installer_insert on public.order_incidents
         and w.assigned_installer_id = auth.uid()
     )
   );
-

@@ -26,4 +26,3 @@ describe("manager dashboard", () => {
     expect(firstResolutionSummary([{ id: "a", visitCount: 1 }, { id: "b", visitCount: 2 }, { id: "c", visitCount: 1 }], new Set(["c"]))).toEqual({ rate: 33, repeats: 2 });
   });
 });
-

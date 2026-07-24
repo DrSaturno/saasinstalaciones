@@ -39,8 +39,6 @@ export function DashboardFinancePulse({ finances }: { finances: DashboardOvervie
     </Card>
   );
 }
-
 function Value({ label, value }: { label: string; value: string }) {
   return <div><p className="font-mono text-sm font-semibold">{value}</p><p className="mt-1 text-[11px] text-muted-foreground">{label}</p></div>;
 }
-

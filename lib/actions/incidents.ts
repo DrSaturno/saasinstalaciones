@@ -21,7 +21,6 @@ async function requireManager() {
   if (!user || user.role !== "company_manager" || !user.companyId) throw new Error("access");
   return { user, companyId: user.companyId, supabase: await createClient() };
 }
-
 export async function createIncident(input: z.infer<typeof incidentSchema>): Promise<IncidentActionState> {
   const t = await getTranslations("Errors");
   const parsed = incidentSchema.safeParse(input);
@@ -66,4 +65,3 @@ export async function resolveIncident(incidentId: string, orderId: string): Prom
     return { error: t("unexpected") };
   }
 }
-

@@ -66,7 +66,6 @@ export function DashboardExecution({
     </section>
   );
 }
-
 function Data({ label, value, danger = false }: { label: string; value: string | number; danger?: boolean }) {
   return (
     <div>
@@ -75,4 +74,3 @@ function Data({ label, value, danger = false }: { label: string; value: string |
     </div>
   );
 }
-
