@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { MapPin, Users } from "lucide-react";
+import { CalendarDays, CircleDollarSign, MapPin, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -69,6 +69,12 @@ export function JobCard({ job }: { job: InstallerJob }) {
         </CardHeader>
         <CardContent>
           {job.description ? <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">{job.description}</p> : null}
+          {job.requirements ? <div className="mt-3 rounded-lg bg-muted/60 p-3 text-xs"><p className="font-medium">{t("requirements")}</p><p className="mt-1 whitespace-pre-wrap text-muted-foreground">{job.requirements}</p></div> : null}
+          {job.logisticsNotes ? <p className="mt-3 text-xs text-muted-foreground">{job.logisticsNotes}</p> : null}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {job.scheduledDate ? <Badge variant="outline"><CalendarDays className="mr-1 size-3" />{format.dateTime(new Date(`${job.scheduledDate}T12:00:00`), { dateStyle: "medium" })}</Badge> : null}
+            {job.payVisible && job.payAmount !== null ? <Badge><CircleDollarSign className="mr-1 size-3" />{format.number(job.payAmount, { style: "currency", currency: job.currency })}</Badge> : null}
+          </div>
           <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5"><Users className="size-3.5" />{t("slots", { count: job.slots })}</span>
             <span>{format.dateTime(new Date(job.createdAt), { day: "numeric", month: "short" })}</span>

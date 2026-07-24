@@ -11,12 +11,12 @@ import Dexie, { type EntityTable } from "dexie";
  * - `tasks`: cache de las tareas asignadas, para verlas sin señal.
  */
 
-export type OutboxKind = "update" | "transition";
+export type OutboxKind = "update" | "transition" | "chat" | "chat_read";
 
 export type OutboxItem = {
   id: string; // uuid de la operación (idempotencia)
   kind: OutboxKind;
-  orderId: string;
+  orderId?: string;
   // update:
   updateType?: "checkin" | "progress" | "blocker" | "done";
   note?: string;
@@ -24,6 +24,10 @@ export type OutboxItem = {
   companyId?: string;
   // transition:
   toStatus?: string;
+  threadId?: string;
+  messageId?: string;
+  body?: string;
+  attachments?: { path: string; name: string; mimeType: string }[];
   createdAt: number;
   tries: number;
   lastError?: string;
@@ -52,6 +56,12 @@ const db = new Dexie("instalapro-installer") as Dexie & {
 
 db.version(1).stores({
   outbox: "id, orderId, createdAt",
+  photos: "id, orderId",
+  tasks: "id, cachedAt",
+});
+
+db.version(2).stores({
+  outbox: "id, orderId, threadId, createdAt",
   photos: "id, orderId",
   tasks: "id, cachedAt",
 });

@@ -22,7 +22,58 @@ export type PendingInvitation = {
   createdAt: string;
   expiresAt: string;
   expired: boolean;
+  role: "installer" | "coordinator";
 };
+
+export type CoordinatorOption = { id: string; name: string };
+
+export async function fetchCoordinators(
+  supabase: SupabaseClient<Database>,
+): Promise<CoordinatorOption[]> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, full_name")
+    .eq("role", "coordinator")
+    .order("full_name");
+  return (data ?? []).map((profile) => ({
+    id: profile.id,
+    name: profile.full_name,
+  }));
+}
+
+export type UnavailableInstaller = {
+  id: string;
+  installerId: string;
+  name: string;
+  startsAt: string;
+  endsAt: string;
+  reason: string;
+};
+
+export async function fetchUnavailableInstallers(
+  supabase: SupabaseClient<Database>,
+): Promise<UnavailableInstaller[]> {
+  const { data: exceptions } = await supabase
+    .from("installer_unavailability")
+    .select("id, installer_id, starts_at, ends_at, reason")
+    .gte("ends_at", new Date().toISOString())
+    .order("starts_at");
+  const ids = [...new Set((exceptions ?? []).map((item) => item.installer_id))];
+  if (!ids.length) return [];
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, full_name")
+    .in("id", ids);
+  const names = new Map((profiles ?? []).map((item) => [item.id, item.full_name]));
+  return (exceptions ?? []).map((item) => ({
+    id: item.id,
+    installerId: item.installer_id,
+    name: names.get(item.installer_id) ?? "",
+    startsAt: item.starts_at,
+    endsAt: item.ends_at,
+    reason: item.reason,
+  }));
+}
 
 /**
  * Roster de la empresa: miembros (activos y removidos) con su nombre,
@@ -89,7 +140,7 @@ export async function fetchPendingInvitations(
 ): Promise<PendingInvitation[]> {
   const { data } = await supabase
     .from("invitations")
-    .select("id, email, token, created_at, expires_at, status")
+    .select("id, email, token, created_at, expires_at, status, role")
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
@@ -101,5 +152,6 @@ export async function fetchPendingInvitations(
     createdAt: inv.created_at,
     expiresAt: inv.expires_at,
     expired: new Date(inv.expires_at).getTime() < now,
+    role: inv.role,
   }));
 }

@@ -10,6 +10,7 @@ import { OrderAttachments } from "@/components/shared/order-attachments";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { OrderStatus, OrderUpdateType } from "@/types/database";
+import { getCurrentUser } from "@/lib/auth";
 
 export default async function OrderDetailPage({
   params,
@@ -17,11 +18,12 @@ export default async function OrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, statusT, createOrderT, format] = await Promise.all([
+  const [t, statusT, createOrderT, format, user] = await Promise.all([
     getTranslations("OrderDetail"),
     getTranslations("Status"),
     getTranslations("CreateOrder"),
     getFormatter(),
+    getCurrentUser(),
   ]);
   const supabase = await createClient();
 
@@ -176,10 +178,10 @@ export default async function OrderDetailPage({
                     {order.requires_freight ? t("yes") : t("no")}
                   </dd>
                 </div>
-                <div>
+                {user?.role === "company_manager" ? <div>
                   <dt className="text-xs text-muted-foreground">{t("amount")}</dt>
                   <dd className="mt-1 font-mono text-sm font-semibold">{amount}</dd>
-                </div>
+                </div> : null}
               </dl>
               {order.freight_details ? (
                 <div className="mt-5 border-t pt-4">

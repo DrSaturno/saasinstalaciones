@@ -1,7 +1,6 @@
 import { CalendarRange, Gauge, TimerReset } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { DashboardOverview } from "@/lib/data/dashboard";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function DashboardExecution({
@@ -58,8 +57,8 @@ export function DashboardExecution({
             <div>
               <p className="font-mono text-lg font-semibold">{sla.completionChange === null ? t("newComparison") : `${sla.completionChange >= 0 ? "+" : ""}${sla.completionChange}%`}</p>
               <p className="text-[11px] text-muted-foreground">{t("monthComparison")}</p>
-              {sla.cancelled > 0 ? <Badge variant="outline" className="mt-2">{t("cancelledCount", { count: sla.cancelled })}</Badge> : null}
             </div>
+            <Data label={t("cancelledLabel")} value={sla.cancelled} danger={sla.cancelled > 0} />
           </CardContent>
         </Card>
       </div>

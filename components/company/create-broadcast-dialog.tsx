@@ -28,12 +28,15 @@ const INITIAL: BroadcastActionState = { error: null };
 export function CreateBroadcastDialog({
   projects,
   zones,
+  canManageFinance,
 }: {
   projects: ProjectOption[];
   zones: string[];
+  canManageFinance: boolean;
 }) {
   const t = useTranslations("CreateBroadcast");
   const [open, setOpen] = useState(false);
+  const [showPay, setShowPay] = useState(false);
   const router = useRouter();
   const [state, action, pending] = useActionState(
     async (previous: BroadcastActionState, formData: FormData) => {
@@ -55,7 +58,7 @@ export function CreateBroadcastDialog({
           <Plus /> {t("trigger")}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{t("title")}</DialogTitle>
           <DialogDescription>
@@ -78,6 +81,10 @@ export function CreateBroadcastDialog({
               ))}
             </select>
           </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-2"><Label htmlFor="broadcast-date">{t("scheduledDate")}</Label><Input id="broadcast-date" name="scheduledDate" type="date" /></div>
+            <div className="grid gap-2"><Label htmlFor="broadcast-end-date">{t("scheduledEndDate")}</Label><Input id="broadcast-end-date" name="scheduledEndDate" type="date" /></div>
+          </div>
           <div className="grid gap-2">
             <Label htmlFor="broadcast-zone">{t("zone")}</Label>
             <Input
@@ -92,6 +99,23 @@ export function CreateBroadcastDialog({
               {zones.map((zone) => <option key={zone} value={zone} />)}
             </datalist>
           </div>
+          <div className="grid gap-2">
+            <Label htmlFor="broadcast-requirements">{t("requirements")}</Label>
+            <Textarea id="broadcast-requirements" name="requirements" maxLength={1500} rows={3} placeholder={t("requirementsPlaceholder")} />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="broadcast-logistics">{t("logistics")}</Label>
+            <Textarea id="broadcast-logistics" name="logisticsNotes" maxLength={1500} rows={3} placeholder={t("logisticsPlaceholder")} />
+          </div>
+          {canManageFinance ? (
+            <div className="rounded-xl border p-4">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input type="checkbox" name="payVisible" checked={showPay} onChange={(event) => setShowPay(event.target.checked)} className="accent-primary" />
+                {t("showPay")}
+              </label>
+              {showPay ? <div className="mt-3 grid gap-2"><Label htmlFor="broadcast-pay">{t("payAmount")}</Label><Input id="broadcast-pay" name="payAmount" type="number" min="0" step="0.01" required /></div> : <input type="hidden" name="payAmount" value="" />}
+            </div>
+          ) : null}
           <div className="grid grid-cols-[1fr_90px] gap-3">
             <div className="grid gap-2">
               <Label htmlFor="broadcast-title">{t("searchTitle")}</Label>

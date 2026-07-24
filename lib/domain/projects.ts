@@ -24,7 +24,8 @@ const optionalAmount = z
 export const projectInputSchema = z
   .object({
     name: z.string().trim().min(2).max(150),
-    clientName: z.string().trim().min(2).max(150),
+    clientId: z.string().uuid(),
+    coordinatorId: z.string().uuid(),
     description: z.string().trim().max(2000),
     startsAt: optionalDate,
     endsAt: optionalDate,
@@ -54,6 +55,8 @@ export type ProjectInput = z.infer<typeof projectInputSchema>;
 export type ProjectFormDefaults = {
   name: string;
   clientName: string;
+  clientId: string;
+  coordinatorId: string;
   description: string;
   startsAt: string;
   endsAt: string;

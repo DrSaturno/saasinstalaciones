@@ -23,6 +23,7 @@ export function InviteInstallerDialog() {
   const errors = useTranslations("Errors");
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
+  const [role, setRole] = useState<"installer" | "coordinator">("installer");
   const [link, setLink] = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -30,7 +31,7 @@ export function InviteInstallerDialog() {
 
   const submit = () => {
     startTransition(async () => {
-      const res = await inviteInstaller(email);
+      const res = await inviteInstaller(email, role);
       if (res.error || !res.token) {
         toast.error(res.error ?? errors("createInvitation"));
         return;
@@ -51,6 +52,7 @@ export function InviteInstallerDialog() {
   const close = () => {
     setOpen(false);
     setEmail("");
+    setRole("installer");
     setLink(null);
     setEmailSent(false);
   };
@@ -102,6 +104,20 @@ export function InviteInstallerDialog() {
                   placeholder="instalador@email.com"
                   onKeyDown={(e) => e.key === "Enter" && submit()}
                 />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="invite-role">{t("role")}</Label>
+                <select
+                  id="invite-role"
+                  value={role}
+                  onChange={(event) =>
+                    setRole(event.target.value as "installer" | "coordinator")
+                  }
+                  className="h-9 rounded-lg border border-input bg-transparent px-3 text-sm"
+                >
+                  <option value="installer">{t("installerRole")}</option>
+                  <option value="coordinator">{t("coordinatorRole")}</option>
+                </select>
               </div>
               <Button onClick={submit} disabled={pending}>
                 {pending ? t("creating") : t("submit")}

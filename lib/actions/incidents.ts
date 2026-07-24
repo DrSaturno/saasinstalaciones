@@ -18,7 +18,7 @@ export type IncidentActionState = { error: string | null; ok?: boolean };
 
 async function requireManager() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "company_manager" || !user.companyId) throw new Error("access");
+  if (!user || !["company_manager", "coordinator"].includes(user.role) || !user.companyId) throw new Error("access");
   return { user, companyId: user.companyId, supabase: await createClient() };
 }
 export async function createIncident(input: z.infer<typeof incidentSchema>): Promise<IncidentActionState> {

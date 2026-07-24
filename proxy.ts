@@ -7,12 +7,14 @@ import { isProfileLocale, LOCALE_COOKIE } from "@/i18n/config";
 const ROLE_HOME: Record<UserRole, string> = {
   platform_admin: "/master",
   company_manager: "/dashboard",
+  coordinator: "/dashboard",
   installer: "/tasks",
 };
 
 const ROLE_PREFIX: Record<UserRole, string> = {
   platform_admin: "/master",
   company_manager: "/dashboard",
+  coordinator: "/dashboard",
   installer: "/tasks",
 };
 

@@ -49,6 +49,21 @@ export function ImportSitesDialog({ projectId }: { projectId: string }) {
     setResult(null);
   };
 
+  const downloadTemplate = () => {
+    const csv = [
+      "nombre,direccion,ciudad,provincia,zona,codigo,lat,lng",
+      "Local Centro,Av. Ejemplo 123,Ciudad,Provincia,AMBA,LOC-001,-34.6037,-58.3816",
+    ].join("\r\n");
+    const url = URL.createObjectURL(
+      new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "plantilla-puntos-instalapro.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? setOpen(true) : close())}>
       <DialogTrigger asChild>
@@ -107,6 +122,9 @@ export function ImportSitesDialog({ projectId }: { projectId: string }) {
               <p className="mt-1 font-mono">{t("columns")}</p>
               <p className="mt-2">{t("variants")}</p>
             </div>
+            <Button type="button" variant="outline" onClick={downloadTemplate}>
+              {t("downloadTemplate")}
+            </Button>
             {pending && (
               <p className="text-sm text-muted-foreground">{t("importing")}</p>
             )}

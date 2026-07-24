@@ -1,5 +1,70 @@
 # Instala Pro — Estado del proyecto
 
+## ACTUALIZACIÓN AUTORITATIVA — coordinadores y expansión operativa (`rama1`, 2026-07-24)
+
+> Este es el punto de reanudación vigente. La migración anterior
+> `20260724000001_manager_dashboard.sql` fue ejecutada por el usuario. El código
+> de esta sección está completo en `rama1`; falta ejecutar la migración nueva
+> indicada abajo antes de probar las pantallas contra Supabase.
+
+### Implementado
+
+- **Rol coordinador:** un proyecto tiene un coordinador responsable y un
+  coordinador puede llevar varios proyectos. Ve y opera solamente sus proyectos,
+  órdenes, locaciones, incidencias, bolsa y adjuntos; no accede a Finanzas ni
+  puede ver/modificar cobros o importes. El gerente invita coordinadores desde
+  Equipo con el mismo flujo seguro de alta por link.
+- **Dashboard corregido:** acciones rápidas inmediatamente debajo de las
+  métricas y abiertas en formularios operativos directos; se quitó Exportar
+  informe y el bloque financiero. Se compactó el desglose de instaladores, se
+  reacomodaron canceladas en SLA y los nombres de instaladores abren el chat.
+- **Proyectos e instalaciones:** alta/edición con cliente de agenda y
+  coordinador. “Generar órdenes” crea primero las locaciones pendientes sin
+  datos hasta alcanzar la cantidad contratada y después genera sólo las órdenes
+  faltantes. Al completar la ficha, la locación deja de ser placeholder.
+- **CSV:** importación ampliada con latitud/longitud y descarga de una planilla
+  modelo lista para completar.
+- **Equipo:** panel de coordinadores y panel de instaladores indispuestos con
+  período y justificación.
+- **Clientes:** módulo `/clients`, agenda de empresas, ficha de contacto,
+  proyectos/puntos vinculados e histórico de órdenes por locación.
+- **Mensajería oficial:** módulo `/messages`, una conversación persistente por
+  empresa/instalador, visibilidad para gerente y todos los coordinadores, tiempo
+  real, adjuntos privados y envío offline idempotente para el instalador. Los
+  nombres de instaladores en dashboard, equipo y postulaciones abren su charla.
+- **Bolsa de trabajo:** fechas, requisitos, logística, paga opcional visible
+  mediante toggle y moneda del proyecto. La tarjeta del instalador muestra toda
+  la información relevante.
+- **Finanzas:** filtros globales por semana, quincena, mes, semestre y fechas
+  personalizadas. Exportación y todos los paneles usan el mismo período.
+- **Menú:** Clientes y Mensajería agregados; el lateral minimizable existente se
+  conserva. Finanzas se omite completamente para coordinadores.
+- **i18n:** nuevas pantallas y controles en español y portugués.
+
+### Base de datos pendiente de aplicar
+
+- Ejecutar completa en Supabase SQL Editor:
+  `supabase/migrations/20260724000002_coordinator_clients_messaging.sql`.
+- Crea/actualiza roles, invitaciones, asignación de coordinador, clientes,
+  placeholders, bolsa ampliada, threads/mensajes/lecturas, bucket privado
+  `chat`, realtime y todas las políticas RLS.
+- Prueba estructural:
+  `supabase/tests/coordinator_rls.test.sql`.
+- No abrir las pantallas nuevas en un entorno conectado antes de aplicar esta
+  migración: las consultas esperan esas columnas/tablas.
+
+### Verificación
+
+- JSON de traducciones ES/PT: OK.
+- TypeScript strict: OK.
+- ESLint: 0 errores/advertencias.
+- Vitest: **52 pruebas en 12 archivos**, todas OK.
+- `next build`: OK; 23 rutas generadas, incluidas `/clients` y `/messages`.
+- La CLI de Supabase no está instalada en este entorno, por lo que la migración
+  no pudo validarse/aplicarse remotamente desde la terminal.
+- Vercel no fue modificado. El siguiente paso después de ejecutar SQL es smoke
+  test local con gerente, coordinador e instalador; luego commit/push de `rama1`.
+
 ## ACTUALIZACIÓN AUTORITATIVA — tablero gerencial (`rama1`, 2026-07-24)
 
 > Trabajo aislado de `main` en la rama `rama1`. Esta sección es el punto de
@@ -36,18 +101,17 @@
 - **Responsive e i18n:** interfaz verificada en escritorio y 375×812, sin
   desborde horizontal, con textos completos en español y portugués.
 
-### Base de datos pendiente de aplicar
+### Base de datos aplicada por el usuario
 
-- Migración nueva:
+- Migración:
   `supabase/migrations/20260724000001_manager_dashboard.sql`.
 - Agrega metadatos automáticos a `work_orders` (`assigned_at`,
   `original_scheduled_date`, `reschedule_count`, `visit_count`) y la tabla
   multi-tenant `order_incidents`, con RLS para gerente e instalador.
 - Prueba estructural de RLS:
   `supabase/tests/order_incidents_rls.test.sql`.
-- `supabase db push --linked --dry-run` confirmó que sólo está pendiente esa
-  migración. No se aplicó remotamente: el usuario pidió recibir la query para
-  ejecutarla en SQL Editor.
+- El usuario confirmó que esta migración fue ejecutada correctamente en
+  Supabase SQL Editor antes de iniciar la ampliación siguiente.
 
 ### Verificación de esta rama
 

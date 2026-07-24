@@ -9,7 +9,11 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type UserRole = "platform_admin" | "company_manager" | "installer";
+export type UserRole =
+  | "platform_admin"
+  | "company_manager"
+  | "coordinator"
+  | "installer";
 export type Locale = "es" | "pt";
 export type CompanyStatus = "active" | "suspended";
 export type Country = "AR" | "BR";
@@ -147,6 +151,7 @@ export interface Database {
           email: string;
           token: string;
           status: InvitationStatus;
+          role: "installer" | "coordinator";
           created_at: string;
           expires_at: string;
         };
@@ -156,10 +161,41 @@ export interface Database {
           email: string;
           token?: string;
           status?: InvitationStatus;
+          role?: "installer" | "coordinator";
           created_at?: string;
           expires_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["invitations"]["Insert"]>;
+        Relationships: [];
+      };
+      clients: {
+        Row: {
+          id: string;
+          company_id: string;
+          name: string;
+          tax_id: string;
+          contact_name: string;
+          email: string;
+          phone: string;
+          address: string;
+          notes: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          name: string;
+          tax_id?: string;
+          contact_name?: string;
+          email?: string;
+          phone?: string;
+          address?: string;
+          notes?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["clients"]["Insert"]>;
         Relationships: [];
       };
       projects: {
@@ -168,6 +204,8 @@ export interface Database {
           company_id: string;
           name: string;
           client_name: string;
+          client_id: string | null;
+          coordinator_id: string | null;
           description: string;
           status: ProjectStatus;
           starts_at: string | null;
@@ -186,6 +224,8 @@ export interface Database {
           company_id: string;
           name: string;
           client_name?: string;
+          client_id?: string | null;
+          coordinator_id?: string | null;
           description?: string;
           status?: ProjectStatus;
           starts_at?: string | null;
@@ -226,6 +266,7 @@ export interface Database {
           technical_notes: string;
           risk_notes: string;
           permanent_notes: string;
+          is_placeholder: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -252,6 +293,7 @@ export interface Database {
           technical_notes?: string;
           risk_notes?: string;
           permanent_notes?: string;
+          is_placeholder?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -444,6 +486,13 @@ export interface Database {
           description: string;
           slots: number;
           status: BroadcastStatus;
+          scheduled_date: string | null;
+          scheduled_end_date: string | null;
+          requirements: string;
+          logistics_notes: string;
+          pay_visible: boolean;
+          pay_amount: number | null;
+          currency: OrderCurrency;
           created_at: string;
         };
         Insert: {
@@ -455,6 +504,13 @@ export interface Database {
           description?: string;
           slots?: number;
           status?: BroadcastStatus;
+          scheduled_date?: string | null;
+          scheduled_end_date?: string | null;
+          requirements?: string;
+          logistics_notes?: string;
+          pay_visible?: boolean;
+          pay_amount?: number | null;
+          currency?: OrderCurrency;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["broadcasts"]["Insert"]>;
@@ -476,6 +532,66 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["broadcast_applications"]["Insert"]>;
+        Relationships: [];
+      };
+      chat_threads: {
+        Row: {
+          id: string;
+          company_id: string;
+          installer_id: string;
+          created_at: string;
+          last_message_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          installer_id: string;
+          created_at?: string;
+          last_message_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["chat_threads"]["Insert"]>;
+        Relationships: [];
+      };
+      chat_messages: {
+        Row: {
+          id: string;
+          thread_id: string;
+          company_id: string;
+          sender_id: string;
+          body: string;
+          attachments: Json;
+          reply_to_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          thread_id: string;
+          company_id: string;
+          sender_id: string;
+          body?: string;
+          attachments?: Json;
+          reply_to_id?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["chat_messages"]["Insert"]>;
+        Relationships: [];
+      };
+      chat_message_reads: {
+        Row: {
+          message_id: string;
+          company_id: string;
+          user_id: string;
+          read_at: string;
+        };
+        Insert: {
+          message_id: string;
+          company_id: string;
+          user_id: string;
+          read_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["chat_message_reads"]["Insert"]
+        >;
         Relationships: [];
       };
       ratings: {
@@ -661,7 +777,17 @@ export interface Database {
       };
       invitation_preview: {
         Args: { p_token: string };
-        Returns: { company_name: string; email: string; valid: boolean }[];
+        Returns: {
+          company_name: string;
+          email: string;
+          valid: boolean;
+          invite_role: "installer" | "coordinator";
+          company_id: string;
+        }[];
+      };
+      can_operate_project: {
+        Args: { p_project_id: string };
+        Returns: boolean;
       };
       accept_broadcast_application: {
         Args: {

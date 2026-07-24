@@ -50,7 +50,9 @@ export function PendingInvitations({
             className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
           >
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium">{inv.email}</p>
+              <p className="truncate text-sm font-medium">
+                {inv.email} · {t(`roles.${inv.role}`)}
+              </p>
               <p className="font-mono text-xs text-muted-foreground">
                 {inv.expired
                   ? t("expired")

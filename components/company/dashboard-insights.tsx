@@ -1,4 +1,5 @@
 import { MapPinned, Timer, UsersRound } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { DashboardOverview } from "@/lib/data/dashboard";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +12,7 @@ export function DashboardInsights({ regions, installers }: Pick<DashboardOvervie
     <div className="grid gap-4 lg:grid-cols-2">
       <Card>
         <CardHeader className="border-b"><div className="flex items-center gap-2"><MapPinned className="size-4 text-primary" aria-hidden="true" /><CardTitle>{t("regionsTitle")}</CardTitle></div></CardHeader>
-        <CardContent className="px-0">
+        <CardContent className="max-h-[520px] overflow-y-auto px-0">
           {regions.length === 0 ? <p className="px-4 py-8 text-center text-sm text-muted-foreground">{t("emptyRegions")}</p> : regions.map((region) => (
             <div key={region.name} className="border-b px-4 py-3 last:border-b-0">
               <div className="flex items-center justify-between"><p className="font-mono text-sm font-semibold">{region.name}</p><p className="font-mono text-xs text-muted-foreground">{region.progress}%</p></div>
@@ -27,7 +28,7 @@ export function DashboardInsights({ regions, installers }: Pick<DashboardOvervie
           {installers.length === 0 ? <p className="px-4 py-8 text-center text-sm text-muted-foreground">{t("emptyInstallers")}</p> : installers.map((installer) => (
             <div key={installer.id} className="border-b px-4 py-3 last:border-b-0">
               <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0"><p className="truncate font-medium">{installer.name}</p><p className="truncate text-xs text-muted-foreground">{installer.reason ?? t("installerOrders", { count: installer.openOrders })}</p></div>
+                <div className="min-w-0"><Link href={`/messages/${installer.id}`} className="truncate font-medium hover:text-primary">{installer.name}</Link><p className="truncate text-xs text-muted-foreground">{installer.reason ?? t("installerOrders", { count: installer.openOrders })}</p></div>
                 <div className="flex shrink-0 items-center gap-2"><span className="font-mono text-xs text-muted-foreground">★ {installer.rating.toFixed(1)}</span><Badge variant={installer.available ? "default" : "outline"}>{installer.available ? t("available") : t("unavailable")}</Badge></div>
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2 rounded-lg bg-muted/45 p-2 text-center">

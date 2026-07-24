@@ -11,7 +11,11 @@ export type SiteActionState = { error: string | null; ok?: boolean; id?: string 
 
 async function requireManager() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "company_manager" || !user.companyId) {
+  if (
+    !user ||
+    !["company_manager", "coordinator"].includes(user.role) ||
+    !user.companyId
+  ) {
     throw new Error("Acceso denegado");
   }
   return { supabase: await createClient(), companyId: user.companyId };
@@ -99,6 +103,7 @@ export async function createSite(
         technical_notes: parsed.data.technicalNotes,
         risk_notes: parsed.data.riskNotes,
         permanent_notes: parsed.data.permanentNotes,
+        is_placeholder: false,
       })
       .select("id")
       .single();
@@ -144,6 +149,7 @@ export async function updateSite(
         technical_notes: parsed.data.technicalNotes,
         risk_notes: parsed.data.riskNotes,
         permanent_notes: parsed.data.permanentNotes,
+        is_placeholder: false,
       })
       .eq("id", siteId)
       .eq("project_id", projectId)

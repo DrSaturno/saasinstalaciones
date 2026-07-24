@@ -11,7 +11,13 @@ export type FinancialOverview = {
   months: { month: string; currency: OrderCurrency; value: number }[];
 };
 
-type FinanceContext = { siteZones: Map<string, string>; installerNames: Map<string, string>; now?: Date };
+type FinanceContext = {
+  siteZones: Map<string, string>;
+  installerNames: Map<string, string>;
+  now?: Date;
+  dateFrom?: string;
+  dateTo?: string;
+};
 
 function addBreakdown(map: Map<string, FinanceBreakdown>, key: string, name: string, currency: OrderCurrency, contracted: number, completed: number) {
   const value = map.get(key) ?? { name, currency, orders: 0, contracted: 0, completed: 0, pending: 0 };
@@ -39,11 +45,24 @@ export function buildFinancialOverview(projects: FinanceProjectInput[], orders: 
   const monthMap = new Map<string, number>();
 
   for (const project of projects) {
-    const projectOrders = liveOrders.filter((order) => order.projectId === project.id);
+    const allProjectOrders = liveOrders.filter((order) => order.projectId === project.id);
+    const projectOrders = allProjectOrders.filter((order) => {
+      if (!context.dateFrom && !context.dateTo) return true;
+      const date = order.status === "finalizada"
+        ? order.finalizedAt?.slice(0, 10)
+        : order.scheduledDate;
+      if (!date) return false;
+      return (!context.dateFrom || date >= context.dateFrom) &&
+        (!context.dateTo || date <= context.dateTo);
+    });
     const contracted = project.billingMode === "project"
-      ? Number(project.contractAmount ?? 0)
+      ? allProjectOrders.length
+        ? (Number(project.contractAmount ?? 0) / allProjectOrders.length) * projectOrders.length
+        : 0
       : projectOrders.reduce((sum, order) => sum + Number(order.amount ?? 0), 0);
-    const share = project.billingMode === "project" && projectOrders.length ? contracted / projectOrders.length : 0;
+    const share = project.billingMode === "project" && allProjectOrders.length
+      ? Number(project.contractAmount ?? 0) / allProjectOrders.length
+      : 0;
     let completed = 0;
 
     for (const order of projectOrders) {

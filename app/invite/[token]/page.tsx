@@ -78,7 +78,7 @@ export default async function InvitePage({
   }
 
   // Logueado con un rol que no es installer.
-  if (user.role !== "installer") {
+  if (user.role !== invite.invite_role) {
     return (
       <InvitationFrame>
         <h1 className="text-lg font-medium">

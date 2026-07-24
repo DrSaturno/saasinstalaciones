@@ -10,7 +10,11 @@ export type RatingActionState = { error: string | null; ok?: boolean };
 
 async function requireManager() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "company_manager" || !user.companyId) {
+  if (
+    !user ||
+    !["company_manager", "coordinator"].includes(user.role) ||
+    !user.companyId
+  ) {
     throw new Error("Acceso denegado");
   }
   return { supabase: await createClient(), companyId: user.companyId };

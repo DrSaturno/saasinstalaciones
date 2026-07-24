@@ -7,7 +7,10 @@ import type { BillingMode, Database, OrderCurrency, OrderStatus } from "@/types/
 type ProjectRow = { id: string; name: string; billing_mode: BillingMode; contract_amount: number | null; currency: OrderCurrency };
 type OrderRow = { id: string; project_id: string; site_id: string; status: OrderStatus; amount: number | null; currency: OrderCurrency; assigned_installer_id: string | null; finalized_at: string | null; scheduled_date: string | null };
 
-export async function fetchFinancialOverview(supabase: SupabaseClient<Database>): Promise<FinancialOverview> {
+export async function fetchFinancialOverview(
+  supabase: SupabaseClient<Database>,
+  range?: { from: string; to: string },
+): Promise<FinancialOverview> {
   const [{ data: projects }, { data: orders }, { data: sites }, { data: roster }] = await Promise.all([
     supabase.from("projects").select("id, name, billing_mode, contract_amount, currency").neq("status", "draft").overrideTypes<ProjectRow[]>(),
     supabase.from("work_orders").select("id, project_id, site_id, status, amount, currency, assigned_installer_id, finalized_at, scheduled_date").overrideTypes<OrderRow[]>(),
@@ -22,6 +25,11 @@ export async function fetchFinancialOverview(supabase: SupabaseClient<Database>)
   return buildFinancialOverview(
     (projects ?? []).map((project) => ({ id: project.id, name: project.name, billingMode: project.billing_mode, contractAmount: project.contract_amount, currency: project.currency })),
     (orders ?? []).map((order) => ({ id: order.id, projectId: order.project_id, siteId: order.site_id, status: order.status, amount: order.amount, currency: order.currency, installerId: order.assigned_installer_id, finalizedAt: order.finalized_at, scheduledDate: order.scheduled_date })),
-    { siteZones: new Map((sites ?? []).map((site) => [site.id, site.zone])), installerNames: new Map((profiles ?? []).map((profile) => [profile.id, profile.full_name])) },
+    {
+      siteZones: new Map((sites ?? []).map((site) => [site.id, site.zone])),
+      installerNames: new Map((profiles ?? []).map((profile) => [profile.id, profile.full_name])),
+      dateFrom: range?.from,
+      dateTo: range?.to,
+    },
   );
 }

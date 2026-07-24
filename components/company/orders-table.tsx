@@ -14,7 +14,13 @@ const ROW_HEIGHT = 60;
 const STATUS_ORDER = Object.keys(ORDER_STATUS) as OrderStatus[];
 type SortMode = "newest" | "amount_desc" | "amount_asc";
 
-export function OrdersTable({ orders }: { orders: OrderRow[] }) {
+export function OrdersTable({
+  orders,
+  showAmounts = true,
+}: {
+  orders: OrderRow[];
+  showAmounts?: boolean;
+}) {
   const t = useTranslations("OrdersTable");
   const statusT = useTranslations("Status");
   const format = useFormatter();
@@ -80,24 +86,24 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           {zones.length ? <select value={zoneFilter} onChange={(event) => setZoneFilter(event.target.value)} className={selectClass}><option value="all">{t("allZones")}</option>{zones.map((zone) => <option key={zone} value={zone}>{zone}</option>)}</select> : null}
           {(installers.length || hasUnassigned) ? <select value={installerFilter} onChange={(event) => setInstallerFilter(event.target.value)} className={selectClass}><option value="all">{t("allInstallers")}</option>{hasUnassigned ? <option value="unassigned">{t("unassigned")}</option> : null}{installers.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select> : null}
-          <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)} className={`${selectClass} col-span-2 w-fit`}><option value="newest">{t("sortNewest")}</option><option value="amount_desc">{t("sortAmountHigh")}</option><option value="amount_asc">{t("sortAmountLow")}</option></select>
+          {showAmounts ? <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)} className={`${selectClass} col-span-2 w-fit`}><option value="newest">{t("sortNewest")}</option><option value="amount_desc">{t("sortAmountHigh")}</option><option value="amount_asc">{t("sortAmountLow")}</option></select> : null}
         </div>
         <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2"><Input className="min-w-0" type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} aria-label={t("dateFrom")} /><span className="text-xs text-muted-foreground">—</span><Input className="min-w-0" type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} aria-label={t("dateTo")} /></div>
         <span className="self-center font-mono text-xs text-muted-foreground">{t("resultCount", { filtered: filtered.length, total: orders.length })}</span>
       </div>
 
       <div className="mt-4 overflow-x-auto rounded-xl border bg-card">
-        <div className="grid min-w-[1060px] grid-cols-[110px_1fr_1fr_130px_110px_120px_130px] gap-4 border-b bg-muted/30 px-4 py-2 text-xs font-medium text-muted-foreground"><span>{t("number")}</span><span>{t("titleSite")}</span><span>{t("project")}</span><span>{t("installer")}</span><span>{t("date")}</span><span>{t("amount")}</span><span>{t("status")}</span></div>
+        <div className={`grid min-w-[940px] gap-4 border-b bg-muted/30 px-4 py-2 text-xs font-medium text-muted-foreground ${showAmounts ? "grid-cols-[110px_1fr_1fr_130px_110px_120px_130px]" : "grid-cols-[110px_1fr_1fr_150px_120px_130px]"}`}><span>{t("number")}</span><span>{t("titleSite")}</span><span>{t("project")}</span><span>{t("installer")}</span><span>{t("date")}</span>{showAmounts ? <span>{t("amount")}</span> : null}<span>{t("status")}</span></div>
         {filtered.length === 0 ? <p className="py-16 text-center text-sm text-muted-foreground">{orders.length === 0 ? t("empty") : t("noMatch")}</p> : (
           <div ref={scrollRef} className="max-h-[600px] min-w-[1060px] overflow-auto"><div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>{virtualizer.getVirtualItems().map((virtualRow) => {
             const order = filtered[virtualRow.index];
-            return <div key={order.id} onClick={() => router.push(`/orders/${order.id}`)} className="absolute inset-x-0 grid cursor-pointer grid-cols-[110px_1fr_1fr_130px_110px_120px_130px] items-center gap-4 border-b px-4 text-sm transition-colors hover:bg-muted/40" style={{ height: virtualRow.size, transform: `translateY(${virtualRow.start}px)` }}>
+            return <div key={order.id} onClick={() => router.push(`/orders/${order.id}`)} className={`absolute inset-x-0 grid cursor-pointer items-center gap-4 border-b px-4 text-sm transition-colors hover:bg-muted/40 ${showAmounts ? "grid-cols-[110px_1fr_1fr_130px_110px_120px_130px]" : "grid-cols-[110px_1fr_1fr_150px_120px_130px]"}`} style={{ height: virtualRow.size, transform: `translateY(${virtualRow.start}px)` }}>
               <span className="font-mono text-xs">{order.order_number}</span>
               <div className="min-w-0"><p className="truncate font-medium">{order.title}</p><p className="truncate text-xs text-muted-foreground">{order.site_name}{order.site_city ? ` · ${order.site_city}` : ""}</p></div>
               <div className="min-w-0"><p className="truncate text-muted-foreground">{order.project_name}</p><p className="truncate font-mono text-xs text-muted-foreground">{order.site_zone || "—"}</p></div>
               <span className="truncate text-muted-foreground">{order.installer_name ?? <span className="text-xs italic opacity-60">{t("unassigned")}</span>}</span>
               <span className="font-mono text-xs text-muted-foreground">{order.scheduled_date ? format.dateTime(new Date(`${order.scheduled_date}T12:00:00`), { day: "2-digit", month: "2-digit" }) : "—"}</span>
-              <span className="font-mono text-xs">{order.amount === null ? "—" : format.number(Number(order.amount), { style: "currency", currency: order.currency, maximumFractionDigits: 0 })}</span>
+              {showAmounts ? <span className="font-mono text-xs">{order.amount === null ? "—" : format.number(Number(order.amount), { style: "currency", currency: order.currency, maximumFractionDigits: 0 })}</span> : null}
               <StatusBadge status={order.status} kind="order" />
             </div>;
           })}</div></div>

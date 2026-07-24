@@ -28,6 +28,7 @@ type Props = {
   disabled: boolean;
   onAddFiles: (files: File[]) => void;
   onRemoveFile: (index: number) => void;
+  canManageFinance: boolean;
 };
 
 const selectClass =
@@ -41,6 +42,7 @@ export function OrderFormFields({
   disabled,
   onAddFiles,
   onRemoveFile,
+  canManageFinance,
 }: Props) {
   const t = useTranslations("CreateOrder");
   const statusT = useTranslations("Status");
@@ -54,7 +56,8 @@ export function OrderFormFields({
 
   const project = projects.find((item) => item.id === projectId) ?? null;
   const orderCurrency = project?.currency ?? currency;
-  const amountEnabled = project?.billingMode === "per_installation";
+  const amountEnabled =
+    canManageFinance && project?.billingMode === "per_installation";
   const site = sites.find((item) => item.id === siteId) ?? null;
   const installer = roster.find((item) => item.id === installerId) ?? null;
 

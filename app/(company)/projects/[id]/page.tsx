@@ -9,6 +9,9 @@ import { EditProjectDialog } from "@/components/company/edit-project-dialog";
 import { PROJECT_STATUS } from "@/lib/domain/status";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { fetchClients } from "@/lib/data/clients";
+import { fetchCoordinators } from "@/lib/data/team";
+import { getCurrentUser } from "@/lib/auth";
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -18,10 +21,13 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     getFormatter(),
   ]);
   const supabase = await createClient();
-  const [{ data: project }, sites, { data: orderAmounts }] = await Promise.all([
-    supabase.from("projects").select("id, name, client_name, description, status, starts_at, ends_at, country, zones, planned_installations, billing_mode, contract_amount, currency").eq("id", id).single(),
+  const [{ data: project }, sites, { data: orderAmounts }, clients, coordinators, user] = await Promise.all([
+    supabase.from("projects").select("id, name, client_name, client_id, coordinator_id, description, status, starts_at, ends_at, country, zones, planned_installations, billing_mode, contract_amount, currency").eq("id", id).single(),
     fetchAllSites(supabase, id),
     supabase.from("work_orders").select("status, amount").eq("project_id", id).neq("status", "cancelada"),
+    fetchClients(supabase),
+    fetchCoordinators(supabase),
+    getCurrentUser(),
   ]);
 
   if (!project) notFound();
@@ -52,8 +58,9 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           {project.description ? <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground">{project.description}</p> : null}
         </div>
         <div className="flex flex-wrap gap-2">
-          <EditProjectDialog projectId={project.id} defaults={{
+          <EditProjectDialog projectId={project.id} clients={clients.map(({ id, name }) => ({ id, name }))} coordinators={coordinators} canManageFinance={user?.role === "company_manager"} fixedCoordinatorId={user?.role === "coordinator" ? user.id : undefined} defaults={{
             name: project.name, clientName: project.client_name, description: project.description,
+            clientId: project.client_id ?? "", coordinatorId: project.coordinator_id ?? "",
             startsAt: project.starts_at ?? "", endsAt: project.ends_at ?? "", country: project.country,
             zones: project.zones, plannedInstallations: project.planned_installations,
             billingMode: project.billing_mode, contractAmount: project.contract_amount,
@@ -69,7 +76,9 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           { label: t("loaded"), value: activeSites.length },
           { label: t("completedSites"), value: completedSites },
           { label: t("openOrders"), value: Math.max(0, totalOrders - completedOrders) },
-          { label: t("projectValue"), value: amount },
+          ...(user?.role === "company_manager"
+            ? [{ label: t("projectValue"), value: amount }]
+            : []),
         ].map((metric) => <Card key={metric.label}><CardContent className="pt-5"><p className="font-mono text-xl font-semibold">{metric.value}</p><p className="mt-1 text-xs text-muted-foreground">{metric.label}</p></CardContent></Card>)}
       </div>
 

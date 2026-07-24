@@ -18,7 +18,11 @@ import type { OrderStatus, TablesInsert } from "@/types/database";
 /** Toda acción de empresa resuelve company_id desde la sesión, nunca del cliente. */
 async function requireManager() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "company_manager" || !user.companyId) {
+  if (
+    !user ||
+    !["company_manager", "coordinator"].includes(user.role) ||
+    !user.companyId
+  ) {
     throw new Error("Acceso denegado");
   }
   return { user, supabase: await createClient(), companyId: user.companyId };
@@ -126,7 +130,11 @@ export async function createOrder(
         requires_freight: parsed.data.requiresFreight,
         freight_details: parsed.data.freightDetails,
         logistics_notes: parsed.data.logisticsNotes,
-        amount: project.billing_mode === "per_installation" ? parsed.data.amount : null,
+        amount:
+          user.role === "company_manager" &&
+          project.billing_mode === "per_installation"
+            ? parsed.data.amount
+            : null,
         currency: project.currency,
         assigned_installer_id: parsed.data.installerId,
         created_by: user.id,
@@ -299,12 +307,46 @@ export async function createOrdersForProject(
 
   const { data: project } = await supabase
     .from("projects")
-    .select("id, currency")
+    .select("id, currency, country, zones, planned_installations")
     .eq("id", projectId)
     .eq("company_id", companyId)
     .single();
   if (!project) {
     return { error: t("projectNotFound"), created: 0, skipped: 0 };
+  }
+
+  const { count: activeSiteCount } = await supabase
+    .from("sites")
+    .select("id", { count: "exact", head: true })
+    .eq("project_id", projectId)
+    .is("archived_at", null);
+  const missingSites = Math.max(
+    0,
+    project.planned_installations - (activeSiteCount ?? 0),
+  );
+  if (missingSites > 0) {
+    const start = (activeSiteCount ?? 0) + 1;
+    const zone = project.zones[0] ?? (project.country === "BR" ? "BR" : "Interior");
+    const placeholders: TablesInsert<"sites">[] = Array.from(
+      { length: missingSites },
+      (_, index) => ({
+        company_id: companyId,
+        project_id: projectId,
+        name: createOrdersT("placeholderName", { number: start + index }),
+        zone,
+        state: project.country === "BR" ? zone : "",
+        external_ref: `PEND-${String(start + index).padStart(5, "0")}`,
+        is_placeholder: true,
+      }),
+    );
+    for (let i = 0; i < placeholders.length; i += BATCH_SIZE) {
+      const { error } = await supabase
+        .from("sites")
+        .insert(placeholders.slice(i, i + BATCH_SIZE));
+      if (error) {
+        return { error: error.message, created: 0, skipped: 0 };
+      }
+    }
   }
 
   // Todos los puntos del proyecto (paginado: PostgREST corta en 1000).

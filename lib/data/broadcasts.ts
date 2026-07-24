@@ -6,6 +6,7 @@ import type {
   ApplicationStatus,
   BroadcastStatus,
   Database,
+  OrderCurrency,
 } from "@/types/database";
 
 export type ProjectOption = { id: string; name: string };
@@ -41,6 +42,13 @@ export type ManagerBroadcast = {
   acceptedCount: number;
   applicants: BroadcastApplicant[];
   availableOrders: BroadcastOrderOption[];
+  scheduledDate: string | null;
+  scheduledEndDate: string | null;
+  requirements: string;
+  logisticsNotes: string;
+  payVisible: boolean;
+  payAmount: number | null;
+  currency: OrderCurrency;
 };
 
 export type BroadcastBoard = {
@@ -59,6 +67,13 @@ export type InstallerJob = {
   createdAt: string;
   applicationStatus: ApplicationStatus | null;
   applicationMessage: string | null;
+  scheduledDate: string | null;
+  scheduledEndDate: string | null;
+  requirements: string;
+  logisticsNotes: string;
+  payVisible: boolean;
+  payAmount: number | null;
+  currency: OrderCurrency;
 };
 
 export type InstallerJobsBoard = {
@@ -75,7 +90,7 @@ export async function fetchBroadcastBoard(
     await Promise.all([
       supabase
         .from("broadcasts")
-        .select("id, project_id, zone, title, description, slots, status, created_at")
+        .select("id, project_id, zone, title, description, slots, status, created_at, scheduled_date, scheduled_end_date, requirements, logistics_notes, pay_visible, pay_amount, currency")
         .order("created_at", { ascending: false }),
       supabase
         .from("projects")
@@ -168,6 +183,13 @@ export async function fetchBroadcastBoard(
         slots: broadcast.slots,
         status: broadcast.status,
         createdAt: broadcast.created_at,
+        scheduledDate: broadcast.scheduled_date,
+        scheduledEndDate: broadcast.scheduled_end_date,
+        requirements: broadcast.requirements,
+        logisticsNotes: broadcast.logistics_notes,
+        payVisible: broadcast.pay_visible,
+        payAmount: broadcast.pay_amount,
+        currency: broadcast.currency,
         acceptedCount: ownApplications.filter(
           (application) => application.status === "accepted",
         ).length,
@@ -209,7 +231,7 @@ export async function fetchInstallerJobs(
     await Promise.all([
       supabase
         .from("broadcasts")
-        .select("id, zone, title, description, slots, status, created_at")
+        .select("id, zone, title, description, slots, status, created_at, scheduled_date, scheduled_end_date, requirements, logistics_notes, pay_visible, pay_amount, currency")
         .order("created_at", { ascending: false }),
       supabase
         .from("broadcast_applications")
@@ -241,6 +263,13 @@ export async function fetchInstallerJobs(
         createdAt: broadcast.created_at,
         applicationStatus: application?.status ?? null,
         applicationMessage: application?.message ?? null,
+        scheduledDate: broadcast.scheduled_date,
+        scheduledEndDate: broadcast.scheduled_end_date,
+        requirements: broadcast.requirements,
+        logisticsNotes: broadcast.logistics_notes,
+        payVisible: broadcast.pay_visible,
+        payAmount: broadcast.pay_amount,
+        currency: broadcast.currency,
       };
     }),
   };

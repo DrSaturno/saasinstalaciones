@@ -33,7 +33,10 @@ export type InviteResult = {
  * Crea una invitación para un instalador y envía el email como best effort.
  * El token siempre vuelve al manager para conservar el flujo manual de respaldo.
  */
-export async function inviteInstaller(email: string): Promise<InviteResult> {
+export async function inviteInstaller(
+  email: string,
+  role: "installer" | "coordinator" = "installer",
+): Promise<InviteResult> {
   const t = await getTranslations("Errors");
   const parsed = emailSchema.safeParse(email.trim().toLowerCase());
   if (!parsed.success) {
@@ -49,6 +52,7 @@ export async function inviteInstaller(email: string): Promise<InviteResult> {
         .select("token")
         .eq("company_id", companyId)
         .eq("email", parsed.data)
+        .eq("role", role)
         .eq("status", "pending")
         .maybeSingle(),
       supabase.from("companies").select("name").eq("id", companyId).single(),
@@ -62,7 +66,7 @@ export async function inviteInstaller(email: string): Promise<InviteResult> {
     if (!token) {
       const { data, error } = await supabase
         .from("invitations")
-        .insert({ company_id: companyId, email: parsed.data })
+        .insert({ company_id: companyId, email: parsed.data, role })
         .select("token")
         .single();
       if (error || !data) {

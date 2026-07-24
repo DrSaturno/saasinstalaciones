@@ -8,6 +8,8 @@ export type NavIcon =
   | "tasks"
   | "jobs"
   | "profile"
-  | "companies";
+  | "companies"
+  | "clients"
+  | "messages";
 
 export type NavItem = { href: string; label: string; icon: NavIcon };

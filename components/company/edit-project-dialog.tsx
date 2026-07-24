@@ -12,7 +12,21 @@ import type { ProjectFormDefaults } from "@/lib/domain/projects";
 
 const initial: ActionState = { error: null };
 
-export function EditProjectDialog({ projectId, defaults }: { projectId: string; defaults: ProjectFormDefaults }) {
+export function EditProjectDialog({
+  projectId,
+  defaults,
+  clients,
+  coordinators,
+  canManageFinance,
+  fixedCoordinatorId,
+}: {
+  projectId: string;
+  defaults: ProjectFormDefaults;
+  clients: { id: string; name: string }[];
+  coordinators: { id: string; name: string }[];
+  canManageFinance: boolean;
+  fixedCoordinatorId?: string;
+}) {
   const t = useTranslations("CreateProject");
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -36,7 +50,7 @@ export function EditProjectDialog({ projectId, defaults }: { projectId: string; 
       <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader><DialogTitle>{t("editTitle")}</DialogTitle><DialogDescription>{t("editDescription")}</DialogDescription></DialogHeader>
         <form action={formAction} className="flex flex-col gap-5">
-          <ProjectFormFields defaults={defaults} pending={pending} />
+          <ProjectFormFields defaults={defaults} pending={pending} clients={clients} coordinators={coordinators} canManageFinance={canManageFinance} fixedCoordinatorId={fixedCoordinatorId} />
           {state.error ? <p className="text-sm text-destructive" role="alert">{state.error}</p> : null}
           <Button type="submit" disabled={pending}>{pending ? t("saving") : t("save")}</Button>
         </form>

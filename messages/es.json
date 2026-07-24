@@ -23,6 +23,8 @@
     "home": "Inicio",
     "projects": "Proyectos",
     "orders": "Órdenes",
+    "clients": "Clientes",
+    "messages": "Mensajería",
     "team": "Equipo",
     "broadcasts": "Bolsa de zona",
     "finance": "Finanzas",
@@ -300,7 +302,12 @@
       "reviewOrders": "Reprogramar trabajos",
       "approveWork": "Aprobar trabajos",
       "financeReport": "Exportar informe"
-    }
+    },
+    "quickActionDone": "Acción aplicada",
+    "quickActionEmpty": "No hay órdenes que requieran esta acción.",
+    "selectInstaller": "Elegí un instalador",
+    "apply": "Aplicar",
+    "cancelledLabel": "Órdenes canceladas"
   },
   "OrderIncidents": {
     "title": "Incidencias",
@@ -360,6 +367,10 @@
     "empty": "No hay proyectos con datos financieros.",
     "emptyBreakdown": "Todavía no hay órdenes para desglosar.",
     "allocationNote": "En proyectos cobrados globalmente, el importe se distribuye entre las órdenes no canceladas sólo para obtener métricas operativas por zona, instalador y período. El total autorizado sigue siendo el importe del proyecto.",
+    "periods": { "week": "Semana", "fortnight": "Quincena", "month": "Mes", "semester": "Semestre" },
+    "from": "Desde",
+    "to": "Hasta",
+    "applyPeriod": "Aplicar fechas",
     "csv": { "project": "Proyecto", "mode": "Modalidad", "currency": "Moneda", "contracted": "Contratado", "completed": "Realizado", "pending": "Pendiente", "progress": "Avance" }
   },
   "Projects": {
@@ -452,7 +463,11 @@
   },
   "Team": {
     "title": "Equipo",
-    "description": "Los instaladores de tu equipo pueden recibir órdenes de trabajo."
+    "description": "Los instaladores de tu equipo pueden recibir órdenes de trabajo.",
+    "coordinators": "Coordinadores",
+    "noCoordinators": "Todavía no hay coordinadores.",
+    "unavailableTitle": "Instaladores indispuestos",
+    "noUnavailable": "No hay indisponibilidades próximas."
   },
   "Broadcasts": {
     "eyebrow": "Despacho por zona",
@@ -524,6 +539,9 @@
     "namePlaceholder": "Refacción Estaciones Shell 2026",
     "client": "Cliente",
     "clientPlaceholder": "Shell Argentina",
+    "selectClient": "Elegí un cliente",
+    "coordinator": "Coordinador responsable",
+    "selectCoordinator": "Elegí un coordinador",
     "country": "País del proyecto",
     "argentina": "Argentina",
     "brazil": "Brasil",
@@ -561,10 +579,12 @@
     "recognized": "Columnas reconocidas",
     "columns": "nombre (obligatoria), direccion, ciudad, provincia, zona, codigo",
     "variants": "Acepta variantes en portugués e inglés (endereco, cidade, city, address…).",
-    "importing": "Importando…"
+    "importing": "Importando…",
+    "downloadTemplate": "Descargar planilla modelo"
   },
   "CreateOrders": {
     "defaultTitle": "Instalación",
+    "placeholderName": "Instalación pendiente {number}",
     "trigger": "Generar órdenes",
     "title": "Generar órdenes de trabajo",
     "description": "Se crea una orden por cada punto del proyecto que todavía no tenga una. Los puntos que ya tienen orden se saltean.",
@@ -757,6 +777,9 @@
     "title": "Invitar instalador",
     "description": "Generamos un link de invitación para que se sume a tu equipo.",
     "email": "Email del instalador",
+    "role": "Perfil a invitar",
+    "installerRole": "Instalador",
+    "coordinatorRole": "Coordinador",
     "creating": "Creando…",
     "submit": "Crear invitación",
     "created": "Invitación creada",
@@ -779,7 +802,8 @@
     "copy": "Copiar link",
     "copied": "Link copiado",
     "cancel": "Cancelar",
-    "cancelled": "Invitación cancelada"
+    "cancelled": "Invitación cancelada",
+    "roles": { "installer": "Instalador", "coordinator": "Coordinador" }
   },
   "Roster": {
     "removed": "{name} salió del equipo",
@@ -805,6 +829,14 @@
     "slots": "Cupos",
     "detail": "Detalle",
     "detailPlaceholder": "Alcance, fechas estimadas y requisitos…",
+    "scheduledDate": "Fecha de inicio",
+    "scheduledEndDate": "Fecha de finalización",
+    "requirements": "Requisitos y especialidades",
+    "requirementsPlaceholder": "Herramientas, experiencia, documentación o habilidades necesarias…",
+    "logistics": "Logística y acceso",
+    "logisticsPlaceholder": "Materiales, contacto en sitio, acceso, horarios y observaciones…",
+    "showPay": "Mostrar la paga al instalador",
+    "payAmount": "Paga por el trabajo",
     "publishing": "Publicando…",
     "submit": "Publicar búsqueda",
     "published": "Búsqueda publicada"
@@ -844,6 +876,7 @@
     "success": "{name} se sumó al equipo"
   },
   "JobCard": {
+    "requirements": "Requisitos",
     "slots": "{count, plural, =1 {# cupo} other {# cupos}}",
     "received": "La empresa ya recibió tu postulación.",
     "apply": "Quiero postularme",
@@ -853,6 +886,38 @@
     "sending": "Enviando…",
     "submit": "Enviar postulación",
     "sent": "Postulación enviada"
+  },
+  "Clients": {
+    "title": "Clientes",
+    "description": "Agenda de empresas, puntos instalados e historial de trabajos.",
+    "new": "Nuevo cliente",
+    "edit": "Editar",
+    "newTitle": "Nuevo cliente",
+    "editTitle": "Editar cliente",
+    "name": "Razón social o nombre",
+    "taxId": "CUIT / identificación fiscal",
+    "contact": "Contacto",
+    "email": "Email",
+    "phone": "Teléfono",
+    "address": "Dirección",
+    "notes": "Notas",
+    "save": "Guardar cliente",
+    "saving": "Guardando…",
+    "saved": "Cliente guardado",
+    "noContact": "Sin datos de contacto",
+    "projectCount": "{count, plural, =1 {# proyecto} other {# proyectos}}",
+    "siteCount": "{count, plural, =1 {# punto} other {# puntos}}",
+    "empty": "Todavía no hay clientes cargados.",
+    "back": "← Clientes",
+    "noOrders": "Este punto todavía no tiene órdenes.",
+    "noSites": "Este cliente todavía no tiene puntos de instalación."
+  },
+  "Messages": {
+    "title": "Mensajería",
+    "description": "Canal oficial entre la empresa y sus instaladores.",
+    "empty": "Todavía no hay conversaciones.",
+    "back": "← Conversaciones",
+    "companyChannel": "Canal con la empresa"
   },
   "TaskActions": {
     "queued": "{message} · se enviará al recuperar señal",

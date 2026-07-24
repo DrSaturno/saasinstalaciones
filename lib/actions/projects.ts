@@ -10,9 +10,13 @@ import { projectInputSchema } from "@/lib/domain/projects";
 import type { TablesInsert } from "@/types/database";
 
 /** Toda acción de empresa resuelve company_id desde la sesión, nunca del cliente. */
-async function requireManager() {
+async function requireOperator() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "company_manager" || !user.companyId) {
+  if (
+    !user ||
+    !["company_manager", "coordinator"].includes(user.role) ||
+    !user.companyId
+  ) {
     throw new Error("Acceso denegado");
   }
   return { user, supabase: await createClient(), companyId: user.companyId };
@@ -23,7 +27,8 @@ export type ActionState = { error: string | null; ok?: boolean };
 function parseProjectForm(formData: FormData) {
   return projectInputSchema.safeParse({
     name: formData.get("name"),
-    clientName: formData.get("clientName"),
+    clientId: formData.get("clientId"),
+    coordinatorId: formData.get("coordinatorId"),
     description: formData.get("description") ?? "",
     startsAt: formData.get("startsAt") ?? "",
     endsAt: formData.get("endsAt") ?? "",
@@ -46,11 +51,32 @@ export async function createProject(
   }
 
   try {
-    const { supabase, companyId } = await requireManager();
+    const { supabase, companyId, user } = await requireOperator();
+    const [{ data: client }, { data: coordinator }] = await Promise.all([
+      supabase
+        .from("clients")
+        .select("id, name")
+        .eq("id", parsed.data.clientId)
+        .eq("company_id", companyId)
+        .single(),
+      supabase
+        .from("profiles")
+        .select("id")
+        .eq(
+          "id",
+          user.role === "coordinator" ? user.id : parsed.data.coordinatorId,
+        )
+        .eq("company_id", companyId)
+        .eq("role", "coordinator")
+        .single(),
+    ]);
+    if (!client || !coordinator) return { error: t("invalidData") };
     const { error } = await supabase.from("projects").insert({
       company_id: companyId,
       name: parsed.data.name,
-      client_name: parsed.data.clientName,
+      client_name: client.name,
+      client_id: client.id,
+      coordinator_id: coordinator.id,
       description: parsed.data.description,
       status: "active",
       starts_at: parsed.data.startsAt,
@@ -58,9 +84,14 @@ export async function createProject(
       country: parsed.data.country,
       zones: parsed.data.zones,
       planned_installations: parsed.data.plannedInstallations,
-      billing_mode: parsed.data.billingMode,
+      billing_mode:
+        user.role === "company_manager"
+          ? parsed.data.billingMode
+          : "per_installation",
       contract_amount:
-        parsed.data.billingMode === "project" ? parsed.data.contractAmount : null,
+        user.role === "company_manager" && parsed.data.billingMode === "project"
+          ? parsed.data.contractAmount
+          : null,
       currency: parsed.data.country === "BR" ? "BRL" : "ARS",
     });
     if (error) return { error: error.message };
@@ -83,12 +114,20 @@ export async function updateProject(
   if (!parsed.success) return { error: t("invalidData") };
 
   try {
-    const { supabase, companyId } = await requireManager();
+    const { supabase, companyId, user } = await requireOperator();
     const [{ data: current }, { data: sites }] = await Promise.all([
-      supabase.from("projects").select("contract_amount, country").eq("id", projectId).eq("company_id", companyId).single(),
+      supabase.from("projects").select("contract_amount, country, billing_mode, currency, coordinator_id").eq("id", projectId).eq("company_id", companyId).single(),
       supabase.from("sites").select("zone").eq("project_id", projectId).eq("company_id", companyId),
     ]);
     if (!current) return { error: t("projectNotFound") };
+    if (user.role === "coordinator" && current.coordinator_id !== user.id) {
+      return { error: t("accessDenied") };
+    }
+    const [{ data: client }, { data: coordinator }] = await Promise.all([
+      supabase.from("clients").select("id, name").eq("id", parsed.data.clientId).eq("company_id", companyId).single(),
+      supabase.from("profiles").select("id").eq("id", user.role === "coordinator" ? user.id : parsed.data.coordinatorId).eq("company_id", companyId).eq("role", "coordinator").single(),
+    ]);
+    if (!client || !coordinator) return { error: t("invalidData") };
     if ((sites ?? []).length > 0 && current.country !== parsed.data.country) return { error: t("projectCountryLocked") };
     const zonesInUse = [...new Set((sites ?? []).map((site) => site.zone).filter(Boolean))];
     if (zonesInUse.some((zone) => !parsed.data.zones.includes(zone))) return { error: t("projectZonesInUse") };
@@ -96,17 +135,24 @@ export async function updateProject(
       .from("projects")
       .update({
         name: parsed.data.name,
-        client_name: parsed.data.clientName,
+        client_name: client.name,
+        client_id: client.id,
+        coordinator_id: coordinator.id,
         description: parsed.data.description,
         starts_at: parsed.data.startsAt,
         ends_at: parsed.data.endsAt,
         country: parsed.data.country,
         zones: parsed.data.zones,
         planned_installations: parsed.data.plannedInstallations,
-        billing_mode: parsed.data.billingMode,
+        billing_mode: user.role === "company_manager" ? parsed.data.billingMode : current.billing_mode,
         contract_amount:
-          parsed.data.billingMode === "project" ? parsed.data.contractAmount : current.contract_amount,
-        currency: parsed.data.country === "BR" ? "BRL" : "ARS",
+          user.role === "company_manager" && parsed.data.billingMode === "project"
+            ? parsed.data.contractAmount
+            : current.contract_amount,
+        currency:
+          user.role === "company_manager"
+            ? parsed.data.country === "BR" ? "BRL" : "ARS"
+            : current.currency,
       })
       .eq("id", projectId)
       .eq("company_id", companyId)
@@ -131,7 +177,7 @@ export async function updateProjectStatus(
 ): Promise<ActionState> {
   const t = await getTranslations("Errors");
   try {
-    const { supabase, companyId } = await requireManager();
+    const { supabase, companyId } = await requireOperator();
     const { error } = await supabase
       .from("projects")
       .update({ status })
@@ -156,6 +202,8 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   state: ["provincia", "state", "estado", "departamento"],
   zone: ["zona", "zone", "region", "regiao"],
   externalRef: ["codigo", "ref", "referencia", "external", "id", "externalref"],
+  lat: ["lat", "latitud", "latitude"],
+  lng: ["lng", "lon", "longitud", "longitude"],
 };
 
 const siteRowSchema = z.object({
@@ -165,6 +213,8 @@ const siteRowSchema = z.object({
   state: z.string().default(""),
   zone: z.string().default(""),
   externalRef: z.string().optional(),
+  lat: z.union([z.literal(""), z.coerce.number().min(-90).max(90)]),
+  lng: z.union([z.literal(""), z.coerce.number().min(-180).max(180)]),
 });
 
 export type ImportResult = {
@@ -182,7 +232,7 @@ export async function importSites(
   const t = await getTranslations("Errors");
   let ctx;
   try {
-    ctx = await requireManager();
+    ctx = await requireOperator();
   } catch {
     return {
       error: t("accessDenied"),
@@ -248,6 +298,8 @@ export async function importSites(
       state: importedState || (project.country === "BR" ? zone : ""),
       zone,
       externalRef: get("externalRef") || undefined,
+      lat: get("lat"),
+      lng: get("lng"),
     });
 
     if (!parsed.success) {
@@ -276,6 +328,8 @@ export async function importSites(
       state: parsed.data.state,
       zone: parsed.data.zone,
       external_ref: parsed.data.externalRef ?? null,
+      lat: parsed.data.lat === "" ? null : parsed.data.lat,
+      lng: parsed.data.lng === "" ? null : parsed.data.lng,
     });
   });
 

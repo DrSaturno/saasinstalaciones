@@ -23,6 +23,8 @@
     "home": "Início",
     "projects": "Projetos",
     "orders": "Ordens",
+    "clients": "Clientes",
+    "messages": "Mensagens",
     "team": "Equipe",
     "broadcasts": "Oportunidades por região",
     "finance": "Finanças",
@@ -300,7 +302,12 @@
       "reviewOrders": "Reagendar trabalhos",
       "approveWork": "Aprovar trabalhos",
       "financeReport": "Exportar relatório"
-    }
+    },
+    "quickActionDone": "Ação aplicada",
+    "quickActionEmpty": "Não há ordens que exijam esta ação.",
+    "selectInstaller": "Escolha um instalador",
+    "apply": "Aplicar",
+    "cancelledLabel": "Ordens canceladas"
   },
   "OrderIncidents": {
     "title": "Ocorrências",
@@ -360,6 +367,10 @@
     "empty": "Não há projetos com dados financeiros.",
     "emptyBreakdown": "Ainda não há ordens para detalhar.",
     "allocationNote": "Nos projetos cobrados globalmente, o valor é distribuído entre as ordens não canceladas apenas para obter métricas operacionais por zona, instalador e período. O total autorizado continua sendo o valor do projeto.",
+    "periods": { "week": "Semana", "fortnight": "Quinzena", "month": "Mês", "semester": "Semestre" },
+    "from": "De",
+    "to": "Até",
+    "applyPeriod": "Aplicar datas",
     "csv": { "project": "Projeto", "mode": "Modalidade", "currency": "Moeda", "contracted": "Contratado", "completed": "Realizado", "pending": "Pendente", "progress": "Progresso" }
   },
   "Projects": {
@@ -452,7 +463,11 @@
   },
   "Team": {
     "title": "Equipe",
-    "description": "Os instaladores da sua equipe podem receber ordens de serviço."
+    "description": "Os instaladores da sua equipe podem receber ordens de serviço.",
+    "coordinators": "Coordenadores",
+    "noCoordinators": "Ainda não há coordenadores.",
+    "unavailableTitle": "Instaladores indisponíveis",
+    "noUnavailable": "Não há indisponibilidades próximas."
   },
   "Broadcasts": {
     "eyebrow": "Distribuição por região",
@@ -524,6 +539,9 @@
     "namePlaceholder": "Reforma Postos Shell 2026",
     "client": "Cliente",
     "clientPlaceholder": "Shell Brasil",
+    "selectClient": "Escolha um cliente",
+    "coordinator": "Coordenador responsável",
+    "selectCoordinator": "Escolha um coordenador",
     "country": "País do projeto",
     "argentina": "Argentina",
     "brazil": "Brasil",
@@ -561,10 +579,12 @@
     "recognized": "Colunas reconhecidas",
     "columns": "nome (obrigatória), endereco, cidade, estado, zona, codigo",
     "variants": "Aceita variações em português, espanhol e inglês (direccion, ciudad, city, address…).",
-    "importing": "Importando…"
+    "importing": "Importando…",
+    "downloadTemplate": "Baixar planilha modelo"
   },
   "CreateOrders": {
     "defaultTitle": "Instalação",
+    "placeholderName": "Instalação pendente {number}",
     "trigger": "Gerar ordens",
     "title": "Gerar ordens de serviço",
     "description": "Será criada uma ordem para cada ponto do projeto que ainda não tenha uma. Pontos que já possuem ordem serão ignorados.",
@@ -757,6 +777,9 @@
     "title": "Convidar instalador",
     "description": "Geramos um link de convite para que ele entre na sua equipe.",
     "email": "E-mail do instalador",
+    "role": "Perfil a convidar",
+    "installerRole": "Instalador",
+    "coordinatorRole": "Coordenador",
     "creating": "Criando…",
     "submit": "Criar convite",
     "created": "Convite criado",
@@ -779,7 +802,8 @@
     "copy": "Copiar link",
     "copied": "Link copiado",
     "cancel": "Cancelar",
-    "cancelled": "Convite cancelado"
+    "cancelled": "Convite cancelado",
+    "roles": { "installer": "Instalador", "coordinator": "Coordenador" }
   },
   "Roster": {
     "removed": "{name} saiu da equipe",
@@ -805,6 +829,14 @@
     "slots": "Vagas",
     "detail": "Detalhes",
     "detailPlaceholder": "Escopo, datas estimadas e requisitos…",
+    "scheduledDate": "Data de início",
+    "scheduledEndDate": "Data de término",
+    "requirements": "Requisitos e especialidades",
+    "requirementsPlaceholder": "Ferramentas, experiência, documentação ou habilidades necessárias…",
+    "logistics": "Logística e acesso",
+    "logisticsPlaceholder": "Materiais, contato no local, acesso, horários e observações…",
+    "showPay": "Mostrar pagamento ao instalador",
+    "payAmount": "Pagamento pelo trabalho",
     "publishing": "Publicando…",
     "submit": "Publicar oportunidade",
     "published": "Oportunidade publicada"
@@ -844,6 +876,7 @@
     "success": "{name} entrou para a equipe"
   },
   "JobCard": {
+    "requirements": "Requisitos",
     "slots": "{count, plural, =1 {# vaga} other {# vagas}}",
     "received": "A empresa já recebeu sua candidatura.",
     "apply": "Quero me candidatar",
@@ -853,6 +886,38 @@
     "sending": "Enviando…",
     "submit": "Enviar candidatura",
     "sent": "Candidatura enviada"
+  },
+  "Clients": {
+    "title": "Clientes",
+    "description": "Agenda de empresas, pontos instalados e histórico de trabalhos.",
+    "new": "Novo cliente",
+    "edit": "Editar",
+    "newTitle": "Novo cliente",
+    "editTitle": "Editar cliente",
+    "name": "Razão social ou nome",
+    "taxId": "CNPJ / identificação fiscal",
+    "contact": "Contato",
+    "email": "E-mail",
+    "phone": "Telefone",
+    "address": "Endereço",
+    "notes": "Notas",
+    "save": "Salvar cliente",
+    "saving": "Salvando…",
+    "saved": "Cliente salvo",
+    "noContact": "Sem dados de contato",
+    "projectCount": "{count, plural, =1 {# projeto} other {# projetos}}",
+    "siteCount": "{count, plural, =1 {# ponto} other {# pontos}}",
+    "empty": "Ainda não há clientes cadastrados.",
+    "back": "← Clientes",
+    "noOrders": "Este ponto ainda não possui ordens.",
+    "noSites": "Este cliente ainda não possui pontos de instalação."
+  },
+  "Messages": {
+    "title": "Mensagens",
+    "description": "Canal oficial entre a empresa e seus instaladores.",
+    "empty": "Ainda não há conversas.",
+    "back": "← Conversas",
+    "companyChannel": "Canal com a empresa"
   },
   "TaskActions": {
     "queued": "{message} · será enviado quando o sinal voltar",

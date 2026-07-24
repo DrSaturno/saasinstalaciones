@@ -3,7 +3,8 @@ import { projectCurrency, projectInputSchema } from "@/lib/domain/projects";
 
 const base = {
   name: "Campaña nacional",
-  clientName: "Cliente SA",
+  clientId: "11111111-1111-4111-8111-111111111111",
+  coordinatorId: "22222222-2222-4222-8222-222222222222",
   description: "",
   startsAt: "2026-08-01",
   endsAt: "2026-09-01",

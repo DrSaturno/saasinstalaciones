@@ -5,6 +5,7 @@ import type { UserRole } from "@/types/database";
 export const ROLE_HOME: Record<UserRole, string> = {
   platform_admin: "/master",
   company_manager: "/dashboard",
+  coordinator: "/dashboard",
   installer: "/tasks",
 };
 
@@ -12,6 +13,7 @@ export const ROLE_HOME: Record<UserRole, string> = {
 export const ROLE_AREA_PREFIX: Record<UserRole, string> = {
   platform_admin: "/master",
   company_manager: "/dashboard",
+  coordinator: "/dashboard",
   installer: "/tasks",
 };
 

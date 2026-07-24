@@ -67,7 +67,7 @@ export async function flush(): Promise<number> {
           const { error } = await supabase.from("order_updates").upsert(
             {
               id: item.id,
-              order_id: item.orderId,
+              order_id: item.orderId!,
               company_id: item.companyId!,
               installer_id: user.id,
               type: item.updateType!,
@@ -88,15 +88,37 @@ export async function flush(): Promise<number> {
           const { data: order } = await supabase
             .from("work_orders")
             .select("status, assigned_installer_id")
-            .eq("id", item.orderId)
+            .eq("id", item.orderId!)
             .single();
           if (order && order.status !== item.toStatus) {
             const { error } = await supabase
               .from("work_orders")
               .update({ status: item.toStatus as OrderStatus })
-              .eq("id", item.orderId);
+              .eq("id", item.orderId!);
             if (error) throw error;
           }
+        } else if (item.kind === "chat") {
+          const { error } = await supabase.from("chat_messages").upsert(
+            {
+              id: item.messageId!,
+              thread_id: item.threadId!,
+              company_id: item.companyId!,
+              sender_id: user.id,
+              body: item.body ?? "",
+              attachments: item.attachments ?? [],
+              created_at: new Date(item.createdAt).toISOString(),
+            },
+            { onConflict: "id", ignoreDuplicates: true },
+          );
+          if (error) throw error;
+        } else if (item.kind === "chat_read") {
+          const { error } = await supabase.from("chat_message_reads").upsert({
+            message_id: item.messageId!,
+            company_id: item.companyId!,
+            user_id: user.id,
+            read_at: new Date(item.createdAt).toISOString(),
+          });
+          if (error) throw error;
         }
 
         await db.outbox.delete(item.id);

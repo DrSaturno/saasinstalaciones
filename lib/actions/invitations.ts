@@ -20,7 +20,7 @@ export async function acceptInvitation(token: string): Promise<AcceptState> {
 
   const user = await getCurrentUser();
   if (!user) return { error: t("loginRequired") };
-  if (user.role !== "installer") {
+  if (!["installer", "coordinator"].includes(user.role)) {
     return { error: t("installerOnlyInvitation") };
   }
 

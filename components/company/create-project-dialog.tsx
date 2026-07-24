@@ -18,7 +18,19 @@ import {
 
 const initial: ActionState = { error: null };
 
-export function CreateProjectDialog() {
+export function CreateProjectDialog({
+  clients,
+  coordinators,
+  canManageFinance,
+  trigger,
+  fixedCoordinatorId,
+}: {
+  clients: { id: string; name: string }[];
+  coordinators: { id: string; name: string }[];
+  canManageFinance: boolean;
+  trigger?: React.ReactNode;
+  fixedCoordinatorId?: string;
+}) {
   const t = useTranslations("CreateProject");
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -37,14 +49,14 @@ export function CreateProjectDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild><Button>{t("trigger")}</Button></DialogTrigger>
+      <DialogTrigger asChild>{trigger ?? <Button>{t("trigger")}</Button>}</DialogTrigger>
       <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{t("title")}</DialogTitle>
           <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
         <form action={formAction} className="flex flex-col gap-5">
-          <ProjectFormFields pending={pending} />
+          <ProjectFormFields pending={pending} clients={clients} coordinators={coordinators} canManageFinance={canManageFinance} fixedCoordinatorId={fixedCoordinatorId} />
           {state.error ? <p className="text-sm text-destructive" role="alert">{state.error}</p> : null}
           <Button type="submit" disabled={pending}>
             {pending ? t("creating") : t("submit")}

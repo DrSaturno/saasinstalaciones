@@ -2,7 +2,6 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { DashboardInsights } from "@/components/company/dashboard-insights";
 import { DashboardExecution } from "@/components/company/dashboard-execution";
-import { DashboardFinancePulse } from "@/components/company/dashboard-finance-pulse";
 import { DashboardMap } from "@/components/company/dashboard-map";
 import { DashboardMetrics } from "@/components/company/dashboard-metrics";
 import { DashboardOperations } from "@/components/company/dashboard-operations";
@@ -17,6 +16,14 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchZoneForecasts } from "@/lib/weather/forecast";
 import { googleCalendarConfigured } from "@/lib/google-calendar/config";
 import type { Country } from "@/types/database";
+import { CreateProjectDialog } from "@/components/company/create-project-dialog";
+import { CreateOrderDialog } from "@/components/company/create-order-dialog";
+import { DashboardOrderAction } from "@/components/company/dashboard-order-actions";
+import { fetchClients } from "@/lib/data/clients";
+import { fetchCoordinators } from "@/lib/data/team";
+import { fetchActiveRoster, fetchAllOrders } from "@/lib/data/orders";
+import { fetchCompanyCurrency, fetchOrderFormProjects } from "@/lib/data/order-form";
+import { getCurrentUser } from "@/lib/auth";
 
 export default async function CompanyDashboard() {
   const [t, supabase] = await Promise.all([
@@ -27,7 +34,17 @@ export default async function CompanyDashboard() {
     supabase.from("companies").select("country").limit(1).maybeSingle(),
     supabase.from("calendar_connections").select("google_email").limit(1).maybeSingle(),
   ]);
-  const overview = await fetchDashboardOverview(supabase, (company?.country ?? "AR") as Country);
+  const [overview, clients, coordinators, roster, orders, projects, currency, user] =
+    await Promise.all([
+      fetchDashboardOverview(supabase, (company?.country ?? "AR") as Country),
+      fetchClients(supabase),
+      fetchCoordinators(supabase),
+      fetchActiveRoster(supabase),
+      fetchAllOrders(supabase),
+      fetchOrderFormProjects(supabase),
+      fetchCompanyCurrency(supabase),
+      getCurrentUser(),
+    ]);
   const forecasts = await fetchZoneForecasts(overview.weatherZones);
 
   return (
@@ -42,8 +59,30 @@ export default async function CompanyDashboard() {
       </header>
 
       <DashboardMetrics metrics={overview.metrics} />
+      <DashboardQuickActions
+        newProject={
+          <CreateProjectDialog
+            clients={clients.map(({ id, name }) => ({ id, name }))}
+            coordinators={coordinators}
+            canManageFinance={user?.role === "company_manager"}
+            fixedCoordinatorId={user?.role === "coordinator" ? user.id : undefined}
+            trigger={<Button variant="outline">{t("quickActions.newProject")}</Button>}
+          />
+        }
+        urgentOrder={
+          <CreateOrderDialog
+            projects={projects}
+            roster={roster}
+            currency={currency}
+            canManageFinance={user?.role === "company_manager"}
+            trigger={<Button variant="outline">{t("quickActions.urgentOrder")}</Button>}
+          />
+        }
+        assignPending={<DashboardOrderAction mode="assign" orders={orders.filter((order) => !order.installer_id && !["finalizada", "cancelada"].includes(order.status))} roster={roster} />}
+        reschedule={<DashboardOrderAction mode="reschedule" orders={orders.filter((order) => order.scheduled_date && !["finalizada", "cancelada"].includes(order.status))} roster={roster} />}
+        approve={<DashboardOrderAction mode="approve" orders={orders.filter((order) => order.status === "en_revision")} roster={roster} />}
+      />
       <DashboardPulse alerts={overview.alerts} forecasts={forecasts} />
-      <DashboardQuickActions />
       <DashboardOperations forecasts={forecasts} calendarEmail={calendar?.google_email ?? null} calendarConfigured={googleCalendarConfigured()} />
       <DashboardExecution agenda={overview.agenda} capacity={overview.capacity} sla={overview.sla} />
 
@@ -55,7 +94,6 @@ export default async function CompanyDashboard() {
       <DashboardInsights regions={overview.regions} installers={overview.installers} />
       <DashboardQuality quality={overview.quality} incidents={overview.incidents} />
       <DashboardMap sites={overview.mapSites} availableInstallers={overview.capacity.availableToday} />
-      <DashboardFinancePulse finances={overview.finances} />
     </main>
   );
 }

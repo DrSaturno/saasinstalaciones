@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { CalendarDays, MapPin, MoreHorizontal, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
@@ -178,7 +179,7 @@ function ApplicantRow({
     <div className="p-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium">{applicant.name}</p>
+          <Link href={`/messages/${applicant.installerId}`} className="truncate text-sm font-medium hover:text-primary">{applicant.name}</Link>
           <p className="mt-0.5 text-xs text-muted-foreground">
             <span className="text-warning">★</span> {applicant.ratingCount ? applicant.ratingAvg.toFixed(1) : common("new")} · {t("reviews", { count: applicant.ratingCount })}
           </p>

@@ -16,6 +16,8 @@ import type { BillingMode, Country } from "@/types/database";
 const EMPTY: ProjectFormDefaults = {
   name: "",
   clientName: "",
+  clientId: "",
+  coordinatorId: "",
   description: "",
   startsAt: "",
   endsAt: "",
@@ -32,9 +34,17 @@ const selectClass = "h-9 w-full rounded-lg border border-input bg-transparent px
 export function ProjectFormFields({
   defaults = EMPTY,
   pending,
+  clients,
+  coordinators,
+  canManageFinance = true,
+  fixedCoordinatorId,
 }: {
   defaults?: ProjectFormDefaults;
   pending: boolean;
+  clients: { id: string; name: string }[];
+  coordinators: { id: string; name: string }[];
+  canManageFinance?: boolean;
+  fixedCoordinatorId?: string;
 }) {
   const t = useTranslations("CreateProject");
   const [country, setCountry] = useState<Country>(defaults.country);
@@ -63,18 +73,30 @@ export function ProjectFormFields({
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="project-client">{t("client")}</Label>
-          <Input id="project-client" name="clientName" defaultValue={defaults.clientName} placeholder={t("clientPlaceholder")} required disabled={pending} />
+          <select id="project-client" name="clientId" defaultValue={defaults.clientId} className={selectClass} required disabled={pending}>
+            <option value="">{t("selectClient")}</option>
+            {clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}
+          </select>
         </div>
       </div>
 
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="project-coordinator">{t("coordinator")}</Label>
+        <select id="project-coordinator" name="coordinatorId" defaultValue={fixedCoordinatorId ?? defaults.coordinatorId} className={selectClass} required disabled={pending || !canManageFinance}>
+          <option value="">{t("selectCoordinator")}</option>
+          {coordinators.map((coordinator) => <option key={coordinator.id} value={coordinator.id}>{coordinator.name}</option>)}
+        </select>
+        {!canManageFinance ? <input type="hidden" name="coordinatorId" value={fixedCoordinatorId ?? defaults.coordinatorId} /> : null}
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="flex flex-col gap-2">
+        {canManageFinance ? <div className="flex flex-col gap-2">
           <Label htmlFor="project-country">{t("country")}</Label>
           <select id="project-country" name="country" value={country} onChange={(event) => changeCountry(event.target.value as Country)} className={selectClass} disabled={pending}>
             <option value="AR">{t("argentina")}</option>
             <option value="BR">{t("brazil")}</option>
           </select>
-        </div>
+        </div> : <input type="hidden" name="billingMode" value={defaults.billingMode} />}
         <div className="flex flex-col gap-2">
           <Label htmlFor="planned-installations">{t("plannedInstallations")}</Label>
           <Input id="planned-installations" name="plannedInstallations" type="number" min="0" max="100000" defaultValue={defaults.plannedInstallations} required disabled={pending} />
@@ -101,7 +123,7 @@ export function ProjectFormFields({
         </div>
       </fieldset>
 
-      {billingMode === "project" ? (
+      {canManageFinance && billingMode === "project" ? (
         <div className="flex flex-col gap-2">
           <Label htmlFor="contract-amount">{t("contractAmount")}</Label>
           <div className="relative">
@@ -109,7 +131,7 @@ export function ProjectFormFields({
             <Input id="contract-amount" name="contractAmount" type="number" min="0" step="0.01" defaultValue={defaults.contractAmount ?? ""} className="pl-14 font-mono" required disabled={pending} />
           </div>
         </div>
-      ) : <input type="hidden" name="contractAmount" value="" />}
+      ) : <input type="hidden" name="contractAmount" value={canManageFinance ? "" : (defaults.contractAmount ?? "")} />}
 
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-2">

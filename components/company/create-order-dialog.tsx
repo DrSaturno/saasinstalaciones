@@ -40,6 +40,8 @@ type Props = {
   projects: OrderFormProject[];
   roster: RosterOption[];
   currency: OrderCurrency;
+  trigger?: React.ReactNode;
+  canManageFinance?: boolean;
 };
 
 function safeExtension(file: File) {
@@ -50,7 +52,7 @@ function safeExtension(file: File) {
   return file.type.split("/")[1]?.replace(/[^a-z0-9]/g, "").slice(0, 10) || "file";
 }
 
-export function CreateOrderDialog({ projects, roster, currency }: Props) {
+export function CreateOrderDialog({ projects, roster, currency, trigger, canManageFinance = true }: Props) {
   const t = useTranslations("CreateOrder");
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -141,10 +143,10 @@ export function CreateOrderDialog({ projects, roster, currency }: Props) {
   return (
     <Dialog open={open} onOpenChange={changeOpen}>
       <DialogTrigger asChild>
-        <Button disabled={projects.length === 0}>
+        {trigger ?? <Button disabled={projects.length === 0}>
           <Plus className="size-4" aria-hidden="true" />
           {t("trigger")}
-        </Button>
+        </Button>}
       </DialogTrigger>
       <DialogContent className="max-h-[calc(100dvh-1rem)] max-w-[calc(100%-1rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-6xl">
         <form onSubmit={submit} className="contents">
@@ -169,6 +171,7 @@ export function CreateOrderDialog({ projects, roster, currency }: Props) {
               onRemoveFile={(index) =>
                 setFiles((current) => current.filter((_, itemIndex) => itemIndex !== index))
               }
+              canManageFinance={canManageFinance}
             />
           </div>
 

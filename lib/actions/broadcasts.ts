@@ -16,7 +16,11 @@ export type BroadcastActionState = { error: string | null; ok?: boolean };
 
 async function requireManager() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "company_manager" || !user.companyId) {
+  if (
+    !user ||
+    !["company_manager", "coordinator"].includes(user.role) ||
+    !user.companyId
+  ) {
     throw new Error("Acceso denegado");
   }
   return { user, companyId: user.companyId, supabase: await createClient() };
@@ -44,16 +48,22 @@ export async function createBroadcast(
     title: formData.get("title"),
     description: formData.get("description") ?? "",
     slots: formData.get("slots"),
+    scheduledDate: formData.get("scheduledDate") ?? "",
+    scheduledEndDate: formData.get("scheduledEndDate") ?? "",
+    requirements: formData.get("requirements") ?? "",
+    logisticsNotes: formData.get("logisticsNotes") ?? "",
+    payVisible: formData.get("payVisible") === "on",
+    payAmount: formData.get("payAmount") ?? "",
   });
   if (!parsed.success) {
     return { error: t("invalidData") };
   }
 
   try {
-    const { companyId, supabase } = await requireManager();
+    const { companyId, supabase, user } = await requireManager();
     const { data: project } = await supabase
       .from("projects")
-      .select("id")
+      .select("id, currency")
       .eq("id", parsed.data.projectId)
       .eq("company_id", companyId)
       .single();
@@ -68,6 +78,16 @@ export async function createBroadcast(
         title: parsed.data.title,
         description: parsed.data.description,
         slots: parsed.data.slots,
+        scheduled_date: parsed.data.scheduledDate,
+        scheduled_end_date: parsed.data.scheduledEndDate,
+        requirements: parsed.data.requirements,
+        logistics_notes: parsed.data.logisticsNotes,
+        pay_visible: user.role === "company_manager" && parsed.data.payVisible,
+        pay_amount:
+          user.role === "company_manager" && parsed.data.payVisible
+            ? parsed.data.payAmount
+            : null,
+        currency: project.currency,
       })
       .select("id")
       .single();

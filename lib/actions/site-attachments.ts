@@ -11,7 +11,7 @@ type Result = { error: string | null; ok?: boolean };
 
 async function context(siteId: string) {
   const user = await getCurrentUser();
-  if (!user || user.role !== "company_manager" || !user.companyId) throw new Error("access");
+  if (!user || !["company_manager", "coordinator"].includes(user.role) || !user.companyId) throw new Error("access");
   const supabase = await createClient();
   const { data: site } = await supabase.from("sites").select("id, project_id").eq("id", siteId).eq("company_id", user.companyId).single();
   if (!site) throw new Error("site");

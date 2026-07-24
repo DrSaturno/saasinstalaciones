@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -58,7 +59,9 @@ export function RosterTable({ members }: { members: RosterMember[] }) {
   const Row = ({ m }: { m: RosterMember }) => (
     <TableRow>
       <TableCell>
-        <span className="font-medium">{m.name}</span>
+        <Link href={`/messages/${m.installerId}`} className="font-medium hover:text-primary">
+          {m.name}
+        </Link>
       </TableCell>
       <TableCell className="font-mono text-xs text-muted-foreground">
         {m.zones.length ? m.zones.join(", ") : "—"}

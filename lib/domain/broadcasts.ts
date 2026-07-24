@@ -17,7 +17,16 @@ export const createBroadcastSchema = z.object({
   title,
   description,
   slots,
-});
+  scheduledDate: z.union([z.literal(""), z.iso.date()]).default("").transform((value) => value || null),
+  scheduledEndDate: z.union([z.literal(""), z.iso.date()]).default("").transform((value) => value || null),
+  requirements: z.string().trim().max(1500).default(""),
+  logisticsNotes: z.string().trim().max(1500).default(""),
+  payVisible: z.boolean().default(false),
+  payAmount: z.union([z.literal(""), z.coerce.number().min(0)]).default("").transform((value) => value === "" ? null : value),
+}).refine(
+  (value) => !value.scheduledEndDate || !value.scheduledDate || value.scheduledEndDate >= value.scheduledDate,
+  { path: ["scheduledEndDate"] },
+);
 
 export const updateBroadcastSchema = z.object({
   broadcastId: databaseId("Búsqueda inválida"),

@@ -12,10 +12,11 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getCurrentUser } from "@/lib/auth";
 
 export default async function SiteDetailPage({ params }: { params: Promise<{ id: string; siteId: string }> }) {
   const { id: projectId, siteId } = await params;
-  const [t, format] = await Promise.all([getTranslations("SiteDetail"), getFormatter()]);
+  const [t, format, user] = await Promise.all([getTranslations("SiteDetail"), getFormatter(), getCurrentUser()]);
   const supabase = await createClient();
   const [{ data: site }, { data: project }, { data: orders }, attachments] = await Promise.all([
     supabase.from("sites").select("id, company_id, name, address, city, state, zone, lat, lng, status, external_ref, archived_at, contact_name, contact_phone, contact_email, opening_hours, access_notes, parking_notes, technical_notes, risk_notes, permanent_notes").eq("id", siteId).eq("project_id", projectId).single(),
@@ -68,7 +69,7 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
       <section className="mt-9">
         <h2 className="text-lg font-semibold">{t("history")}</h2><p className="text-sm text-muted-foreground">{t("historyDescription")}</p>
         <div className="mt-4 overflow-hidden rounded-xl border bg-card">
-          {(orders ?? []).length === 0 ? <p className="py-12 text-center text-sm text-muted-foreground">{t("emptyHistory")}</p> : (orders ?? []).map((order) => <Link key={order.id} href={`/orders/${order.id}`} className="grid gap-2 border-b px-4 py-4 transition-colors hover:bg-muted/40 sm:grid-cols-[130px_1fr_130px_120px] sm:items-center"><span className="font-mono text-xs">{order.order_number}</span><div><p className="text-sm font-medium">{order.title}</p><p className="text-xs text-muted-foreground">{format.dateTime(new Date(order.created_at), { dateStyle: "medium" })}</p></div><StatusBadge status={order.status} kind="order" /><span className="text-right font-mono text-sm">{order.amount === null ? "—" : format.number(Number(order.amount), { style: "currency", currency: order.currency })}</span></Link>)}</div>
+          {(orders ?? []).length === 0 ? <p className="py-12 text-center text-sm text-muted-foreground">{t("emptyHistory")}</p> : (orders ?? []).map((order) => <Link key={order.id} href={`/orders/${order.id}`} className={`grid gap-2 border-b px-4 py-4 transition-colors hover:bg-muted/40 sm:items-center ${user?.role === "company_manager" ? "sm:grid-cols-[130px_1fr_130px_120px]" : "sm:grid-cols-[130px_1fr_130px]"}`}><span className="font-mono text-xs">{order.order_number}</span><div><p className="text-sm font-medium">{order.title}</p><p className="text-xs text-muted-foreground">{format.dateTime(new Date(order.created_at), { dateStyle: "medium" })}</p></div><StatusBadge status={order.status} kind="order" />{user?.role === "company_manager" ? <span className="text-right font-mono text-sm">{order.amount === null ? "—" : format.number(Number(order.amount), { style: "currency", currency: order.currency })}</span> : null}</Link>)}</div>
       </section>
     </div>
   );

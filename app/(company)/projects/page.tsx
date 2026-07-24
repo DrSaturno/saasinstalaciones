@@ -5,6 +5,9 @@ import { CreateProjectDialog } from "@/components/company/create-project-dialog"
 import { PROJECT_STATUS } from "@/lib/domain/status";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { fetchClients } from "@/lib/data/clients";
+import { fetchCoordinators } from "@/lib/data/team";
+import { getCurrentUser } from "@/lib/auth";
 
 export default async function ProjectsPage() {
   const [t, statusT] = await Promise.all([
@@ -12,6 +15,11 @@ export default async function ProjectsPage() {
     getTranslations("Status"),
   ]);
   const supabase = await createClient();
+  const [clients, coordinators, user] = await Promise.all([
+    fetchClients(supabase),
+    fetchCoordinators(supabase),
+    getCurrentUser(),
+  ]);
 
   // RLS filtra por empresa: no hace falta (ni conviene) filtrar acá.
   const { data: projects } = await supabase
@@ -40,7 +48,14 @@ export default async function ProjectsPage() {
             {t("description")}
           </p>
         </div>
-        <CreateProjectDialog />
+        <CreateProjectDialog
+          clients={clients.map(({ id, name }) => ({ id, name }))}
+          coordinators={coordinators}
+          canManageFinance={user?.role === "company_manager"}
+          fixedCoordinatorId={
+            user?.role === "coordinator" ? user.id : undefined
+          }
+        />
       </div>
 
       {(projects ?? []).length === 0 ? (

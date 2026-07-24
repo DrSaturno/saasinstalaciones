@@ -4,11 +4,15 @@ import { CreateBroadcastDialog } from "@/components/company/create-broadcast-dia
 import { BroadcastCard } from "@/components/company/broadcast-card";
 import { createClient } from "@/lib/supabase/server";
 import { fetchBroadcastBoard } from "@/lib/data/broadcasts";
+import { getCurrentUser } from "@/lib/auth";
 
 export default async function BroadcastsPage() {
   const t = await getTranslations("Broadcasts");
   const supabase = await createClient();
-  const board = await fetchBroadcastBoard(supabase);
+  const [board, user] = await Promise.all([
+    fetchBroadcastBoard(supabase),
+    getCurrentUser(),
+  ]);
   const openCount = board.broadcasts.filter((item) => item.status === "open").length;
   const pendingCount = board.broadcasts.reduce(
     (total, item) =>
@@ -28,7 +32,7 @@ export default async function BroadcastsPage() {
             {t("description")}
           </p>
         </div>
-        <CreateBroadcastDialog projects={board.projects} zones={board.zones} />
+        <CreateBroadcastDialog projects={board.projects} zones={board.zones} canManageFinance={user?.role === "company_manager"} />
       </div>
 
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border sm:w-fit sm:grid-cols-[160px_160px]">

@@ -23,7 +23,7 @@ export function AcceptInvitation({ token }: { token: string }) {
       setDone(true);
       toast.success(t("joinedToast"));
       // Damos un momento para leer el mensaje antes de ir a las tareas.
-      setTimeout(() => router.push("/tasks"), 1200);
+      setTimeout(() => router.push("/"), 1200);
     });
   };
 
