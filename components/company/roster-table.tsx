@@ -1,11 +1,12 @@
 "use client";
 
 import { useTransition } from "react";
+import { ArrowUpCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { setRosterStatus } from "@/lib/actions/team";
+import { promoteToCoordinator, setRosterStatus } from "@/lib/actions/team";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -18,7 +19,13 @@ import {
 } from "@/components/ui/table";
 import type { RosterMember } from "@/lib/data/team";
 
-export function RosterTable({ members }: { members: RosterMember[] }) {
+export function RosterTable({
+  members,
+  canPromote = false,
+}: {
+  members: RosterMember[];
+  canPromote?: boolean;
+}) {
   const t = useTranslations("Roster");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -39,6 +46,19 @@ export function RosterTable({ members }: { members: RosterMember[] }) {
           ? t("removed", { name })
           : t("reactivated", { name }),
       );
+      router.refresh();
+    });
+  };
+
+  const promote = (installerId: string, name: string) => {
+    if (!window.confirm(t("promoteConfirm", { name }))) return;
+    startTransition(async () => {
+      const res = await promoteToCoordinator(installerId);
+      if (res.error) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success(t("promoted", { name }));
       router.refresh();
     });
   };
@@ -81,14 +101,27 @@ export function RosterTable({ members }: { members: RosterMember[] }) {
             {t("reactivate")}
           </Button>
         ) : (
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={pending}
-            onClick={() => change(m.installerId, "removed", m.name)}
-          >
-            {t("remove")}
-          </Button>
+          <div className="flex justify-end gap-2">
+            {canPromote ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={pending}
+                onClick={() => promote(m.installerId, m.name)}
+              >
+                <ArrowUpCircle className="size-3.5" aria-hidden="true" />
+                {t("promote")}
+              </Button>
+            ) : null}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pending}
+              onClick={() => change(m.installerId, "removed", m.name)}
+            >
+              {t("remove")}
+            </Button>
+          </div>
         )}
       </TableCell>
     </TableRow>

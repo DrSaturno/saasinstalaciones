@@ -819,6 +819,10 @@ export interface Database {
         Args: { p_company_id: string; p_entries: Json };
         Returns: void;
       };
+      promote_installer_to_coordinator: {
+        Args: { p_installer_id: string };
+        Returns: void;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

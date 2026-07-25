@@ -116,6 +116,32 @@ export async function cancelInvitation(invitationId: string): Promise<ActionStat
   return { error: null, ok: true };
 }
 
+/**
+ * Asciende a un instalador del roster a coordinador de la empresa.
+ *
+ * El cambio de rol lo hace la RPC vetada `promote_installer_to_coordinator`
+ * (SECURITY DEFINER): valida que quien llama sea manager de la misma empresa,
+ * que el destino sea un instalador activo y que nadie se ascienda a sí mismo.
+ * Al ascender sale del roster y se liberan sus órdenes sin terminar.
+ */
+export async function promoteToCoordinator(installerId: string): Promise<ActionState> {
+  const t = await getTranslations("Errors");
+  try {
+    const { supabase } = await requireManager();
+    const { error } = await supabase.rpc("promote_installer_to_coordinator", {
+      p_installer_id: installerId,
+    });
+    if (error) return { error: error.message };
+
+    revalidatePath("/team");
+    revalidatePath("/orders");
+    revalidatePath("/dashboard");
+  } catch {
+    return { error: t("unexpected") };
+  }
+  return { error: null, ok: true };
+}
+
 /** Cambia el estado de un miembro del roster (quitar / reactivar). */
 export async function setRosterStatus(
   installerId: string,
