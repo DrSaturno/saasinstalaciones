@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { DashboardInsights } from "@/components/company/dashboard-insights";
-import { DashboardExecution } from "@/components/company/dashboard-execution";
+import { DashboardAgenda, DashboardCapacity } from "@/components/company/dashboard-execution";
 import { DashboardMap } from "@/components/company/dashboard-map";
 import { DashboardMetrics } from "@/components/company/dashboard-metrics";
 import { DashboardOperations } from "@/components/company/dashboard-operations";
@@ -49,13 +49,10 @@ export default async function CompanyDashboard() {
 
   return (
     <main className="mx-auto max-w-[1480px] space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="font-mono text-xs font-semibold uppercase tracking-[0.18em] text-primary">{t("eyebrow")}</p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t("description")}</p>
-        </div>
-        <Button asChild variant="outline"><Link href="/orders">{t("viewOrders")}</Link></Button>
+      <header>
+        <p className="font-mono text-xs font-semibold uppercase tracking-[0.18em] text-primary">{t("eyebrow")}</p>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("description")}</p>
       </header>
 
       <DashboardMetrics metrics={overview.metrics} />
@@ -81,14 +78,19 @@ export default async function CompanyDashboard() {
         assignPending={<DashboardOrderAction mode="assign" orders={orders.filter((order) => !order.installer_id && !["finalizada", "cancelada"].includes(order.status))} roster={roster} />}
         reschedule={<DashboardOrderAction mode="reschedule" orders={orders.filter((order) => order.scheduled_date && !["finalizada", "cancelada"].includes(order.status))} roster={roster} />}
         approve={<DashboardOrderAction mode="approve" orders={orders.filter((order) => order.status === "en_revision")} roster={roster} />}
+        viewOrders={<Button asChild variant="outline"><Link href="/orders">{t("quickActions.viewOrders")}</Link></Button>}
       />
       <DashboardPulse alerts={overview.alerts} forecasts={forecasts} />
       <DashboardOperations forecasts={forecasts} calendarEmail={calendar?.google_email ?? null} calendarConfigured={googleCalendarConfigured()} />
-      <DashboardExecution agenda={overview.agenda} capacity={overview.capacity} sla={overview.sla} />
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        <DashboardProjects projects={overview.projects} />
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(300px,0.85fr)]">
+        <DashboardAgenda agenda={overview.agenda} />
         <DashboardTodayOrders orders={overview.todayOrders} />
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)]">
+        <DashboardProjects projects={overview.projects} />
+        <DashboardCapacity capacity={overview.capacity} sla={overview.sla} />
       </section>
 
       <DashboardInsights regions={overview.regions} installers={overview.installers} />

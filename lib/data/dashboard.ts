@@ -125,6 +125,7 @@ export async function fetchDashboardOverview(supabase: SupabaseClient<Database>,
   const orderById = new Map(relevantOrders.map((order) => [order.id, order]));
   const today = localDate(country);
   const weekDates = Array.from({ length: 7 }, (_, index) => addDays(today, index));
+  const agendaDates = Array.from({ length: 15 }, (_, index) => addDays(today, index));
   const todayOrders = liveOrders.filter((order) => order.scheduled_date && order.scheduled_date <= today && (order.scheduled_end_date ?? order.scheduled_date) >= today);
   const finalized = liveOrders.filter((order) => order.status === "finalizada");
   const completedToday = todayOrders.filter((order) => order.status === "finalizada").length;
@@ -142,7 +143,7 @@ export async function fetchDashboardOverview(supabase: SupabaseClient<Database>,
     at: new Date(`${date}T15:00:00Z`),
   });
 
-  const agenda = weekDates.map((date) => {
+  const agenda = agendaDates.map((date) => {
     const daily = liveOrders.filter((order) => order.scheduled_date && order.scheduled_date <= date && (order.scheduled_end_date ?? order.scheduled_date) >= date);
     const capacity = installerIds.filter((id) => availabilityAt(id, date).available).length;
     return { date, total: daily.length, assigned: daily.filter((order) => order.assigned_installer_id).length, completed: daily.filter((order) => order.status === "finalizada").length, capacity, load: workload(daily.length, capacity) };
@@ -232,7 +233,7 @@ export async function fetchDashboardOverview(supabase: SupabaseClient<Database>,
     installers: installerRowsView,
     weatherZones: [...new Map(weatherSource.filter((site) => site.zone).map((site) => [site.zone, { name: site.zone, lat: site.lat, lng: site.lng }])).values()].slice(0, 4),
     agenda,
-    capacity: { availableToday: installerRowsView.filter((item) => item.available).length, total: installerIds.length, unavailable: unavailable.length, weeklyAssignments: agenda.reduce((sum, day) => sum + day.assigned, 0), overloadedDays: agenda.filter((day) => day.load > 100).length, freeSlots: agenda.reduce((sum, day) => sum + Math.max(0, day.capacity - day.total), 0) },
+    capacity: { availableToday: installerRowsView.filter((item) => item.available).length, total: installerIds.length, unavailable: unavailable.length, weeklyAssignments: agenda.slice(0, 7).reduce((sum, day) => sum + day.assigned, 0), overloadedDays: agenda.filter((day) => day.load > 100).length, freeSlots: agenda.slice(0, 7).reduce((sum, day) => sum + Math.max(0, day.capacity - day.total), 0) },
     sla: { onTimeRate: percentage(onTime, finalized.length), averageAssignmentHours: Math.round(average(completedAssignmentHours) * 10) / 10, averageCompletionDays: Math.round(average(completedDays) * 10) / 10, rescheduled: relevantOrders.filter((order) => order.reschedule_count > 0).length, cancelled: relevantOrders.filter((order) => order.status === "cancelada").length, averageDelayDays: Math.round(average(delayedDays) * 10) / 10, completionChange },
     quality: { firstResolutionRate: firstResolution.rate, finalized: finalized.length, repeatVisits: firstResolution.repeats },
     incidents: incidents.map((item) => { const order = orderById.get(item.order_id); const site = order ? siteById.get(order.site_id) : null; return { id: item.id, orderId: item.order_id, number: order?.order_number ?? "—", title: order?.title ?? "—", siteName: site?.name ?? "—", category: item.category, severity: item.severity, description: item.description, requiresRevisit: item.requires_revisit, status: item.status, createdAt: item.created_at }; }).sort((a, b) => Number(a.status === "resolved") - Number(b.status === "resolved") || b.createdAt.localeCompare(a.createdAt)),

@@ -228,7 +228,7 @@
     "weatherRisk": "Risco climático em {zone}",
     "weatherRiskDetail": "{rain}% chuva · {wind} km/h vento",
     "weatherNoRisk": "Sem alertas meteorológicos para as zonas ativas.",
-    "agendaTitle": "Agenda dos próximos 7 dias",
+    "agendaTitle": "Agenda dos próximos 15 dias",
     "agendaDescription": "Carga de trabalho comparada com a disponibilidade informada pela equipe.",
     "agendaJobs": "trabalhos",
     "agendaLoad": "{load}% · capacidade {capacity}",
@@ -301,6 +301,7 @@
       "assignPending": "Atribuir pendentes",
       "reviewOrders": "Reagendar trabalhos",
       "approveWork": "Aprovar trabalhos",
+      "viewOrders": "Ver todas as ordens",
       "financeReport": "Exportar relatório"
     },
     "quickActionDone": "Ação aplicada",

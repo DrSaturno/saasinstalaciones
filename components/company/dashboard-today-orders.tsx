@@ -18,7 +18,7 @@ export function DashboardTodayOrders({ orders }: { orders: DashboardOverview["to
         {orders.length === 0 ? (
           <p className="px-4 py-10 text-center text-sm text-muted-foreground">{t("emptyToday")}</p>
         ) : (
-          <div className="divide-y">
+          <div className="max-h-[360px] divide-y overflow-y-auto">
             {orders.map((order) => (
               <Link key={order.id} href={`/orders/${order.id}`} className="group grid gap-2 px-4 py-3.5 transition-colors hover:bg-muted/40 sm:grid-cols-[110px_1fr_auto] sm:items-center">
                 <span className="font-mono text-xs text-muted-foreground">{order.number}</span>
