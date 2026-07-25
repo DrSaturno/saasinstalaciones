@@ -1,11 +1,14 @@
 # Instala Pro — Estado del proyecto
 
-## ACTUALIZACIÓN AUTORITATIVA — coordinadores y expansión operativa (`rama1`, 2026-07-24)
+## ACTUALIZACIÓN AUTORITATIVA — coordinadores y expansión operativa (`main`, 2026-07-25)
 
-> Este es el punto de reanudación vigente. La migración anterior
-> `20260724000001_manager_dashboard.sql` fue ejecutada por el usuario. El código
-> de esta sección está completo en `rama1`; falta ejecutar la migración nueva
-> indicada abajo antes de probar las pantallas contra Supabase.
+> Este es el punto de reanudación vigente. `rama1` se fusionó a `main` (fast-
+> forward, commit `14ec283`) y está en producción. Ambas migraciones —
+> `20260724000001_manager_dashboard.sql` y
+> `20260724000002_coordinator_clients_messaging.sql` — están **aplicadas y
+> verificadas en Supabase** (18/18 checks estructurales en `true`: tablas,
+> columnas, constraint, funciones, trigger, políticas, bucket `chat` y
+> publicación realtime). No hay nada pendiente en base de datos.
 
 ### Implementado
 
@@ -41,17 +44,21 @@
   conserva. Finanzas se omite completamente para coordinadores.
 - **i18n:** nuevas pantallas y controles en español y portugués.
 
-### Base de datos pendiente de aplicar
+### Base de datos — aplicada y verificada (2026-07-25)
 
-- Ejecutar completa en Supabase SQL Editor:
-  `supabase/migrations/20260724000002_coordinator_clients_messaging.sql`.
-- Crea/actualiza roles, invitaciones, asignación de coordinador, clientes,
-  placeholders, bolsa ampliada, threads/mensajes/lecturas, bucket privado
-  `chat`, realtime y todas las políticas RLS.
-- Prueba estructural:
+- `supabase/migrations/20260724000002_coordinator_clients_messaging.sql` ya
+  corrió en Supabase. Crea/actualiza roles, invitaciones, asignación de
+  coordinador, clientes, placeholders, bolsa ampliada, threads/mensajes/
+  lecturas, bucket privado `chat`, realtime y todas las políticas RLS.
+- **Nota para el futuro:** esta migración no es re-ejecutable (no tiene
+  `BEGIN`/`COMMIT` propio, así que el SQL Editor confirma cada sentencia a
+  medida que corre). Si se reintenta una vez aplicada, falla en el primer
+  `ADD CONSTRAINT` con "already exists" — eso NO indica corrupción, solo que
+  ya está aplicada. Verificado con una query de diagnóstico de 18 checks
+  (tablas, columnas, constraint, funciones, trigger, políticas, bucket,
+  publicación realtime): las 18 en `true`.
+- Prueba estructural opcional (requiere extensión `pgtap`):
   `supabase/tests/coordinator_rls.test.sql`.
-- No abrir las pantallas nuevas en un entorno conectado antes de aplicar esta
-  migración: las consultas esperan esas columnas/tablas.
 
 ### Verificación
 
