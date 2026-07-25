@@ -285,17 +285,18 @@ export async function importSites(
     const get = (field: string) =>
       indexOf[field] !== undefined ? (cells[indexOf[field]] ?? "") : "";
 
+    // Provincia = zona = state. Puede venir de la columna "zona" o "provincia";
+    // si el proyecto opera una sola provincia, se usa esa por defecto.
     const importedZone = get("zone").trim();
     const importedState = get("state").trim();
-    const zone = importedZone ||
-      (project.country === "BR" ? importedState.toUpperCase() : "") ||
+    const zone = importedZone || importedState ||
       (project.zones.length === 1 ? project.zones[0] : "");
 
     const parsed = siteRowSchema.safeParse({
       name: get("name"),
       address: get("address"),
       city: get("city"),
-      state: importedState || (project.country === "BR" ? zone : ""),
+      state: zone,
       zone,
       externalRef: get("externalRef") || undefined,
       lat: get("lat"),

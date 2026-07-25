@@ -114,6 +114,9 @@ export interface Database {
           rating_avg: number;
           rating_count: number;
           available: boolean;
+          base_lat: number | null;
+          base_lng: number | null;
+          service_radius_km: number | null;
         };
         Insert: {
           id: string;
@@ -122,6 +125,9 @@ export interface Database {
           rating_avg?: number;
           rating_count?: number;
           available?: boolean;
+          base_lat?: number | null;
+          base_lng?: number | null;
+          service_radius_km?: number | null;
         };
         Update: Partial<Database["public"]["Tables"]["installers"]["Insert"]>;
         Relationships: [];

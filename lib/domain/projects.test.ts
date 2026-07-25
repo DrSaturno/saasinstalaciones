@@ -9,7 +9,7 @@ const base = {
   startsAt: "2026-08-01",
   endsAt: "2026-09-01",
   country: "AR",
-  zones: ["AMBA", "Interior"],
+  zones: ["Buenos Aires", "Córdoba"],
   plannedInstallations: 50,
   billingMode: "per_installation",
   contractAmount: "",

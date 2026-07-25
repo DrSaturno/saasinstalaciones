@@ -22,7 +22,7 @@ const EMPTY: ProjectFormDefaults = {
   startsAt: "",
   endsAt: "",
   country: "AR",
-  zones: ["AMBA"],
+  zones: ["Buenos Aires"],
   plannedInstallations: 0,
   billingMode: "per_installation",
   contractAmount: null,
@@ -55,7 +55,7 @@ export function ProjectFormFields({
 
   const changeCountry = (next: Country) => {
     setCountry(next);
-    setZones(next === "AR" ? ["AMBA"] : []);
+    setZones(next === "AR" ? ["Buenos Aires"] : []);
   };
 
   const toggleZone = (zone: string) => {

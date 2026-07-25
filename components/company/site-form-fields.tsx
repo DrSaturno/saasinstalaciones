@@ -3,6 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { CityInput } from "@/components/shared/city-input";
 import type { SiteFormDefaults } from "@/lib/domain/sites";
 import type { Country } from "@/types/database";
 import { useTranslations } from "next-intl";
@@ -14,11 +15,12 @@ const EMPTY: SiteFormDefaults = {
   riskNotes: "", permanentNotes: "",
 };
 
-export function SiteFormFields({ defaults = EMPTY, zones, country, pending }: {
+export function SiteFormFields({ defaults = EMPTY, zones, country, pending, citySuggestions = [] }: {
   defaults?: SiteFormDefaults;
   zones: string[];
   country: Country;
   pending: boolean;
+  citySuggestions?: string[];
 }) {
   const t = useTranslations("SiteForm");
   const selectClass = "h-9 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring";
@@ -31,9 +33,8 @@ export function SiteFormFields({ defaults = EMPTY, zones, country, pending }: {
           <div className="flex flex-col gap-2"><Label htmlFor="site-name">{t("name")}</Label><Input id="site-name" name="name" defaultValue={defaults.name} required disabled={pending} /></div>
           <div className="flex flex-col gap-2"><Label htmlFor="site-ref">{t("reference")}</Label><Input id="site-ref" name="externalRef" defaultValue={defaults.externalRef} disabled={pending} /></div>
           <div className="flex flex-col gap-2 sm:col-span-2"><Label htmlFor="site-address">{t("address")}</Label><Input id="site-address" name="address" defaultValue={defaults.address} disabled={pending} /></div>
-          <div className="flex flex-col gap-2"><Label htmlFor="site-city">{t("city")}</Label><Input id="site-city" name="city" defaultValue={defaults.city} disabled={pending} /></div>
-          <div className="flex flex-col gap-2"><Label htmlFor="site-state">{country === "BR" ? t("stateBrazil") : t("province")}</Label><Input id="site-state" name="state" defaultValue={defaults.state} disabled={pending || country === "BR"} placeholder={country === "BR" ? t("stateFromZone") : undefined} /></div>
-          <div className="flex flex-col gap-2 sm:col-span-2"><Label htmlFor="site-zone">{t("zone")}</Label><select id="site-zone" name="zone" defaultValue={defaults.zone || zones[0]} className={selectClass} required disabled={pending}>{zones.map((zone) => <option key={zone} value={zone}>{zone}</option>)}</select></div>
+          <div className="flex flex-col gap-2"><Label htmlFor="site-zone">{country === "BR" ? t("stateBrazil") : t("province")}</Label><select id="site-zone" name="zone" defaultValue={defaults.zone || zones[0]} className={selectClass} required disabled={pending}>{zones.map((zone) => <option key={zone} value={zone}>{zone}</option>)}</select></div>
+          <div className="flex flex-col gap-2"><Label htmlFor="site-city">{t("city")}</Label><CityInput id="site-city" defaultValue={defaults.city} suggestions={citySuggestions} disabled={pending} /></div>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-2"><Label htmlFor="site-lat">{t("latitude")}</Label><Input id="site-lat" name="lat" type="number" min="-90" max="90" step="any" defaultValue={defaults.lat ?? ""} disabled={pending} /></div>

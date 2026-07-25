@@ -1,13 +1,11 @@
 import { z } from "zod";
+import { AR_PROVINCES, BR_STATES } from "@/lib/domain/geography";
 import type { BillingMode, Country, OrderCurrency } from "@/types/database";
 
-export const ARGENTINA_ZONES = ["AMBA", "Interior"] as const;
-
-export const BRAZIL_STATES = [
-  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT",
-  "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO",
-  "RR", "SC", "SP", "SE", "TO",
-] as const;
+// Fuente única de la taxonomía en lib/domain/geography.ts. Se re-exportan con los
+// nombres históricos para no tocar los consumidores existentes.
+export const ARGENTINA_ZONES = AR_PROVINCES;
+export const BRAZIL_STATES = BR_STATES;
 
 const optionalDate = z
   .string()

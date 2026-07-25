@@ -51,8 +51,8 @@ export function ImportSitesDialog({ projectId }: { projectId: string }) {
 
   const downloadTemplate = () => {
     const csv = [
-      "nombre,direccion,ciudad,provincia,zona,codigo,lat,lng",
-      "Local Centro,Av. Ejemplo 123,Ciudad,Provincia,AMBA,LOC-001,-34.6037,-58.3816",
+      "nombre,direccion,ciudad,provincia,codigo,lat,lng",
+      "Local Centro,Av. Ejemplo 123,La Plata,Buenos Aires,LOC-001,-34.9205,-57.9536",
     ].join("\r\n");
     const url = URL.createObjectURL(
       new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }),

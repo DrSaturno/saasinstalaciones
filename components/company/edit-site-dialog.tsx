@@ -13,7 +13,7 @@ import type { Country } from "@/types/database";
 
 const initial: SiteActionState = { error: null };
 
-export function EditSiteDialog({ projectId, siteId, country, zones, defaults }: { projectId: string; siteId: string; country: Country; zones: string[]; defaults: SiteFormDefaults }) {
+export function EditSiteDialog({ projectId, siteId, country, zones, defaults, citySuggestions = [] }: { projectId: string; siteId: string; country: Country; zones: string[]; defaults: SiteFormDefaults; citySuggestions?: string[] }) {
   const t = useTranslations("SiteForm");
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -29,7 +29,7 @@ export function EditSiteDialog({ projectId, siteId, country, zones, defaults }: 
       <DialogTrigger asChild><Button variant="outline">{t("edit")}</Button></DialogTrigger>
       <DialogContent className="max-h-[92svh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader><DialogTitle>{t("editTitle")}</DialogTitle><DialogDescription>{t("editDescription")}</DialogDescription></DialogHeader>
-        <form action={formAction} className="space-y-5"><SiteFormFields defaults={defaults} country={country} zones={zones} pending={pending} />{state.error ? <p className="text-sm text-destructive" role="alert">{state.error}</p> : null}<Button type="submit" disabled={pending} className="w-full">{pending ? t("saving") : t("save")}</Button></form>
+        <form action={formAction} className="space-y-5"><SiteFormFields defaults={defaults} country={country} zones={zones} pending={pending} citySuggestions={citySuggestions} />{state.error ? <p className="text-sm text-destructive" role="alert">{state.error}</p> : null}<Button type="submit" disabled={pending} className="w-full">{pending ? t("saving") : t("save")}</Button></form>
       </DialogContent>
     </Dialog>
   );
