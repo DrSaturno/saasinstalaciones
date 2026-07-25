@@ -10,6 +10,7 @@ import {
   Gauge,
   Megaphone,
   MessageSquareText,
+  Settings,
   UserRound,
   UsersRound,
   WalletCards,
@@ -33,6 +34,7 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   companies: Building2,
   clients: Building2,
   messages: MessageSquareText,
+  settings: Settings,
 };
 
 export function SidebarNav({

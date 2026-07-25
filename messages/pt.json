@@ -28,6 +28,7 @@
     "team": "Equipe",
     "broadcasts": "Oportunidades por região",
     "finance": "Finanças",
+    "settings": "Configurações",
     "tasks": "Minhas tarefas",
     "jobs": "Oportunidades",
     "profile": "Perfil",
@@ -1050,6 +1051,29 @@
     "disable": "Desativar",
     "enable": "Ativar"
   },
+  "Settings": {
+    "title": "Configurações",
+    "description": "Seus dados de conta e a segurança do seu acesso.",
+    "accountTitle": "Conta",
+    "name": "Nome",
+    "email": "E-mail",
+    "role": "Função",
+    "roles": {
+      "platform_admin": "Administrador da plataforma",
+      "company_manager": "Gerente",
+      "coordinator": "Coordenador",
+      "installer": "Instalador"
+    },
+    "securityTitle": "Senha",
+    "securityDescription": "Para alterá-la você precisa informar a senha atual.",
+    "currentPassword": "Senha atual",
+    "newPassword": "Nova senha",
+    "confirmPassword": "Repetir nova senha",
+    "passwordHint": "Pelo menos 8 caracteres.",
+    "changePassword": "Alterar senha",
+    "saving": "Salvando…",
+    "passwordUpdated": "Senha atualizada"
+  },
   "Errors": {
     "invalidData": "Dados inválidos",
     "accessDenied": "Acesso negado",
@@ -1066,6 +1090,9 @@
     "installerOnlyInvitation": "Somente um instalador pode aceitar este convite.",
     "emailExists": "Já existe uma conta com este email. Entre para aceitar o convite.",
     "weakPassword": "A senha é muito fraca. Use pelo menos 8 caracteres.",
+    "currentPasswordWrong": "A senha atual não está correta.",
+    "passwordMismatch": "As novas senhas não coincidem.",
+    "samePassword": "A nova senha precisa ser diferente da atual.",
     "signupFailed": "Não foi possível criar sua conta. Tente novamente em instantes.",
     "projectNotFound": "Projeto não encontrado",
     "projectCountryLocked": "Não é possível alterar o país quando o projeto já possui instalações cadastradas.",

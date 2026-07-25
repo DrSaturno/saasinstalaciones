@@ -10,6 +10,7 @@ export type NavIcon =
   | "profile"
   | "companies"
   | "clients"
-  | "messages";
+  | "messages"
+  | "settings";
 
 export type NavItem = { href: string; label: string; icon: NavIcon };

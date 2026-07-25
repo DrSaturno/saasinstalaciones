@@ -26,6 +26,7 @@ export default async function CompanyLayout({
     ...(user.role === "company_manager"
       ? [{ href: "/finance", label: t("finance"), icon: "finance" as const }]
       : []),
+    { href: "/settings", label: t("settings"), icon: "settings" as const },
   ];
 
   return (

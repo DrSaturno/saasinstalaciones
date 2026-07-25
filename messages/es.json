@@ -28,6 +28,7 @@
     "team": "Equipo",
     "broadcasts": "Bolsa de zona",
     "finance": "Finanzas",
+    "settings": "Configuración",
     "tasks": "Mis tareas",
     "jobs": "Bolsa de zona",
     "profile": "Perfil",
@@ -1050,6 +1051,29 @@
     "disable": "Desactivar",
     "enable": "Activar"
   },
+  "Settings": {
+    "title": "Configuración",
+    "description": "Tus datos de cuenta y la seguridad de tu acceso.",
+    "accountTitle": "Cuenta",
+    "name": "Nombre",
+    "email": "Email",
+    "role": "Rol",
+    "roles": {
+      "platform_admin": "Administrador de plataforma",
+      "company_manager": "Gerente",
+      "coordinator": "Coordinador",
+      "installer": "Instalador"
+    },
+    "securityTitle": "Contraseña",
+    "securityDescription": "Para cambiarla necesitás ingresar la contraseña actual.",
+    "currentPassword": "Contraseña actual",
+    "newPassword": "Contraseña nueva",
+    "confirmPassword": "Repetir contraseña nueva",
+    "passwordHint": "Al menos 8 caracteres.",
+    "changePassword": "Cambiar contraseña",
+    "saving": "Guardando…",
+    "passwordUpdated": "Contraseña actualizada"
+  },
   "Errors": {
     "invalidData": "Datos inválidos",
     "accessDenied": "Acceso denegado",
@@ -1066,6 +1090,9 @@
     "installerOnlyInvitation": "Solo un instalador puede aceptar esta invitación.",
     "emailExists": "Ya existe una cuenta con este email. Iniciá sesión para aceptar la invitación.",
     "weakPassword": "La contraseña es demasiado débil. Usá al menos 8 caracteres.",
+    "currentPasswordWrong": "La contraseña actual no es correcta.",
+    "passwordMismatch": "Las contraseñas nuevas no coinciden.",
+    "samePassword": "La contraseña nueva tiene que ser distinta de la actual.",
     "signupFailed": "No pudimos crear tu cuenta. Probá de nuevo en un momento.",
     "projectNotFound": "Proyecto no encontrado",
     "projectCountryLocked": "No se puede cambiar el país cuando el proyecto ya tiene instalaciones cargadas.",
