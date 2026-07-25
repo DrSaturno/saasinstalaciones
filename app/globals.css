@@ -60,6 +60,10 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  /* Sombras "premium" (estética proyecto2, paleta propia): capas suaves y un
+     hover con leve tinte de primary. Habilitan shadow-premium / -hover. */
+  --shadow-premium: 0 1px 2px rgb(0 0 0 / 0.04), 0 10px 26px -12px rgb(0 0 0 / 0.10);
+  --shadow-premium-hover: 0 2px 6px rgb(0 0 0 / 0.05), 0 20px 40px -14px color-mix(in oklab, var(--primary) 24%, transparent);
 }
 
 :root {
@@ -155,5 +159,27 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/* Entrada sutil de tarjetas/listas (estética proyecto2). Respeta reduced-motion. */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility animate-fade-in-up {
+  animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up {
+    animation: none;
   }
 }
