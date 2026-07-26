@@ -1,4 +1,4 @@
-import { ArrowUpRight, CalendarSync, ClipboardList, FolderPlus, Megaphone, Plus, UsersRound } from "lucide-react";
+import { ArrowUpRight, CalendarSync, ClipboardList, FolderPlus, Inbox, Megaphone, Plus, RadioTower, Search, UsersRound } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -9,6 +9,9 @@ export async function DashboardQuickActions({
   reschedule,
   approve,
   viewOrders,
+  postJob,
+  myJobs,
+  applications,
 }: {
   newProject: React.ReactNode;
   urgentOrder: React.ReactNode;
@@ -16,6 +19,9 @@ export async function DashboardQuickActions({
   reschedule: React.ReactNode;
   approve: React.ReactNode;
   viewOrders: React.ReactNode;
+  postJob: React.ReactNode;
+  myJobs: React.ReactNode;
+  applications: React.ReactNode;
 }) {
   const t = await getTranslations("Dashboard");
   const actions = [
@@ -25,11 +31,14 @@ export async function DashboardQuickActions({
     { key: "reviewOrders", icon: CalendarSync, node: reschedule },
     { key: "approveWork", icon: Megaphone, node: approve },
     { key: "viewOrders", icon: ClipboardList, node: viewOrders },
+    { key: "postJob", icon: RadioTower, node: postJob },
+    { key: "myJobs", icon: Search, node: myJobs },
+    { key: "applications", icon: Inbox, node: applications },
   ] as const;
   return (
     <Card>
       <CardHeader className="border-b"><CardTitle>{t("quickActionsTitle")}</CardTitle></CardHeader>
-      <CardContent className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
+      <CardContent className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-5">
         {actions.map(({ key, icon: Icon, node }) => (
           <div
             key={key}

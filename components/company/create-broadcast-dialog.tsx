@@ -29,10 +29,13 @@ export function CreateBroadcastDialog({
   projects,
   zones,
   canManageFinance,
+  trigger,
 }: {
   projects: ProjectOption[];
   zones: string[];
   canManageFinance: boolean;
+  /** Permite reusar el diálogo desde los accesos rápidos del inicio. */
+  trigger?: React.ReactNode;
 }) {
   const t = useTranslations("CreateBroadcast");
   const [open, setOpen] = useState(false);
@@ -54,9 +57,11 @@ export function CreateBroadcastDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button disabled={!projects.length}>
-          <Plus /> {t("trigger")}
-        </Button>
+        {trigger ?? (
+          <Button disabled={!projects.length}>
+            <Plus /> {t("trigger")}
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>

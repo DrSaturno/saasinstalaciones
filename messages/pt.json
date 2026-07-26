@@ -303,6 +303,9 @@
       "reviewOrders": "Reagendar trabalhos",
       "approveWork": "Aprovar trabalhos",
       "viewOrders": "Ver todas as ordens",
+      "postJob": "Publicar trabalho",
+      "myJobs": "Meus trabalhos",
+      "applications": "Ofertas recebidas",
       "financeReport": "Exportar relatório"
     },
     "quickActionDone": "Ação aplicada",
@@ -486,6 +489,9 @@
     "description": "Publique necessidades por projeto, avalie candidatos e atribua ordens em uma única operação.",
     "openSearches": "oportunidades abertas",
     "toReview": "para avaliar",
+    "filterOpen": "Apenas buscas abertas",
+    "filterApplications": "Apenas com candidaturas para avaliar",
+    "clearFilter": "Ver todas",
     "emptyTitle": "Ainda não há oportunidades",
     "emptyDescription": "Crie a primeira para avisar os instaladores disponíveis em uma região."
   },

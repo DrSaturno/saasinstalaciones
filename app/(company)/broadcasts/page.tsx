@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { RadioTower } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { CreateBroadcastDialog } from "@/components/company/create-broadcast-dialog";
@@ -6,8 +7,15 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchBroadcastBoard } from "@/lib/data/broadcasts";
 import { getCurrentUser } from "@/lib/auth";
 
-export default async function BroadcastsPage() {
-  const t = await getTranslations("Broadcasts");
+export default async function BroadcastsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ filter?: string }>;
+}) {
+  const [t, { filter }] = await Promise.all([
+    getTranslations("Broadcasts"),
+    searchParams,
+  ]);
   const supabase = await createClient();
   const [board, user] = await Promise.all([
     fetchBroadcastBoard(supabase),
@@ -19,6 +27,16 @@ export default async function BroadcastsPage() {
       total + item.applicants.filter((applicant) => applicant.status === "applied").length,
     0,
   );
+
+  // Los accesos rápidos del inicio entran acá ya filtrados.
+  const visible =
+    filter === "open"
+      ? board.broadcasts.filter((item) => item.status === "open")
+      : filter === "applications"
+        ? board.broadcasts.filter((item) =>
+            item.applicants.some((applicant) => applicant.status === "applied"),
+          )
+        : board.broadcasts;
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -46,9 +64,20 @@ export default async function BroadcastsPage() {
         </div>
       </div>
 
-      {board.broadcasts.length ? (
+      {filter ? (
+        <div className="mt-6 flex items-center gap-3">
+          <span className="rounded-full bg-primary-soft/60 px-3 py-1 text-xs font-medium text-primary">
+            {filter === "open" ? t("filterOpen") : t("filterApplications")}
+          </span>
+          <Link href="/broadcasts" className="text-xs text-muted-foreground hover:text-foreground">
+            {t("clearFilter")}
+          </Link>
+        </div>
+      ) : null}
+
+      {visible.length ? (
         <div className="mt-6 grid items-start gap-5 lg:grid-cols-2">
-          {board.broadcasts.map((broadcast) => (
+          {visible.map((broadcast) => (
             <BroadcastCard key={broadcast.id} broadcast={broadcast} />
           ))}
         </div>

@@ -18,7 +18,9 @@ import { fetchZoneForecasts } from "@/lib/weather/forecast";
 import { googleCalendarConfigured } from "@/lib/google-calendar/config";
 import type { Country } from "@/types/database";
 import { CreateProjectDialog } from "@/components/company/create-project-dialog";
+import { CreateBroadcastDialog } from "@/components/company/create-broadcast-dialog";
 import { CreateOrderDialog } from "@/components/company/create-order-dialog";
+import { fetchBroadcastBoard } from "@/lib/data/broadcasts";
 import { DashboardOrderAction } from "@/components/company/dashboard-order-actions";
 import { fetchClients } from "@/lib/data/clients";
 import { fetchCoordinators } from "@/lib/data/team";
@@ -35,7 +37,7 @@ export default async function CompanyDashboard() {
     supabase.from("companies").select("country").limit(1).maybeSingle(),
     supabase.from("calendar_connections").select("google_email").limit(1).maybeSingle(),
   ]);
-  const [overview, clients, coordinators, roster, orders, projects, currency, user] =
+  const [overview, clients, coordinators, roster, orders, projects, currency, user, board] =
     await Promise.all([
       fetchDashboardOverview(supabase, (company?.country ?? "AR") as Country),
       fetchClients(supabase),
@@ -45,6 +47,7 @@ export default async function CompanyDashboard() {
       fetchOrderFormProjects(supabase),
       fetchCompanyCurrency(supabase),
       getCurrentUser(),
+      fetchBroadcastBoard(supabase),
     ]);
   const forecasts = await fetchZoneForecasts(overview.weatherZones);
 
@@ -80,6 +83,16 @@ export default async function CompanyDashboard() {
         reschedule={<DashboardOrderAction mode="reschedule" orders={orders.filter((order) => order.scheduled_date && !["finalizada", "cancelada"].includes(order.status))} roster={roster} />}
         approve={<DashboardOrderAction mode="approve" orders={orders.filter((order) => order.status === "en_revision")} roster={roster} />}
         viewOrders={<Button asChild variant="outline"><Link href="/orders">{t("quickActions.viewOrders")}</Link></Button>}
+        postJob={
+          <CreateBroadcastDialog
+            projects={board.projects}
+            zones={board.zones}
+            canManageFinance={user?.role === "company_manager"}
+            trigger={<Button variant="outline">{t("quickActions.postJob")}</Button>}
+          />
+        }
+        myJobs={<Button asChild variant="outline"><Link href="/broadcasts?filter=open">{t("quickActions.myJobs")}</Link></Button>}
+        applications={<Button asChild variant="outline"><Link href="/broadcasts?filter=applications">{t("quickActions.applications")}</Link></Button>}
       />
       <AnnouncementComposer
         zones={overview.regions.map((region) => region.name)}
