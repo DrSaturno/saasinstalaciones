@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { AnnouncementComposer } from "@/components/company/announcement-composer";
 import { DashboardInsights } from "@/components/company/dashboard-insights";
 import { DashboardAgenda, DashboardCapacity } from "@/components/company/dashboard-execution";
 import { DashboardMap } from "@/components/company/dashboard-map";
@@ -79,6 +80,10 @@ export default async function CompanyDashboard() {
         reschedule={<DashboardOrderAction mode="reschedule" orders={orders.filter((order) => order.scheduled_date && !["finalizada", "cancelada"].includes(order.status))} roster={roster} />}
         approve={<DashboardOrderAction mode="approve" orders={orders.filter((order) => order.status === "en_revision")} roster={roster} />}
         viewOrders={<Button asChild variant="outline"><Link href="/orders">{t("quickActions.viewOrders")}</Link></Button>}
+      />
+      <AnnouncementComposer
+        zones={overview.regions.map((region) => region.name)}
+        projects={projects.map(({ id, name }) => ({ id, name }))}
       />
       <DashboardPulse alerts={overview.alerts} forecasts={forecasts} />
       <DashboardOperations forecasts={forecasts} calendarEmail={calendar?.google_email ?? null} calendarConfigured={googleCalendarConfigured()} />

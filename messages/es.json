@@ -1068,6 +1068,34 @@
     "disable": "Desactivar",
     "enable": "Activar"
   },
+  "Announcements": {
+    "title": "Publicar anuncio",
+    "description": "Un aviso a tus instaladores. Llega a la campanita, al celular y por email.",
+    "titleLabel": "Título",
+    "titlePlaceholder": "Ej: Cambio de horario esta semana",
+    "bodyLabel": "Mensaje",
+    "bodyPlaceholder": "Contá lo que necesitás que sepan.",
+    "severityLabel": "Tipo",
+    "severityInfo": "Información",
+    "severityWarning": "Alerta",
+    "severityCritical": "Crítico",
+    "audienceLabel": "Para quién",
+    "audienceAll": "Todo el equipo",
+    "audienceZone": "Por provincia",
+    "audienceProject": "Por proyecto",
+    "zoneLabel": "Provincia",
+    "projectLabel": "Proyecto",
+    "publish": "Publicar",
+    "publishing": "Publicando…",
+    "published": "{count, plural, =0 {Nadie coincide con ese público} one {Enviado a # instalador} other {Enviado a # instaladores}}",
+    "publishedWithEmail": "{count, plural, one {Enviado a # instalador (también por email)} other {Enviado a # instaladores (también por email)}}",
+    "deliveryNote": "Se envía a la bandeja de la app, como notificación push y por email."
+  },
+  "AnnouncementEmail": {
+    "subject": "Comunicado de {company}",
+    "intro": "Comunicado de la empresa",
+    "footer": "Recibís este aviso porque formás parte del equipo de instaladores."
+  },
   "Settings": {
     "title": "Configuración",
     "description": "Tus datos de cuenta y la seguridad de tu acceso.",

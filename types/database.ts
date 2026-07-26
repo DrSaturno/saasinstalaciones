@@ -46,6 +46,8 @@ export type IncidentStatus = "open" | "resolved";
 export type InvitationStatus = "pending" | "accepted" | "expired";
 export type RosterStatus = "invited" | "active" | "removed";
 export type UnavailabilityStatus = "pending" | "approved" | "rejected";
+export type AnnouncementSeverity = "info" | "warning" | "critical";
+export type AnnouncementAudience = "all" | "zone" | "project";
 export type BroadcastStatus = "open" | "closed";
 export type ApplicationStatus = "applied" | "accepted" | "rejected";
 export type SiteStatus =
@@ -649,6 +651,34 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["notifications"]["Insert"]>;
         Relationships: [];
       };
+      announcements: {
+        Row: {
+          id: string;
+          company_id: string;
+          created_by: string | null;
+          title: string;
+          body: string;
+          severity: AnnouncementSeverity;
+          audience_type: AnnouncementAudience;
+          audience_ref: string;
+          recipients: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          created_by?: string | null;
+          title: string;
+          body: string;
+          severity?: AnnouncementSeverity;
+          audience_type?: AnnouncementAudience;
+          audience_ref?: string;
+          recipients?: number;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["announcements"]["Insert"]>;
+        Relationships: [];
+      };
       push_subscriptions: {
         Row: {
           user_id: string;
@@ -831,6 +861,20 @@ export interface Database {
       promote_installer_to_coordinator: {
         Args: { p_installer_id: string };
         Returns: void;
+      };
+      publish_announcement: {
+        Args: {
+          p_title: string;
+          p_body: string;
+          p_severity?: AnnouncementSeverity;
+          p_audience_type?: AnnouncementAudience;
+          p_audience_ref?: string;
+        };
+        Returns: { announcement_id: string; recipients: number }[];
+      };
+      announcement_recipient_emails: {
+        Args: { p_announcement_id: string };
+        Returns: { email: string }[];
       };
     };
     Enums: Record<string, never>;
