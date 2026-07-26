@@ -6,7 +6,7 @@ export const ROLE_HOME: Record<UserRole, string> = {
   platform_admin: "/master",
   company_manager: "/dashboard",
   coordinator: "/dashboard",
-  installer: "/tasks",
+  installer: "/home",
 };
 
 /** Prefijo de rutas que cada rol tiene permitido visitar. */

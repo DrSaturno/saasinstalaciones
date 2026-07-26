@@ -584,6 +584,23 @@
     "empty": "Você não tem tarefas atribuídas no momento.",
     "closed": "Encerradas"
   },
+  "InstallerHome": {
+    "greeting": "Olá, {name}",
+    "assigned": "Trabalhos atribuídos",
+    "inProgress": "Em andamento",
+    "doneToday": "Concluídos hoje",
+    "pending": "Sem planejar",
+    "nextJob": "Próximo destino",
+    "noNextJob": "Você não tem trabalhos pendentes.",
+    "openJob": "Abrir ordem",
+    "directions": "Como chegar",
+    "week": "Sua semana",
+    "weather": "Clima nas suas regiões",
+    "announcements": "Comunicados da empresa",
+    "noAnnouncements": "Não há comunicados recentes.",
+    "myOrders": "Minhas ordens",
+    "findJobs": "Buscar trabalho"
+  },
   "TaskDetail": {
     "back": "← Minhas tarefas",
     "noAddress": "Sem endereço",
