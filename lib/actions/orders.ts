@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import {
   orderAttachmentRegistrationSchema,
+  orderEditSchema,
   orderIntakeSchema,
   databaseIdSchema,
   type OrderAttachmentRegistration,
@@ -162,6 +163,108 @@ export async function createOrder(
       companyId,
       orderNumber: order.order_number,
     };
+  } catch {
+    return { error: t("unexpected") };
+  }
+}
+
+/**
+ * Edita los datos de una orden existente.
+ *
+ * NO toca el estado: las transiciones pasan exclusivamente por `transitionOrder`
+ * (regla no negociable #4), que valida la máquina de estados contra el trigger.
+ * Tampoco permite mudar la orden de punto: eso cambiaría el proyecto y la
+ * numeración, así que sería otra orden.
+ */
+export async function updateOrder(
+  orderId: string,
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const t = await getTranslations("Errors");
+  if (!databaseIdSchema.safeParse(orderId).success) return { error: t("invalidData") };
+  const parsed = orderEditSchema.safeParse({
+    title: formData.get("title"),
+    description: formData.get("description") ?? "",
+    scheduledDate: formData.get("scheduledDate") ?? "",
+    scheduledEndDate: formData.get("scheduledEndDate") ?? "",
+    priority: formData.get("priority") ?? "media",
+    indoor: formData.get("indoor") === "on",
+    requiresFreight: formData.get("requiresFreight") === "on",
+    freightDetails: formData.get("freightDetails") ?? "",
+    logisticsNotes: formData.get("logisticsNotes") ?? "",
+    amount: formData.get("amount") ?? "",
+    installerId: formData.get("installerId") ?? "",
+  });
+  if (!parsed.success) return { error: t("invalidData") };
+
+  try {
+    const { supabase, companyId, user } = await requireManager();
+
+    const { data: order } = await supabase
+      .from("work_orders")
+      .select("id, project_id, status, assigned_installer_id")
+      .eq("id", orderId)
+      .eq("company_id", companyId)
+      .single();
+    if (!order) return { error: t("orderNotFound") };
+
+    if (parsed.data.installerId) {
+      const { data: active } = await supabase
+        .from("company_installers")
+        .select("installer_id")
+        .eq("company_id", companyId)
+        .eq("installer_id", parsed.data.installerId)
+        .eq("status", "active")
+        .maybeSingle();
+      if (!active) return { error: t("installerNotActive") };
+    }
+
+    const { data: project } = await supabase
+      .from("projects")
+      .select("billing_mode")
+      .eq("id", order.project_id)
+      .eq("company_id", companyId)
+      .single();
+    if (!project) return { error: t("projectNotFound") };
+
+    const { error } = await supabase
+      .from("work_orders")
+      .update({
+        title: parsed.data.title,
+        description: parsed.data.description,
+        scheduled_date: parsed.data.scheduledDate,
+        scheduled_end_date: parsed.data.scheduledEndDate,
+        priority: parsed.data.priority,
+        indoor: parsed.data.indoor,
+        requires_freight: parsed.data.requiresFreight,
+        freight_details: parsed.data.freightDetails,
+        logistics_notes: parsed.data.logisticsNotes,
+        // El importe sigue siendo potestad del gerente y sólo con cobro por
+        // instalación; un coordinador no puede tocarlo.
+        ...(user.role === "company_manager" && project.billing_mode === "per_installation"
+          ? { amount: parsed.data.amount }
+          : {}),
+        assigned_installer_id: parsed.data.installerId,
+      })
+      .eq("id", orderId)
+      .eq("company_id", companyId);
+    if (error) return { error: error.message };
+
+    // Si cambió el instalador, avisarle como en una asignación nueva.
+    if (
+      parsed.data.installerId &&
+      parsed.data.installerId !== order.assigned_installer_id
+    ) {
+      await requestPushDelivery(supabase, "order_assigned", orderId, parsed.data.installerId);
+    }
+
+    revalidatePath("/orders");
+    revalidatePath(`/orders/${orderId}`);
+    revalidatePath(`/projects/${order.project_id}`);
+    revalidatePath("/dashboard");
+    revalidatePath("/clients");
+    return { error: null, ok: true };
   } catch {
     return { error: t("unexpected") };
   }

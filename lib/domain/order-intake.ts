@@ -29,42 +29,63 @@ const optionalAmount = z
   ])
   .transform((value) => (value === "" ? null : value));
 
+/** Campos que se cargan igual al crear y al editar una orden. */
+const orderFields = {
+  title: z.string().trim().min(2).max(200),
+  description: z.string().trim().max(4_000).default(""),
+  scheduledDate: optionalDate,
+  scheduledEndDate: optionalDate,
+  priority: z.enum(ORDER_PRIORITIES).default("media"),
+  indoor: z.boolean().default(false),
+  requiresFreight: z.boolean().default(false),
+  freightDetails: z.string().trim().max(1_000).default(""),
+  logisticsNotes: z.string().trim().max(2_000).default(""),
+  amount: optionalAmount,
+  installerId: optionalUuid,
+};
+
+type OrderFieldValues = {
+  scheduledDate: string | null;
+  scheduledEndDate: string | null;
+  requiresFreight: boolean;
+  freightDetails: string;
+};
+
+function checkOrderFields(value: OrderFieldValues, context: z.RefinementCtx) {
+  if (
+    value.scheduledDate &&
+    value.scheduledEndDate &&
+    value.scheduledEndDate < value.scheduledDate
+  ) {
+    context.addIssue({
+      code: "custom",
+      path: ["scheduledEndDate"],
+      message: "end_before_start",
+    });
+  }
+  if (value.requiresFreight && value.freightDetails.length === 0) {
+    context.addIssue({
+      code: "custom",
+      path: ["freightDetails"],
+      message: "freight_details_required",
+    });
+  }
+}
+
 export const orderIntakeSchema = z
   .object({
     siteId: databaseIdSchema,
-    title: z.string().trim().min(2).max(200),
-    description: z.string().trim().max(4_000).default(""),
     status: z.enum(ORDER_INITIAL_STATUSES).default("pendiente"),
-    scheduledDate: optionalDate,
-    scheduledEndDate: optionalDate,
-    priority: z.enum(ORDER_PRIORITIES).default("media"),
-    indoor: z.boolean().default(false),
-    requiresFreight: z.boolean().default(false),
-    freightDetails: z.string().trim().max(1_000).default(""),
-    logisticsNotes: z.string().trim().max(2_000).default(""),
-    amount: optionalAmount,
-    installerId: optionalUuid,
+    ...orderFields,
   })
-  .superRefine((value, context) => {
-    if (
-      value.scheduledDate &&
-      value.scheduledEndDate &&
-      value.scheduledEndDate < value.scheduledDate
-    ) {
-      context.addIssue({
-        code: "custom",
-        path: ["scheduledEndDate"],
-        message: "end_before_start",
-      });
-    }
-    if (value.requiresFreight && value.freightDetails.length === 0) {
-      context.addIssue({
-        code: "custom",
-        path: ["freightDetails"],
-        message: "freight_details_required",
-      });
-    }
-  });
+  .superRefine(checkOrderFields);
+
+/**
+ * Edición de una orden ya creada: sin `siteId` (mudarla de punto la
+ * convertiría en otra orden) y sin `status` — las transiciones pasan
+ * exclusivamente por `transitionOrder`.
+ */
+export const orderEditSchema = z.object(orderFields).superRefine(checkOrderFields);
 
 export const orderAttachmentRegistrationSchema = z
   .array(
@@ -83,6 +104,7 @@ export const orderAttachmentRegistrationSchema = z
   .max(MAX_ORDER_ATTACHMENTS);
 
 export type OrderIntake = z.infer<typeof orderIntakeSchema>;
+export type OrderEdit = z.infer<typeof orderEditSchema>;
 export type OrderAttachmentRegistration = z.infer<
   typeof orderAttachmentRegistrationSchema
 >[number];

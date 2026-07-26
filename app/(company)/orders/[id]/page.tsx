@@ -7,7 +7,9 @@ import { fetchOrderAttachments } from "@/lib/data/order-attachments";
 import { OrderActions } from "@/components/company/order-actions";
 import { OrderIncidents } from "@/components/company/order-incidents";
 import { OrderAttachments } from "@/components/shared/order-attachments";
+import { EditOrderDialog } from "@/components/company/edit-order-dialog";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { StatusStepper } from "@/components/shared/status-stepper";
 import { Card, CardContent } from "@/components/ui/card";
 import type { OrderStatus, OrderUpdateType } from "@/types/database";
 import { getCurrentUser } from "@/lib/auth";
@@ -51,7 +53,11 @@ export default async function OrderDetailPage({
         .select("name, address, city, state, zone, external_ref")
         .eq("id", order.site_id)
         .single(),
-      supabase.from("projects").select("name").eq("id", order.project_id).single(),
+      supabase
+        .from("projects")
+        .select("name, billing_mode")
+        .eq("id", order.project_id)
+        .single(),
       supabase
         .from("order_updates")
         .select("id, type, note, created_at")
@@ -106,9 +112,38 @@ export default async function OrderDetailPage({
             </Link>
           )}
         </div>
+        <EditOrderDialog
+          orderId={order.id}
+          currency={order.currency}
+          canEditAmount={
+            user?.role === "company_manager" && project?.billing_mode === "per_installation"
+          }
+          roster={roster.map(({ id: rosterId, name }) => ({ id: rosterId, name }))}
+          defaults={{
+            title: order.title,
+            description: order.description ?? "",
+            scheduledDate: order.scheduled_date ?? "",
+            scheduledEndDate: order.scheduled_end_date ?? "",
+            priority: order.priority,
+            indoor: order.indoor,
+            requiresFreight: order.requires_freight,
+            freightDetails: order.freight_details ?? "",
+            logisticsNotes: order.logistics_notes ?? "",
+            amount: order.amount,
+            installerId: order.assigned_installer_id ?? "",
+          }}
+        />
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_320px]">
+      <Card className="mt-6">
+        <CardContent className="overflow-x-auto py-5">
+          <div className="min-w-[560px]">
+            <StatusStepper status={order.status as OrderStatus} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
         {/* Columna principal */}
         <div className="flex flex-col gap-6">
           {/* Punto */}

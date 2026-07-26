@@ -26,10 +26,29 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
     <main className="mx-auto max-w-6xl">
       <Link href="/clients" className="text-sm text-muted-foreground hover:text-foreground">{t("back")}</Link>
       <header className="mt-4 flex items-start justify-between gap-4">
-        <div><h1 className="text-2xl font-bold">{detail.client.name}</h1><p className="mt-1 text-sm text-muted-foreground">{[detail.client.contact_name, detail.client.email, detail.client.phone].filter(Boolean).join(" · ")}</p></div>
+        <div><h1 className="text-2xl font-bold">{detail.client.name}</h1><p className="mt-1 text-sm text-muted-foreground">{t("summary", { projects: summary.projectCount, sites: summary.siteCount })}</p></div>
         <ClientDialog client={summary} />
       </header>
-      <div className="mt-8 space-y-4">
+
+      <Card className="mt-6">
+        <CardHeader className="border-b"><CardTitle>{t("dataTitle")}</CardTitle></CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Field label={t("contactName")} value={detail.client.contact_name} />
+          <Field label={t("taxId")} value={detail.client.tax_id} mono />
+          <Field label={t("phone")} value={detail.client.phone} mono />
+          <Field label={t("email")} value={detail.client.email} />
+          <Field label={t("address")} value={detail.client.address} />
+          {detail.client.notes ? (
+            <div className="sm:col-span-2 lg:col-span-3">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{t("notes")}</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm">{detail.client.notes}</p>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <h2 className="mt-8 text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t("sitesTitle")}</h2>
+      <div className="mt-3 space-y-4">
         {detail.sites.map((site) => (
           <Card key={site.id}>
             <CardHeader><CardTitle><Link href={`/projects/${site.project_id}/sites/${site.id}`} className="hover:text-primary">{site.name}</Link></CardTitle></CardHeader>
@@ -50,5 +69,14 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         {!detail.sites.length ? <p className="text-sm text-muted-foreground">{t("noSites")}</p> : null}
       </div>
     </main>
+  );
+}
+
+function Field({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className={`mt-1 truncate ${mono ? "font-mono text-sm" : "text-sm"}`}>{value || "—"}</p>
+    </div>
   );
 }

@@ -924,7 +924,11 @@
     "empty": "Ainda não há clientes cadastrados.",
     "back": "← Clientes",
     "noOrders": "Este ponto ainda não possui ordens.",
-    "noSites": "Este cliente ainda não possui pontos de instalação."
+    "noSites": "Este cliente ainda não possui pontos de instalação.",
+    "dataTitle": "Dados do cliente",
+    "contactName": "Pessoa de contato",
+    "sitesTitle": "Locais e ordens",
+    "summary": "{projects, plural, =1 {# projeto} other {# projetos}} · {sites, plural, =1 {# local} other {# locais}}"
   },
   "Messages": {
     "title": "Mensagens",
@@ -1067,6 +1071,14 @@
     "pendingConfig": "Configuração pendente",
     "disable": "Desativar",
     "enable": "Ativar"
+  },
+  "EditOrder": {
+    "trigger": "Editar",
+    "title": "Editar ordem",
+    "description": "Altere os dados do trabalho. O status muda pelas ações da ordem.",
+    "save": "Salvar alterações",
+    "saving": "Salvando…",
+    "saved": "Ordem atualizada"
   },
   "Announcements": {
     "title": "Publicar comunicado",
