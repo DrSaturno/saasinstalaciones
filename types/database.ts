@@ -502,6 +502,8 @@ export interface Database {
           pay_visible: boolean;
           pay_amount: number | null;
           currency: OrderCurrency;
+          lat: number | null;
+          lng: number | null;
           created_at: string;
         };
         Insert: {
@@ -520,6 +522,8 @@ export interface Database {
           pay_visible?: boolean;
           pay_amount?: number | null;
           currency?: OrderCurrency;
+          lat?: number | null;
+          lng?: number | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["broadcasts"]["Insert"]>;

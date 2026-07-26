@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchInstallerAvailability } from "@/lib/data/availability";
 import { StarRating } from "@/components/shared/star-rating";
 import { AvailabilitySettings } from "@/components/installer/availability-settings";
+import { CoverageSettings } from "@/components/installer/coverage-settings";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -121,6 +122,15 @@ export default async function InstallerProfilePage() {
           </CardContent>
         </Card>
       ) : null}
+
+      <div className="mt-8">
+        <CoverageSettings
+          zones={reputation.zones}
+          baseLat={reputation.baseLat}
+          baseLng={reputation.baseLng}
+          serviceRadiusKm={reputation.serviceRadiusKm}
+        />
+      </div>
 
       <AvailabilitySettings
         companies={availability}

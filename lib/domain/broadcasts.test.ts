@@ -8,16 +8,33 @@ import {
 const ID = "11111111-1111-4111-8111-111111111111";
 
 describe("broadcast schemas", () => {
-  it("normaliza la zona y convierte cupos de FormData", () => {
+  it("conserva la provincia tal cual y convierte cupos de FormData", () => {
     const parsed = createBroadcastSchema.parse({
       projectId: ID,
-      zone: " ar-cba ",
+      zone: " Córdoba ",
       title: "Refuerzo Córdoba",
       description: "Seis estaciones",
       slots: "2",
     });
-    expect(parsed.zone).toBe("AR-CBA");
+    // No se normaliza a mayúsculas: tiene que coincidir exactamente con la
+    // provincia declarada en installers.zones para que el matching funcione.
+    expect(parsed.zone).toBe("Córdoba");
     expect(parsed.slots).toBe(2);
+  });
+
+  it("exige las dos coordenadas o ninguna", () => {
+    const base = {
+      projectId: ID,
+      zone: "Córdoba",
+      title: "Refuerzo Córdoba",
+      description: "",
+      slots: "1",
+    };
+    expect(createBroadcastSchema.safeParse(base).success).toBe(true);
+    expect(
+      createBroadcastSchema.safeParse({ ...base, lat: "-31.42", lng: "-64.18" }).success,
+    ).toBe(true);
+    expect(createBroadcastSchema.safeParse({ ...base, lat: "-31.42" }).success).toBe(false);
   });
 
   it("rechaza cupos fuera del rango", () => {

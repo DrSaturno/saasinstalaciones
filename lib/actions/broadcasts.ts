@@ -54,6 +54,8 @@ export async function createBroadcast(
     logisticsNotes: formData.get("logisticsNotes") ?? "",
     payVisible: formData.get("payVisible") === "on",
     payAmount: formData.get("payAmount") ?? "",
+    lat: formData.get("lat") ?? "",
+    lng: formData.get("lng") ?? "",
   });
   if (!parsed.success) {
     return { error: t("invalidData") };
@@ -88,6 +90,9 @@ export async function createBroadcast(
             ? parsed.data.payAmount
             : null,
         currency: project.currency,
+        // Con coordenadas, el matching afina por radio; sin ellas, sólo provincia.
+        lat: parsed.data.lat,
+        lng: parsed.data.lng,
       })
       .select("id")
       .single();

@@ -6,14 +6,17 @@ const title = z.string().trim().min(4, "El título es muy corto").max(120);
 const description = z.string().trim().max(1200);
 const slots = z.coerce.number().int().min(1).max(50);
 
+const optionalCoordinate = (min: number, max: number) =>
+  z
+    .union([z.literal(""), z.coerce.number().min(min).max(max)])
+    .default("")
+    .transform((value) => (value === "" ? null : value));
+
 export const createBroadcastSchema = z.object({
   projectId: databaseId("Proyecto inválido"),
-  zone: z
-    .string()
-    .trim()
-    .min(2, "Ingresá una zona")
-    .max(80)
-    .transform((value) => value.toUpperCase()),
+  // La zona es la provincia, tal cual figura en la taxonomía y en la cobertura
+  // del instalador: no se normaliza a mayúsculas o dejaría de matchear.
+  zone: z.string().trim().min(2, "Ingresá una zona").max(80),
   title,
   description,
   slots,
@@ -23,9 +26,15 @@ export const createBroadcastSchema = z.object({
   logisticsNotes: z.string().trim().max(1500).default(""),
   payVisible: z.boolean().default(false),
   payAmount: z.union([z.literal(""), z.coerce.number().min(0)]).default("").transform((value) => value === "" ? null : value),
+  lat: optionalCoordinate(-90, 90),
+  lng: optionalCoordinate(-180, 180),
 }).refine(
   (value) => !value.scheduledEndDate || !value.scheduledDate || value.scheduledEndDate >= value.scheduledDate,
   { path: ["scheduledEndDate"] },
+).refine(
+  // Media coordenada no ubica nada: se piden las dos o ninguna.
+  (value) => (value.lat === null) === (value.lng === null),
+  { path: ["lng"] },
 );
 
 export const updateBroadcastSchema = z.object({

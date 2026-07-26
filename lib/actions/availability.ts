@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
+import { z } from "zod";
 import { databaseIdSchema } from "@/lib/domain/order-intake";
 import { unavailabilitySchema, weeklyAvailabilitySchema, type WeeklyAvailabilityInput } from "@/lib/domain/availability";
 import { getCurrentUser } from "@/lib/auth";
@@ -23,6 +24,61 @@ function revalidateAvailability() {
   revalidatePath("/jobs");
   revalidatePath("/team");
   revalidatePath("/dashboard");
+}
+
+const coverageSchema = z.object({
+  zones: z.array(z.string().trim().min(2).max(80)).max(24),
+  baseLat: z.union([z.literal(""), z.coerce.number().min(-90).max(90)]).transform((v) => (v === "" ? null : v)),
+  baseLng: z.union([z.literal(""), z.coerce.number().min(-180).max(180)]).transform((v) => (v === "" ? null : v)),
+  serviceRadiusKm: z.union([z.literal(""), z.coerce.number().int().min(1).max(3000)]).transform((v) => (v === "" ? null : v)),
+});
+
+export type CoverageState = { error: string | null; ok?: boolean };
+
+/**
+ * Cobertura del instalador: qué provincias trabaja y, opcionalmente, desde dónde
+ * y hasta cuántos km. Es lo que decide qué búsquedas de la bolsa le aparecen
+ * (ver la función broadcast_matches_installer). Sin provincias no ve ninguna.
+ */
+export async function saveCoverage(
+  _prev: CoverageState,
+  formData: FormData,
+): Promise<CoverageState> {
+  const t = await getTranslations("Errors");
+  const parsed = coverageSchema.safeParse({
+    zones: formData.getAll("zones").map(String),
+    baseLat: formData.get("baseLat") ?? "",
+    baseLng: formData.get("baseLng") ?? "",
+    serviceRadiusKm: formData.get("serviceRadiusKm") ?? "",
+  });
+  if (!parsed.success) return { error: t("invalidData") };
+  // El radio sin base desde dónde medirlo no filtra nada: se pide el par completo.
+  if (
+    parsed.data.serviceRadiusKm !== null &&
+    (parsed.data.baseLat === null || parsed.data.baseLng === null)
+  ) {
+    return { error: t("coordinatePairRequired") };
+  }
+
+  try {
+    const user = await getCurrentUser();
+    if (!user || user.role !== "installer") return { error: t("accessDenied") };
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from("installers")
+      .update({
+        zones: parsed.data.zones,
+        base_lat: parsed.data.baseLat,
+        base_lng: parsed.data.baseLng,
+        service_radius_km: parsed.data.serviceRadiusKm,
+      })
+      .eq("id", user.id);
+    if (error) return { error: t("operation") };
+    revalidateAvailability();
+    return { error: null, ok: true };
+  } catch {
+    return { error: t("unexpected") };
+  }
 }
 
 export async function setAvailabilityEnabled(enabled: boolean): Promise<Result> {

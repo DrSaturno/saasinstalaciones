@@ -185,7 +185,11 @@
     "weatherTitle": "Clima da operação",
     "weatherDescription": "Previsão de hoje para as zonas com trabalho ativo.",
     "weatherEmpty": "Cadastre locais ou programe ordens para ver a previsão por zona.",
-    "weatherSeverity": { "ok": "Normal", "warning": "Atenção", "danger": "Crítico" },
+    "weatherSeverity": {
+      "ok": "Normal",
+      "warning": "Atenção",
+      "danger": "Crítico"
+    },
     "calendarTitle": "Google Calendar",
     "calendarDescription": "Sincronização em um só sentido: o Instala Pro publica as ordens programadas no calendário do responsável.",
     "calendarPending": "Conexão pendente de configuração",
@@ -249,7 +253,12 @@
     "monthComparison": "Conclusões vs. mês anterior",
     "newComparison": "Novo",
     "cancelledCount": "{count, plural, =1 {# cancelada} other {# canceladas}}",
-    "projectHealth": { "onTrack": "No prazo", "atRisk": "Em risco", "delayed": "Atrasado", "paused": "Pausado" },
+    "projectHealth": {
+      "onTrack": "No prazo",
+      "atRisk": "Em risco",
+      "delayed": "Atrasado",
+      "paused": "Pausado"
+    },
     "planVariance": "{value}% vs. plano",
     "forecastDate": "Conclusão estimada: {date}",
     "forecastPending": "Sem ritmo suficiente para projetar",
@@ -274,7 +283,12 @@
       "incomplete_work": "Trabalho incompleto",
       "other": "Outro"
     },
-    "incidentSeverity": { "low": "Baixa", "medium": "Média", "high": "Alta", "critical": "Crítica" },
+    "incidentSeverity": {
+      "low": "Baixa",
+      "medium": "Média",
+      "high": "Alta",
+      "critical": "Crítica"
+    },
     "installerCompleted": "Concluídas",
     "installerOnTime": "No prazo",
     "installerFirstTime": "1ª visita",
@@ -342,7 +356,12 @@
       "incomplete_work": "Trabalho incompleto",
       "other": "Outro"
     },
-    "severityValues": { "low": "Baixa", "medium": "Média", "high": "Alta", "critical": "Crítica" }
+    "severityValues": {
+      "low": "Baixa",
+      "medium": "Média",
+      "high": "Alta",
+      "critical": "Crítica"
+    }
   },
   "Finance": {
     "eyebrow": "Desempenho",
@@ -365,18 +384,34 @@
     "progress": "Realizado",
     "orders": "ordens",
     "ordersCount": "{count, plural, =1 {# ordem} other {# ordens}}",
-    "mode": { "project": "Por projeto", "per_installation": "Por instalação" },
+    "mode": {
+      "project": "Por projeto",
+      "per_installation": "Por instalação"
+    },
     "zonesTitle": "Valores por zona",
     "installersTitle": "Valores por instalador",
     "ofContracted": "de {value}",
     "empty": "Não há projetos com dados financeiros.",
     "emptyBreakdown": "Ainda não há ordens para detalhar.",
     "allocationNote": "Nos projetos cobrados globalmente, o valor é distribuído entre as ordens não canceladas apenas para obter métricas operacionais por zona, instalador e período. O total autorizado continua sendo o valor do projeto.",
-    "periods": { "week": "Semana", "fortnight": "Quinzena", "month": "Mês", "semester": "Semestre" },
+    "periods": {
+      "week": "Semana",
+      "fortnight": "Quinzena",
+      "month": "Mês",
+      "semester": "Semestre"
+    },
     "from": "De",
     "to": "Até",
     "applyPeriod": "Aplicar datas",
-    "csv": { "project": "Projeto", "mode": "Modalidade", "currency": "Moeda", "contracted": "Contratado", "completed": "Realizado", "pending": "Pendente", "progress": "Progresso" }
+    "csv": {
+      "project": "Projeto",
+      "mode": "Modalidade",
+      "currency": "Moeda",
+      "contracted": "Contratado",
+      "completed": "Realizado",
+      "pending": "Pendente",
+      "progress": "Progresso"
+    }
   },
   "Projects": {
     "title": "Projetos",
@@ -413,19 +448,67 @@
     "actionsDescription": "Há {archived} locais arquivados. Você pode adicionar uma ficha, importar CSV ou gerar ordens."
   },
   "SiteForm": {
-    "add": "Adicionar instalação", "createTitle": "Nova instalação", "createDescription": "Crie a ficha permanente do local. Depois ela conservará todos os trabalhos e imagens.",
-    "edit": "Editar ficha", "editTitle": "Editar instalação", "editDescription": "Estes dados ficam disponíveis para futuros trabalhos no mesmo local.",
-    "identity": "Identidade e localização", "name": "Nome do local", "reference": "Código ou referência", "address": "Endereço", "city": "Cidade", "province": "Província", "stateBrazil": "Estado", "stateFromZone": "Definido pela zona escolhida", "zone": "Zona",
-    "latitude": "Latitude", "longitude": "Longitude", "mapsHelp": "As coordenadas são opcionais. Sem elas, o Google Maps usará o endereço.",
-    "contact": "Contato do local", "contactName": "Nome", "phone": "Telefone", "email": "Email", "openingHours": "Horários e janelas de acesso", "openingPlaceholder": "Ex.: segunda a sexta, das 8h às 17h",
-    "operation": "Condições operacionais permanentes", "access": "Acesso, permissões e chaves", "parking": "Estacionamento e descarga", "technical": "Altura, eletricidade e equipamentos", "risks": "Riscos e precauções", "permanentNotes": "Notas permanentes",
-    "saving": "Salvando…", "create": "Criar instalação", "save": "Salvar ficha", "created": "Instalação criada", "updated": "Ficha atualizada"
+    "add": "Adicionar instalação",
+    "createTitle": "Nova instalação",
+    "createDescription": "Crie a ficha permanente do local. Depois ela conservará todos os trabalhos e imagens.",
+    "edit": "Editar ficha",
+    "editTitle": "Editar instalação",
+    "editDescription": "Estes dados ficam disponíveis para futuros trabalhos no mesmo local.",
+    "identity": "Identidade e localização",
+    "name": "Nome do local",
+    "reference": "Código ou referência",
+    "address": "Endereço",
+    "city": "Cidade",
+    "province": "Província",
+    "stateBrazil": "Estado",
+    "stateFromZone": "Definido pela zona escolhida",
+    "zone": "Zona",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "mapsHelp": "As coordenadas são opcionais. Sem elas, o Google Maps usará o endereço.",
+    "contact": "Contato do local",
+    "contactName": "Nome",
+    "phone": "Telefone",
+    "email": "Email",
+    "openingHours": "Horários e janelas de acesso",
+    "openingPlaceholder": "Ex.: segunda a sexta, das 8h às 17h",
+    "operation": "Condições operacionais permanentes",
+    "access": "Acesso, permissões e chaves",
+    "parking": "Estacionamento e descarga",
+    "technical": "Altura, eletricidade e equipamentos",
+    "risks": "Riscos e precauções",
+    "permanentNotes": "Notas permanentes",
+    "saving": "Salvando…",
+    "create": "Criar instalação",
+    "save": "Salvar ficha",
+    "created": "Instalação criada",
+    "updated": "Ficha atualizada"
   },
   "SiteDetail": {
-    "back": "← Voltar para {project}", "archived": "Arquivada", "location": "Localização", "noAddress": "Sem endereço cadastrado", "openMaps": "Abrir no Google Maps", "mapTitle": "Mapa da instalação",
-    "progress": "Progresso histórico", "completed": "{done} de {total} ordens", "contact": "Contato e horários", "access": "Acesso", "parking": "Estacionamento e descarga", "technical": "Informação técnica", "risks": "Riscos", "permanentNotes": "Notas permanentes",
-    "history": "Histórico de trabalhos", "historyDescription": "Todas as ordens realizadas e futuras neste local.", "emptyHistory": "Este local ainda não possui ordens.",
-    "archive": "Arquivar instalação", "reactivate": "Reativar instalação", "archivedToast": "Instalação arquivada", "reactivated": "Instalação reativada", "delete": "Excluir definitivamente", "deleteConfirm": "Esta instalação não possui histórico. Deseja excluí-la definitivamente?", "deleted": "Instalação excluída"
+    "back": "← Voltar para {project}",
+    "archived": "Arquivada",
+    "location": "Localização",
+    "noAddress": "Sem endereço cadastrado",
+    "openMaps": "Abrir no Google Maps",
+    "mapTitle": "Mapa da instalação",
+    "progress": "Progresso histórico",
+    "completed": "{done} de {total} ordens",
+    "contact": "Contato e horários",
+    "access": "Acesso",
+    "parking": "Estacionamento e descarga",
+    "technical": "Informação técnica",
+    "risks": "Riscos",
+    "permanentNotes": "Notas permanentes",
+    "history": "Histórico de trabalhos",
+    "historyDescription": "Todas as ordens realizadas e futuras neste local.",
+    "emptyHistory": "Este local ainda não possui ordens.",
+    "archive": "Arquivar instalação",
+    "reactivate": "Reativar instalação",
+    "archivedToast": "Instalação arquivada",
+    "reactivated": "Instalação reativada",
+    "delete": "Excluir definitivamente",
+    "deleteConfirm": "Esta instalação não possui histórico. Deseja excluí-la definitivamente?",
+    "deleted": "Instalação excluída"
   },
   "SiteFiles": {
     "title": "Fotos e documentos permanentes",
@@ -820,7 +903,10 @@
     "copied": "Link copiado",
     "cancel": "Cancelar",
     "cancelled": "Convite cancelado",
-    "roles": { "installer": "Instalador", "coordinator": "Coordenador" }
+    "roles": {
+      "installer": "Instalador",
+      "coordinator": "Coordenador"
+    }
   },
   "Roster": {
     "removed": "{name} saiu da equipe",
@@ -845,6 +931,10 @@
     "project": "Projeto",
     "chooseProject": "Escolha um projeto",
     "zone": "Região",
+    "zonePlaceholder": "Ex: São Paulo",
+    "coordinatesHelp": "Coordenadas do trabalho (opcional). Com elas só é oferecido a instaladores dentro do raio; sem elas, a todos do estado.",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
     "searchTitle": "Título",
     "slots": "Vagas",
     "detail": "Detalhes",
@@ -1000,7 +1090,30 @@
     "removeException": "Remover",
     "exceptionRemoved": "Ausência removida",
     "unknownError": "Não foi possível atualizar a disponibilidade.",
-    "days": { "sun": "Domingo", "mon": "Segunda", "tue": "Terça", "wed": "Quarta", "thu": "Quinta", "fri": "Sexta", "sat": "Sábado" }
+    "days": {
+      "sun": "Domingo",
+      "mon": "Segunda",
+      "tue": "Terça",
+      "wed": "Quarta",
+      "thu": "Quinta",
+      "fri": "Sexta",
+      "sat": "Sábado"
+    }
+  },
+  "Coverage": {
+    "title": "Onde você trabalha",
+    "description": "Define quais buscas de oportunidades aparecem para você.",
+    "provinces": "Estados que você atende",
+    "provincesHelp": "Se não marcar nenhum, não verá trabalhos nas oportunidades.",
+    "radiusTitle": "Raio de trabalho (opcional)",
+    "radiusHelp": "Se informar sua base e um raio, verá apenas os trabalhos com coordenadas dentro dessa distância. Trabalhos sem coordenadas continuam aparecendo por estado.",
+    "latitude": "Latitude da sua base",
+    "longitude": "Longitude da sua base",
+    "radiusKm": "Raio em km",
+    "radiusPlaceholder": "Ex: 80",
+    "save": "Salvar cobertura",
+    "saving": "Salvando…",
+    "saved": "Cobertura atualizada"
   },
   "StarRating": {
     "summary": "{value} de 5 estrelas",
@@ -1139,6 +1252,7 @@
   },
   "Errors": {
     "invalidData": "Dados inválidos",
+    "coordinatePairRequired": "Para usar um raio você precisa informar latitude e longitude da sua base.",
     "accessDenied": "Acesso negado",
     "notAuthenticated": "Não autenticado",
     "unexpected": "Erro inesperado",
