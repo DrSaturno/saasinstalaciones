@@ -75,6 +75,47 @@ export async function addUnavailability(companyId: string, input: { startsAt: st
   }
 }
 
+/**
+ * La empresa resuelve un aviso de inactividad.
+ *
+ * Sólo las aprobadas bloquean la agenda (ver lib/data/dashboard.ts), así que
+ * hasta que el manager decide, el instalador sigue contando como disponible.
+ */
+export async function reviewUnavailability(
+  id: string,
+  decision: "approved" | "rejected",
+  note = "",
+): Promise<Result> {
+  const t = await getTranslations("Errors");
+  if (!databaseIdSchema.safeParse(id).success) return { error: t("invalidData") };
+  try {
+    const user = await getCurrentUser();
+    if (
+      !user ||
+      !["company_manager", "coordinator"].includes(user.role) ||
+      !user.companyId
+    ) {
+      return { error: t("accessDenied") };
+    }
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from("installer_unavailability")
+      .update({
+        status: decision,
+        reviewed_by: user.id,
+        review_note: note.trim().slice(0, 500),
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .eq("company_id", user.companyId);
+    if (error) return { error: t("operation") };
+    revalidateAvailability();
+    return { error: null, ok: true };
+  } catch {
+    return { error: t("unexpected") };
+  }
+}
+
 export async function removeUnavailability(companyId: string, id: string): Promise<Result> {
   const t = await getTranslations("Errors");
   if (!databaseIdSchema.safeParse(companyId).success || !databaseIdSchema.safeParse(id).success) return { error: t("invalidData") };

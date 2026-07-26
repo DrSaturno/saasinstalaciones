@@ -469,7 +469,16 @@
     "coordinators": "Coordinadores",
     "noCoordinators": "Todavía no hay coordinadores.",
     "unavailableTitle": "Instaladores indispuestos",
-    "noUnavailable": "No hay indisponibilidades próximas."
+    "noUnavailable": "No hay indisponibilidades próximas.",
+    "pendingCount": "{count, plural, one {# aviso esperando tu respuesta} other {# avisos esperando tu respuesta}}",
+    "statusPending": "Pendiente",
+    "statusApproved": "Aprobada",
+    "statusRejected": "Rechazada",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "rejectReason": "¿Por qué rechazás la ausencia de {name}? (opcional)",
+    "approved": "Ausencia de {name} aprobada",
+    "rejected": "Ausencia de {name} rechazada"
   },
   "Broadcasts": {
     "eyebrow": "Despacho por zona",
@@ -966,7 +975,12 @@
     "saveSchedule": "Guardar horario",
     "scheduleSaved": "Horario semanal guardado",
     "exceptions": "Ausencias y excepciones",
-    "exceptionsHelp": "Registrá vacaciones, turnos, problemas de salud u otros períodos en los que no puedas recibir trabajo.",
+    "exceptionsHelp": "Registrá vacaciones, turnos, problemas de salud u otros períodos en los que no puedas recibir trabajo. La empresa las revisa antes de que bloqueen tu agenda.",
+    "exceptionStatus": {
+      "pending": "Pendiente",
+      "approved": "Aprobada",
+      "rejected": "Rechazada"
+    },
     "from": "Desde",
     "to": "Hasta",
     "reason": "Motivo",

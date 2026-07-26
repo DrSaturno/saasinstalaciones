@@ -45,6 +45,7 @@ export type IncidentSeverity = "low" | "medium" | "high" | "critical";
 export type IncidentStatus = "open" | "resolved";
 export type InvitationStatus = "pending" | "accepted" | "expired";
 export type RosterStatus = "invited" | "active" | "removed";
+export type UnavailabilityStatus = "pending" | "approved" | "rejected";
 export type BroadcastStatus = "open" | "closed";
 export type ApplicationStatus = "applied" | "accepted" | "rejected";
 export type SiteStatus =
@@ -713,6 +714,10 @@ export interface Database {
           ends_at: string;
           reason: string;
           created_at: string;
+          status: UnavailabilityStatus;
+          reviewed_by: string | null;
+          review_note: string;
+          reviewed_at: string | null;
         };
         Insert: {
           id?: string;
@@ -722,6 +727,10 @@ export interface Database {
           ends_at: string;
           reason: string;
           created_at?: string;
+          status?: UnavailabilityStatus;
+          reviewed_by?: string | null;
+          review_note?: string;
+          reviewed_at?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["installer_unavailability"]["Insert"]>;
         Relationships: [];

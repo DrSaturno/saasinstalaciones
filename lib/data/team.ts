@@ -2,7 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getTranslations } from "next-intl/server";
-import type { Database, RosterStatus } from "@/types/database";
+import type { Database, RosterStatus, UnavailabilityStatus } from "@/types/database";
 
 export type RosterMember = {
   installerId: string;
@@ -48,6 +48,8 @@ export type UnavailableInstaller = {
   startsAt: string;
   endsAt: string;
   reason: string;
+  status: UnavailabilityStatus;
+  reviewNote: string;
 };
 
 export async function fetchUnavailableInstallers(
@@ -55,7 +57,7 @@ export async function fetchUnavailableInstallers(
 ): Promise<UnavailableInstaller[]> {
   const { data: exceptions } = await supabase
     .from("installer_unavailability")
-    .select("id, installer_id, starts_at, ends_at, reason")
+    .select("id, installer_id, starts_at, ends_at, reason, status, review_note")
     .gte("ends_at", new Date().toISOString())
     .order("starts_at");
   const ids = [...new Set((exceptions ?? []).map((item) => item.installer_id))];
@@ -72,6 +74,8 @@ export async function fetchUnavailableInstallers(
     startsAt: item.starts_at,
     endsAt: item.ends_at,
     reason: item.reason,
+    status: item.status,
+    reviewNote: item.review_note,
   }));
 }
 

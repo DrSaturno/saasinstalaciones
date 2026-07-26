@@ -113,7 +113,9 @@ export async function fetchDashboardOverview(supabase: SupabaseClient<Database>,
     supabase.from("profiles").select("id, full_name").in("id", installerIds),
     supabase.from("installers").select("id, available, rating_avg").in("id", installerIds),
     supabase.from("installer_weekly_availability").select("installer_id, weekday, starts_at, ends_at, timezone").eq("company_id", companyId).in("installer_id", installerIds),
-    supabase.from("installer_unavailability").select("installer_id, starts_at, ends_at, reason").eq("company_id", companyId).in("installer_id", installerIds).gte("ends_at", new Date().toISOString()),
+    // Sólo las ausencias aprobadas bloquean la agenda: una solicitud pendiente
+    // no puede dejar al instalador fuera de la planificación por sí sola.
+    supabase.from("installer_unavailability").select("installer_id, starts_at, ends_at, reason").eq("company_id", companyId).eq("status", "approved").in("installer_id", installerIds).gte("ends_at", new Date().toISOString()),
   ]) : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }];
 
   const projectIds = new Set(projects.map((project) => project.id));
