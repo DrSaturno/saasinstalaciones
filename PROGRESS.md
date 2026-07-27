@@ -1,5 +1,75 @@
 # Instala Pro — Estado del proyecto
 
+## PUNTO DE REANUDACIÓN — blueprint de expansión terminado (`rama1`, 2026-07-27)
+
+> **Los 17 pasos de `BLUEPRINT-EXPANSION.md` están completos y commiteados.**
+> `rama1` va **16 commits adelante de `main`**; `main` sigue en producción sin
+> los cambios nuevos. Nada quedó sin commitear.
+
+### Lo que falta hacer (en orden)
+
+1. **Actualizar dependencias** — la auditoría encontró 16 vulnerabilidades, todas
+   de terceros. La importante: **Next.js 16.2.10 tiene un bypass de middleware en
+   App Router + Turbopack**, y esta app cumple las tres condiciones (App Router,
+   `turbopack` declarado en `next.config.ts`, y `proxy.ts` protegiendo todas las
+   rutas y el ruteo por rol). Se arregla con un bump:
+   ```bash
+   pnpm up next@^16.2.11 sharp@^0.35.0
+   # + overrides en package.json: postcss >=8.5.18, brace-expansion >=5.0.8,
+   #   @hono/node-server >=2.0.5
+   pnpm build && pnpm test
+   ```
+   Reporte completo: `~/Escritorio/cyber-neo-report-instalapro-2026-07-27.md`
+   (risk score 39/100, medio; el código propio salió limpio).
+
+2. **Probar a mano la interacción de la UI.** Durante toda la sesión los clicks no
+   funcionaron en el navegador de pruebas: se comprobó que **los componentes cliente
+   no hidratan ahí** (los botones no tienen props de React). No es un bug del
+   código —la lógica se verificó por otras vías— pero conviene ejercitar a mano:
+   botón Ascender (`/team`), Aceptar orden (`/tasks`), toggle Lista/Tablero
+   (`/clients`, `/projects`), y el chat nuevo (`/messages`).
+
+3. **Merge a `main` + deploy** cuando lo anterior esté OK. Vercel deploya solo al
+   pushear `main`. Las 6 migraciones nuevas **ya están aplicadas en Supabase**.
+
+### Migraciones de este lote (todas aplicadas y verificadas)
+
+| Archivo | Qué trae |
+|---------|----------|
+| `20260725000001_geography.sql` | Provincias AR; `installers.base_lat/lng/service_radius_km`; backfill AMBA/Interior → provincia |
+| `20260725000002_promote_coordinator.sql` | RPC `promote_installer_to_coordinator` + excepción quirúrgica al trigger anti-escalación |
+| `20260725000003_unavailability_review.sql` | `status/reviewed_by/review_note/reviewed_at` en ausencias + RLS de aprobación |
+| `20260725000004_announcements.sql` | Tabla `announcements`, RPC `publish_announcement` (fan-out) y `announcement_recipient_emails` |
+| `20260725000005_broadcast_matching.sql` | `broadcast_matches_installer` (provincia + radio + excluir roster), `distance_km`, lat/lng en broadcasts |
+| `20260725000006_order_acceptance.sql` | `work_orders.installer_accepted_at` + trigger que la limpia al reasignar |
+
+### Los 17 pasos, uno por commit
+
+Geografía · sistema visual · configuración/contraseña · ascender a coordinador ·
+aprobación de inactividad · anuncios con público filtrable · edición de órdenes +
+ficha de cliente · accesos de bolsa en el inicio · matching geográfico de la bolsa ·
+Inicio del instalador · aceptación de órdenes ("Mis órdenes") · ausencias en el
+Inicio · módulo Mi ruta · acciones rápidas en la orden · mensajería WhatsApp ·
+lista/tablero · auditoría Cyber Neo.
+
+**Estado de verificación al cierre:** paridad i18n 1194=1194, lint 0 errores,
+74 tests, build OK (26 rutas).
+
+### Decisiones que conviene recordar
+
+- **`/tasks` conserva su URL** (label "Mis órdenes") para no romper las PWA
+  instaladas. `/home` es el nuevo landing del instalador, pero el `start_url` del
+  manifest sigue en `/tasks`.
+- **Órdenes quedó fuera del toggle lista/tablero**: su tabla está virtualizada para
+  miles de filas y pasarla a tarjetas perdería esa optimización.
+- **Las ausencias sólo bloquean la agenda cuando el gerente las aprueba.** Si tarda
+  en responder, el instalador sigue disponible; por eso el contador de pendientes es
+  prominente en `/team`.
+- **La bolsa no se le muestra a quien ya está en el equipo**: existe para conseguir
+  gente nueva.
+
+---
+
 ## ACTUALIZACIÓN AUTORITATIVA — coordinadores y expansión operativa (`main`, 2026-07-25)
 
 > Este es el punto de reanudación vigente. `rama1` se fusionó a `main` (fast-
