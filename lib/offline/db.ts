@@ -26,6 +26,7 @@ export type OutboxItem = {
   toStatus?: string;
   threadId?: string;
   messageId?: string;
+  replyToId?: string | null;
   body?: string;
   attachments?: { path: string; name: string; mimeType: string }[];
   createdAt: number;

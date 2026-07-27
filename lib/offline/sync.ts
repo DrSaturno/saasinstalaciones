@@ -106,6 +106,7 @@ export async function flush(): Promise<number> {
               sender_id: user.id,
               body: item.body ?? "",
               attachments: item.attachments ?? [],
+              reply_to_id: item.replyToId ?? null,
               created_at: new Date(item.createdAt).toISOString(),
             },
             { onConflict: "id", ignoreDuplicates: true },

@@ -12,6 +12,8 @@ export type ChatThreadSummary = {
 };
 
 export type ChatMessage = {
+  /** Ids de quienes ya lo leyeron (excluye al autor). */
+  readBy?: string[];
   id: string;
   threadId: string;
   companyId: string;
@@ -82,6 +84,15 @@ export async function fetchConversation(
       .order("created_at")
       .limit(300),
   ]);
+  // Quién leyó qué: alimenta las tildes de entregado/leído.
+  const ids = (messages ?? []).map((message) => message.id);
+  const { data: reads } = ids.length
+    ? await supabase.from("chat_message_reads").select("message_id, user_id").in("message_id", ids)
+    : { data: [] };
+  const readers = new Map<string, string[]>();
+  for (const row of reads ?? []) {
+    readers.set(row.message_id, [...(readers.get(row.message_id) ?? []), row.user_id]);
+  }
   return {
     thread,
     installerName: profile?.full_name ?? "",
@@ -94,6 +105,7 @@ export async function fetchConversation(
       attachments: message.attachments,
       replyToId: message.reply_to_id,
       createdAt: message.created_at,
+      readBy: readers.get(message.id) ?? [],
     })),
   };
 }

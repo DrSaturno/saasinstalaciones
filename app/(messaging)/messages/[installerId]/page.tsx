@@ -17,7 +17,7 @@ export default async function ConversationPage({ params, searchParams }: { param
     <main className="mx-auto max-w-4xl">
       <Link href="/messages" className="text-sm text-muted-foreground hover:text-foreground">{t("back")}</Link>
       <h1 className="mb-5 mt-3 text-2xl font-bold">{user.role === "installer" ? t("companyChannel") : conversation.installerName}</h1>
-      <ChatPanel threadId={conversation.thread.id} companyId={conversation.thread.company_id} currentUserId={user.id} installerMode={user.role === "installer"} initialMessages={conversation.messages} />
+      <ChatPanel threadId={conversation.thread.id} companyId={conversation.thread.company_id} currentUserId={user.id} installerMode={user.role === "installer"} initialMessages={conversation.messages} peerName={user.role === "installer" ? t("companyChannel") : conversation.installerName} />
     </main>
   );
 }
