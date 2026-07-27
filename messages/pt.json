@@ -14,7 +14,9 @@
     "optional": "opcional",
     "of": "de",
     "new": "Novo",
-    "localeName": "Português (Brasil)"
+    "localeName": "Português (Brasil)",
+    "viewList": "Lista",
+    "viewBoard": "Painel"
   },
   "Navigation": {
     "companyArea": "Empresa",
@@ -418,7 +420,12 @@
     "title": "Projetos",
     "description": "Cada projeto reúne seus pontos de instalação e ordens de serviço.",
     "empty": "Você ainda não tem projetos. Crie o primeiro para começar a cadastrar pontos de instalação.",
-    "progress": "{total, plural, =1 {# ponto} other {# pontos}} · {done, plural, =1 {# concluído} other {# concluídos}}"
+    "progress": "{total, plural, =1 {# ponto} other {# pontos}} · {done, plural, =1 {# concluído} other {# concluídos}}",
+    "nameColumn": "Projeto",
+    "clientColumn": "Cliente",
+    "statusColumn": "Status",
+    "sitesColumn": "Pontos",
+    "progressColumn": "Progresso"
   },
   "ProjectDetail": {
     "back": "← Projetos",
@@ -1071,7 +1078,9 @@
     "dataTitle": "Dados do cliente",
     "contactName": "Pessoa de contato",
     "sitesTitle": "Locais e ordens",
-    "summary": "{projects, plural, =1 {# projeto} other {# projetos}} · {sites, plural, =1 {# local} other {# locais}}"
+    "summary": "{projects, plural, =1 {# projeto} other {# projetos}} · {sites, plural, =1 {# local} other {# locais}}",
+    "projectsColumn": "Projetos",
+    "sitesColumn": "Locais"
   },
   "Messages": {
     "title": "Mensagens",

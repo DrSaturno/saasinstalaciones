@@ -14,7 +14,9 @@
     "optional": "opcional",
     "of": "de",
     "new": "Nuevo",
-    "localeName": "Español (Argentina)"
+    "localeName": "Español (Argentina)",
+    "viewList": "Lista",
+    "viewBoard": "Tablero"
   },
   "Navigation": {
     "companyArea": "Empresa",
@@ -418,7 +420,12 @@
     "title": "Proyectos",
     "description": "Cada proyecto agrupa sus puntos de instalación y órdenes de trabajo.",
     "empty": "Todavía no tenés proyectos. Creá el primero para empezar a cargar puntos de instalación.",
-    "progress": "{total, plural, =1 {# punto} other {# puntos}} · {done, plural, =1 {# finalizado} other {# finalizados}}"
+    "progress": "{total, plural, =1 {# punto} other {# puntos}} · {done, plural, =1 {# finalizado} other {# finalizados}}",
+    "nameColumn": "Proyecto",
+    "clientColumn": "Cliente",
+    "statusColumn": "Estado",
+    "sitesColumn": "Puntos",
+    "progressColumn": "Avance"
   },
   "ProjectDetail": {
     "back": "← Proyectos",
@@ -1071,7 +1078,9 @@
     "dataTitle": "Datos del cliente",
     "contactName": "Persona de contacto",
     "sitesTitle": "Ubicaciones y órdenes",
-    "summary": "{projects, plural, =1 {# proyecto} other {# proyectos}} · {sites, plural, =1 {# ubicación} other {# ubicaciones}}"
+    "summary": "{projects, plural, =1 {# proyecto} other {# proyectos}} · {sites, plural, =1 {# ubicación} other {# ubicaciones}}",
+    "projectsColumn": "Proyectos",
+    "sitesColumn": "Ubicaciones"
   },
   "Messages": {
     "title": "Mensajería",

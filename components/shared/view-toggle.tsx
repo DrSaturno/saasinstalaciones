@@ -1,33 +1,33 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { LayoutGrid, List } from "lucide-react";
 
 export type ViewMode = "list" | "board";
 
 /**
  * Persiste la preferencia lista/tablero por módulo en localStorage.
- * Usa useSyncExternalStore: SSR devuelve `initial` y el cliente sincroniza sin
- * mismatch de hidratación. `setMode` emite un StorageEvent para refrescar la
- * misma pestaña (el evento nativo solo dispara entre pestañas).
+ *
+ * El primer render usa `initial` para que servidor y cliente coincidan, y una
+ * vez montado se adopta lo guardado. Es exactamente el caso que los efectos
+ * existen para cubrir —sincronizar con un sistema externo al montar—, de ahí
+ * la excepción a la regla de setState en efectos.
  */
 export function useViewMode(storageKey: string, initial: ViewMode = "list") {
-  const subscribe = useCallback((onChange: () => void) => {
-    window.addEventListener("storage", onChange);
-    return () => window.removeEventListener("storage", onChange);
-  }, []);
+  const [mode, setModeState] = useState<ViewMode>(initial);
 
-  const getSnapshot = useCallback(() => {
+  useEffect(() => {
     const stored = window.localStorage.getItem(storageKey);
-    return stored === "list" || stored === "board" ? stored : initial;
-  }, [storageKey, initial]);
-
-  const mode = useSyncExternalStore(subscribe, getSnapshot, () => initial);
+    if (stored === "list" || stored === "board") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- adoptar la preferencia guardada al montar
+      setModeState(stored);
+    }
+  }, [storageKey]);
 
   const setMode = useCallback(
     (next: ViewMode) => {
+      setModeState(next);
       window.localStorage.setItem(storageKey, next);
-      window.dispatchEvent(new StorageEvent("storage", { key: storageKey }));
     },
     [storageKey],
   );
