@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Images, MessageSquareText, TriangleAlert } from "lucide-react";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { fetchActiveRoster } from "@/lib/data/orders";
@@ -10,6 +11,7 @@ import { OrderAttachments } from "@/components/shared/order-attachments";
 import { EditOrderDialog } from "@/components/company/edit-order-dialog";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { StatusStepper } from "@/components/shared/status-stepper";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { OrderStatus, OrderUpdateType } from "@/types/database";
 import { getCurrentUser } from "@/lib/auth";
@@ -136,9 +138,36 @@ export default async function OrderDetailPage({
       </div>
 
       <Card className="mt-6">
-        <CardContent className="overflow-x-auto py-5">
-          <div className="min-w-[560px]">
-            <StatusStepper status={order.status as OrderStatus} />
+        <CardContent className="py-5">
+          <div className="overflow-x-auto">
+            <div className="min-w-[560px]">
+              <StatusStepper status={order.status as OrderStatus} />
+            </div>
+          </div>
+          {/* Atajos a lo que se hace habitualmente desde acá, sin bajar al panel. */}
+          <div className="mt-5 flex flex-wrap gap-2 border-t pt-4">
+            {order.assigned_installer_id ? (
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/messages/${order.assigned_installer_id}`}>
+                  <MessageSquareText className="size-3.5" aria-hidden="true" />
+                  {t("messageInstaller")}
+                </Link>
+              </Button>
+            ) : null}
+            {attachments.length > 0 || (updates ?? []).some((u) => u.type !== "system") ? (
+              <Button asChild variant="outline" size="sm">
+                <a href="#evidencia">
+                  <Images className="size-3.5" aria-hidden="true" />
+                  {t("viewEvidence")}
+                </a>
+              </Button>
+            ) : null}
+            <Button asChild variant="outline" size="sm">
+              <a href="#incidencias">
+                <TriangleAlert className="size-3.5" aria-hidden="true" />
+                {t("reportIncident")}
+              </a>
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -233,12 +262,14 @@ export default async function OrderDetailPage({
             </CardContent>
           </Card>
 
+          <div id="evidencia" />
           <OrderAttachments
             attachments={attachments}
             title={t("attachments")}
             openLabel={(name) => t("openAttachment", { name })}
           />
 
+          <div id="incidencias" />
           <OrderIncidents orderId={order.id} incidents={incidents ?? []} />
 
           {/* Historial */}

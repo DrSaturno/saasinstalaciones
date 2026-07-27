@@ -548,7 +548,10 @@
     "attachments": "Material adjunto",
     "openAttachment": "Abrir {name}",
     "history": "Historial",
-    "emptyHistory": "Sin movimientos todavía."
+    "emptyHistory": "Sin movimientos todavía.",
+    "messageInstaller": "Mensajes",
+    "viewEvidence": "Ver evidencia",
+    "reportIncident": "Incidencias"
   },
   "Team": {
     "title": "Equipo",
