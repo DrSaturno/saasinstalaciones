@@ -43,7 +43,8 @@
     "expandMenu": "Expandir menu",
     "collapseMenu": "Minimizar menu",
     "collapse": "Minimizar",
-    "operationalCenter": "Centro operacional"
+    "operationalCenter": "Centro operacional",
+    "route": "Minha rota"
   },
   "LocaleSwitcher": {
     "label": "Idioma",
@@ -589,6 +590,17 @@
     "accepting": "Aceitando…",
     "accepted": "Ordem aceita",
     "pendingAcceptance": "Aguardando sua confirmação"
+  },
+  "InstallerRoute": {
+    "title": "Minha rota",
+    "description": "As paradas de hoje, em ordem.",
+    "openFullRoute": "Abrir rota completa",
+    "navigate": "Como chegar",
+    "noLocation": "Sem localização",
+    "overdue": "atrasada",
+    "empty": "Você não tem paradas para hoje.",
+    "summary": "{stops, plural, one {# parada} other {# paradas}} · {locatable, plural, one {# com localização} other {# com localização}}",
+    "needTwoStops": "Para abrir a rota completa você precisa de pelo menos duas paradas com localização."
   },
   "InstallerHome": {
     "greeting": "Olá, {name}",

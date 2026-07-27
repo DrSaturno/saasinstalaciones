@@ -11,6 +11,7 @@ export type NavIcon =
   | "companies"
   | "clients"
   | "messages"
-  | "settings";
+  | "settings"
+  | "route";
 
 export type NavItem = { href: string; label: string; icon: NavIcon };
