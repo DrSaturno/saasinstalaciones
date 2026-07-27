@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
+  CalendarOff,
   CalendarRange,
   ClipboardList,
   Megaphone,
@@ -216,6 +217,50 @@ export default async function InstallerHomePage() {
               {t("noAnnouncements")}
             </p>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="mt-4">
+        <CardHeader className="border-b">
+          <div className="flex items-center gap-2">
+            <CalendarOff className="size-4 text-primary" aria-hidden="true" />
+            <CardTitle>{t("absences")}</CardTitle>
+          </div>
+          <p className="text-xs text-muted-foreground">{t("absencesHelp")}</p>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-2">
+          {home.unavailability.length ? (
+            home.unavailability.map((item) => (
+              <div key={item.id} className="rounded-xl border px-3 py-2">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="min-w-0 truncate text-sm">{item.reason}</p>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${
+                      item.status === "approved"
+                        ? "bg-success/15 text-green-700"
+                        : item.status === "rejected"
+                          ? "bg-destructive/10 text-destructive"
+                          : "bg-warning/15 text-amber-700"
+                    }`}
+                  >
+                    {t(`absenceStatus.${item.status}`)}
+                  </span>
+                </div>
+                <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+                  {format.dateTime(new Date(item.startsAt), { dateStyle: "short" })} →{" "}
+                  {format.dateTime(new Date(item.endsAt), { dateStyle: "short" })}
+                </p>
+                {item.reviewNote ? (
+                  <p className="mt-1 text-[11px] italic text-muted-foreground">{item.reviewNote}</p>
+                ) : null}
+              </div>
+            ))
+          ) : (
+            <p className="py-2 text-sm text-muted-foreground">{t("noAbsences")}</p>
+          )}
+          <Button asChild variant="outline" size="sm" className="mt-1 sm:self-start">
+            <Link href="/profile">{t("declareAbsence")}</Link>
+          </Button>
         </CardContent>
       </Card>
 

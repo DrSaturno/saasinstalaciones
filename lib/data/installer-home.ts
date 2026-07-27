@@ -1,7 +1,12 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { AnnouncementSeverity, Database, OrderStatus } from "@/types/database";
+import type {
+  AnnouncementSeverity,
+  Database,
+  OrderStatus,
+  UnavailabilityStatus,
+} from "@/types/database";
 
 export type InstallerHome = {
   stats: { assigned: number; inProgress: number; doneToday: number; pending: number };
@@ -28,6 +33,15 @@ export type InstallerHome = {
     createdAt: string;
   }[];
   zones: { name: string; lat: number | null; lng: number | null }[];
+  /** Ausencias próximas declaradas por el instalador, con su estado de revisión. */
+  unavailability: {
+    id: string;
+    startsAt: string;
+    endsAt: string;
+    reason: string;
+    status: UnavailabilityStatus;
+    reviewNote: string;
+  }[];
 };
 
 const DAY = 86_400_000;
@@ -50,7 +64,7 @@ export async function fetchInstallerHome(
   supabase: SupabaseClient<Database>,
   today: string,
 ): Promise<InstallerHome> {
-  const [{ data: orders }, { data: announcements }, { data: companies }] = await Promise.all([
+  const [{ data: orders }, { data: announcements }, { data: companies }, { data: absences }] = await Promise.all([
     supabase
       .from("work_orders")
       .select(
@@ -63,6 +77,12 @@ export async function fetchInstallerHome(
       .order("created_at", { ascending: false })
       .limit(5),
     supabase.from("companies").select("id, name"),
+    supabase
+      .from("installer_unavailability")
+      .select("id, starts_at, ends_at, reason, status, review_note")
+      .gte("ends_at", new Date().toISOString())
+      .order("starts_at")
+      .limit(5),
   ]);
 
   type Row = {
@@ -142,5 +162,13 @@ export async function fetchInstallerHome(
       createdAt: row.created_at,
     })),
     zones,
+    unavailability: (absences ?? []).map((row) => ({
+      id: row.id,
+      startsAt: row.starts_at,
+      endsAt: row.ends_at,
+      reason: row.reason,
+      status: row.status,
+      reviewNote: row.review_note,
+    })),
   };
 }

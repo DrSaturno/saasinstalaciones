@@ -605,7 +605,16 @@
     "announcements": "Anuncios de la empresa",
     "noAnnouncements": "No hay anuncios recientes.",
     "myOrders": "Mis órdenes",
-    "findJobs": "Buscar trabajo"
+    "findJobs": "Buscar trabajo",
+    "absences": "Tus ausencias",
+    "absencesHelp": "La empresa revisa cada aviso antes de que bloquee tu agenda.",
+    "absenceStatus": {
+      "pending": "Pendiente",
+      "approved": "Aprobada",
+      "rejected": "Rechazada"
+    },
+    "noAbsences": "No tenés ausencias declaradas.",
+    "declareAbsence": "Avisar que no voy a estar"
   },
   "TaskDetail": {
     "back": "← Mis tareas",
