@@ -12,6 +12,8 @@ export type TaskRow = {
   site_city: string;
   company_id: string;
   company_name: string;
+  /** null = asignada pero todavía sin confirmar por el instalador. */
+  accepted_at: string | null;
 };
 
 /** Peso para ordenar: lo accionable primero, lo cerrado al final. */
@@ -31,6 +33,7 @@ type RawTask = {
   title: string;
   status: OrderStatus;
   scheduled_date: string | null;
+  installer_accepted_at: string | null;
   company_id: string;
   sites: { name: string; address: string; city: string } | null;
   companies: { name: string } | null;
@@ -46,7 +49,7 @@ export async function fetchMyTasks(
   const { data } = await supabase
     .from("work_orders")
     .select(
-      "id, order_number, title, status, scheduled_date, company_id, sites(name, address, city), companies(name)",
+      "id, order_number, title, status, scheduled_date, installer_accepted_at, company_id, sites(name, address, city), companies(name)",
     )
     .order("scheduled_date", { ascending: true, nullsFirst: false })
     .overrideTypes<RawTask[]>();
@@ -62,6 +65,7 @@ export async function fetchMyTasks(
     site_city: o.sites?.city ?? "",
     company_id: o.company_id,
     company_name: o.companies?.name ?? "",
+    accepted_at: o.installer_accepted_at,
   }));
 
   return rows.sort(

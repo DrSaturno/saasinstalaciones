@@ -29,7 +29,7 @@
     "broadcasts": "Bolsa de zona",
     "finance": "Finanzas",
     "settings": "Configuración",
-    "tasks": "Mis tareas",
+    "tasks": "Mis órdenes",
     "jobs": "Bolsa de zona",
     "profile": "Perfil",
     "overview": "Resumen",
@@ -579,10 +579,16 @@
     "emptyDescription": "Creá la primera para avisar a los instaladores disponibles en una zona."
   },
   "InstallerTasks": {
-    "title": "Mis tareas",
+    "title": "Mis órdenes",
     "description": "Las órdenes asignadas a vos.",
-    "empty": "No tenés tareas asignadas por ahora.",
-    "closed": "Cerradas"
+    "empty": "No tenés órdenes asignadas por ahora.",
+    "closed": "Cerradas",
+    "toAccept": "{count, plural, one {# orden por aceptar} other {# órdenes por aceptar}}",
+    "accepted_section": "Aceptadas",
+    "accept": "Aceptar",
+    "accepting": "Aceptando…",
+    "accepted": "Orden aceptada",
+    "pendingAcceptance": "Esperando tu confirmación"
   },
   "InstallerHome": {
     "greeting": "Hola, {name}",

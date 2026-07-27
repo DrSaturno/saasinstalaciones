@@ -330,6 +330,7 @@ export interface Database {
           currency: OrderCurrency;
           assigned_installer_id: string | null;
           assigned_at: string | null;
+          installer_accepted_at: string | null;
           original_scheduled_date: string | null;
           reschedule_count: number;
           visit_count: number;
@@ -359,6 +360,7 @@ export interface Database {
           currency?: OrderCurrency;
           assigned_installer_id?: string | null;
           assigned_at?: string | null;
+          installer_accepted_at?: string | null;
           original_scheduled_date?: string | null;
           reschedule_count?: number;
           visit_count?: number;

@@ -52,6 +52,46 @@ async function installerTransition(
   return { error: null, ok: true };
 }
 
+/**
+ * El instalador acepta una orden que le asignaron.
+ *
+ * Idempotente: si ya la aceptó, es un no-op exitoso (el retry offline no puede
+ * romper). Sólo sella la propia asignación; la RLS ya limita a sus órdenes,
+ * pero se valida igual antes de escribir.
+ */
+export async function acceptOrder(orderId: string): Promise<ActionState> {
+  const t = await getTranslations("Errors");
+  if (!z.string().uuid().safeParse(orderId).success) {
+    return { error: t("invalidData") };
+  }
+  try {
+    const { supabase, user } = await requireInstaller();
+    const { data: order } = await supabase
+      .from("work_orders")
+      .select("id, assigned_installer_id, installer_accepted_at, status")
+      .eq("id", orderId)
+      .single();
+    if (!order || order.assigned_installer_id !== user.id) {
+      return { error: t("orderNotAssigned") };
+    }
+    if (order.installer_accepted_at) return { error: null, ok: true }; // ya aceptada
+
+    const { error } = await supabase
+      .from("work_orders")
+      .update({ installer_accepted_at: new Date().toISOString() })
+      .eq("id", orderId)
+      .eq("assigned_installer_id", user.id);
+    if (error) return { error: error.message };
+
+    revalidatePath("/tasks");
+    revalidatePath(`/tasks/${orderId}`);
+    revalidatePath("/home");
+    return { error: null, ok: true };
+  } catch {
+    return { error: t("unexpected") };
+  }
+}
+
 const updateSchema = z.object({
   orderId: z.string().uuid(),
   updateId: z.string().uuid(), // generado en el CLIENTE: idempotencia offline

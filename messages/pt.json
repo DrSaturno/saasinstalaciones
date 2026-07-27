@@ -29,7 +29,7 @@
     "broadcasts": "Oportunidades por região",
     "finance": "Finanças",
     "settings": "Configurações",
-    "tasks": "Minhas tarefas",
+    "tasks": "Minhas ordens",
     "jobs": "Oportunidades",
     "profile": "Perfil",
     "overview": "Resumo",
@@ -579,10 +579,16 @@
     "emptyDescription": "Crie a primeira para avisar os instaladores disponíveis em uma região."
   },
   "InstallerTasks": {
-    "title": "Minhas tarefas",
+    "title": "Minhas ordens",
     "description": "As ordens atribuídas a você.",
-    "empty": "Você não tem tarefas atribuídas no momento.",
-    "closed": "Encerradas"
+    "empty": "Você não tem ordens atribuídas por enquanto.",
+    "closed": "Encerradas",
+    "toAccept": "{count, plural, one {# ordem para aceitar} other {# ordens para aceitar}}",
+    "accepted_section": "Aceitas",
+    "accept": "Aceitar",
+    "accepting": "Aceitando…",
+    "accepted": "Ordem aceita",
+    "pendingAcceptance": "Aguardando sua confirmação"
   },
   "InstallerHome": {
     "greeting": "Olá, {name}",
