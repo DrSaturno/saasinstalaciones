@@ -8,19 +8,9 @@
 
 ### Lo que falta hacer (en orden)
 
-1. **Actualizar dependencias** — la auditoría encontró 16 vulnerabilidades, todas
-   de terceros. La importante: **Next.js 16.2.10 tiene un bypass de middleware en
-   App Router + Turbopack**, y esta app cumple las tres condiciones (App Router,
-   `turbopack` declarado en `next.config.ts`, y `proxy.ts` protegiendo todas las
-   rutas y el ruteo por rol). Se arregla con un bump:
-   ```bash
-   pnpm up next@^16.2.11 sharp@^0.35.0
-   # + overrides en package.json: postcss >=8.5.18, brace-expansion >=5.0.8,
-   #   @hono/node-server >=2.0.5
-   pnpm build && pnpm test
-   ```
-   Reporte completo: `~/Escritorio/cyber-neo-report-instalapro-2026-07-27.md`
-   (risk score 39/100, medio; el código propio salió limpio).
+1. ~~**Actualizar dependencias**~~ — **HECHO (2026-07-27, sin commitear todavía).**
+   Ver "Bump de dependencias" más abajo para qué se cambió y por qué difiere de
+   lo que decía este plan.
 
 2. **Probar a mano la interacción de la UI.** Durante toda la sesión los clicks no
    funcionaron en el navegador de pruebas: se comprobó que **los componentes cliente
@@ -31,6 +21,49 @@
 
 3. **Merge a `main` + deploy** cuando lo anterior esté OK. Vercel deploya solo al
    pushear `main`. Las 6 migraciones nuevas **ya están aplicadas en Supabase**.
+
+### Bump de dependencias (2026-07-27)
+
+Cierra el bypass de middleware de Next y las 16 vulnerabilidades de terceros.
+**El plan original de arriba tenía dos errores; esto es lo que se hizo en su lugar:**
+
+| Cambio | Detalle |
+|--------|---------|
+| `next` y `eslint-config-next` | `16.2.10` → **`16.2.12`** (no `16.2.11`: 16.2.12 es el `latest` actual y ya incluye el parche del bypass) |
+| `pnpm.overrides` → `sharp` | `>=0.35.0`. **No se puede con `pnpm up`**: `sharp` no es dependencia directa, entra como `optionalDependency` de `next` |
+| `pnpm.overrides` → `postcss` | `>=8.5.18`. `next` lo pinea exacto en `8.4.31`, así que sólo sale por override |
+| `pnpm.overrides` → `@hono/node-server` | `>=2.0.5`. Entra por `shadcn > @modelcontextprotocol/sdk` |
+| `brace-expansion` | **NO se puso el override que pedía el plan.** Ver abajo |
+
+**Por qué no va el override de `brace-expansion`:** forzar `>=5.0.8` de forma
+global rompe ESLint. `eslint` usa `minimatch@3.1.5`, que declara
+`brace-expansion@^1.1.7` y lo carga con `require()` esperando una función;
+`brace-expansion@5` es ESM con export nombrado, así que revienta con
+`TypeError: expand is not a function` y `pnpm lint` sale con exit 2. Los
+selectores tipo `"brace-expansion@1"` y `"minimatch@3>brace-expansion"` no
+lograron acotarlo en pnpm 9.15.9. Sin override, la resolución natural ya da
+`1.1.16` para la línea 1.x y `5.0.8` para la 5.x, que es la versión parcheada.
+
+**Queda 1 vulnerabilidad high abierta y es aceptable:** `brace-expansion@1.1.16`
+vía `eslint > minimatch@3.1.5` ([GHSA-mh99-v99m-4gvg](https://github.com/advisories/GHSA-mh99-v99m-4gvg)).
+La línea 1.x **no tiene versión parcheada** — 1.1.16 es la última que existe. Es
+**dependencia de desarrollo**: `pnpm audit --prod` da **cero vulnerabilidades**,
+o sea que no viaja al bundle de producción. Se destraba sola cuando ESLint deje
+de arrastrar `minimatch@3`.
+
+**Riesgo asumido — `sharp` 0.35.3 fuera de rango:** `next@16.2.12` declara
+`optionalDependencies.sharp: ^0.34.5`, pero todo `<0.35.0` es vulnerable, así que
+el override salta un major. Se verificó a mano que carga y encodea
+(`sharp.versions.sharp === '0.35.3'`, webp OK). `next/image` se usa sólo en
+`components/company/site-files.tsx` y `components/shared/order-attachments.tsx`.
+Vercel además optimiza imágenes con su propio pipeline, no con el `sharp` local.
+
+**Verificación tras el bump:** `pnpm audit --prod` 0 vulnerabilidades ·
+`type-check` OK · `lint` 0 errores · **74 tests en 14 archivos, todos OK** ·
+`pnpm build` OK con **26 rutas** y el Proxy (Middleware) presente.
+
+> Los overrides son deuda: revisarlos y sacarlos cuando `next` y `shadcn`
+> actualicen sus rangos. Quedó un `comment` al lado de ellos en `package.json`.
 
 ### Migraciones de este lote (todas aplicadas y verificadas)
 
