@@ -86,7 +86,7 @@ export default async function InstallerRoutePage() {
   const locatable = routeStops.filter((stop) => stop.lat !== null || stop.address).length;
 
   return (
-    <div className="mx-auto w-full max-w-5xl">
+    <div className="mx-auto w-full max-w-[1480px]">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>

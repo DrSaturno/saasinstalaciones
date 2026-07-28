@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function InstallerLoading() {
   return (
-    <div className="mx-auto w-full max-w-6xl">
+    <div className="mx-auto w-full max-w-[1480px]">
       <Skeleton className="h-7 w-40" />
       <Skeleton className="mt-2 h-4 w-56" />
 

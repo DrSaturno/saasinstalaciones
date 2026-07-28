@@ -68,7 +68,7 @@ export default async function InstallerHomePage() {
     : null;
 
   return (
-    <div className="mx-auto w-full max-w-6xl">
+    <div className="mx-auto w-full max-w-[1480px]">
       <header>
         <h1 className="text-2xl font-bold tracking-tight">{t("greeting", { name: firstName })}</h1>
         <p className="mt-1 text-sm capitalize text-muted-foreground">

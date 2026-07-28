@@ -60,7 +60,7 @@ export default async function TaskDetailPage({
     : null;
 
   return (
-    <div className="mx-auto w-full max-w-5xl">
+    <div className="mx-auto w-full max-w-[1480px]">
       <Link
         href="/tasks"
         className="text-sm text-muted-foreground hover:text-foreground"

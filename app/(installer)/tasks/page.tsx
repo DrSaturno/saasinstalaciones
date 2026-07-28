@@ -16,7 +16,7 @@ export default async function InstallerTasks() {
   const closed = tasks.filter((task) => isTerminal(task.status));
 
   return (
-    <div className="mx-auto w-full max-w-6xl">
+    <div className="mx-auto w-full max-w-[1480px]">
       <h1 className="text-2xl font-bold">{t("title")}</h1>
       <p className="mt-1 text-sm text-muted-foreground">{t("description")}</p>
 

@@ -86,7 +86,7 @@ export default async function CoordinationOrderPage({
     : null;
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-6">
+    <div className="mx-auto w-full max-w-[1480px] px-4 py-6">
       <Link
         href="/coordination"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"

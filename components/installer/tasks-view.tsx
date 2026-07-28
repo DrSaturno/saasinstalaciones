@@ -80,7 +80,7 @@ export function TasksView({
           </h2>
 
           {mode === "board" ? (
-            <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {section.tasks.map((task) => (
                 <TaskCard
                   key={task.id}

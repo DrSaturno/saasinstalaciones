@@ -142,7 +142,7 @@ export function CoordinationBoard({
         />
       </div>
 
-      <div className={mode === "board" ? "mt-4 grid gap-3 lg:grid-cols-2" : "mt-4 overflow-hidden rounded-xl border bg-card"}>
+      <div className={mode === "board" ? "mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3" : "mt-4 overflow-hidden rounded-xl border bg-card"}>
         {visible.length === 0 ? (
           <div className="rounded-xl border bg-card py-12 text-center">
             <p className="text-sm text-muted-foreground">{t("empty")}</p>
