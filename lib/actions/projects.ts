@@ -430,7 +430,15 @@ export async function setProjectArchived(
  *
  * El Excel se convierte a las mismas filas que produce el parser de CSV y se
  * delega en `importSites`, así hay UN solo camino de validación e inserción.
- * Convertir en el servidor evita mandar exceljs al navegador.
+ * Convertir en el servidor evita mandar la librería de lectura al navegador.
+ *
+ * Se lee con SheetJS (`xlsx`), no con exceljs (que sí se usa para ESCRIBIR la
+ * plantilla, en /api/site-template). exceljs es estricto con el XML interno
+ * del .xlsx y rechaza archivos válidos que algunos programas re-escriben con
+ * un dialecto distinto (namespace con prefijo en vez de namespace por
+ * defecto) al volver a guardarlos — pasó con una planilla real de un usuario,
+ * completada y re-guardada, con datos perfectamente buenos. SheetJS es mucho
+ * más tolerante con esas variantes y es el que de hecho pudo abrirla.
  */
 export async function importSitesFile(
   projectId: string,
@@ -455,43 +463,40 @@ export async function importSitesFile(
   }
 
   try {
-    const ExcelJS = (await import("exceljs")).default;
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(await file.arrayBuffer());
+    const XLSX = await import("xlsx");
+    const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
 
-    // La primera hoja con datos; la de instrucciones no tiene encabezados.
-    const sheet =
-      workbook.worksheets.find((candidate) =>
-        String(candidate.getRow(1).getCell(1).value ?? "")
-          .toLowerCase()
-          .includes("nombre"),
-      ) ?? workbook.worksheets[0];
+    // La primera hoja cuya cabecera menciona "nombre"; la de instrucciones no
+    // tiene encabezados de columna.
+    const sheetName =
+      workbook.SheetNames.find((name) => {
+        const sheet = workbook.Sheets[name];
+        const firstCell = sheet["A1"];
+        return String(firstCell?.v ?? "").toLowerCase().includes("nombre");
+      }) ?? workbook.SheetNames[0];
+    const sheet = sheetName ? workbook.Sheets[sheetName] : undefined;
     if (!sheet) return { error: t("csvNoRows"), inserted: 0, skipped: [] };
 
+    const rows = XLSX.utils.sheet_to_json<string[]>(sheet, {
+      header: 1,
+      raw: false,
+      defval: "",
+    });
+
     const lines: string[] = [];
-    sheet.eachRow((row) => {
+    for (const row of rows) {
       const values: string[] = [];
-      for (let index = 1; index <= SITE_TEMPLATE_HEADERS.length; index++) {
-        const cell = row.getCell(index);
-        let text = "";
-        if (cell.value !== null && cell.value !== undefined) {
-          if (typeof cell.value === "object" && "result" in cell.value) {
-            text = String(cell.value.result ?? "");
-          } else if (cell.value instanceof Date) {
-            text = cell.value.toISOString().slice(0, 10);
-          } else {
-            text = String(cell.value);
-          }
-        }
+      for (let index = 0; index < SITE_TEMPLATE_HEADERS.length; index++) {
+        const raw = row[index] ?? "";
         // El encabezado marca las obligatorias con "*": se saca para que el
         // nombre de columna coincida con el que espera el parser.
-        values.push(text.replace(/\s*\*\s*$/, "").trim());
+        values.push(String(raw).replace(/\s*\*\s*$/, "").trim());
       }
       if (values.some((value) => value !== "")) {
         // Comillas para que las direcciones con coma no partan la columna.
         lines.push(values.map((value) => `"${value.replace(/"/g, '""')}"`).join(","));
       }
-    });
+    }
 
     if (lines.length < 2) {
       return { error: t("csvNoRows"), inserted: 0, skipped: [] };
