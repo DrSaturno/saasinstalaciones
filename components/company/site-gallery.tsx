@@ -102,6 +102,15 @@ export function SiteGallery({
                   </Button>
                 ) : null}
 
+                {item.fromProject ? (
+                  <span
+                    className="absolute left-1.5 top-1.5 max-w-[85%] truncate rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-medium"
+                    title={t("fromProject", { project: item.fromProject })}
+                  >
+                    {item.fromProject}
+                  </span>
+                ) : null}
+
                 <figcaption className="mt-1.5 text-xs">
                   <Link
                     href={`/orders/${item.orderId}`}

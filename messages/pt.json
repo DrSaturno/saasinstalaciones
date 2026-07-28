@@ -525,6 +525,7 @@
     "empty": "Ainda não há imagens deste local.",
     "fromOrder": "Anexo da ordem",
     "fromUpdate": "Foto de progresso",
+    "fromProject": "De outro projeto do cliente: {project}",
     "delete": "Excluir",
     "deleteConfirm": "Excluir esta imagem? O arquivo é apagado e não pode ser recuperado. O progresso no histórico é mantido.",
     "deleted": "Imagem excluída"
@@ -664,6 +665,13 @@
     "weather": "Clima nas suas regiões",
     "announcements": "Comunicados da empresa",
     "noAnnouncements": "Não há comunicados recentes.",
+    "coordinationTitle": "Como coordenador",
+    "coordinationSubtitle": "{count, plural, =0 {Sem projetos sob sua responsabilidade} one {# projeto sob sua responsabilidade} other {# projetos sob sua responsabilidade}}",
+    "coordPendingReview": "Aguardam sua confirmação",
+    "coordInProgress": "Em andamento",
+    "coordUnassigned": "Sem atribuir",
+    "coordDoneToday": "Fechadas hoje",
+    "weekLegend": "Acima, seus trabalhos como instalador. Abaixo em azul, os da equipe que você coordena.",
     "coordinationPending": "{count, plural, one {# trabalho aguardando sua confirmação} other {# trabalhos aguardando sua confirmação}}",
     "coordinationOpen": "Ir para Coordenação",
     "myOrders": "Minhas ordens",
@@ -788,20 +796,20 @@
     "added": "{count, plural, one {# local adicionado} other {# locais adicionados}}"
   },
   "ImportSites": {
-    "trigger": "Importar pontos (CSV)",
-    "title": "Importar pontos de instalação",
-    "description": "Envie um CSV com os pontos. O separador é detectado automaticamente (vírgula ou ponto e vírgula).",
+    "trigger": "Importar locais (Excel)",
+    "title": "Importar locais",
+    "description": "Baixe a planilha, preencha com seus locais e envie de volta. Também aceita CSV.",
     "imported": "{count, plural, =1 {# ponto importado} other {# pontos importados}}",
     "importedLabel": "pontos importados",
     "skipped": "{count, plural, =1 {# linha ignorada} other {# linhas ignoradas}}",
     "row": "Linha {row}: {reason}",
     "more": "…e mais {count}",
-    "file": "Arquivo CSV",
+    "file": "Arquivo Excel (.xlsx) ou CSV",
     "recognized": "Colunas reconhecidas",
-    "columns": "nome (obrigatória), endereco, cidade, estado, zona, codigo",
+    "columns": "nombre e direccion (obrigatórias), ciudad, provincia, codigo, lat, lng",
     "variants": "Aceita variações em português, espanhol e inglês (direccion, ciudad, city, address…).",
     "importing": "Importando…",
-    "downloadTemplate": "Baixar planilha modelo"
+    "downloadTemplate": "Baixar planilha Excel"
   },
   "CreateOrders": {
     "defaultTitle": "Instalação",

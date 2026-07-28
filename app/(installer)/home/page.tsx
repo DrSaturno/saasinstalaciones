@@ -11,6 +11,7 @@ import {
 import { getFormatter, getTranslations } from "next-intl/server";
 import { getCurrentUser, ROLE_HOME, isInstallerArea } from "@/lib/auth";
 import { fetchInstallerHome } from "@/lib/data/installer-home";
+import { fetchCoordinationHome } from "@/lib/data/coordination-home";
 import { createClient } from "@/lib/supabase/server";
 import { fetchZoneForecasts } from "@/lib/weather/forecast";
 import { googleMapsHref } from "@/lib/domain/sites";
@@ -41,26 +42,18 @@ export default async function InstallerHomePage() {
   const today = localDate();
   const home = await fetchInstallerHome(supabase, today);
 
-  // El coordinador ve además cuánto tiene esperando su confirmación. Sin esto
-  // su Inicio queda mostrando sólo "su día" como instalador, que puede estar
-  // vacío, y no tiene por dónde entrar a lo que sí le toca.
-  let pendingReview = 0;
-  if (user.role === "coordinator") {
-    const { data: myProjects } = await supabase
-      .from("projects")
-      .select("id")
-      .eq("coordinator_id", user.id)
-      .is("archived_at", null);
-    const ids = (myProjects ?? []).map((project) => project.id);
-    if (ids.length) {
-      const { count } = await supabase
-        .from("work_orders")
-        .select("id", { count: "exact", head: true })
-        .in("project_id", ids)
-        .eq("status", "en_revision");
-      pendingReview = count ?? 0;
-    }
-  }
+  // El coordinador ve además sus métricas de coordinación, separadas de las de
+  // instalador: son dos roles en la misma persona y mezclarlos haría ilegibles
+  // los dos números.
+  const coordination =
+    user.role === "coordinator"
+      ? await fetchCoordinationHome(
+          supabase,
+          user.id,
+          today,
+          home.week.map((day) => day.date),
+        )
+      : null;
   const forecasts = await fetchZoneForecasts(home.zones);
   const firstName = user.fullName.split(" ")[0] || user.fullName;
   const maps = home.nextJob
@@ -91,6 +84,31 @@ export default async function InstallerHomePage() {
         <Stat label={t("doneToday")} value={home.stats.doneToday} />
         <Stat label={t("pending")} value={home.stats.pending} />
       </div>
+
+      {coordination ? (
+        <Card className="mt-4 border-primary/30">
+          <CardHeader className="border-b">
+            <div className="flex items-center gap-2">
+              <ClipboardList className="size-4 text-primary" aria-hidden="true" />
+              <CardTitle>{t("coordinationTitle")}</CardTitle>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t("coordinationSubtitle", { count: coordination.projects })}
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3">
+              <Stat label={t("coordPendingReview")} value={coordination.pendingReview} highlight />
+              <Stat label={t("coordInProgress")} value={coordination.inProgress} />
+              <Stat label={t("coordUnassigned")} value={coordination.unassigned} />
+              <Stat label={t("coordDoneToday")} value={coordination.doneToday} />
+            </div>
+            <Button asChild className="mt-4 w-full">
+              <Link href="/coordination">{t("coordinationOpen")}</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card className="mt-4">
         <CardHeader className="border-b">
@@ -154,20 +172,32 @@ export default async function InstallerHomePage() {
             <CardTitle>{t("week")}</CardTitle>
           </div>
         </CardHeader>
-        <CardContent className="grid grid-cols-7 gap-1.5">
-          {home.week.map((day, index) => (
-            <div
-              key={day.date}
-              className={`rounded-lg border p-1.5 text-center ${
-                index === 0 ? "border-primary/40 bg-primary-soft/25" : ""
-              }`}
-            >
-              <p className="text-[10px] capitalize text-muted-foreground">
-                {format.dateTime(new Date(`${day.date}T12:00:00Z`), { weekday: "narrow" })}
-              </p>
-              <p className="font-mono text-base font-semibold leading-tight">{day.total}</p>
-            </div>
-          ))}
+        <CardContent>
+          <div className="grid grid-cols-7 gap-1.5">
+            {home.week.map((day, index) => (
+              <div
+                key={day.date}
+                className={`rounded-lg border p-1.5 text-center ${
+                  index === 0 ? "border-primary/40 bg-primary-soft/25" : ""
+                }`}
+              >
+                <p className="text-[10px] capitalize text-muted-foreground">
+                  {format.dateTime(new Date(`${day.date}T12:00:00Z`), { weekday: "narrow" })}
+                </p>
+                <p className="font-mono text-base font-semibold leading-tight">{day.total}</p>
+                {coordination ? (
+                  <p className="font-mono text-[10px] leading-tight text-primary">
+                    {coordination.week[index]?.total ?? 0}
+                  </p>
+                ) : null}
+              </div>
+            ))}
+          </div>
+          {coordination ? (
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              {t("weekLegend")}
+            </p>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -287,17 +317,6 @@ export default async function InstallerHomePage() {
           </Button>
         </CardContent>
       </Card>
-
-      {user.role === "coordinator" ? (
-        <Button asChild className="mt-4 w-full" size="lg">
-          <Link href="/coordination">
-            <ClipboardList className="size-4" aria-hidden="true" />
-            {pendingReview > 0
-              ? t("coordinationPending", { count: pendingReview })
-              : t("coordinationOpen")}
-          </Link>
-        </Button>
-      ) : null}
 
       <div className="mt-4 grid grid-cols-2 gap-3">
         <Button asChild variant="outline">

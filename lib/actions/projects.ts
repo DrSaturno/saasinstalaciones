@@ -623,7 +623,7 @@ export async function reuseSites(
     const { data: origin } = await supabase
       .from("sites")
       .select(
-        "name, address, city, state, zone, lat, lng, external_ref, contact_name, contact_phone, contact_email, opening_hours, access_notes, parking_notes, technical_notes, risk_notes, permanent_notes",
+        "id, name, address, city, state, zone, lat, lng, external_ref, contact_name, contact_phone, contact_email, opening_hours, access_notes, parking_notes, technical_notes, risk_notes, permanent_notes",
       )
       .in("id", ids.data);
     if (!origin?.length) {
@@ -657,9 +657,13 @@ export async function reuseSites(
     }));
 
     let inserted = 0;
+    const created: { newId: string; originId: string }[] = [];
     for (let index = 0; index < rows.length; index += BATCH_SIZE) {
       const batch = rows.slice(index, index + BATCH_SIZE);
-      const { error } = await supabase.from("sites").insert(batch);
+      const { data: createdBatch, error } = await supabase
+        .from("sites")
+        .insert(batch)
+        .select("id");
       if (error) {
         return {
           error: t("importBatch", { count: inserted, error: error.message }),
@@ -667,12 +671,68 @@ export async function reuseSites(
           skipped: [],
         };
       }
+      (createdBatch ?? []).forEach((row, position) => {
+        const source = origin[index + position];
+        if (source) created.push({ newId: row.id, originId: source.id });
+      });
       inserted += batch.length;
     }
+
+    // Los archivos permanentes de la ficha (planos, fotos de fachada) viajan
+    // con el local: son del lugar, no del proyecto. Se copia el archivo en el
+    // bucket para que borrar el proyecto viejo no rompa el nuevo.
+    await copySiteAttachments(supabase, companyId, created);
 
     revalidatePath(`/projects/${projectId}`);
     return { error: null, inserted, skipped: [] };
   } catch {
     return { error: t("unexpected"), inserted: 0, skipped: [] };
   }
+}
+
+/** Duplica los adjuntos permanentes de cada locación de origen a su copia. */
+async function copySiteAttachments(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  companyId: string,
+  pairs: { newId: string; originId: string }[],
+) {
+  if (pairs.length === 0) return;
+
+  const { data: attachments } = await supabase
+    .from("site_attachments")
+    .select("site_id, storage_path, file_name, mime_type, size_bytes")
+    .in(
+      "site_id",
+      pairs.map((pair) => pair.originId),
+    );
+  if (!attachments?.length) return;
+
+  const newIdByOrigin = new Map(pairs.map((pair) => [pair.originId, pair.newId]));
+  const rows: TablesInsert<"site_attachments">[] = [];
+
+  for (const attachment of attachments) {
+    const newSiteId = newIdByOrigin.get(attachment.site_id);
+    if (!newSiteId) continue;
+
+    const fileName = attachment.storage_path.split("/").pop() ?? "archivo";
+    const destination = `${companyId}/${newSiteId}/${crypto.randomUUID()}-${fileName}`;
+
+    const { error } = await supabase.storage
+      .from("evidence")
+      .copy(attachment.storage_path, destination);
+    // Si un archivo falla, se omite: no vale la pena tumbar toda la copia de
+    // locaciones porque un adjunto ya no esté en el bucket.
+    if (error) continue;
+
+    rows.push({
+      site_id: newSiteId,
+      company_id: companyId,
+      storage_path: destination,
+      file_name: attachment.file_name,
+      mime_type: attachment.mime_type,
+      size_bytes: attachment.size_bytes,
+    });
+  }
+
+  if (rows.length) await supabase.from("site_attachments").insert(rows);
 }

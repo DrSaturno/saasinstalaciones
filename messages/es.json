@@ -525,6 +525,7 @@
     "empty": "Todavía no hay imágenes de esta locación.",
     "fromOrder": "Adjunto de la orden",
     "fromUpdate": "Foto de avance",
+    "fromProject": "De otro proyecto del cliente: {project}",
     "delete": "Eliminar",
     "deleteConfirm": "¿Eliminar esta imagen? Se borra el archivo y no se puede recuperar. El avance en el historial se conserva.",
     "deleted": "Imagen eliminada"
@@ -664,6 +665,13 @@
     "weather": "Clima en tus zonas",
     "announcements": "Anuncios de la empresa",
     "noAnnouncements": "No hay anuncios recientes.",
+    "coordinationTitle": "Como coordinador",
+    "coordinationSubtitle": "{count, plural, =0 {Sin proyectos a cargo} one {# proyecto a cargo} other {# proyectos a cargo}}",
+    "coordPendingReview": "Esperan tu confirmación",
+    "coordInProgress": "En proceso",
+    "coordUnassigned": "Sin asignar",
+    "coordDoneToday": "Cerradas hoy",
+    "weekLegend": "Arriba, tus trabajos como instalador. Abajo en azul, los del equipo que coordinás.",
     "coordinationPending": "{count, plural, one {# trabajo esperando tu confirmación} other {# trabajos esperando tu confirmación}}",
     "coordinationOpen": "Ir a Coordinación",
     "myOrders": "Mis órdenes",
@@ -788,20 +796,20 @@
     "added": "{count, plural, one {Se agregó # locación} other {Se agregaron # locaciones}}"
   },
   "ImportSites": {
-    "trigger": "Importar puntos (CSV)",
-    "title": "Importar puntos de instalación",
-    "description": "Subí un CSV con los puntos. Se detecta el separador automáticamente (coma o punto y coma).",
+    "trigger": "Importar locaciones (Excel)",
+    "title": "Importar locaciones",
+    "description": "Descargá la planilla, completala con tus locaciones y volvé a subirla. También acepta CSV.",
     "imported": "{count, plural, =1 {# punto importado} other {# puntos importados}}",
     "importedLabel": "puntos importados",
     "skipped": "{count, plural, =1 {# fila omitida} other {# filas omitidas}}",
     "row": "Fila {row}: {reason}",
     "more": "…y {count} más",
-    "file": "Archivo CSV",
+    "file": "Archivo Excel (.xlsx) o CSV",
     "recognized": "Columnas reconocidas",
-    "columns": "nombre (obligatoria), direccion, ciudad, provincia, zona, codigo",
+    "columns": "nombre y direccion (obligatorias), ciudad, provincia, codigo, lat, lng",
     "variants": "Acepta variantes en portugués e inglés (endereco, cidade, city, address…).",
     "importing": "Importando…",
-    "downloadTemplate": "Descargar planilla modelo"
+    "downloadTemplate": "Descargar planilla Excel"
   },
   "CreateOrders": {
     "defaultTitle": "Instalación",
