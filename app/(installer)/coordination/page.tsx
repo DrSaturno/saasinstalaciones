@@ -29,7 +29,7 @@ export default async function CoordinationPage() {
     ? await supabase
         .from("work_orders")
         .select(
-          "id, order_number, title, status, scheduled_date, assigned_installer_id, project_id",
+          "id, order_number, title, status, scheduled_date, assigned_installer_id, project_id, installer_accepted_at",
         )
         .in("project_id", projectIds)
         .order("scheduled_date", { ascending: true, nullsFirst: false })
@@ -45,6 +45,20 @@ export default async function CoordinationPage() {
   const { data: installers } = installerIds.length
     ? await supabase.from("profiles").select("id, full_name").in("id", installerIds)
     : { data: [] };
+
+  // ¿Cuáles tienen acta de relevamiento? Sólo hace falta para las que están en
+  // ese estado: sin acta no se puede planificar.
+  const surveying = (orders ?? [])
+    .filter((order) => order.status === "relevamiento")
+    .map((order) => order.id);
+  const { data: surveys } = surveying.length
+    ? await supabase
+        .from("order_updates")
+        .select("order_id")
+        .in("order_id", surveying)
+        .eq("type", "survey")
+    : { data: [] };
+  const withSurvey = new Set((surveys ?? []).map((row) => row.order_id));
 
   const installerName = new Map(
     (installers ?? []).map((profile) => [profile.id, profile.full_name]),
@@ -75,7 +89,10 @@ export default async function CoordinationPage() {
             installerName: order.assigned_installer_id
               ? (installerName.get(order.assigned_installer_id) ?? "")
               : "",
+            acceptedAt: order.installer_accepted_at,
+            hasSurvey: withSurvey.has(order.id),
           }))}
+          viewerId={user.id}
         />
       )}
     </div>

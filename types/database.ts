@@ -30,7 +30,13 @@ export type OrderSource = "roster" | "broadcast";
 export type OrderPriority = "baja" | "media" | "alta" | "urgente";
 export type OrderCurrency = "ARS" | "BRL";
 export type BillingMode = "project" | "per_installation";
-export type OrderUpdateType = "checkin" | "progress" | "blocker" | "done" | "system";
+export type OrderUpdateType =
+  | "checkin"
+  | "progress"
+  | "blocker"
+  | "done"
+  | "survey"
+  | "system";
 export type IncidentCategory =
   | "failed_visit"
   | "missing_materials"

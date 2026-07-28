@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
 import { MessageSquare } from "lucide-react";
 import { toast } from "sonner";
-import { transitionOrder } from "@/lib/actions/orders";
+import { recordSurvey, transitionOrder } from "@/lib/actions/orders";
 import { ORDER_TRANSITIONS } from "@/lib/domain/transitions";
+import { allowedTransitions } from "@/lib/domain/order-rules";
+import { Textarea } from "@/components/ui/textarea";
 import { ORDER_STATUS } from "@/lib/domain/status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +26,8 @@ export type CoordinationOrder = {
   projectName: string;
   installerId: string | null;
   installerName: string;
+  acceptedAt: string | null;
+  hasSurvey: boolean;
 };
 
 /**
@@ -31,7 +35,13 @@ export type CoordinationOrder = {
  * teléfono. Las transiciones reutilizan `transitionOrder`, que valida contra la
  * máquina de estados (y la DB la vuelve a validar con su trigger).
  */
-export function CoordinationBoard({ orders }: { orders: CoordinationOrder[] }) {
+export function CoordinationBoard({
+  orders,
+  viewerId,
+}: {
+  orders: CoordinationOrder[];
+  viewerId: string;
+}) {
   const t = useTranslations("Coordination");
   const statusT = useTranslations("Status");
   const format = useFormatter();
@@ -118,7 +128,9 @@ export function CoordinationBoard({ orders }: { orders: CoordinationOrder[] }) {
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="font-mono text-xs text-muted-foreground">{order.orderNumber}</p>
-                  <p className="font-medium">{order.title}</p>
+                  <Link href={`/coordination/${order.id}`} className="font-medium hover:text-primary">
+                    {order.title}
+                  </Link>
                   <p className="text-xs text-muted-foreground">{order.projectName}</p>
                 </div>
                 <Badge
@@ -155,9 +167,31 @@ export function CoordinationBoard({ orders }: { orders: CoordinationOrder[] }) {
                 )}
               </div>
 
-              {ORDER_TRANSITIONS[order.status].length > 0 ? (
+              {order.status === "relevamiento" && !order.hasSurvey ? (
+                <SurveyForm orderId={order.id} orderNumber={order.orderNumber} />
+              ) : null}
+
+              {allowedTransitions(
+                {
+                  status: order.status,
+                  assignedInstallerId: order.installerId,
+                  acceptedAt: order.acceptedAt,
+                  hasSurvey: order.hasSurvey,
+                },
+                { id: viewerId, role: "coordinator" },
+                ORDER_TRANSITIONS[order.status],
+              ).length > 0 ? (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {ORDER_TRANSITIONS[order.status].map((to) => (
+                  {allowedTransitions(
+                    {
+                      status: order.status,
+                      assignedInstallerId: order.installerId,
+                      acceptedAt: order.acceptedAt,
+                      hasSurvey: order.hasSurvey,
+                    },
+                    { id: viewerId, role: "coordinator" },
+                    ORDER_TRANSITIONS[order.status],
+                  ).map((to) => (
                     <Button
                       key={to}
                       size="sm"
@@ -175,5 +209,55 @@ export function CoordinationBoard({ orders }: { orders: CoordinationOrder[] }) {
         )}
       </div>
     </>
+  );
+}
+
+/** Acta de relevamiento: sin ella la orden no puede pasar a planificada. */
+function SurveyForm({
+  orderId,
+  orderNumber,
+}: {
+  orderId: string;
+  orderNumber: string;
+}) {
+  const t = useTranslations("Coordination");
+  const router = useRouter();
+  const [note, setNote] = useState("");
+  const [pending, startTransition] = useTransition();
+
+  const save = () => {
+    startTransition(async () => {
+      const res = await recordSurvey({ orderId, note });
+      if (res.error) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success(t("surveySaved", { number: orderNumber }));
+      setNote("");
+      router.refresh();
+    });
+  };
+
+  return (
+    <div className="mt-3 rounded-lg border border-dashed p-3">
+      <p className="text-xs font-medium">{t("surveyTitle")}</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">{t("surveyHelp")}</p>
+      <Textarea
+        value={note}
+        onChange={(event) => setNote(event.target.value)}
+        rows={3}
+        className="mt-2"
+        placeholder={t("surveyPlaceholder")}
+        disabled={pending}
+      />
+      <Button
+        size="sm"
+        className="mt-2"
+        onClick={save}
+        disabled={pending || note.trim().length < 3}
+      >
+        {t("surveySave")}
+      </Button>
+    </div>
   );
 }

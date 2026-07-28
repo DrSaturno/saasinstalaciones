@@ -48,26 +48,26 @@ Estado: ⬜ pendiente · 🔶 en curso · ✅ hecho
   Decidir qué muestra: resumen de coordinación (órdenes por confirmar, equipo)
   + lo suyo propio si tiene.
 
-## FASE 1 — Reglas de negocio de la orden (máquina de estados por rol)
+## FASE 1 — Reglas de negocio de la orden ✅ COMPLETA
 
-- ⬜ **1.1 No se sale de "pendiente" sin instalador asignado.** Validación en
+- ✅ **1.1 No se sale de "pendiente" sin instalador asignado.** Validación en
   server + trigger en DB + la UI lo explica (interpretación: es la regla
   deseada, hoy se puede avanzar sin asignar).
-- ⬜ **1.2 El instalador no puede INICIAR sin haber ACEPTADO la orden.**
+- ✅ **1.2 El instalador no puede INICIAR sin haber ACEPTADO la orden.**
   `installer_accepted_at` como precondición de `planificada → en_proceso` para
   el rol instalador.
-- ⬜ **1.3 "Enviar a revisión" sólo el instalador.** El coordinador aprueba
+- ✅ **1.3 "Enviar a revisión" sólo el instalador.** El coordinador aprueba
   (`en_revision → finalizada`) y la empresa es última instancia. Ni coordinador
   ni empresa pueden mandar a revisión. Restricción por rol en server y trigger.
-- ⬜ **1.4 Acta de relevamiento.** En estado "relevamiento", coordinador y/o
+- ✅ **1.4 Acta de relevamiento.** En estado "relevamiento", coordinador y/o
   instalador dejan asentado lo relevado (order_update tipo `survey`) y eso
-  queda visible antes de pasar a planificar. Definir si es obligatorio para
-  avanzar (propuesta: sí, al menos una nota).
-- ⬜ **1.5 Un coordinador no puede ser elegido como instalador de una orden.**
+  queda visible antes de pasar a planificar. Obligatorio SÓLO si la orden pasó
+  por 'relevamiento' (decisión B). Tipo de avance nuevo: `survey`.
+- ✅ **1.5 Un coordinador no puede ser elegido como instalador de una orden.**
   Filtrar todos los selectores de asignación por rol `installer` + validación
-  server. ⚠️ Cambia la decisión de ayer ("coordina Y ejecuta") — ver Decisión A
-  abajo por las órdenes que ya tenga asignadas.
-- ⬜ **1.6 El coordinador puede ENTRAR a la orden.** Vista de detalle
+  server. Conserva las órdenes que ya tenía al ascender (decisión A); lo que se
+  bloquea son las asignaciones NUEVAS.
+- ✅ **1.6 El coordinador puede ENTRAR a la orden.** Vista de detalle
   (`/coordination/[id]`): la orden desde adentro — datos, locación, historial,
   adjuntos, incidencias y las acciones que le tocan según estado.
 

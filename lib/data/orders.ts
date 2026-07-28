@@ -115,6 +115,13 @@ export async function fetchAllOrders(
 }
 
 /** Instaladores del roster activo, para el selector de asignación. */
+/**
+ * Roster asignable a una orden.
+ *
+ * Excluye a los coordinadores: coordinan el trabajo, no lo ejecutan. Los que
+ * ascendieron conservan las órdenes que ya tenían hasta terminarlas, pero no
+ * pueden recibir nuevas.
+ */
 export async function fetchActiveRoster(
   supabase: SupabaseClient<Database>,
 ): Promise<
@@ -129,7 +136,7 @@ export async function fetchActiveRoster(
   if (ids.length === 0) return [];
 
   const [{ data: profiles }, { data: installers }] = await Promise.all([
-    supabase.from("profiles").select("id, full_name").in("id", ids),
+    supabase.from("profiles").select("id, full_name, role").in("id", ids),
     supabase
       .from("installers")
       .select("id, rating_avg, rating_count")
@@ -138,7 +145,11 @@ export async function fetchActiveRoster(
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
   const installerById = new Map((installers ?? []).map((i) => [i.id, i]));
 
-  return ids.map((id) => {
+  const assignable = ids.filter(
+    (id) => profileById.get(id)?.role === "installer",
+  );
+
+  return assignable.map((id) => {
     const installer = installerById.get(id);
     return {
       id,

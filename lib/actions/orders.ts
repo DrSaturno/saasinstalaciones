@@ -12,7 +12,7 @@ import {
   databaseIdSchema,
   type OrderAttachmentRegistration,
 } from "@/lib/domain/order-intake";
-import { canTransition } from "@/lib/domain/transitions";
+import { orderTransitionBlock } from "@/lib/domain/order-rules";
 import { requestPushDelivery } from "@/lib/push/events";
 import type { OrderStatus, TablesInsert } from "@/types/database";
 
@@ -525,18 +525,39 @@ export async function transitionOrder(
     getTranslations("Status"),
   ]);
   try {
-    const { supabase, companyId } = await requireManager();
+    const { supabase, companyId, user } = await requireManager();
 
     const { data: order } = await supabase
       .from("work_orders")
-      .select("id, status, project_id")
+      .select("id, status, project_id, assigned_installer_id, installer_accepted_at")
       .eq("id", orderId)
       .eq("company_id", companyId)
       .single();
     if (!order) return { error: t("orderNotFound") };
 
+    // ¿Quedó asentado el relevamiento? Sólo importa al salir de ese estado.
+    let hasSurvey = false;
+    if (order.status === "relevamiento") {
+      const { count } = await supabase
+        .from("order_updates")
+        .select("id", { count: "exact", head: true })
+        .eq("order_id", orderId)
+        .eq("type", "survey");
+      hasSurvey = (count ?? 0) > 0;
+    }
+
     // Validamos acá para dar un error claro; el trigger valida igual en la DB.
-    if (!canTransition(order.status, toStatus)) {
+    const block = orderTransitionBlock(
+      {
+        status: order.status,
+        assignedInstallerId: order.assigned_installer_id,
+        acceptedAt: order.installer_accepted_at,
+        hasSurvey,
+      },
+      toStatus,
+      { id: user.id, role: user.role },
+    );
+    if (block === "invalidTransition") {
       return {
         error: t("invalidOrderTransition", {
           from: statusT(`order.${order.status}`),
@@ -544,6 +565,7 @@ export async function transitionOrder(
         }),
       };
     }
+    if (block) return { error: t(block) };
 
     const { error } = await supabase
       .from("work_orders")
@@ -600,6 +622,17 @@ export async function assignInstaller(
       if (!roster) {
         return { error: t("installerNotActive") };
       }
+
+      // Un coordinador no ejecuta trabajo: coordina. Conserva las órdenes que
+      // ya tenía al ascender, pero no puede recibir nuevas.
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", installerId)
+        .single();
+      if (profile?.role !== "installer") {
+        return { error: t("coordinatorNotAssignable") };
+      }
     }
 
     const { error } = await supabase
@@ -655,6 +688,57 @@ export async function rescheduleOrder(input: {
     revalidatePath("/orders");
     revalidatePath(`/orders/${parsed.data.orderId}`);
     revalidatePath(`/projects/${order.project_id}`);
+    return { error: null, ok: true };
+  } catch {
+    return { error: t("unexpected") };
+  }
+}
+
+const surveySchema = z.object({
+  orderId: z.string().uuid(),
+  note: z.string().trim().min(3).max(2000),
+});
+
+/**
+ * Registra el acta de relevamiento de una orden.
+ *
+ * Queda como un `order_update` de tipo `survey`, así aparece en el historial
+ * junto al resto. Es lo que habilita pasar de `relevamiento` a `planificada`:
+ * sin al menos un acta, el trigger de la base rechaza la transición.
+ *
+ * La puede cargar quien opera la orden — empresa o coordinador del proyecto —,
+ * y el instalador la carga desde su propio tablero.
+ */
+export async function recordSurvey(input: {
+  orderId: string;
+  note: string;
+}): Promise<ActionState> {
+  const t = await getTranslations("Errors");
+  const parsed = surveySchema.safeParse(input);
+  if (!parsed.success) return { error: t("invalidUpdate") };
+
+  try {
+    const { supabase, companyId } = await requireManager();
+
+    const { data: order } = await supabase
+      .from("work_orders")
+      .select("id, status")
+      .eq("id", parsed.data.orderId)
+      .eq("company_id", companyId)
+      .single();
+    if (!order) return { error: t("orderNotFound") };
+
+    const { error } = await supabase.from("order_updates").insert({
+      id: crypto.randomUUID(),
+      order_id: parsed.data.orderId,
+      company_id: companyId,
+      type: "survey",
+      note: parsed.data.note,
+    });
+    if (error) return { error: error.message };
+
+    revalidatePath(`/orders/${parsed.data.orderId}`);
+    revalidatePath("/coordination");
     return { error: null, ok: true };
   } catch {
     return { error: t("unexpected") };

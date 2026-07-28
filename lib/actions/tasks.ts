@@ -5,7 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser, isInstallerArea } from "@/lib/auth";
-import { canTransition } from "@/lib/domain/transitions";
+import { orderTransitionBlock } from "@/lib/domain/order-rules";
 import { requestPushDelivery } from "@/lib/push/events";
 import type { OrderStatus, OrderUpdateType } from "@/types/database";
 
@@ -33,16 +33,28 @@ async function installerTransition(
 
   const { data: order } = await supabase
     .from("work_orders")
-    .select("id, status, assigned_installer_id")
+    .select("id, status, assigned_installer_id, installer_accepted_at")
     .eq("id", orderId)
     .single();
   if (!order || order.assigned_installer_id !== user.id) {
     return { error: t("orderNotAssigned") };
   }
   if (order.status === toStatus) return { error: null, ok: true }; // idempotente
-  if (!canTransition(order.status, toStatus)) {
-    return { error: t("invalidTransition") };
-  }
+
+  const block = orderTransitionBlock(
+    {
+      status: order.status,
+      assignedInstallerId: order.assigned_installer_id,
+      acceptedAt: order.installer_accepted_at,
+      // El instalador nunca sale de 'relevamiento': eso lo hace la empresa o el
+      // coordinador desde su tablero, así que acá la regla del acta no aplica.
+      hasSurvey: true,
+    },
+    toStatus,
+    { id: user.id, role: user.role },
+  );
+  if (block === "invalidTransition") return { error: t("invalidTransition") };
+  if (block) return { error: t(block) };
 
   const { error } = await supabase
     .from("work_orders")

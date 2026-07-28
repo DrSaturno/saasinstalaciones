@@ -42,7 +42,11 @@ export function OrderActions({
   const [pending, startTransition] = useTransition();
   const [startDate, setStartDate] = useState(scheduledDate ?? "");
   const [endDate, setEndDate] = useState(scheduledEndDate ?? "");
-  const targets = ORDER_TRANSITIONS[status] ?? [];
+  // El gerente nunca "envía a revisión": eso lo hace el instalador asignado.
+  // Él aprueba desde revisión, y puede reabrir o cancelar.
+  const targets = (ORDER_TRANSITIONS[status] ?? []).filter(
+    (to) => to !== "en_revision",
+  );
 
   const doTransition = (to: OrderStatus) => {
     startTransition(async () => {
