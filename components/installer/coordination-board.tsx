@@ -66,6 +66,21 @@ export function CoordinationBoard({
     });
   }, [orders, filter]);
 
+  // Las acciones disponibles salen de las reglas de negocio: si una regla las
+  // bloquea, el botón no aparece en vez de fallar al tocarlo.
+  const options = (order: CoordinationOrder) =>
+    allowedTransitions(
+      {
+        status: order.status,
+        assignedInstallerId: order.installerId,
+        acceptedAt: order.acceptedAt,
+        hasSurvey: order.hasSurvey,
+        scheduledDate: order.scheduledDate,
+      },
+      { id: viewerId, role: "coordinator" },
+      ORDER_TRANSITIONS[order.status],
+    );
+
   const move = (order: CoordinationOrder, to: OrderStatus) => {
     if (to === "cancelada" && !window.confirm(t("cancelConfirm", { number: order.orderNumber }))) {
       return;
@@ -117,7 +132,7 @@ export function CoordinationBoard({
         ))}
       </div>
 
-      <div className="mt-4 flex flex-col gap-3">
+      <div className="mt-4 grid gap-3 lg:grid-cols-2">
         {visible.length === 0 ? (
           <div className="rounded-xl border bg-card py-12 text-center">
             <p className="text-sm text-muted-foreground">{t("empty")}</p>
@@ -171,27 +186,9 @@ export function CoordinationBoard({
                 <SurveyForm orderId={order.id} orderNumber={order.orderNumber} />
               ) : null}
 
-              {allowedTransitions(
-                {
-                  status: order.status,
-                  assignedInstallerId: order.installerId,
-                  acceptedAt: order.acceptedAt,
-                  hasSurvey: order.hasSurvey,
-                },
-                { id: viewerId, role: "coordinator" },
-                ORDER_TRANSITIONS[order.status],
-              ).length > 0 ? (
+              {options(order).length > 0 ? (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {allowedTransitions(
-                    {
-                      status: order.status,
-                      assignedInstallerId: order.installerId,
-                      acceptedAt: order.acceptedAt,
-                      hasSurvey: order.hasSurvey,
-                    },
-                    { id: viewerId, role: "coordinator" },
-                    ORDER_TRANSITIONS[order.status],
-                  ).map((to) => (
+                  {options(order).map((to) => (
                     <Button
                       key={to}
                       size="sm"

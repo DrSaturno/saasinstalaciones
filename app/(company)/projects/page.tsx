@@ -35,7 +35,7 @@ export default async function ProjectsPage() {
   }, {});
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto w-full max-w-[1480px]">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">{t("title")}</h1>

@@ -33,7 +33,7 @@ async function installerTransition(
 
   const { data: order } = await supabase
     .from("work_orders")
-    .select("id, status, assigned_installer_id, installer_accepted_at")
+    .select("id, status, assigned_installer_id, installer_accepted_at, scheduled_date")
     .eq("id", orderId)
     .single();
   if (!order || order.assigned_installer_id !== user.id) {
@@ -49,6 +49,7 @@ async function installerTransition(
       // El instalador nunca sale de 'relevamiento': eso lo hace la empresa o el
       // coordinador desde su tablero, así que acá la regla del acta no aplica.
       hasSurvey: true,
+      scheduledDate: order.scheduled_date,
     },
     toStatus,
     { id: user.id, role: user.role },

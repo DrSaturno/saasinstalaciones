@@ -14,6 +14,9 @@ export const ORDER_STATUS: Record<
   cancelada: { key: "order.cancelada", bg: "#d32f2f18", fg: "#a52323" },
 };
 
+/** Orden de presentación de los estados de orden, de inicio a cierre. */
+export const ORDER_STATUS_ORDER = Object.keys(ORDER_STATUS) as OrderStatus[];
+
 /** El estado del punto es un cache derivado de sus órdenes. */
 export const SITE_STATUS: Record<
   SiteStatus,

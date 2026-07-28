@@ -12,6 +12,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { getCurrentUser, ROLE_HOME, isInstallerArea } from "@/lib/auth";
 import { fetchInstallerHome } from "@/lib/data/installer-home";
 import { fetchCoordinationHome } from "@/lib/data/coordination-home";
+import { ORDER_STATUS, ORDER_STATUS_ORDER } from "@/lib/domain/status";
 import { createClient } from "@/lib/supabase/server";
 import { fetchZoneForecasts } from "@/lib/weather/forecast";
 import { googleMapsHref } from "@/lib/domain/sites";
@@ -34,8 +35,9 @@ export default async function InstallerHomePage() {
   if (!user) redirect("/login");
   if (!isInstallerArea(user.role)) redirect(ROLE_HOME[user.role]);
 
-  const [t, format, supabase] = await Promise.all([
+  const [t, statusT, format, supabase] = await Promise.all([
     getTranslations("InstallerHome"),
+    getTranslations("Status"),
     getFormatter(),
     createClient(),
   ]);
@@ -66,7 +68,7 @@ export default async function InstallerHomePage() {
     : null;
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto w-full max-w-6xl">
       <header>
         <h1 className="text-2xl font-bold tracking-tight">{t("greeting", { name: firstName })}</h1>
         <p className="mt-1 text-sm capitalize text-muted-foreground">
@@ -78,12 +80,21 @@ export default async function InstallerHomePage() {
         </p>
       </header>
 
-      <div className="mt-6 grid grid-cols-2 gap-3">
-        <Stat label={t("assigned")} value={home.stats.assigned} />
-        <Stat label={t("inProgress")} value={home.stats.inProgress} highlight />
-        <Stat label={t("doneToday")} value={home.stats.doneToday} />
-        <Stat label={t("pending")} value={home.stats.pending} />
-      </div>
+      <Card className="mt-6">
+        <CardHeader className="border-b">
+          <div className="flex items-center gap-2">
+            <Wrench className="size-4 text-primary" aria-hidden="true" />
+            <CardTitle>{t("asInstaller")}</CardTitle>
+          </div>
+          <p className="text-xs text-muted-foreground">{t("asInstallerHelp")}</p>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Stat label={t("assigned")} value={home.stats.assigned} />
+          <Stat label={t("inProgress")} value={home.stats.inProgress} highlight />
+          <Stat label={t("doneToday")} value={home.stats.doneToday} />
+          <Stat label={t("pending")} value={home.stats.pending} />
+        </CardContent>
+      </Card>
 
       {coordination ? (
         <Card className="mt-4 border-primary/30">
@@ -97,13 +108,39 @@ export default async function InstallerHomePage() {
             </p>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-3">
-              <Stat label={t("coordPendingReview")} value={coordination.pendingReview} highlight />
-              <Stat label={t("coordInProgress")} value={coordination.inProgress} />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              <Stat
+                label={t("coordPendingReview")}
+                value={coordination.byStatus.en_revision}
+                highlight
+              />
               <Stat label={t("coordUnassigned")} value={coordination.unassigned} />
               <Stat label={t("coordDoneToday")} value={coordination.doneToday} />
+              <Stat label={t("coordTotal")} value={coordination.total} />
             </div>
-            <Button asChild className="mt-4 w-full">
+
+            <p className="mt-4 text-xs font-medium text-muted-foreground">
+              {t("coordByStatus")}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {ORDER_STATUS_ORDER.map((status) => (
+                <span
+                  key={status}
+                  className="rounded-full border px-3 py-1 text-xs"
+                  style={{
+                    backgroundColor: ORDER_STATUS[status].bg,
+                    color: ORDER_STATUS[status].fg,
+                  }}
+                >
+                  {statusT(ORDER_STATUS[status].key)}{" "}
+                  <span className="font-mono font-semibold">
+                    {coordination.byStatus[status]}
+                  </span>
+                </span>
+              ))}
+            </div>
+
+            <Button asChild className="mt-4 w-full sm:w-auto">
               <Link href="/coordination">{t("coordinationOpen")}</Link>
             </Button>
           </CardContent>

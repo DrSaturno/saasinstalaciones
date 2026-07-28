@@ -12,7 +12,7 @@ export default async function MessagesPage() {
   const [t, format, supabase] = await Promise.all([getTranslations("Messages"), getFormatter(), createClient()]);
   const threads = await fetchChatThreads(supabase, user.role as "company_manager" | "coordinator" | "installer");
   return (
-    <main className="mx-auto max-w-4xl">
+    <main className="mx-auto w-full max-w-6xl">
       <h1 className="text-2xl font-bold">{t("title")}</h1><p className="mt-1 text-muted-foreground">{t("description")}</p>
       <div className="mt-8 space-y-2">
         {threads.map((thread) => (

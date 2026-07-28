@@ -529,7 +529,7 @@ export async function transitionOrder(
 
     const { data: order } = await supabase
       .from("work_orders")
-      .select("id, status, project_id, assigned_installer_id, installer_accepted_at")
+      .select("id, status, project_id, assigned_installer_id, installer_accepted_at, scheduled_date")
       .eq("id", orderId)
       .eq("company_id", companyId)
       .single();
@@ -553,6 +553,7 @@ export async function transitionOrder(
         assignedInstallerId: order.assigned_installer_id,
         acceptedAt: order.installer_accepted_at,
         hasSurvey,
+        scheduledDate: order.scheduled_date,
       },
       toStatus,
       { id: user.id, role: user.role },

@@ -92,7 +92,7 @@ export default async function OrderDetailPage({
         });
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto w-full max-w-[1480px]">
       <Link
         href="/orders"
         className="text-sm text-muted-foreground hover:text-foreground"

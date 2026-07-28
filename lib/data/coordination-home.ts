@@ -1,19 +1,29 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/types/database";
+import type { Database, OrderStatus } from "@/types/database";
 
 export type CoordinationHome = {
   /** Proyectos activos a cargo. */
   projects: number;
-  /** Órdenes de esos proyectos, sin contar canceladas. */
+  /** Órdenes de esos proyectos, incluidas canceladas. */
   total: number;
-  pendingReview: number;
-  inProgress: number;
+  /** Conteo por cada estado de la máquina: puede tener trabajos en todos. */
+  byStatus: Record<OrderStatus, number>;
   unassigned: number;
   doneToday: number;
   /** Trabajos por día de la semana entrante, del equipo que coordina. */
   week: { date: string; total: number }[];
+};
+
+const EMPTY_STATUS: Record<OrderStatus, number> = {
+  pendiente: 0,
+  relevamiento: 0,
+  planificada: 0,
+  en_proceso: 0,
+  en_revision: 0,
+  finalizada: 0,
+  cancelada: 0,
 };
 
 /**
@@ -39,8 +49,7 @@ export async function fetchCoordinationHome(
   const empty: CoordinationHome = {
     projects: projectIds.length,
     total: 0,
-    pendingReview: 0,
-    inProgress: 0,
+    byStatus: { ...EMPTY_STATUS },
     unassigned: 0,
     doneToday: 0,
     week: weekDates.map((date) => ({ date, total: 0 })),
@@ -50,15 +59,18 @@ export async function fetchCoordinationHome(
   const { data: orders } = await supabase
     .from("work_orders")
     .select("id, status, scheduled_date, assigned_installer_id, updated_at")
-    .in("project_id", projectIds)
-    .neq("status", "cancelada");
+    .in("project_id", projectIds);
 
   if (!orders?.length) return empty;
 
+  const byStatus = { ...EMPTY_STATUS };
   const perDay = new Map(weekDates.map((date) => [date, 0]));
+
   for (const order of orders) {
-    if (!order.scheduled_date) continue;
-    if (perDay.has(order.scheduled_date)) {
+    byStatus[order.status] += 1;
+    // La semana muestra trabajo por hacer: canceladas y cerradas no cuentan.
+    if (["finalizada", "cancelada"].includes(order.status)) continue;
+    if (order.scheduled_date && perDay.has(order.scheduled_date)) {
       perDay.set(order.scheduled_date, (perDay.get(order.scheduled_date) ?? 0) + 1);
     }
   }
@@ -66,9 +78,12 @@ export async function fetchCoordinationHome(
   return {
     projects: projectIds.length,
     total: orders.length,
-    pendingReview: orders.filter((order) => order.status === "en_revision").length,
-    inProgress: orders.filter((order) => order.status === "en_proceso").length,
-    unassigned: orders.filter((order) => !order.assigned_installer_id).length,
+    byStatus,
+    unassigned: orders.filter(
+      (order) =>
+        !order.assigned_installer_id &&
+        !["finalizada", "cancelada"].includes(order.status),
+    ).length,
     doneToday: orders.filter(
       (order) =>
         order.status === "finalizada" && order.updated_at.startsWith(today),

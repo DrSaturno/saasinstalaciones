@@ -50,7 +50,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   const amount = format.number(financialTotal, { style: "currency", currency: project.currency });
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div className="mx-auto w-full max-w-[1480px]">
       <Link href="/projects" className="text-sm text-muted-foreground hover:text-foreground">{t("back")}</Link>
 
       <div className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">

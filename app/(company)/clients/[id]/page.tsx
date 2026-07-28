@@ -23,7 +23,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
     ordersBySite.set(order.site_id, [...(ordersBySite.get(order.site_id) ?? []), order]);
   }
   return (
-    <main className="mx-auto max-w-6xl">
+    <main className="mx-auto w-full max-w-[1480px]">
       <Link href="/clients" className="text-sm text-muted-foreground hover:text-foreground">{t("back")}</Link>
       <header className="mt-4 flex items-start justify-between gap-4">
         <div><h1 className="text-2xl font-bold">{detail.client.name}</h1><p className="mt-1 text-sm text-muted-foreground">{t("summary", { projects: summary.projectCount, sites: summary.siteCount })}</p></div>

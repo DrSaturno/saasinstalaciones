@@ -19,7 +19,7 @@ export default async function InstallerTasks() {
   const closed = tasks.filter((task) => isTerminal(task.status));
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto w-full max-w-6xl">
       <h1 className="text-2xl font-bold">{t("title")}</h1>
       <p className="mt-1 text-sm text-muted-foreground">{t("description")}</p>
 
@@ -28,7 +28,7 @@ export default async function InstallerTasks() {
           <p className="text-sm text-muted-foreground">{t("empty")}</p>
         </div>
       ) : (
-        <div className="mt-6 flex flex-col gap-3">
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {toAccept.length > 0 && (
             <>
               <h2 className="flex items-center gap-2 text-sm font-medium">

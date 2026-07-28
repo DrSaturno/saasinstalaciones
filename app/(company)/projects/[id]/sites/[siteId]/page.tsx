@@ -37,7 +37,7 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
   const mapEmbed = mapQuery ? `https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed` : null;
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto w-full max-w-[1480px]">
       <Link href={`/projects/${projectId}`} className="text-sm text-muted-foreground hover:text-foreground">{t("back", { project: project.name })}</Link>
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>

@@ -85,7 +85,7 @@ export default async function CoordinationOrderPage({
     : null;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6">
+    <div className="mx-auto w-full max-w-5xl px-4 py-6">
       <Link
         href="/coordination"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
@@ -153,7 +153,7 @@ export default async function CoordinationOrderPage({
       {order.description ? (
         <Card className="mt-4">
           <CardHeader className="border-b">
-            <CardTitle>{t("description")}</CardTitle>
+            <CardTitle>{t("descriptionLabel")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="whitespace-pre-wrap text-sm">{order.description}</p>
@@ -181,6 +181,7 @@ export default async function CoordinationOrderPage({
             assignedInstallerId={order.assigned_installer_id}
             acceptedAt={order.installer_accepted_at}
             hasSurvey={hasSurvey}
+            scheduledDate={order.scheduled_date}
             viewerId={user.id}
           />
         </CardContent>

@@ -14,7 +14,7 @@ export default async function ConversationPage({ params, searchParams }: { param
   const conversation = await fetchConversation(supabase, installerId, user.role === "installer" ? query.company : user.companyId ?? undefined);
   if (!conversation) notFound();
   return (
-    <main className="mx-auto max-w-4xl">
+    <main className="mx-auto w-full max-w-5xl">
       <Link href="/messages" className="text-sm text-muted-foreground hover:text-foreground">{t("back")}</Link>
       <h1 className="mb-5 mt-3 text-2xl font-bold">{user.role === "installer" ? t("companyChannel") : conversation.installerName}</h1>
       <ChatPanel threadId={conversation.thread.id} companyId={conversation.thread.company_id} currentUserId={user.id} installerMode={user.role === "installer"} initialMessages={conversation.messages} peerName={user.role === "installer" ? t("companyChannel") : conversation.installerName} />

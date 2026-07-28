@@ -39,7 +39,7 @@ export default async function InstallerProfilePage() {
 
   if (!reputation) {
     return (
-      <div className="mx-auto max-w-2xl">
+      <div className="mx-auto w-full max-w-5xl">
         <h1 className="text-2xl font-bold">{t("title")}</h1>
         <Card className="mt-6">
           <CardContent>
@@ -53,7 +53,7 @@ export default async function InstallerProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto w-full max-w-5xl">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm text-muted-foreground">{t("title")}</p>

@@ -14,7 +14,7 @@ export default async function InstallerJobsPage() {
   );
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto w-full max-w-6xl">
       <div className="rounded-2xl bg-brand-purple px-5 py-6 text-white sm:px-7">
         <p className="font-mono text-xs uppercase tracking-[0.18em] text-white/60">{t("eyebrow")}</p>
         <h1 className="mt-2 text-2xl font-semibold">{t("title")}</h1>
@@ -38,7 +38,7 @@ export default async function InstallerJobsPage() {
         <span className="font-mono text-xs text-muted-foreground">{t("opportunities", { count: openJobs.length })}</span>
       </div>
       {openJobs.length ? (
-        <div className="mt-3 grid gap-3">
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {openJobs.map((job) => <JobCard key={job.id} job={job} />)}
         </div>
       ) : (
@@ -52,7 +52,7 @@ export default async function InstallerJobsPage() {
       {history.length ? (
         <section className="mt-8">
           <h2 className="mb-3 text-sm font-medium text-muted-foreground">{t("history")}</h2>
-          <div className="grid gap-3">{history.map((job) => <JobCard key={job.id} job={job} />)}</div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{history.map((job) => <JobCard key={job.id} job={job} />)}</div>
         </section>
       ) : null}
     </div>

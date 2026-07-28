@@ -42,7 +42,7 @@ export default async function InstallerProfilePage({
   ).length;
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto w-full max-w-6xl">
       <Link
         href="/team"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"

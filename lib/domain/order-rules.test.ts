@@ -17,6 +17,7 @@ function orden(overrides: Partial<OrderRuleContext> = {}): OrderRuleContext {
     assignedInstallerId: "inst-1",
     acceptedAt: null,
     hasSurvey: false,
+    scheduledDate: "2026-08-01",
     ...overrides,
   };
 }
@@ -64,6 +65,54 @@ describe("regla: el relevamiento tiene que quedar asentado", () => {
 
   it("no pide acta si va de pendiente derecho a planificada", () => {
     expect(orderTransitionBlock(orden({ status: "pendiente" }), "planificada", GERENTE)).toBeNull();
+  });
+});
+
+describe("regla: no se planifica sin fecha programada", () => {
+  it("bloquea planificar sin fecha", () => {
+    expect(
+      orderTransitionBlock(orden({ scheduledDate: null }), "planificada", GERENTE),
+    ).toBe("needsScheduledDate");
+  });
+
+  it("deja planificar con fecha", () => {
+    expect(orderTransitionBlock(orden(), "planificada", GERENTE)).toBeNull();
+  });
+
+  it("sin fecha tampoco se puede iniciar, porque no se pudo planificar", () => {
+    // La orden nunca llega a 'planificada', así que 'en_proceso' es inválida.
+    expect(
+      orderTransitionBlock(orden({ scheduledDate: null }), "en_proceso", INSTALADOR),
+    ).toBe("invalidTransition");
+  });
+});
+
+describe("regla: sólo el instalador asignado inicia el trabajo", () => {
+  const lista = orden({
+    status: "planificada",
+    acceptedAt: "2026-07-28T10:00:00Z",
+  });
+
+  it("deja al instalador asignado", () => {
+    expect(orderTransitionBlock(lista, "en_proceso", INSTALADOR)).toBeNull();
+  });
+
+  it("bloquea al coordinador", () => {
+    expect(orderTransitionBlock(lista, "en_proceso", COORDINADOR)).toBe(
+      "onlyInstallerStarts",
+    );
+  });
+
+  it("bloquea a la empresa", () => {
+    expect(orderTransitionBlock(lista, "en_proceso", GERENTE)).toBe(
+      "onlyInstallerStarts",
+    );
+  });
+
+  it("la falta de aceptación manda sobre quién es", () => {
+    expect(
+      orderTransitionBlock(orden({ status: "planificada" }), "en_proceso", INSTALADOR),
+    ).toBe("needsAcceptance");
   });
 });
 

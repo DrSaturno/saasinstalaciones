@@ -25,6 +25,7 @@ export function CoordinationOrderActions({
   assignedInstallerId,
   acceptedAt,
   hasSurvey,
+  scheduledDate,
   viewerId,
 }: {
   orderId: string;
@@ -33,6 +34,7 @@ export function CoordinationOrderActions({
   assignedInstallerId: string | null;
   acceptedAt: string | null;
   hasSurvey: boolean;
+  scheduledDate: string | null;
   viewerId: string;
 }) {
   const t = useTranslations("Coordination");
@@ -46,6 +48,7 @@ export function CoordinationOrderActions({
     assignedInstallerId,
     acceptedAt,
     hasSurvey,
+    scheduledDate,
   };
   const actor = { id: viewerId, role: "coordinator" as const };
   const options = allowedTransitions(context, actor, ORDER_TRANSITIONS[status]);

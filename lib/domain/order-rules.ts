@@ -14,6 +14,8 @@ export type OrderRuleBlock =
   | "needsInstaller"
   | "needsSurvey"
   | "needsAcceptance"
+  | "needsScheduledDate"
+  | "onlyInstallerStarts"
   | "onlyInstallerReviews";
 
 export type OrderRuleContext = {
@@ -21,6 +23,7 @@ export type OrderRuleContext = {
   assignedInstallerId: string | null;
   acceptedAt: string | null;
   hasSurvey: boolean;
+  scheduledDate: string | null;
 };
 
 export type Actor = {
@@ -48,12 +51,19 @@ export function orderTransitionBlock(
     return "needsInstaller";
   }
 
+  // Sin fecha comprometida no hay plan: el instalador no sabría cuándo ir.
+  if (to === "planificada" && !order.scheduledDate) {
+    return "needsScheduledDate";
+  }
+
   if (order.status === "relevamiento" && to === "planificada" && !order.hasSurvey) {
     return "needsSurvey";
   }
 
-  if (order.status === "planificada" && to === "en_proceso" && !order.acceptedAt) {
-    return "needsAcceptance";
+  if (order.status === "planificada" && to === "en_proceso") {
+    if (!order.acceptedAt) return "needsAcceptance";
+    // Sólo quien está en el punto sabe que empezó.
+    if (actor.id !== order.assignedInstallerId) return "onlyInstallerStarts";
   }
 
   // Mandar a revisión es potestad del instalador asignado: el coordinador
