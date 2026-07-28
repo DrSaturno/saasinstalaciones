@@ -12,6 +12,9 @@ const incidentSchema = z.object({
   severity: z.enum(["low", "medium", "high", "critical"]),
   description: z.string().trim().max(2000),
   requiresRevisit: z.boolean(),
+  // Cuándo ocurrió, no cuándo se carga. Formato de <input type="datetime-local">
+  // ("2026-07-28T14:30"), que el navegador da en hora local.
+  occurredAt: z.string().trim().optional(),
 });
 
 export type IncidentActionState = { error: string | null; ok?: boolean };
@@ -36,6 +39,9 @@ export async function createIncident(input: z.infer<typeof incidentSchema>): Pro
       severity: parsed.data.severity,
       description: parsed.data.description,
       requires_revisit: parsed.data.requiresRevisit,
+      occurred_at: parsed.data.occurredAt
+        ? new Date(parsed.data.occurredAt).toISOString()
+        : new Date().toISOString(),
       created_by: user.id,
     });
     if (error) return { error: error.message };

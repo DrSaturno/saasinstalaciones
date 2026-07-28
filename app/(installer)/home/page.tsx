@@ -9,7 +9,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { getFormatter, getTranslations } from "next-intl/server";
-import { getCurrentUser, ROLE_HOME } from "@/lib/auth";
+import { getCurrentUser, ROLE_HOME, isInstallerArea } from "@/lib/auth";
 import { fetchInstallerHome } from "@/lib/data/installer-home";
 import { createClient } from "@/lib/supabase/server";
 import { fetchZoneForecasts } from "@/lib/weather/forecast";
@@ -31,7 +31,7 @@ function localDate() {
 export default async function InstallerHomePage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (user.role !== "installer") redirect(ROLE_HOME[user.role]);
+  if (!isInstallerArea(user.role)) redirect(ROLE_HOME[user.role]);
 
   const [t, format, supabase] = await Promise.all([
     getTranslations("InstallerHome"),
@@ -40,6 +40,27 @@ export default async function InstallerHomePage() {
   ]);
   const today = localDate();
   const home = await fetchInstallerHome(supabase, today);
+
+  // El coordinador ve además cuánto tiene esperando su confirmación. Sin esto
+  // su Inicio queda mostrando sólo "su día" como instalador, que puede estar
+  // vacío, y no tiene por dónde entrar a lo que sí le toca.
+  let pendingReview = 0;
+  if (user.role === "coordinator") {
+    const { data: myProjects } = await supabase
+      .from("projects")
+      .select("id")
+      .eq("coordinator_id", user.id)
+      .is("archived_at", null);
+    const ids = (myProjects ?? []).map((project) => project.id);
+    if (ids.length) {
+      const { count } = await supabase
+        .from("work_orders")
+        .select("id", { count: "exact", head: true })
+        .in("project_id", ids)
+        .eq("status", "en_revision");
+      pendingReview = count ?? 0;
+    }
+  }
   const forecasts = await fetchZoneForecasts(home.zones);
   const firstName = user.fullName.split(" ")[0] || user.fullName;
   const maps = home.nextJob
@@ -188,7 +209,10 @@ export default async function InstallerHomePage() {
             home.announcements.map((item) => (
               <div
                 key={item.id}
-                className={`rounded-xl border p-3 ${
+                // Ancla del aviso: la notificación linkea a /home#anuncio-<id>
+                // y el navegador lo trae a la vista.
+                id={`anuncio-${item.id}`}
+                className={`scroll-mt-20 rounded-xl border p-3 target:ring-2 target:ring-primary ${
                   item.severity === "critical"
                     ? "border-destructive/30 bg-destructive/5"
                     : item.severity === "warning"
@@ -263,6 +287,17 @@ export default async function InstallerHomePage() {
           </Button>
         </CardContent>
       </Card>
+
+      {user.role === "coordinator" ? (
+        <Button asChild className="mt-4 w-full" size="lg">
+          <Link href="/coordination">
+            <ClipboardList className="size-4" aria-hidden="true" />
+            {pendingReview > 0
+              ? t("coordinationPending", { count: pendingReview })
+              : t("coordinationOpen")}
+          </Link>
+        </Button>
+      ) : null}
 
       <div className="mt-4 grid grid-cols-2 gap-3">
         <Button asChild variant="outline">

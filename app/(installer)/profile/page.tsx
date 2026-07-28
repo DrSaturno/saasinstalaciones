@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
-import { getCurrentUser, ROLE_HOME } from "@/lib/auth";
+import { getCurrentUser, ROLE_HOME, isInstallerArea } from "@/lib/auth";
 import { fetchInstallerReputation } from "@/lib/data/ratings";
 import { createClient } from "@/lib/supabase/server";
 import { fetchInstallerAvailability } from "@/lib/data/availability";
@@ -23,7 +23,7 @@ export default async function InstallerProfilePage() {
   ]);
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (user.role !== "installer") redirect(ROLE_HOME[user.role]);
+  if (!isInstallerArea(user.role)) redirect(ROLE_HOME[user.role]);
 
   const supabase = await createClient();
   const [reputation, availability] = await Promise.all([

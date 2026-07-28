@@ -6,6 +6,22 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname),
   },
+  /**
+   * Identidad del despliegue, para el desfasaje de versiones ("skew").
+   *
+   * Con una pestaña abierta desde antes de un deploy, el navegador conserva el
+   * JS viejo y pide payloads RSC y Server Actions de un build que ya no existe.
+   * Next devuelve error, se activa el boundary y la pantalla se rompe — al
+   * recargar anda, porque baja el build nuevo. Ese era el error al tocar
+   * "Volver" con deploys frecuentes.
+   *
+   * Con `deploymentId`, cada pedido viaja etiquetado y Next detecta el
+   * desfasaje: en vez de fallar, fuerza una navegación completa.
+   *
+   * Conviene además activar Skew Protection en Vercel (Settings → Advanced),
+   * que enruta al despliegue correcto en lugar de recargar.
+   */
+  deploymentId: process.env.VERCEL_DEPLOYMENT_ID,
   async headers() {
     return [
       {

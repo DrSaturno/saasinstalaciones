@@ -33,6 +33,14 @@ export function OrderIncidents({ orderId, incidents }: { orderId: string; incide
   const [showForm, setShowForm] = useState(false);
   const [pending, startTransition] = useTransition();
 
+  // Propone "ahora" en hora local, que es el caso más común. El input
+  // datetime-local espera "YYYY-MM-DDTHH:mm" sin zona.
+  const defaultOccurredAt = (() => {
+    const now = new Date();
+    const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  })();
+
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -43,6 +51,7 @@ export function OrderIncidents({ orderId, incidents }: { orderId: string; incide
         severity: String(data.get("severity")) as IncidentSeverity,
         description: String(data.get("description") ?? ""),
         requiresRevisit: data.get("requiresRevisit") === "on",
+        occurredAt: String(data.get("occurredAt") ?? ""),
       });
       if (result.error) {
         toast.error(result.error);
@@ -78,6 +87,10 @@ export function OrderIncidents({ orderId, incidents }: { orderId: string; incide
             <label className="grid gap-1 text-xs text-muted-foreground">{t("category")}<select name="category" className={selectClass}>{categories.map((value) => <option key={value} value={value}>{t(`categories.${value}`)}</option>)}</select></label>
             <label className="grid gap-1 text-xs text-muted-foreground">{t("severity")}<select name="severity" className={selectClass}>{severities.map((value) => <option key={value} value={value}>{t(`severityValues.${value}`)}</option>)}</select></label>
             <label className="grid gap-1 text-xs text-muted-foreground sm:col-span-2">{t("description")}<Textarea name="description" maxLength={2000} placeholder={t("descriptionPlaceholder")} /></label>
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <label htmlFor="incident-occurred-at" className="text-xs text-muted-foreground">{t("occurredAt")}</label>
+              <input id="incident-occurred-at" type="datetime-local" name="occurredAt" defaultValue={defaultOccurredAt} className="h-9 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+            </div>
             <label className="flex items-center gap-2 text-sm sm:col-span-2"><input type="checkbox" name="requiresRevisit" className="size-4 accent-primary" />{t("requiresRevisit")}</label>
             <div className="flex justify-end gap-2 sm:col-span-2"><Button type="button" variant="ghost" onClick={() => setShowForm(false)}>{t("cancel")}</Button><Button type="submit" disabled={pending}>{pending ? t("saving") : t("save")}</Button></div>
           </form>

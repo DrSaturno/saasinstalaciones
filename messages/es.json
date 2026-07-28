@@ -339,6 +339,7 @@
     "severity": "Prioridad",
     "description": "Detalle",
     "descriptionPlaceholder": "Qué ocurrió y qué hace falta para resolverlo",
+    "occurredAt": "Fecha y hora en que ocurrió",
     "requiresRevisit": "Hace falta una nueva visita",
     "cancel": "Cancelar",
     "save": "Guardar incidencia",
@@ -451,6 +452,8 @@
     }
   },
   "ProjectDetail": {
+    "coordinatorLabel": "Coordinador",
+    "noCoordinator": "sin asignar",
     "back": "← Proyectos",
     "completed": "{done} de {total} finalizados",
     "contracted": "Instalaciones contratadas",
@@ -558,6 +561,7 @@
     "description": "Cada orden es una instalación en un punto. Seguí su avance y asigná instaladores."
   },
   "OrderDetail": {
+    "openPhoto": "Abrir la foto",
     "back": "← Órdenes",
     "site": "Punto de instalación",
     "noAddress": "Sin dirección",
@@ -649,6 +653,8 @@
     "weather": "Clima en tus zonas",
     "announcements": "Anuncios de la empresa",
     "noAnnouncements": "No hay anuncios recientes.",
+    "coordinationPending": "{count, plural, one {# trabajo esperando tu confirmación} other {# trabajos esperando tu confirmación}}",
+    "coordinationOpen": "Ir a Coordinación",
     "myOrders": "Mis órdenes",
     "findJobs": "Buscar trabajo",
     "absences": "Tus ausencias",
@@ -662,6 +668,7 @@
     "declareAbsence": "Avisar que no voy a estar"
   },
   "TaskDetail": {
+    "openPhoto": "Abrir la foto",
     "back": "← Mis tareas",
     "noAddress": "Sin dirección",
     "directions": "Cómo llegar →",

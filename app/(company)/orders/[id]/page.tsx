@@ -8,6 +8,8 @@ import { fetchOrderAttachments } from "@/lib/data/order-attachments";
 import { OrderActions } from "@/components/company/order-actions";
 import { OrderIncidents } from "@/components/company/order-incidents";
 import { OrderAttachments } from "@/components/shared/order-attachments";
+import { UpdatePhotos } from "@/components/shared/update-photos";
+import { signUpdatePhotos } from "@/lib/data/update-photos";
 import { EditOrderDialog } from "@/components/company/edit-order-dialog";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { StatusStepper } from "@/components/shared/status-stepper";
@@ -62,7 +64,7 @@ export default async function OrderDetailPage({
         .single(),
       supabase
         .from("order_updates")
-        .select("id, type, note, created_at")
+        .select("id, type, note, photos, created_at")
         .eq("order_id", id)
         .order("created_at", { ascending: false }),
       supabase
@@ -78,6 +80,8 @@ export default async function OrderDetailPage({
       fetchActiveRoster(supabase),
       fetchOrderAttachments(supabase, id),
     ]);
+
+  const photoUrls = await signUpdatePhotos(supabase, updates ?? []);
 
   const amount =
     order.amount === null
@@ -298,6 +302,11 @@ export default async function OrderDetailPage({
                             minute: "2-digit",
                           })}
                         </p>
+                        <UpdatePhotos
+                          photos={u.photos}
+                          urlByPath={photoUrls}
+                          openLabel={t("openPhoto")}
+                        />
                       </div>
                     </li>
                   ))}

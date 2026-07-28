@@ -31,11 +31,9 @@ export function AnnouncementComposer({
 
   useEffect(() => {
     if (state.ok) {
-      toast.success(
-        state.emailed
-          ? t("publishedWithEmail", { count: state.recipients ?? 0 })
-          : t("published", { count: state.recipients ?? 0 }),
-      );
+      // El email sale después de responder, así que acá no se sabe (ni importa)
+      // si se envió: el anuncio ya está en la bandeja de todos.
+      toast.success(t("published", { count: state.recipients ?? 0 }));
       formRef.current?.reset();
     }
   }, [state, t]);

@@ -388,6 +388,7 @@ export interface Database {
           created_by: string | null;
           resolved_by: string | null;
           resolved_at: string | null;
+          occurred_at: string;
           created_at: string;
           updated_at: string;
         };
@@ -403,6 +404,7 @@ export interface Database {
           created_by?: string | null;
           resolved_by?: string | null;
           resolved_at?: string | null;
+          occurred_at?: string;
           created_at?: string;
           updated_at?: string;
         };

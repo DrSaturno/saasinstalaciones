@@ -23,6 +23,23 @@ export const ROLE_AREA_PREFIX: Record<UserRole, string> = {
   installer: "/tasks",
 };
 
+/**
+ * Roles que operan dentro del área instalador.
+ *
+ * El coordinador ES un instalador con un privilegio extra (gestionar las
+ * órdenes de sus proyectos en /coordination), así que hace todo lo que hace un
+ * instalador: aceptar órdenes, cargar avances, pedir ausencias, postularse.
+ * Comparar contra `"installer"` a secas lo deja afuera y rompe esas acciones.
+ */
+export const INSTALLER_AREA_ROLES: readonly UserRole[] = [
+  "installer",
+  "coordinator",
+];
+
+export function isInstallerArea(role: UserRole): boolean {
+  return INSTALLER_AREA_ROLES.includes(role);
+}
+
 export type CurrentUser = {
   id: string;
   email: string | null;

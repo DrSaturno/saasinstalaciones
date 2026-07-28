@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
@@ -24,7 +25,6 @@ export type AnnouncementState = {
   error: string | null;
   ok?: boolean;
   recipients?: number;
-  emailed?: boolean;
 };
 
 /**
@@ -34,6 +34,10 @@ export type AnnouncementState = {
  * `publish_announcement`, que valida permisos y arma el público. Acá encima se
  * manda el email a esos mismos destinatarios, best effort: si Resend no está
  * configurado o falla, el anuncio ya llegó igual in-app.
+ *
+ * Los emails salen DESPUÉS de responder (`after`). Antes se esperaban acá
+ * adentro y, sin dominio verificado en Resend, cada intento fallaba lento: la
+ * acción no volvía nunca y el botón quedaba clavado en "Publicando…".
  */
 export async function publishAnnouncement(
   _prev: AnnouncementState,
@@ -73,13 +77,21 @@ export async function publishAnnouncement(
     const result = Array.isArray(data) ? data[0] : null;
     const recipients = result?.recipients ?? 0;
 
-    let emailed = false;
     if (result && recipients > 0) {
-      emailed = (await deliverEmails(supabase, user, result.announcement_id, parsed.data)) === "sent";
+      const announcementId = result.announcement_id;
+      after(async () => {
+        try {
+          await deliverEmails(supabase, user, announcementId, parsed.data);
+        } catch {
+          // El anuncio ya está publicado y en la bandeja de todos: que el email
+          // falle no puede tumbar la publicación.
+        }
+      });
     }
 
     revalidatePath("/dashboard");
-    return { error: null, ok: true, recipients, emailed };
+    revalidatePath("/home");
+    return { error: null, ok: true, recipients };
   } catch {
     return { error: t("unexpected") };
   }

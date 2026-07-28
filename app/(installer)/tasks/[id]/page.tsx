@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchOrderAttachments } from "@/lib/data/order-attachments";
 import { TaskActions } from "@/components/installer/task-actions";
 import { OrderAttachments } from "@/components/shared/order-attachments";
+import { UpdatePhotos } from "@/components/shared/update-photos";
+import { signUpdatePhotos } from "@/lib/data/update-photos";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { OrderStatus, OrderUpdateType } from "@/types/database";
@@ -45,6 +47,8 @@ export default async function TaskDetailPage({
       .order("created_at", { ascending: false }),
     fetchOrderAttachments(supabase, id),
   ]);
+
+  const photoUrls = await signUpdatePhotos(supabase, updates ?? []);
 
   const mapsUrl = site
     ? site.lat && site.lng
@@ -174,11 +178,11 @@ export default async function TaskDetailPage({
                       </span>
                       {u.note ? ` — ${u.note}` : ""}
                     </p>
-                    {Array.isArray(u.photos) && u.photos.length > 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        {t("photos", { count: u.photos.length })}
-                      </p>
-                    )}
+                    <UpdatePhotos
+                      photos={u.photos}
+                      urlByPath={photoUrls}
+                      openLabel={t("openPhoto")}
+                    />
                     <p className="font-mono text-xs text-muted-foreground">
                       {format.dateTime(new Date(u.created_at), {
                         day: "2-digit",

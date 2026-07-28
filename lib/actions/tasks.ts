@@ -4,14 +4,14 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isInstallerArea } from "@/lib/auth";
 import { canTransition } from "@/lib/domain/transitions";
 import { requestPushDelivery } from "@/lib/push/events";
 import type { OrderStatus, OrderUpdateType } from "@/types/database";
 
 async function requireInstaller() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "installer") {
+  if (!user || !isInstallerArea(user.role)) {
     throw new Error("Acceso denegado");
   }
   return { user, supabase: await createClient() };

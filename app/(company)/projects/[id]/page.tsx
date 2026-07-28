@@ -33,6 +33,11 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
   if (!project) notFound();
 
+  // Quién coordina el proyecto: define qué órdenes ve en /coordination.
+  const coordinatorName = project.coordinator_id
+    ? (coordinators.find((c) => c.id === project.coordinator_id)?.name ?? null)
+    : null;
+
   const activeSites = sites.filter((site) => !site.archived_at);
   const archivedCount = sites.length - activeSites.length;
   const completedSites = activeSites.filter((site) => site.order_count > 0 && site.progress === 100).length;
@@ -55,7 +60,20 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             <Badge variant="secondary">{statusT(PROJECT_STATUS[project.status].key)}</Badge>
             <Badge variant="outline" className="font-mono">{project.country} · {project.zones.join(" / ")}</Badge>
           </div>
-          <p className="mt-1 text-muted-foreground">{project.client_name}</p>
+          <p className="mt-1 text-muted-foreground">
+            {project.client_name}
+            {" · "}
+            <span className="text-foreground">
+              {t("coordinatorLabel")}:{" "}
+              {coordinatorName ? (
+                <Link href={`/team/${project.coordinator_id}`} className="font-medium hover:text-primary">
+                  {coordinatorName}
+                </Link>
+              ) : (
+                <span className="italic">{t("noCoordinator")}</span>
+              )}
+            </span>
+          </p>
           {project.description ? <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground">{project.description}</p> : null}
         </div>
         <div className="flex flex-wrap gap-2">

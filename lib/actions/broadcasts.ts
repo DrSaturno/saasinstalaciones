@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isInstallerArea } from "@/lib/auth";
 import {
   applicationSchema,
   createBroadcastSchema,
@@ -29,7 +29,7 @@ async function requireManager() {
 
 async function requireInstaller() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "installer") throw new Error("Acceso denegado");
+  if (!user || !isInstallerArea(user.role)) throw new Error("Acceso denegado");
   return { user, supabase: await createClient() };
 }
 

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { MapPin, Route as RouteIcon } from "lucide-react";
 import { getTranslations } from "next-intl/server";
-import { getCurrentUser, ROLE_HOME } from "@/lib/auth";
+import { getCurrentUser, ROLE_HOME, isInstallerArea } from "@/lib/auth";
 import { buildRouteUrl, stopHref } from "@/lib/domain/route";
 import { createClient } from "@/lib/supabase/server";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -37,7 +37,7 @@ function localDate() {
 export default async function InstallerRoutePage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (user.role !== "installer") redirect(ROLE_HOME[user.role]);
+  if (!isInstallerArea(user.role)) redirect(ROLE_HOME[user.role]);
 
   const [t, supabase] = await Promise.all([
     getTranslations("InstallerRoute"),
