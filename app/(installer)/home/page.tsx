@@ -42,7 +42,7 @@ export default async function InstallerHomePage() {
     createClient(),
   ]);
   const today = localDate();
-  const home = await fetchInstallerHome(supabase, today);
+  const home = await fetchInstallerHome(supabase, user.id, today);
 
   // El coordinador ve además sus métricas de coordinación, separadas de las de
   // instalador: son dos roles en la misma persona y mezclarlos haría ilegibles

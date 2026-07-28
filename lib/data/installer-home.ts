@@ -57,11 +57,16 @@ function addDays(date: string, days: number) {
 /**
  * Resumen del día para el instalador logueado.
  *
- * RLS ya limita `work_orders` a sus asignaciones y `announcements` a las
- * empresas donde está activo, así que no hace falta filtrar por usuario acá.
+ * El filtro por `assigned_installer_id` va explícito y NO se delega en RLS: las
+ * policies se combinan con OR, así que un coordinador — que además tiene
+ * `work_orders_coordinator_all` — recibiría acá todas las órdenes de sus
+ * proyectos y vería como propio el trabajo que solo coordina.
+ * `announcements` sí se apoya en RLS: alcanza a las empresas donde está activo,
+ * que es exactamente lo que corresponde mostrarle.
  */
 export async function fetchInstallerHome(
   supabase: SupabaseClient<Database>,
+  installerId: string,
   today: string,
 ): Promise<InstallerHome> {
   const [{ data: orders }, { data: announcements }, { data: companies }, { data: absences }] = await Promise.all([
@@ -70,6 +75,7 @@ export async function fetchInstallerHome(
       .select(
         "id, order_number, title, status, scheduled_date, finalized_at, sites(name, address, city, zone, lat, lng)",
       )
+      .eq("assigned_installer_id", installerId)
       .order("scheduled_date", { ascending: true, nullsFirst: false }),
     supabase
       .from("announcements")

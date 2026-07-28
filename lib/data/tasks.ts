@@ -40,17 +40,22 @@ type RawTask = {
 };
 
 /**
- * Órdenes asignadas al instalador logueado. La RLS
- * `work_orders_installer_read` ya filtra por assigned_installer_id = auth.uid().
+ * Órdenes asignadas al instalador logueado.
+ *
+ * El filtro va explícito y no se delega en `work_orders_installer_read`: las
+ * policies de RLS se combinan con OR, así que un coordinador — que además tiene
+ * `work_orders_coordinator_all` — vería acá las órdenes que solo coordina.
  */
 export async function fetchMyTasks(
   supabase: SupabaseClient<Database>,
+  installerId: string,
 ): Promise<TaskRow[]> {
   const { data } = await supabase
     .from("work_orders")
     .select(
       "id, order_number, title, status, scheduled_date, installer_accepted_at, company_id, sites(name, address, city), companies(name)",
     )
+    .eq("assigned_installer_id", installerId)
     .order("scheduled_date", { ascending: true, nullsFirst: false })
     .overrideTypes<RawTask[]>();
 

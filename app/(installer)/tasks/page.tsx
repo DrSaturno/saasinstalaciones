@@ -1,13 +1,19 @@
+import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { getCurrentUser, ROLE_HOME, isInstallerArea } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { fetchMyTasks } from "@/lib/data/tasks";
 import { TasksView } from "@/components/installer/tasks-view";
 import { isTerminal } from "@/lib/domain/transitions";
 
 export default async function InstallerTasks() {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  if (!isInstallerArea(user.role)) redirect(ROLE_HOME[user.role]);
+
   const t = await getTranslations("InstallerTasks");
   const supabase = await createClient();
-  const tasks = await fetchMyTasks(supabase);
+  const tasks = await fetchMyTasks(supabase, user.id);
 
   const open = tasks.filter((task) => !isTerminal(task.status));
   // Asignadas que todavía no confirmó: van primero, son la decisión pendiente.

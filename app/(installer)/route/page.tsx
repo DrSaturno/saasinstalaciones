@@ -47,11 +47,15 @@ export default async function InstallerRoutePage() {
 
   // Paradas de hoy: lo programado para hoy y lo que quedó pendiente de días
   // anteriores, que es trabajo que sigue estando en la calle.
+  // El filtro por asignación va explícito: las policies de RLS se combinan con
+  // OR y un coordinador vería acá las órdenes que solo coordina, no las que sale
+  // a hacer él.
   const { data } = await supabase
     .from("work_orders")
     .select(
       "id, order_number, title, status, scheduled_date, sites(name, address, city, lat, lng)",
     )
+    .eq("assigned_installer_id", user.id)
     .in("status", ["planificada", "en_proceso", "relevamiento"])
     .not("scheduled_date", "is", null)
     .lte("scheduled_date", today)
