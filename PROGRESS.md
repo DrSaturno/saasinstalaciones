@@ -59,8 +59,52 @@ rediseñar el sistema.
 |---|---|---|
 | **1a** | Dos bugs vivos de RLS descubiertos durante el análisis (ver abajo) | **Migración aplicada a mano en producción por el usuario, y ya pusheada** (`5b3228c`) |
 | **0** | 3 queries SELECT de auditoría sobre prod | **Completa — terreno limpio.** Las tres volvieron 0 filas: ningún coordinador tiene órdenes abiertas asignadas a sí mismo en la empresa que coordina, ninguno falta en el roster, ninguno falta en `installers`. No hizo falta ninguna decisión de producto extra |
-| **1b** | `company_installers.role` + FK a `profiles` + índice + backfill + helpers `auth_companies()`/`auth_has_company_role()`/`auth_coordinates_anywhere()` | **Migración escrita, commiteada (`0fba4c6`), NO aplicada todavía.** Puramente aditiva: ninguna policy usa los helpers nuevos. `pnpm test` 114 OK (el cambio es solo SQL) |
-| 2–6b | Reescritura de policies, funciones RPC, capa TypeScript, UI, cutover | No empezado. La Fase 2 es la primera que puede aflojar RLS por accidente — requiere el test de fuga cruzada antes de mergear |
+| **1b** | `company_installers.role` + FK a `profiles` + índice + backfill + helpers `auth_companies()`/`auth_has_company_role()`/`auth_coordinates_anywhere()` | **Migración escrita, commiteada (`0fba4c6`). Aplicada en producción por el usuario** (confirmado 2026-07-28) |
+| **2** | Reescritura en forma dual (`rama vieja OR rama nueva`) de las 22 policies + `can_operate_project()`, más el test de fuga cruzada | **Migración y ambos tests escritos, commiteados, NO aplicados todavía.** Ver "Fase 2" abajo para el orden exacto de aplicación |
+| 3–6b | Funciones RPC bloqueantes, capa TypeScript, UI, cutover | No empezado |
+
+### Fase 2 — cómo aplicar y verificar (decidido con el usuario: habilitar pgtap)
+
+`20260728000013_coordinator_policies_dual.sql` reescribe `can_operate_project()`
+y las 22 policies que asumían coordinador = un solo rol/una sola empresa, en
+forma dual: `(rama vieja) OR (rama nueva)`. Para los datos de hoy la rama nueva
+no agrega ni una fila (es exactamente lo que el backfill de la Fase 1b creó),
+así que el cambio de comportamiento esperado es **cero**. También corrige que
+8 de esas policies tenían el `with check` más flojo que el `using` (sin el
+chequeo de rol) — eso se iba a manifestar como "no puedo guardar" sin ningún
+mensaje útil una vez que `auth_company()` empezara a ser NULL para un
+coordinador, en la Fase 6a. Se corrige ahora, gratis, mientras todavía no
+importa.
+
+Dos tests la acompañan:
+- `supabase/tests/coordinator_policies_dual.test.sql` — **estructural**
+  (verifica que el texto de las policies tenga la forma esperada), 14 asserts.
+- `supabase/tests/multi_company_membership.test.sql` — **el test de fuga
+  cruzada** que el plan pide como gate de esta fase. Siembra 2 empresas + una
+  persona (P) con doble membresía — coordinadora de A (proyecto A1, no A2) e
+  instaladora simple en B, sin usar `profiles.role='coordinator'` en ningún
+  momento — y una tercera persona (Q) instaladora en A. Simula el JWT de P
+  (`set local role authenticated; set local request.jwt.claims = ...`) y
+  verifica fila por fila, con 8 asserts, que P ve exactamente lo que le
+  corresponde: el proyecto que coordina pero no el otro de la misma empresa,
+  el cliente de la empresa que coordina pero no el de la que sólo instala, sus
+  2 órdenes (la coordinada + la asignada) pero ninguna otra — en particular
+  **no** la orden de B que no le pertenece, pese a tener membresía activa ahí
+  (ésa es la fuga central que el test existe para descartar). Todo el fixture
+  vive dentro de `begin;...rollback;`, no deja residuos.
+
+**Orden para aplicar en producción** (el usuario decidió habilitar `pgtap`,
+opción recomendada — de bajo riesgo y reversible):
+
+1. `create extension if not exists pgtap;` en el SQL Editor.
+2. Correr `supabase/tests/member_company_read.test.sql` y
+   `supabase/tests/company_installer_role.test.sql` (Fases 1a/1b, ya
+   aplicadas) — deberían pasar ya, sirven de chequeo de que la extensión quedó
+   bien instalada.
+3. Aplicar `20260728000013_coordinator_policies_dual.sql`.
+4. Correr `supabase/tests/coordinator_policies_dual.test.sql` y
+   `supabase/tests/multi_company_membership.test.sql` — los dos tienen que dar
+   verde antes de considerar la Fase 2 cerrada.
 
 ### Los dos bugs vivos (fuera del plan principal, encontrados al auditar RLS)
 
