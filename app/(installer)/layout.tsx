@@ -12,11 +12,18 @@ export default async function InstallerLayout({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (user.role !== "installer") redirect(ROLE_HOME[user.role]);
+  // El coordinador ES un instalador con un privilegio extra: gestionar las
+  // órdenes de su equipo. Usa esta misma área, con una entrada de menú más.
+  if (!["installer", "coordinator"].includes(user.role)) {
+    redirect(ROLE_HOME[user.role]);
+  }
   const t = await getTranslations("Navigation");
   const nav = [
     { href: "/home", label: t("home"), icon: "dashboard" as const },
     { href: "/tasks", label: t("tasks"), icon: "tasks" as const },
+    ...(user.role === "coordinator"
+      ? [{ href: "/coordination", label: t("coordination"), icon: "orders" as const }]
+      : []),
     { href: "/route", label: t("route"), icon: "route" as const },
     { href: "/jobs", label: t("jobs"), icon: "jobs" as const },
     { href: "/messages", label: t("messages"), icon: "messages" as const },

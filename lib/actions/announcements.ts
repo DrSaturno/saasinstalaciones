@@ -53,7 +53,8 @@ export async function publishAnnouncement(
     const user = await getCurrentUser();
     if (
       !user ||
-      !["company_manager", "coordinator"].includes(user.role) ||
+      // Sólo el gerente: los anuncios son comunicación de empresa.
+      user.role !== "company_manager" ||
       !user.companyId
     ) {
       return { error: t("accessDenied") };

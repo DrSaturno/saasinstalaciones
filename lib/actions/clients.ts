@@ -37,7 +37,8 @@ export async function saveClient(
   const user = await getCurrentUser();
   if (
     !user?.companyId ||
-    !["company_manager", "coordinator"].includes(user.role)
+    // Sólo el gerente: la agenda de clientes es gestión de empresa.
+    user.role !== "company_manager"
   ) {
     return { error: t("accessDenied") };
   }

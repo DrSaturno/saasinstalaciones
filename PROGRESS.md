@@ -54,6 +54,37 @@ alguien probó el botón "Ascender"; se revirtieron a mano.
   10 s para no entrar en bucle si el error es determinístico
   (`lib/use-auto-reload.ts`).
 
+### REDISEÑO DEL COORDINADOR (2026-07-28, decisión del usuario)
+
+**El coordinador ES un instalador con un único privilegio extra: gestionar las
+órdenes de trabajo de sus proyectos.** Ya NO es un usuario del área de empresa.
+
+- Vive en el área instalador (`/home`, `/tasks`, etc.) con una entrada de menú
+  adicional: **Coordinación** (`/coordination`), donde ve las órdenes de los
+  proyectos que tiene a cargo y las mueve de estado (aceptar, validar,
+  confirmar trabajos, cancelar con confirmación). "Eliminar orden" no existe
+  como acción en toda la app, así que la prohibición se cumple sola.
+- "Preguntar" = mensajería: cada orden enlaza al chat con su instalador. La
+  mensajería ya contemplaba al coordinador; no se tocó.
+- El área de empresa quedó **solo para el gerente** (guard del layout + guards
+  de acciones). El coordinador perdió: proyectos, clientes, locaciones,
+  adjuntos de locación, bolsa, anuncios y revisión de ausencias. Conserva:
+  órdenes, incidencias, calificaciones y mensajería (acciones de orden).
+- Ascender/descender vive en `/team` (empresa). Ascender NO saca del roster:
+  la persona sigue activa y puede seguir instalando. Descender le quita la
+  gestión de órdenes y desasigna sus proyectos (quedan sin coordinador para
+  reasignar). El roster muestra chip "Coordinador" y les oculta "Ascender".
+- El alcance de qué órdenes coordina viene de `projects.coordinator_id` (la
+  empresa lo asigna al crear/editar el proyecto); la RLS existente
+  (`work_orders_coordinator_all`) ya acotaba por eso y es la base de la
+  pantalla.
+- Migración `20260728000003_coordinator_installer_area.sql` (pendiente de
+  aplicar): la notificación de ascenso ahora lleva a `/coordination`.
+- Nota: las políticas RLS de coordinador sobre proyectos/clientes (migración
+  20260724000002) siguen vigentes aunque la UI ya no las use; los guards de
+  las Server Actions son la barrera. Si se quiere endurecer a nivel DB, es una
+  migración aparte.
+
 ### Decisiones que conviene recordar
 
 - **"Demorado" no es un estado guardado**: se deriva en

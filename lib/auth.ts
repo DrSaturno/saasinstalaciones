@@ -1,11 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/types/database";
 
-/** Ruta home de cada rol tras el login. */
+/**
+ * Ruta home de cada rol tras el login.
+ *
+ * El coordinador vive en el ÁREA INSTALADOR: es un instalador que además
+ * gestiona las órdenes de su equipo (ver /coordination). No es un usuario de
+ * empresa.
+ */
 export const ROLE_HOME: Record<UserRole, string> = {
   platform_admin: "/master",
   company_manager: "/dashboard",
-  coordinator: "/dashboard",
+  coordinator: "/home",
   installer: "/home",
 };
 
@@ -13,7 +19,7 @@ export const ROLE_HOME: Record<UserRole, string> = {
 export const ROLE_AREA_PREFIX: Record<UserRole, string> = {
   platform_admin: "/master",
   company_manager: "/dashboard",
-  coordinator: "/dashboard",
+  coordinator: "/tasks",
   installer: "/tasks",
 };
 

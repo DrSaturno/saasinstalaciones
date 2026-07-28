@@ -7,6 +7,8 @@ import type { Database, RosterStatus, UnavailabilityStatus } from "@/types/datab
 export type RosterMember = {
   installerId: string;
   name: string;
+  /** Coordinador: sigue en el equipo pero ya no se le ofrece "Ascender". */
+  isCoordinator: boolean;
   status: RosterStatus;
   joinedAt: string | null;
   zones: string[];
@@ -99,7 +101,7 @@ export async function fetchRoster(
 
   const [{ data: profiles }, { data: installers }, { data: orders }] =
     await Promise.all([
-      supabase.from("profiles").select("id, full_name").in("id", ids),
+      supabase.from("profiles").select("id, full_name, role").in("id", ids),
       supabase
         .from("installers")
         .select("id, zones, rating_avg, rating_count")
@@ -111,7 +113,7 @@ export async function fetchRoster(
         .not("status", "in", "(finalizada,cancelada)"),
     ]);
 
-  const nameById = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
+  const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
   const instById = new Map((installers ?? []).map((i) => [i.id, i]));
   const openCount = new Map<string, number>();
   for (const o of orders ?? []) {
@@ -125,9 +127,11 @@ export async function fetchRoster(
 
   return roster.map((r) => {
     const inst = instById.get(r.installer_id);
+    const profile = profileById.get(r.installer_id);
     return {
       installerId: r.installer_id,
-      name: nameById.get(r.installer_id) ?? t("installer"),
+      name: profile?.full_name ?? t("installer"),
+      isCoordinator: profile?.role === "coordinator",
       status: r.status,
       joinedAt: r.joined_at,
       zones: inst?.zones ?? [],

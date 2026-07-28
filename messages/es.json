@@ -23,6 +23,7 @@
     "installerArea": "Instalador",
     "masterArea": "Tablero maestro",
     "home": "Inicio",
+    "coordination": "Coordinación",
     "projects": "Proyectos",
     "orders": "Órdenes",
     "clients": "Clientes",
@@ -993,6 +994,7 @@
     "empty": "Todavía no tenés instaladores en tu equipo. Invitá al primero.",
     "reactivate": "Reactivar",
     "remove": "Quitar",
+    "coordinatorBadge": "Coordinador",
     "promote": "Ascender",
     "promoteConfirm": "¿Ascender a {name} a coordinador? Sigue activo en el equipo y conserva sus órdenes, y además suma el acceso de coordinación. Se le avisa por notificación.",
     "promoted": "{name} ahora es coordinador",
@@ -1404,6 +1406,26 @@
     "invalidOrderTransition": "No se puede pasar de «{from}» a «{to}».",
     "systemStatusChange": "Estado → {status}",
     "systemStatusChangeNote": "Estado → {status}: {note}"
+  },
+  "Coordination": {
+    "title": "Coordinación",
+    "description": "Las órdenes de los proyectos que tenés a cargo. Confirmá los trabajos terminados y movelas de estado.",
+    "noProjects": "Todavía no tenés proyectos a cargo. La empresa te los asigna al crear o editar un proyecto.",
+    "filterAll": "Todas",
+    "empty": "No hay órdenes en ese estado.",
+    "chat": "Abrir chat",
+    "unassigned": "Sin instalador asignado",
+    "cancelConfirm": "¿Cancelar la orden {number}? Es definitivo: una orden cancelada no puede reabrirse.",
+    "moved": "{number} → {status}",
+    "to": {
+      "pendiente": "A pendiente",
+      "relevamiento": "A relevamiento",
+      "planificada": "Planificar",
+      "en_proceso": "Iniciar",
+      "en_revision": "A revisión",
+      "finalizada": "Confirmar trabajo",
+      "cancelada": "Cancelar"
+    }
   },
   "InstallerProfile": {
     "backToTeam": "Volver a Equipo",

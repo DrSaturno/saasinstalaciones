@@ -14,7 +14,9 @@ async function requireOperator() {
   const user = await getCurrentUser();
   if (
     !user ||
-    !["company_manager", "coordinator"].includes(user.role) ||
+    // Sólo el gerente: los proyectos son gestión de empresa. El coordinador
+    // opera únicamente órdenes (lib/actions/orders.ts).
+    user.role !== "company_manager" ||
     !user.companyId
   ) {
     throw new Error("Acceso denegado");

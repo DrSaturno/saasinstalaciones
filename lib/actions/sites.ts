@@ -13,7 +13,8 @@ async function requireManager() {
   const user = await getCurrentUser();
   if (
     !user ||
-    !["company_manager", "coordinator"].includes(user.role) ||
+    // Sólo el gerente: las locaciones son gestión de empresa.
+    user.role !== "company_manager" ||
     !user.companyId
   ) {
     throw new Error("Acceso denegado");

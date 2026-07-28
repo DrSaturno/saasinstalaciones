@@ -148,7 +148,8 @@ export async function reviewUnavailability(
     const user = await getCurrentUser();
     if (
       !user ||
-      !["company_manager", "coordinator"].includes(user.role) ||
+      // Sólo el gerente aprueba o rechaza ausencias.
+      user.role !== "company_manager" ||
       !user.companyId
     ) {
       return { error: t("accessDenied") };

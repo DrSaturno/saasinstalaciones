@@ -82,6 +82,11 @@ export function RosterTable({
         <Link href={`/team/${m.installerId}`} className="font-medium hover:text-primary">
           {m.name}
         </Link>
+        {m.isCoordinator ? (
+          <Badge variant="secondary" className="ml-2 align-middle">
+            {t("coordinatorBadge")}
+          </Badge>
+        ) : null}
       </TableCell>
       <TableCell className="font-mono text-xs text-muted-foreground">
         {m.zones.length ? m.zones.join(", ") : "—"}
@@ -102,7 +107,7 @@ export function RosterTable({
           </Button>
         ) : (
           <div className="flex justify-end gap-2">
-            {canPromote ? (
+            {canPromote && !m.isCoordinator ? (
               <Button
                 variant="ghost"
                 size="sm"

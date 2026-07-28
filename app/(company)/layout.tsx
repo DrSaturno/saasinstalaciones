@@ -11,7 +11,9 @@ export default async function CompanyLayout({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!["company_manager", "coordinator"].includes(user.role)) {
+  // Sólo el gerente: el coordinador vive en el área instalador y gestiona las
+  // órdenes de su equipo desde /coordination.
+  if (user.role !== "company_manager") {
     redirect(ROLE_HOME[user.role]);
   }
   const t = await getTranslations("Navigation");
