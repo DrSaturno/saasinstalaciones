@@ -2,10 +2,10 @@
 
 ## PUNTO DE REANUDACIÓN — coordinador/instalador multi-empresa (2026-07-28)
 
-> **Cutover aplicado en la base; código todavía sin commit/push/deploy.** El
-> usuario confirmó la ejecución del SQL de la Fase 6a antes de desplegar esta
-> versión. La base ya no admite `profiles.role='coordinator'`, por lo que el
-> deploy de la aplicación nueva es ahora el siguiente paso urgente.
+> **Implementación completa y en producción.** Las Fases 0–6 están aplicadas.
+> La aplicación se publicó en `main` con el commit `0d37423` y Vercel confirmó
+> el deployment de producción en estado `success`. La base y la aplicación ya
+> usan el modelo definitivo por membresía; no queda SQL obligatorio por aplicar.
 
 ### Qué lo disparó
 
@@ -30,7 +30,7 @@ tests y build OK en ese momento.
 
 El usuario aclaró el caso real: **Rogelio puede ser coordinador en unas
 empresas e instalador en otras, y varias de cada una, todo simultáneo.** El
-modelo actual no lo permite:
+modelo anterior no lo permitía:
 
 - `profiles.role` es **un solo rol global** (no por empresa).
 - `profiles.company_id` es **una sola empresa**.
@@ -63,13 +63,13 @@ rediseñar el sistema.
 | **1b** | `company_installers.role` + FK a `profiles` + índice + backfill + helpers `auth_companies()`/`auth_has_company_role()`/`auth_coordinates_anywhere()` | **Migración escrita, commiteada (`0fba4c6`). Aplicada en producción por el usuario** (confirmado 2026-07-28) |
 | **2** | Reescritura en forma dual (`rama vieja OR rama nueva`) de las 22 policies + `can_operate_project()`, más el test de fuga cruzada | **Aplicada en producción y verificada por el usuario.** `multi_company_membership.test.sql`: 8/8 OK. `coordinator_policies_dual.test.sql`: 14/14 OK tras corregir un error de conteo propio (ver abajo) |
 | **3** | Funciones RPC bloqueantes + policies de Storage | **Aplicada por el usuario.** Ejecutó la migración 14 y los dos pgTAP (21 + 10 asserts); no reportó ningún `not ok` |
-| **4a** | `CurrentUser.memberships`, `cache()`, helpers, gates, nav y proxy | **Implementada y validada localmente** |
-| **4b** | Guards de Server Actions y prefijos de Storage derivados de la entidad | **Implementada y validada localmente** |
-| **5** | Home por membresía, agrupaciones, i18n y SW v3 | **Implementada y validada localmente.** Falta smoke visual autenticado después del deploy |
+| **4a** | `CurrentUser.memberships`, `cache()`, helpers, gates, nav y proxy | **En producción** (`0d37423`) |
+| **4b** | Guards de Server Actions y prefijos de Storage derivados de la entidad | **En producción** (`0d37423`) |
+| **5** | Home por membresía, agrupaciones, i18n y SW v3 | **En producción.** Home y coordinación de Rogelio verificados visualmente; falta la variante real con varias membresías |
 | **6a** | Cutover de perfiles + retiro de ramas RLS legacy | **Aplicada por el usuario.** No reportó ningún error al ejecutar el SQL |
-| **6b** | Limpieza cosmética post-cutover | **Implementada localmente.** `UserRole` ya no admite `coordinator`; coordinación queda exclusivamente como rol de membresía |
+| **6b** | Limpieza cosmética post-cutover | **En producción.** `UserRole` ya no admite `coordinator`; coordinación queda exclusivamente como rol de membresía |
 
-### Fases 4–6 — implementación local lista (2026-07-28)
+### Fases 4–6 — completas y en producción (2026-07-28)
 
 - `CurrentUser` trae membresías activas con empresa, nombre y rol; la lectura
   queda memoizada por request con `cache()` de React.
@@ -99,6 +99,29 @@ Validación local de esta tanda:
 - `pnpm build`: OK (28 páginas; única advertencia: Node 20 deprecado por
   Supabase, conviene Node 22).
 - `git diff --check`: OK.
+
+### Publicación y smoke de producción (2026-07-28)
+
+- Commit funcional: `0d37423` — `Implementa coordinadores multiempresa`.
+- Push directo a `origin/main`, autorizado expresamente por el usuario.
+- GitHub/Vercel confirmó el deployment de producción `5643462755` en estado
+  `success` (`Deployment has completed`).
+- URL del deployment verificado:
+  `https://saasinstalaciones-lobqe6b75-drsaturnos-projects.vercel.app`.
+- Smoke público a **375 × 812 px**: landing y login renderizan correctamente;
+  `/home` sin sesión redirige a `/login?next=%2Fhome`; consola sin errores.
+- Smoke autenticado aportado por el usuario con la cuenta de Rogelio:
+  - `/home` muestra trabajo propio vacío (sin próximo destino y semana en 0) y
+    separa **68 órdenes coordinadas**: 64 pendientes + 4 finalizadas.
+  - El bloque coordinador informa 3 proyectos y 58 órdenes sin asignar. Las 6
+    pendientes restantes ya están asignadas.
+  - Ya no se repiten las órdenes coordinadas como trabajo propio: queda
+    verificado el bug que originó esta tanda.
+  - Sólo aparece “Como coordinador” porque Rogelio tiene una única membresía
+    activa visible. El bloque “Como instalador” depende de una membresía activa
+    `role='installer'` en otra empresa, no de tener órdenes.
+  - `/coordination` carga el tablero y el listado de órdenes coordinadas sin
+    mezclarlas con el área de ejecución.
 
 ### Fase 3 — implementación local lista (2026-07-28)
 
@@ -216,15 +239,20 @@ tareas y anuncios.
 
 ### Próximo paso concreto
 
-1. Terminar la validación local de las Fases 4–6.
-2. Con autorización explícita, hacer commit y push a `main` para disparar el
-   deploy cuanto antes: la base ya está cortada al modelo definitivo.
-3. Confirmar que `multi_company_cutover.test.sql` y
-   `multi_company_membership.test.sql` dieron **10/10** si no se corrieron junto
-   con la migración.
-4. Hacer smoke autenticado a 375 px con una cuenta de 1 membresía y otra de 3:
-   `/home`, `/tasks`, `/coordination`, `/route`, `/messages`, invitación y
-   subida de adjuntos.
+No queda ningún bloqueo para producción ni SQL obligatorio. Pendientes de QA y
+mejora:
+
+1. Probar una cuenta realmente multiempresa: coordinador en una empresa e
+   instalador en otra. Rogelio sólo valida hoy la mitad coordinador.
+2. Completar el smoke autenticado a 375 px de `/tasks`, `/coordination`,
+   `/route`, `/messages`, `/profile`, invitación y subida de adjuntos.
+3. Agregar recuperación de contraseña: actualmente sólo existe el cambio desde
+   `/settings`, que exige conocer la contraseña actual.
+4. Actualizar Node 20 a Node 22; Supabase muestra una advertencia de deprecación,
+   pero no bloquea tests, build ni deploy.
+5. Guardar el resultado exacto de los dos pgTAP finales si se necesita evidencia
+   auditable: el usuario confirmó la ejecución de los tres SQL y no reportó
+   ningún `not ok`, pero no se conservaron sus salidas.
 
 ## PUNTO DE REANUDACIÓN — tanda de correcciones (2026-07-28)
 
