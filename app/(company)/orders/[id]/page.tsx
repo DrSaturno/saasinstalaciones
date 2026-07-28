@@ -11,6 +11,7 @@ import { OrderAttachments } from "@/components/shared/order-attachments";
 import { UpdatePhotos } from "@/components/shared/update-photos";
 import { signUpdatePhotos } from "@/lib/data/update-photos";
 import { EditOrderDialog } from "@/components/company/edit-order-dialog";
+import { OrderPdfButton } from "@/components/shared/order-pdf-button";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { StatusStepper } from "@/components/shared/status-stepper";
 import { Button } from "@/components/ui/button";
@@ -118,6 +119,8 @@ export default async function OrderDetailPage({
             </Link>
           )}
         </div>
+        <div className="flex flex-wrap items-start gap-2">
+        <OrderPdfButton orderId={order.id} size="default" />
         <EditOrderDialog
           orderId={order.id}
           currency={order.currency}
@@ -139,6 +142,7 @@ export default async function OrderDetailPage({
             installerId: order.assigned_installer_id ?? "",
           }}
         />
+        </div>
       </div>
 
       <Card className="mt-6">

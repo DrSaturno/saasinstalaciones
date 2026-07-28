@@ -12,6 +12,7 @@ import { OrderAttachments } from "@/components/shared/order-attachments";
 import { UpdatePhotos } from "@/components/shared/update-photos";
 import { StatusStepper } from "@/components/shared/status-stepper";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { OrderPdfButton } from "@/components/shared/order-pdf-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { OrderUpdateType } from "@/types/database";
@@ -96,9 +97,12 @@ export default async function CoordinationOrderPage({
 
       <header className="mt-4">
         <p className="font-mono text-xs text-muted-foreground">{order.order_number}</p>
-        <div className="mt-1 flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-bold">{order.title}</h1>
-          <StatusBadge status={order.status} kind="order" />
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-bold">{order.title}</h1>
+            <StatusBadge status={order.status} kind="order" />
+          </div>
+          <OrderPdfButton orderId={order.id} />
         </div>
         <p className="mt-1 text-sm text-muted-foreground">{project?.name}</p>
       </header>

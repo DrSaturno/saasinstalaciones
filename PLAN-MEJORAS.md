@@ -8,6 +8,8 @@ antes del push de la fase.
 
 Estado: ⬜ pendiente · 🔶 en curso · ✅ hecho
 
+> **Las 6 fases están completas (2026-07-28).**
+
 ---
 
 ## FASE 0 — Publicar lo pendiente + bugs que rompen ✅ COMPLETA
@@ -114,15 +116,15 @@ Estado: ⬜ pendiente · 🔶 en curso · ✅ hecho
   roster, así que verificarlo y, si hace falta, excluir además por
   `profiles.company_id` en `broadcast_matches_installer`.
 
-## FASE 5 — Presentación
+## FASE 5 — Presentación ✅ COMPLETA
 
-- ⬜ **5.1 PDF de la orden de trabajo** con diseño cuidado, descargable desde
-  los tres tableros. Enfoque a decidir en implementación: vista imprimible con
-  `@media print` o `@react-pdf/renderer` (evitar puppeteer en Vercel).
-- ⬜ **5.2 Aprovechar el ancho de pantalla.** Pasada general: los contenedores
-  `max-w-6xl/7xl` quedan chicos en tablas y listados; ensanchar dashboard,
-  órdenes, proyectos, finanzas. Usar skills de diseño (frontend-design /
-  ui-ux-pro-max) para esta fase.
+- ✅ **5.1 PDF de la orden de trabajo** con diseño cuidado, descargable desde
+  los tres tableros. Se usó `@react-pdf/renderer`: genera el PDF en el servidor
+  sin navegador, así que anda en Vercel. El endpoint no tiene control de acceso
+  propio — usa el cliente de sesión y RLS decide qué órdenes alcanza cada rol.
+- ✅ **5.2 Aprovechar el ancho de pantalla.** Hecho el 2026-07-28: contenedores
+  ensanchados en las 21 páginas y listados de tarjetas convertidos en grillas
+  responsivas, porque ensanchar solo el contenedor estiraba una tarjeta sola.
 
 ---
 

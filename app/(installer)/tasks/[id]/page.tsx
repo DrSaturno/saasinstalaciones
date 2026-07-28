@@ -8,6 +8,7 @@ import { OrderAttachments } from "@/components/shared/order-attachments";
 import { UpdatePhotos } from "@/components/shared/update-photos";
 import { signUpdatePhotos } from "@/lib/data/update-photos";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { OrderPdfButton } from "@/components/shared/order-pdf-button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { OrderStatus, OrderUpdateType } from "@/types/database";
 
@@ -73,7 +74,10 @@ export default async function TaskDetailPage({
         </span>
         <StatusBadge status={order.status as OrderStatus} kind="order" />
       </div>
-      <h1 className="mt-1 text-xl font-bold">{order.title}</h1>
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-bold">{order.title}</h1>
+        <OrderPdfButton orderId={order.id} />
+      </div>
 
       {/* Punto */}
       <Card className="mt-6">
