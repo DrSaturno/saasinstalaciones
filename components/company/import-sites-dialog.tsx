@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { importSites, type ImportResult } from "@/lib/actions/projects";
+import { importSitesFile, type ImportResult } from "@/lib/actions/projects";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,43 +25,26 @@ export function ImportSitesDialog({ projectId }: { projectId: string }) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
+  // El archivo se manda entero al servidor: ahí se distingue Excel de CSV y se
+  // convierte. Así el navegador no carga la librería de Excel.
   const handleFile = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const text = String(reader.result ?? "");
-      startTransition(async () => {
-        const res = await importSites(projectId, text);
-        setResult(res);
-        if (res.error) {
-          toast.error(res.error);
-        } else {
-          toast.success(t("imported", { count: res.inserted }));
-          router.refresh();
-        }
-      });
-    };
-    // UTF-8 cubre acentos y ñ; Excel suele exportar con BOM, ya lo limpiamos.
-    reader.readAsText(file, "utf-8");
+    const formData = new FormData();
+    formData.set("file", file);
+    startTransition(async () => {
+      const res = await importSitesFile(projectId, formData);
+      setResult(res);
+      if (res.error) {
+        toast.error(res.error);
+      } else {
+        toast.success(t("imported", { count: res.inserted }));
+        router.refresh();
+      }
+    });
   };
 
   const close = () => {
     setOpen(false);
     setResult(null);
-  };
-
-  const downloadTemplate = () => {
-    const csv = [
-      "nombre,direccion,ciudad,provincia,codigo,lat,lng",
-      "Local Centro,Av. Ejemplo 123,La Plata,Buenos Aires,LOC-001,-34.9205,-57.9536",
-    ].join("\r\n");
-    const url = URL.createObjectURL(
-      new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }),
-    );
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "plantilla-puntos-instalapro.csv";
-    link.click();
-    URL.revokeObjectURL(url);
   };
 
   return (
@@ -109,7 +92,7 @@ export function ImportSitesDialog({ projectId }: { projectId: string }) {
               <Input
                 id="csv"
                 type="file"
-                accept=".csv,text/csv"
+                accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
                 disabled={pending}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
@@ -122,8 +105,10 @@ export function ImportSitesDialog({ projectId }: { projectId: string }) {
               <p className="mt-1 font-mono">{t("columns")}</p>
               <p className="mt-2">{t("variants")}</p>
             </div>
-            <Button type="button" variant="outline" onClick={downloadTemplate}>
-              {t("downloadTemplate")}
+            <Button type="button" variant="outline" asChild>
+              <a href="/api/site-template" download>
+                {t("downloadTemplate")}
+              </a>
             </Button>
             {pending && (
               <p className="text-sm text-muted-foreground">{t("importing")}</p>

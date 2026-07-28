@@ -58,7 +58,14 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-bold">{project.name}</h1>
             <Badge variant="secondary">{statusT(PROJECT_STATUS[project.status].key)}</Badge>
-            <Badge variant="outline" className="font-mono">{project.country} · {project.zones.join(" / ")}</Badge>
+            <Badge
+              variant="outline"
+              className="max-w-full truncate font-mono"
+              title={`${project.country} · ${project.zones.join(" / ")}`}
+            >
+              {project.country} · {project.zones.slice(0, 3).join(" / ")}
+              {project.zones.length > 3 ? ` +${project.zones.length - 3}` : ""}
+            </Badge>
           </div>
           <p className="mt-1 text-muted-foreground">
             {project.client_name}
@@ -76,7 +83,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           </p>
           {project.description ? <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground">{project.description}</p> : null}
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex shrink-0 flex-wrap gap-2">
           <EditProjectDialog projectId={project.id} clients={clients.map(({ id, name }) => ({ id, name }))} coordinators={coordinators} canManageFinance={user?.role === "company_manager"} fixedCoordinatorId={user?.role === "coordinator" ? user.id : undefined} defaults={{
             name: project.name, clientName: project.client_name, description: project.description,
             clientId: project.client_id ?? "", coordinatorId: project.coordinator_id ?? "",

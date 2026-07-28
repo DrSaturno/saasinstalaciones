@@ -772,6 +772,21 @@
     "save": "Guardar cambios",
     "updated": "Proyecto actualizado"
   },
+  "ReuseSites": {
+    "trigger": "Traer de otro proyecto",
+    "title": "Reutilizar locaciones del cliente",
+    "description": "Locaciones que este cliente ya tiene cargadas en proyectos anteriores. Se copian con su ficha completa: contacto, horarios, accesos y notas.",
+    "loading": "Buscando locaciones…",
+    "empty": "Este cliente no tiene locaciones en otros proyectos, o ya están todas en este.",
+    "search": "Buscar por nombre, dirección o código",
+    "found": "{count, plural, one {# locación disponible} other {# locaciones disponibles}}",
+    "selectAll": "Seleccionar todas",
+    "clearAll": "Quitar selección",
+    "fromProject": "De: {project}",
+    "addSelected": "{count, plural, =0 {Elegí al menos una} one {Agregar # locación} other {Agregar # locaciones}}",
+    "adding": "Agregando…",
+    "added": "{count, plural, one {Se agregó # locación} other {Se agregaron # locaciones}}"
+  },
   "ImportSites": {
     "trigger": "Importar puntos (CSV)",
     "title": "Importar puntos de instalación",
@@ -1380,6 +1395,8 @@
   },
   "Errors": {
     "coordinatorNotAssignable": "Un coordinador no puede tomar órdenes como instalador. Bajalo a instalador desde Equipo si querés asignárselas.",
+    "fileTooLarge": "El archivo es demasiado grande. El máximo es 20 MB.",
+    "excelUnreadable": "No se pudo leer el Excel. Verificá que sea la plantilla descargada y que no esté dañado.",
     "needsInstaller": "Asigná un instalador antes de avanzar con la orden.",
     "needsSurvey": "Registrá el relevamiento antes de planificar.",
     "needsAcceptance": "El instalador tiene que aceptar la orden antes de iniciarla.",

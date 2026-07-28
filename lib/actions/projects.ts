@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { parseCsv, normalizeHeader } from "@/lib/csv";
 import { projectInputSchema } from "@/lib/domain/projects";
+import { SITE_TEMPLATE_HEADERS } from "@/lib/domain/site-template";
 import type { TablesInsert } from "@/types/database";
 
 /** Toda acción de empresa resuelve company_id desde la sesión, nunca del cliente. */
@@ -422,4 +423,256 @@ export async function setProjectArchived(
     return { error: t("unexpected") };
   }
   return { error: null, ok: true };
+}
+
+/**
+ * Importa locaciones desde un archivo, sea Excel (.xlsx) o CSV.
+ *
+ * El Excel se convierte a las mismas filas que produce el parser de CSV y se
+ * delega en `importSites`, así hay UN solo camino de validación e inserción.
+ * Convertir en el servidor evita mandar exceljs al navegador.
+ */
+export async function importSitesFile(
+  projectId: string,
+  formData: FormData,
+): Promise<ImportResult> {
+  const t = await getTranslations("Errors");
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: t("invalidData"), inserted: 0, skipped: [] };
+  }
+  // 20 MB cubre planillas de decenas de miles de filas.
+  if (file.size > 20 * 1_024 * 1_024) {
+    return { error: t("fileTooLarge"), inserted: 0, skipped: [] };
+  }
+
+  const isExcel =
+    file.name.toLowerCase().endsWith(".xlsx") ||
+    file.type.includes("spreadsheetml");
+
+  if (!isExcel) {
+    return importSites(projectId, await file.text());
+  }
+
+  try {
+    const ExcelJS = (await import("exceljs")).default;
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(await file.arrayBuffer());
+
+    // La primera hoja con datos; la de instrucciones no tiene encabezados.
+    const sheet =
+      workbook.worksheets.find((candidate) =>
+        String(candidate.getRow(1).getCell(1).value ?? "")
+          .toLowerCase()
+          .includes("nombre"),
+      ) ?? workbook.worksheets[0];
+    if (!sheet) return { error: t("csvNoRows"), inserted: 0, skipped: [] };
+
+    const lines: string[] = [];
+    sheet.eachRow((row) => {
+      const values: string[] = [];
+      for (let index = 1; index <= SITE_TEMPLATE_HEADERS.length; index++) {
+        const cell = row.getCell(index);
+        let text = "";
+        if (cell.value !== null && cell.value !== undefined) {
+          if (typeof cell.value === "object" && "result" in cell.value) {
+            text = String(cell.value.result ?? "");
+          } else if (cell.value instanceof Date) {
+            text = cell.value.toISOString().slice(0, 10);
+          } else {
+            text = String(cell.value);
+          }
+        }
+        // El encabezado marca las obligatorias con "*": se saca para que el
+        // nombre de columna coincida con el que espera el parser.
+        values.push(text.replace(/\s*\*\s*$/, "").trim());
+      }
+      if (values.some((value) => value !== "")) {
+        // Comillas para que las direcciones con coma no partan la columna.
+        lines.push(values.map((value) => `"${value.replace(/"/g, '""')}"`).join(","));
+      }
+    });
+
+    if (lines.length < 2) {
+      return { error: t("csvNoRows"), inserted: 0, skipped: [] };
+    }
+
+    return importSites(projectId, lines.join("\r\n"));
+  } catch {
+    return { error: t("excelUnreadable"), inserted: 0, skipped: [] };
+  }
+}
+
+/**
+ * Locaciones que ese cliente ya tiene cargadas en OTROS proyectos.
+ *
+ * Un cliente que vuelve suele instalar en los mismos locales, así que cargarlos
+ * de nuevo a mano (o volver a importar la planilla) es trabajo repetido. Sólo
+ * se ofrecen las que todavía no están en este proyecto, comparando por código
+ * interno y, si no lo tienen, por nombre y dirección.
+ */
+export async function fetchReusableSites(projectId: string): Promise<{
+  error: string | null;
+  sites: {
+    id: string;
+    name: string;
+    address: string;
+    city: string;
+    state: string;
+    externalRef: string | null;
+    projectName: string;
+  }[];
+}> {
+  const t = await getTranslations("Errors");
+  try {
+    const { supabase, companyId } = await requireOperator();
+
+    const { data: project } = await supabase
+      .from("projects")
+      .select("id, client_id")
+      .eq("id", projectId)
+      .eq("company_id", companyId)
+      .single();
+    if (!project?.client_id) return { error: null, sites: [] };
+
+    // Los demás proyectos del mismo cliente.
+    const { data: siblings } = await supabase
+      .from("projects")
+      .select("id, name")
+      .eq("company_id", companyId)
+      .eq("client_id", project.client_id)
+      .neq("id", projectId);
+    const siblingIds = (siblings ?? []).map((sibling) => sibling.id);
+    if (siblingIds.length === 0) return { error: null, sites: [] };
+
+    const nameById = new Map((siblings ?? []).map((s) => [s.id, s.name]));
+
+    const [{ data: candidates }, { data: current }] = await Promise.all([
+      supabase
+        .from("sites")
+        .select("id, project_id, name, address, city, state, external_ref")
+        .in("project_id", siblingIds)
+        .is("archived_at", null)
+        .order("name"),
+      supabase
+        .from("sites")
+        .select("name, address, external_ref")
+        .eq("project_id", projectId),
+    ]);
+
+    const takenRefs = new Set(
+      (current ?? [])
+        .map((site) => site.external_ref?.trim().toLowerCase())
+        .filter((ref): ref is string => Boolean(ref)),
+    );
+    const takenPairs = new Set(
+      (current ?? []).map(
+        (site) =>
+          `${site.name.trim().toLowerCase()}|${site.address.trim().toLowerCase()}`,
+      ),
+    );
+
+    const seen = new Set<string>();
+    const sites = (candidates ?? [])
+      .filter((site) => {
+        const ref = site.external_ref?.trim().toLowerCase();
+        const pair = `${site.name.trim().toLowerCase()}|${site.address.trim().toLowerCase()}`;
+        if (ref ? takenRefs.has(ref) : takenPairs.has(pair)) return false;
+        // El mismo local puede estar en varios proyectos previos: una sola vez.
+        const dedupe = ref || pair;
+        if (seen.has(dedupe)) return false;
+        seen.add(dedupe);
+        return true;
+      })
+      .map((site) => ({
+        id: site.id,
+        name: site.name,
+        address: site.address,
+        city: site.city ?? "",
+        state: site.state ?? "",
+        externalRef: site.external_ref,
+        projectName: nameById.get(site.project_id) ?? "",
+      }));
+
+    return { error: null, sites };
+  } catch {
+    return { error: t("unexpected"), sites: [] };
+  }
+}
+
+/** Copia al proyecto actual las locaciones elegidas de proyectos anteriores. */
+export async function reuseSites(
+  projectId: string,
+  siteIds: string[],
+): Promise<ImportResult> {
+  const t = await getTranslations("Errors");
+  const ids = z.array(z.string().uuid()).min(1).max(2000).safeParse(siteIds);
+  if (!ids.success) return { error: t("invalidData"), inserted: 0, skipped: [] };
+
+  try {
+    const { supabase, companyId } = await requireOperator();
+
+    const { data: project } = await supabase
+      .from("projects")
+      .select("id, country, zones")
+      .eq("id", projectId)
+      .eq("company_id", companyId)
+      .single();
+    if (!project) return { error: t("projectNotFound"), inserted: 0, skipped: [] };
+
+    const { data: origin } = await supabase
+      .from("sites")
+      .select(
+        "name, address, city, state, zone, lat, lng, external_ref, contact_name, contact_phone, contact_email, opening_hours, access_notes, parking_notes, technical_notes, risk_notes, permanent_notes",
+      )
+      .in("id", ids.data);
+    if (!origin?.length) {
+      return { error: t("invalidData"), inserted: 0, skipped: [] };
+    }
+
+    // La zona tiene que ser una de las del proyecto destino; si la original no
+    // aplica, se usa la primera del proyecto para no dejarla huérfana.
+    const fallbackZone = project.zones?.[0] ?? "";
+
+    const rows = origin.map((site) => ({
+      project_id: projectId,
+      company_id: companyId,
+      name: site.name,
+      address: site.address,
+      city: site.city,
+      state: site.state,
+      zone: project.zones?.includes(site.zone ?? "") ? site.zone : fallbackZone,
+      lat: site.lat,
+      lng: site.lng,
+      external_ref: site.external_ref,
+      contact_name: site.contact_name,
+      contact_phone: site.contact_phone,
+      contact_email: site.contact_email,
+      opening_hours: site.opening_hours,
+      access_notes: site.access_notes,
+      parking_notes: site.parking_notes,
+      technical_notes: site.technical_notes,
+      risk_notes: site.risk_notes,
+      permanent_notes: site.permanent_notes,
+    }));
+
+    let inserted = 0;
+    for (let index = 0; index < rows.length; index += BATCH_SIZE) {
+      const batch = rows.slice(index, index + BATCH_SIZE);
+      const { error } = await supabase.from("sites").insert(batch);
+      if (error) {
+        return {
+          error: t("importBatch", { count: inserted, error: error.message }),
+          inserted,
+          skipped: [],
+        };
+      }
+      inserted += batch.length;
+    }
+
+    revalidatePath(`/projects/${projectId}`);
+    return { error: null, inserted, skipped: [] };
+  } catch {
+    return { error: t("unexpected"), inserted: 0, skipped: [] };
+  }
 }

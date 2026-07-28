@@ -81,15 +81,19 @@ Estado: ⬜ pendiente · 🔶 en curso · ✅ hecho
   subida directa desde el navegador en /profile, y se muestra en perfil, roster
   y ficha. Migración `20260728000007_avatars.sql`.
 
-## FASE 3 — Locaciones
+## FASE 3 — Locaciones ✅ COMPLETA
 
-- ⬜ **3.1 Plantilla Excel real (.xlsx).** Archivo armado con columnas y
-  ejemplos, descargable; la importación acepta .xlsx directo (librería `xlsx` o
-  `exceljs`) además del CSV actual.
-- ⬜ **3.2 Reutilizar locaciones entre proyectos del mismo cliente.** En "Adm.
+- ✅ **3.1 Plantilla Excel real (.xlsx).** Se genera en el servidor con exceljs
+  (`/api/site-template`): encabezado formateado, obligatorias marcadas con *,
+  anchos, hoja de Instrucciones y dos filas de ejemplo. La importación acepta
+  .xlsx y lo convierte en el servidor a las mismas filas del parser CSV, así
+  hay un solo camino de validación. Columnas centralizadas en
+  `lib/domain/site-template.ts`.
+- ✅ **3.2 Reutilizar locaciones entre proyectos del mismo cliente.** En "Adm.
   instalaciones": "traer locaciones de proyectos anteriores" del cliente.
-- ⬜ **3.3 Fix visual:** con muchas locaciones, las etiquetas se enciman con el
-  botón "Adm. instalaciones" en la página del proyecto.
+- ✅ **3.3 Fix visual:** el badge de zonas crecía sin límite (una por provincia)
+  y empujaba los botones. Ahora muestra 3 y "+N", con el detalle en el tooltip,
+  y la columna de acciones no se comprime.
 
 ## FASE 4 — UX instalador / coordinador
 

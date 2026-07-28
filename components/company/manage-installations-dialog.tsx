@@ -9,6 +9,7 @@ import { updatePlannedInstallations } from "@/lib/actions/sites";
 import { CreateSiteDialog } from "@/components/company/create-site-dialog";
 import { CreateOrdersDialog } from "@/components/company/create-orders-dialog";
 import { ImportSitesDialog } from "@/components/company/import-sites-dialog";
+import { ReuseSitesDialog } from "@/components/company/reuse-sites-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import type { Country } from "@/types/database";
@@ -77,6 +78,7 @@ export function ManageInstallationsDialog({
           <div className="flex flex-wrap gap-2">
             <CreateSiteDialog projectId={projectId} country={country} zones={zones} />
             <ImportSitesDialog projectId={projectId} />
+            <ReuseSitesDialog projectId={projectId} />
             <CreateOrdersDialog projectId={projectId} siteCount={activeCount} />
           </div>
         </section>
