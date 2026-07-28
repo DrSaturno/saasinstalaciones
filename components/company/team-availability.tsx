@@ -7,6 +7,7 @@ import type {
 } from "@/lib/data/team";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UnavailabilityReview } from "@/components/company/unavailability-review";
+import { DemoteCoordinatorButton } from "@/components/company/demote-coordinator-button";
 
 export async function TeamAvailability({
   coordinators,
@@ -35,8 +36,17 @@ export async function TeamAvailability({
         </CardHeader>
         <CardContent className="space-y-2">
           {coordinators.length ? coordinators.map((person) => (
-            <div key={person.id} className="rounded-xl border px-4 py-3 text-sm">
-              {person.name}
+            <div
+              key={person.id}
+              className="flex items-center justify-between gap-2 rounded-xl border px-4 py-3 text-sm"
+            >
+              <span>{person.name}</span>
+              {canReview ? (
+                <DemoteCoordinatorButton
+                  coordinatorId={person.id}
+                  name={person.name}
+                />
+              ) : null}
             </div>
           )) : <p className="text-sm text-muted-foreground">{t("noCoordinators")}</p>}
         </CardContent>
@@ -64,7 +74,7 @@ export async function TeamAvailability({
                 >
                   <div className="flex items-start justify-between gap-2">
                     <Link
-                      href={`/messages/${item.installerId}`}
+                      href={`/team/${item.installerId}`}
                       className="text-sm font-medium hover:text-primary"
                     >
                       {item.name}
@@ -82,7 +92,7 @@ export async function TeamAvailability({
                 <div key={item.id} className="rounded-xl border px-4 py-3">
                   <div className="flex items-start justify-between gap-2">
                     <Link
-                      href={`/messages/${item.installerId}`}
+                      href={`/team/${item.installerId}`}
                       className="text-sm font-medium hover:text-primary"
                     >
                       {item.name}

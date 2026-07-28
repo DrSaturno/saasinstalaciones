@@ -24,6 +24,35 @@ async function requireOperator() {
 
 export type ActionState = { error: string | null; ok?: boolean };
 
+/**
+ * Resuelve el coordinador responsable del proyecto.
+ *
+ * Devuelve `undefined` si el id vino cargado pero no corresponde a un
+ * coordinador de la empresa (dato inválido), y `null` cuando el proyecto queda
+ * sin coordinador asignado, que es un estado legítimo: la columna es nullable y
+ * una empresa puede no tener ningún coordinador todavía.
+ */
+async function resolveCoordinatorId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  companyId: string,
+  user: { id: string; role: string },
+  coordinatorId: string | null,
+): Promise<string | null | undefined> {
+  // Un coordinador siempre queda como responsable de lo que crea o edita.
+  const wanted = user.role === "coordinator" ? user.id : coordinatorId;
+  if (!wanted) return null;
+
+  const { data } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", wanted)
+    .eq("company_id", companyId)
+    .eq("role", "coordinator")
+    .single();
+
+  return data?.id ?? undefined;
+}
+
 function parseProjectForm(formData: FormData) {
   return projectInputSchema.safeParse({
     name: formData.get("name"),
@@ -52,31 +81,27 @@ export async function createProject(
 
   try {
     const { supabase, companyId, user } = await requireOperator();
-    const [{ data: client }, { data: coordinator }] = await Promise.all([
+    const [{ data: client }, coordinatorId] = await Promise.all([
       supabase
         .from("clients")
         .select("id, name")
         .eq("id", parsed.data.clientId)
         .eq("company_id", companyId)
         .single(),
-      supabase
-        .from("profiles")
-        .select("id")
-        .eq(
-          "id",
-          user.role === "coordinator" ? user.id : parsed.data.coordinatorId,
-        )
-        .eq("company_id", companyId)
-        .eq("role", "coordinator")
-        .single(),
+      resolveCoordinatorId(
+        supabase,
+        companyId,
+        user,
+        parsed.data.coordinatorId,
+      ),
     ]);
-    if (!client || !coordinator) return { error: t("invalidData") };
+    if (!client || coordinatorId === undefined) return { error: t("invalidData") };
     const { error } = await supabase.from("projects").insert({
       company_id: companyId,
       name: parsed.data.name,
       client_name: client.name,
       client_id: client.id,
-      coordinator_id: coordinator.id,
+      coordinator_id: coordinatorId,
       description: parsed.data.description,
       status: "active",
       starts_at: parsed.data.startsAt,
@@ -123,11 +148,11 @@ export async function updateProject(
     if (user.role === "coordinator" && current.coordinator_id !== user.id) {
       return { error: t("accessDenied") };
     }
-    const [{ data: client }, { data: coordinator }] = await Promise.all([
+    const [{ data: client }, coordinatorId] = await Promise.all([
       supabase.from("clients").select("id, name").eq("id", parsed.data.clientId).eq("company_id", companyId).single(),
-      supabase.from("profiles").select("id").eq("id", user.role === "coordinator" ? user.id : parsed.data.coordinatorId).eq("company_id", companyId).eq("role", "coordinator").single(),
+      resolveCoordinatorId(supabase, companyId, user, parsed.data.coordinatorId),
     ]);
-    if (!client || !coordinator) return { error: t("invalidData") };
+    if (!client || coordinatorId === undefined) return { error: t("invalidData") };
     if ((sites ?? []).length > 0 && current.country !== parsed.data.country) return { error: t("projectCountryLocked") };
     const zonesInUse = [...new Set((sites ?? []).map((site) => site.zone).filter(Boolean))];
     if (zonesInUse.some((zone) => !parsed.data.zones.includes(zone))) return { error: t("projectZonesInUse") };
@@ -137,7 +162,7 @@ export async function updateProject(
         name: parsed.data.name,
         client_name: client.name,
         client_id: client.id,
-        coordinator_id: coordinator.id,
+        coordinator_id: coordinatorId,
         description: parsed.data.description,
         starts_at: parsed.data.startsAt,
         ends_at: parsed.data.endsAt,
@@ -351,4 +376,48 @@ export async function importSites(
 
   revalidatePath(`/projects/${projectId}`);
   return { error: null, inserted, skipped };
+}
+
+/**
+ * Archiva o desarchiva un proyecto.
+ *
+ * Archivar reemplaza al borrado: el proyecto, sus locaciones y sus órdenes
+ * siguen existiendo y se pueden consultar; sólo salen del listado corriente.
+ * Por eso es reversible y no toca ningún dato asociado.
+ */
+export async function setProjectArchived(
+  projectId: string,
+  archived: boolean,
+): Promise<ActionState> {
+  const t = await getTranslations("Errors");
+  try {
+    const { supabase, companyId, user } = await requireOperator();
+
+    const { data: current } = await supabase
+      .from("projects")
+      .select("coordinator_id")
+      .eq("id", projectId)
+      .eq("company_id", companyId)
+      .single();
+    if (!current) return { error: t("projectNotFound") };
+
+    // Un coordinador sólo puede archivar los proyectos que tiene a cargo.
+    if (user.role === "coordinator" && current.coordinator_id !== user.id) {
+      return { error: t("accessDenied") };
+    }
+
+    const { error } = await supabase
+      .from("projects")
+      .update({ archived_at: archived ? new Date().toISOString() : null })
+      .eq("id", projectId)
+      .eq("company_id", companyId);
+    if (error) return { error: error.message };
+
+    revalidatePath("/projects");
+    revalidatePath(`/projects/${projectId}`);
+    revalidatePath("/dashboard");
+  } catch {
+    return { error: t("unexpected") };
+  }
+  return { error: null, ok: true };
 }

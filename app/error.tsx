@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { useAutoReloadOnError } from "@/lib/use-auto-reload";
 
 /**
  * Boundary de error de las rutas bajo el layout raíz. Vive dentro del
@@ -15,6 +16,8 @@ export default function ErrorBoundary({
   reset: () => void;
 }) {
   const t = useTranslations("AppStates");
+
+  useAutoReloadOnError();
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-24 text-center">

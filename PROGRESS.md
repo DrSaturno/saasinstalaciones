@@ -1,18 +1,106 @@
 # Instala Pro — Estado del proyecto
 
-## PUNTO DE REANUDACIÓN — blueprint de expansión terminado (`rama1`, 2026-07-27)
+## PUNTO DE REANUDACIÓN — tanda de correcciones (2026-07-28)
 
-> **Los 17 pasos de `BLUEPRINT-EXPANSION.md` están completos y commiteados.**
-> `rama1` va **16 commits adelante de `main`**; `main` sigue en producción sin
-> los cambios nuevos. Nada quedó sin commitear.
+> **Sin commitear ni deployar.** Los cambios están en el working tree. Las dos
+> migraciones de esta tanda **ya fueron aplicadas en Supabase** por el usuario.
 
-### Lo que falta hacer (en orden)
+### Migraciones aplicadas
 
-1. ~~**Actualizar dependencias**~~ — **HECHO (2026-07-27, sin commitear todavía).**
-   Ver "Bump de dependencias" más abajo para qué se cambió y por qué difiere de
-   lo que decía este plan.
+| Archivo | Qué trae |
+|---------|----------|
+| `20260728000001_coordinator_role_changes.sql` | Ascender ya no saca del roster · nueva RPC `demote_coordinator_to_installer` · notificación en ambos cambios de rol · el trigger anti-escalación ahora habilita installer↔coordinator |
+| `20260728000002_project_archive.sql` | `projects.archived_at` + índice parcial de proyectos corrientes |
 
-2. **Probar a mano la interacción de la UI.** Durante toda la sesión los clicks no
+Scripts sueltos corridos en el SQL Editor (no son migraciones, viven en
+`supabase/`): `limpiar_usuarios.sql` y `reparar_instaladores.sql`.
+
+### Estado de los usuarios
+
+Quedaron **4**: `admin@instalapro.dev` (platform_admin), `gerente@demo.dev`
+(company_manager), `instalador1@demo.dev` e `instalador2@demo.dev` (installer).
+Los dos instaladores habían quedado como `coordinator` y fuera del roster porque
+alguien probó el botón "Ascender"; se revirtieron a mano.
+
+### Bugs corregidos
+
+- **No se podían crear proyectos.** `coordinatorId` era obligatorio en
+  `projectInputSchema` aunque la columna es nullable: sin coordinadores en la
+  empresa, el formulario era imposible de completar. Ahora es opcional y el
+  formulario lo explica.
+- **Cambio de usuario al refrescar en el celular.** Dos causas, las dos reales:
+  1. `proxy.ts` descartaba en cada `redirect` las cookies de sesión que Supabase
+     acababa de rotar. Como el login termina en un redirect, ahí se perdía la
+     limpieza de la sesión anterior. Se agregó `redirectKeepingSession`.
+  2. El service worker escucha `"clear-cache"` para vaciar la caché de páginas
+     al cambiar de cuenta, pero **nadie lo emitía**: el mecanismo nunca corrió.
+     `ServiceWorkerRegister` ahora recibe `userId`, detecta el cambio de persona
+     y lo dispara. Ojo: ese componente se monta también en el área de empresa.
+- **Agujero de ruteo:** `/home`, `/route`, `/jobs` y `/profile` no figuraban en
+  el mapa de áreas del proxy, así que la protección por rol dependía sólo del
+  guard del layout. Se reemplazó `ROLE_PREFIX` por `ROLE_AREAS` (lista por rol).
+
+### Funcionalidad nueva
+
+- **Equipo:** ascender ya no saca del equipo ni libera órdenes · botón "Volver a
+  instalador" en el panel de coordinadores · ambos cambios notifican a la
+  persona (y eso dispara el push).
+- **Ficha del instalador:** ruta `/team/[installerId]`. Los nombres de
+  instaladores ahora llevan ahí desde tablero, roster, ausencias y postulaciones;
+  el chat pasó a ser un botón dentro de la ficha.
+- **Proyectos:** fila de 6 métricas · filtros por estado en chips · archivar /
+  desarchivar (reemplaza al "cancelar" pedido: no borra nada y es reversible).
+- **F5 automático:** los boundaries de error recargan una sola vez, con guarda de
+  10 s para no entrar en bucle si el error es determinístico
+  (`lib/use-auto-reload.ts`).
+
+### Decisiones que conviene recordar
+
+- **"Demorado" no es un estado guardado**: se deriva en
+  `lib/domain/project-health.ts` (proyecto activo + fecha de fin pasada + puntos
+  sin terminar). Mismo criterio que el semáforo del tablero.
+- **Archivar es ortogonal al estado**, no un estado más: un proyecto archivado
+  conserva si estaba activo, pausado o terminado.
+- **El email del instalador no se puede mostrar**: vive sólo en `auth.users` y
+  `profiles` no lo espeja. Requiere migración (columna + backfill + trigger de
+  alta). Pendiente de decisión.
+- **Las otras empresas de un instalador no se muestran**: la RLS de
+  `company_installers` acota a la propia empresa y exponerlas cruzaría datos
+  entre inquilinos. Pendiente de decisión de producto.
+
+### Verificación
+
+Type-check OK · lint 0 errores · **87 tests en 16 archivos** · `pnpm build` OK
+con **27 rutas**. **NO se probó en el navegador**: las pantallas piden login y
+el asistente no puede ingresar contraseñas. Falta ejercitar a mano todo lo de
+arriba, sobre todo el bug del celular (entrar como instalador y refrescar varias
+veces).
+
+Hay un checklist de repaso completo por rol en
+[`QA-CHECKLIST.md`](QA-CHECKLIST.md).
+
+---
+
+## PUNTO DE REANUDACIÓN — blueprint de expansión EN PRODUCCIÓN (`main`, 2026-07-27)
+
+> **Los 17 pasos de `BLUEPRINT-EXPANSION.md` están completos, mergeados a `main`
+> y deployados.** `rama1` se fusionó por fast-forward (commit `959d4b5`) y el
+> deploy de producción `dpl_vUPaDPKzAzafgLscyjpixPE8oNvL` está en READY sobre
+> https://saasinstalaciones.vercel.app. `main` y `rama1` apuntan al mismo commit.
+
+### Lo que falta hacer
+
+1. ~~**Actualizar dependencias**~~ — **HECHO.** Ver "Bump de dependencias" abajo:
+   qué se cambió y por qué difiere del plan que estaba escrito acá.
+
+3. ~~**Merge a `main` + deploy**~~ — **HECHO.** Build de Vercel OK con Next 16.2.12
+   y 26 rutas. Smoke test contra producción: `/login` da 200 y `/dashboard`,
+   `/orders`, `/team` y `/tasks` redirigen 307 a `/login?next=…`, o sea que el
+   Proxy sigue protegiendo las rutas después del bump.
+
+2. **PENDIENTE — probar a mano la interacción de la UI.** Se deployó **sin** esta
+   verificación, por decisión explícita. Sigue valiendo lo de abajo, ahora
+   contra producción en vez de local. Durante toda la sesión los clicks no
    funcionaron en el navegador de pruebas: se comprobó que **los componentes cliente
    no hidratan ahí** (los botones no tienen props de React). No es un bug del
    código —la lógica se verificó por otras vías— pero conviene ejercitar a mano:

@@ -6,6 +6,7 @@ import { fetchAllSites } from "@/lib/data/sites";
 import { SitesTable } from "@/components/company/sites-table";
 import { ManageInstallationsDialog } from "@/components/company/manage-installations-dialog";
 import { EditProjectDialog } from "@/components/company/edit-project-dialog";
+import { ArchiveProjectButton } from "@/components/company/archive-project-button";
 import { PROJECT_STATUS } from "@/lib/domain/status";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,7 +23,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   ]);
   const supabase = await createClient();
   const [{ data: project }, sites, { data: orderAmounts }, clients, coordinators, user] = await Promise.all([
-    supabase.from("projects").select("id, name, client_name, client_id, coordinator_id, description, status, starts_at, ends_at, country, zones, planned_installations, billing_mode, contract_amount, currency").eq("id", id).single(),
+    supabase.from("projects").select("id, name, client_name, client_id, coordinator_id, description, status, starts_at, ends_at, country, zones, planned_installations, billing_mode, contract_amount, currency, archived_at").eq("id", id).single(),
     fetchAllSites(supabase, id),
     supabase.from("work_orders").select("status, amount").eq("project_id", id).neq("status", "cancelada"),
     fetchClients(supabase),
@@ -66,6 +67,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             billingMode: project.billing_mode, contractAmount: project.contract_amount,
             currency: project.currency,
           }} />
+          <ArchiveProjectButton projectId={project.id} archived={Boolean(project.archived_at)} name={project.name} />
           <ManageInstallationsDialog projectId={project.id} country={project.country} zones={project.zones} planned={project.planned_installations} activeCount={activeSites.length} archivedCount={archivedCount} />
         </div>
       </div>

@@ -19,7 +19,7 @@ export default async function ProjectsPage() {
   // RLS filtra por empresa: no hace falta (ni conviene) filtrar acá.
   const { data: projects } = await supabase
     .from("projects")
-    .select("id, name, client_name, status, starts_at, created_at")
+    .select("id, name, client_name, status, starts_at, ends_at, archived_at, created_at")
     .order("created_at", { ascending: false });
 
   // Conteo de puntos por proyecto para el resumen de cada tarjeta.
@@ -68,6 +68,8 @@ export default async function ProjectsPage() {
             name: project.name,
             clientName: project.client_name ?? "",
             status: project.status,
+            endsAt: project.ends_at,
+            archivedAt: project.archived_at,
             total: siteStats[project.id]?.total ?? 0,
             done: siteStats[project.id]?.done ?? 0,
           }))}

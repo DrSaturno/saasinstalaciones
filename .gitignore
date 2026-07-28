@@ -26,6 +26,13 @@
 # misc
 .DS_Store
 *.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+service-account*.json
+secrets/
+private/
 
 # debug
 npm-debug.log*
@@ -43,3 +50,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Ruflo / Claude Flow runtime data
+/.claude-flow/
+/.swarm/

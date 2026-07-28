@@ -79,7 +79,7 @@ export function RosterTable({
   const Row = ({ m }: { m: RosterMember }) => (
     <TableRow>
       <TableCell>
-        <Link href={`/messages/${m.installerId}`} className="font-medium hover:text-primary">
+        <Link href={`/team/${m.installerId}`} className="font-medium hover:text-primary">
           {m.name}
         </Link>
       </TableCell>

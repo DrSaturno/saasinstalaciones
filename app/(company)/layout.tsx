@@ -37,7 +37,7 @@ export default async function CompanyLayout({
       locale={user.locale}
       showNotifications
     >
-      <ServiceWorkerRegister />
+      <ServiceWorkerRegister userId={user.id} />
       {children}
     </AppShell>
   );

@@ -31,7 +31,7 @@ export default async function InstallerLayout({
       locale={user.locale}
       showNotifications
     >
-      <ServiceWorkerRegister />
+      <ServiceWorkerRegister userId={user.id} />
       <SyncIndicator />
       {children}
     </AppShell>

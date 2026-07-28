@@ -23,7 +23,21 @@ export const projectInputSchema = z
   .object({
     name: z.string().trim().min(2).max(150),
     clientId: z.string().uuid(),
-    coordinatorId: z.string().uuid(),
+    // Opcional: un proyecto puede nacer sin coordinador y asignarse después.
+    // La columna en la base es nullable; exigirlo acá dejaba a la empresa sin
+    // poder crear proyectos cuando todavía no hay ningún coordinador cargado.
+    coordinatorId: z
+      .string()
+      .trim()
+      .transform((value) => value || null)
+      .refine(
+        (value) =>
+          value === null ||
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+            value,
+          ),
+        { message: "invalidCoordinator" },
+      ),
     description: z.string().trim().max(2000),
     startsAt: optionalDate,
     endsAt: optionalDate,

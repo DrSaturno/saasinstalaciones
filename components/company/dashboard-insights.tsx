@@ -29,7 +29,7 @@ export function DashboardInsights({ regions, installers }: Pick<DashboardOvervie
             <div key={installer.id} className="border-b px-4 py-3 last:border-b-0">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
-                  <Link href={`/messages/${installer.id}`} className="truncate text-[15px] font-semibold hover:text-primary">{installer.name}</Link>
+                  <Link href={`/team/${installer.id}`} className="truncate text-[15px] font-semibold hover:text-primary">{installer.name}</Link>
                   <span className="shrink-0 font-mono text-xs text-muted-foreground">★ {installer.rating.toFixed(1)}</span>
                 </div>
                 <Badge variant={installer.available ? "default" : "outline"} className="shrink-0">{installer.available ? t("available") : t("unavailable")}</Badge>

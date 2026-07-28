@@ -225,6 +225,7 @@ export interface Database {
           billing_mode: BillingMode;
           contract_amount: number | null;
           currency: OrderCurrency;
+          archived_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -245,6 +246,7 @@ export interface Database {
           billing_mode?: BillingMode;
           contract_amount?: number | null;
           currency?: OrderCurrency;
+          archived_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -866,6 +868,10 @@ export interface Database {
       };
       promote_installer_to_coordinator: {
         Args: { p_installer_id: string };
+        Returns: void;
+      };
+      demote_coordinator_to_installer: {
+        Args: { p_coordinator_id: string };
         Returns: void;
       };
       publish_announcement: {

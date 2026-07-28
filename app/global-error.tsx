@@ -1,5 +1,7 @@
 "use client";
 
+import { useAutoReloadOnError } from "@/lib/use-auto-reload";
+
 /*
  * Fallback de último recurso: se activa si falla el propio layout raíz, por lo
  * que debe renderizar su propio <html>/<body> y NO tiene el provider de
@@ -27,6 +29,8 @@ function readLocale(): "es" | "pt" {
 
 export default function GlobalError({ reset }: { reset: () => void }) {
   const c = COPY[readLocale()];
+
+  useAutoReloadOnError();
 
   return (
     <html lang="es">

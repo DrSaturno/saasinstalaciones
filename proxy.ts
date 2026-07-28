@@ -11,12 +11,18 @@ const ROLE_HOME: Record<UserRole, string> = {
   installer: "/home",
 };
 
-const ROLE_PREFIX: Record<UserRole, string> = {
-  platform_admin: "/master",
-  company_manager: "/dashboard",
-  coordinator: "/dashboard",
-  installer: "/tasks",
+/**
+ * Área propia de cada rol. `/messages` queda deliberadamente afuera: es
+ * compartida entre empresa, coordinación e instalador.
+ */
+const ROLE_AREAS: Record<UserRole, readonly string[]> = {
+  platform_admin: ["/master"],
+  company_manager: ["/dashboard"],
+  coordinator: ["/dashboard"],
+  installer: ["/home", "/tasks", "/route", "/jobs", "/profile"],
 };
+
+const ALL_AREAS = Object.values(ROLE_AREAS).flat();
 
 // Rutas públicas (no requieren sesión).
 const PUBLIC_PATHS = ["/", "/login"];
@@ -30,6 +36,22 @@ const isPublic = (path: string) =>
  */
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
+
+  /**
+   * Redirige conservando las cookies que Supabase acaba de escribir.
+   *
+   * `getUser()` puede rotar el token de sesión y, cuando lo hace, deja las
+   * cookies nuevas en `response`. Devolver un `NextResponse.redirect` recién
+   * creado las descarta: el navegador se queda con el token viejo, ya rotado, y
+   * la sesión queda inconsistente. Como el login termina justamente en un
+   * redirect, ahí es donde más duele — incluso puede quedar mezclada con restos
+   * de la sesión anterior en el mismo navegador.
+   */
+  const redirectKeepingSession = (url: URL) => {
+    const redirect = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+    return redirect;
+  };
 
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -68,7 +90,7 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", path);
-    return NextResponse.redirect(url);
+    return redirectKeepingSession(url);
   }
 
   // Con sesión: resolvemos el rol.
@@ -83,7 +105,7 @@ export async function proxy(request: NextRequest) {
     // Usuario sin perfil (estado inconsistente): a login limpio.
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    return NextResponse.redirect(url);
+    return redirectKeepingSession(url);
   }
 
   const home = ROLE_HOME[role];
@@ -102,16 +124,16 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = home;
     url.search = "";
-    return NextResponse.redirect(url);
+    return redirectKeepingSession(url);
   }
 
   // Intenta entrar a un área que no es la suya → a su home.
-  const allowedPrefix = ROLE_PREFIX[role];
-  const inSomeArea = Object.values(ROLE_PREFIX).some((p) => path.startsWith(p));
-  if (inSomeArea && !path.startsWith(allowedPrefix)) {
+  const inSomeArea = ALL_AREAS.some((prefix) => path.startsWith(prefix));
+  const inOwnArea = ROLE_AREAS[role].some((prefix) => path.startsWith(prefix));
+  if (inSomeArea && !inOwnArea) {
     const url = request.nextUrl.clone();
     url.pathname = home;
-    return NextResponse.redirect(url);
+    return redirectKeepingSession(url);
   }
 
   return response;

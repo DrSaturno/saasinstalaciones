@@ -82,10 +82,13 @@ export function ProjectFormFields({
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="project-coordinator">{t("coordinator")}</Label>
-        <select id="project-coordinator" name="coordinatorId" defaultValue={fixedCoordinatorId ?? defaults.coordinatorId} className={selectClass} required disabled={pending || !canManageFinance}>
-          <option value="">{t("selectCoordinator")}</option>
+        <select id="project-coordinator" name="coordinatorId" defaultValue={fixedCoordinatorId ?? defaults.coordinatorId} className={selectClass} disabled={pending || !canManageFinance}>
+          <option value="">{t("noCoordinator")}</option>
           {coordinators.map((coordinator) => <option key={coordinator.id} value={coordinator.id}>{coordinator.name}</option>)}
         </select>
+        <p className="text-xs text-muted-foreground">
+          {coordinators.length === 0 ? t("noCoordinatorsYet") : t("coordinatorOptional")}
+        </p>
         {!canManageFinance ? <input type="hidden" name="coordinatorId" value={fixedCoordinatorId ?? defaults.coordinatorId} /> : null}
       </div>
 
