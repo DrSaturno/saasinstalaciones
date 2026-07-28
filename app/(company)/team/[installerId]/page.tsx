@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MessageSquare, Phone, MapPin, CalendarDays } from "lucide-react";
@@ -54,9 +55,20 @@ export default async function InstallerProfilePage({
       <div className="mt-4 rounded-xl border bg-card p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-primary-soft text-xl font-semibold">
-              {initials || "?"}
-            </div>
+            {profile.avatarUrl ? (
+              <Image
+                src={profile.avatarUrl}
+                alt=""
+                width={128}
+                height={128}
+                unoptimized
+                className="size-16 shrink-0 rounded-full border object-cover"
+              />
+            ) : (
+              <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-primary-soft text-xl font-semibold">
+                {initials || "?"}
+              </div>
+            )}
             <div>
               <h1 className="text-2xl font-bold">{profile.name}</h1>
               <div className="mt-1 flex flex-wrap items-center gap-2">

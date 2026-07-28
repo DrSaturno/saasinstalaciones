@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { ArrowUpCircle } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -79,9 +80,21 @@ export function RosterTable({
   const Row = ({ m }: { m: RosterMember }) => (
     <TableRow>
       <TableCell>
-        <Link href={`/team/${m.installerId}`} className="font-medium hover:text-primary">
-          {m.name}
-        </Link>
+        <span className="inline-flex items-center gap-2 align-middle">
+          {m.avatarUrl ? (
+            <Image
+              src={m.avatarUrl}
+              alt=""
+              width={56}
+              height={56}
+              unoptimized
+              className="size-7 shrink-0 rounded-full border object-cover"
+            />
+          ) : null}
+          <Link href={`/team/${m.installerId}`} className="font-medium hover:text-primary">
+            {m.name}
+          </Link>
+        </span>
         {m.isCoordinator ? (
           <Badge variant="secondary" className="ml-2 align-middle">
             {t("coordinatorBadge")}

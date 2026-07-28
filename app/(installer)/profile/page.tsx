@@ -8,6 +8,7 @@ import { StarRating } from "@/components/shared/star-rating";
 import { AvailabilitySettings } from "@/components/installer/availability-settings";
 import { CoverageSettings } from "@/components/installer/coverage-settings";
 import { Badge } from "@/components/ui/badge";
+import { AvatarUpload } from "@/components/installer/avatar-upload";
 import {
   Card,
   CardContent,
@@ -26,10 +27,15 @@ export default async function InstallerProfilePage() {
   if (!isInstallerArea(user.role)) redirect(ROLE_HOME[user.role]);
 
   const supabase = await createClient();
-  const [reputation, availability] = await Promise.all([
+  const [reputation, availability, { data: profile }] = await Promise.all([
     fetchInstallerReputation(supabase, user.id),
     fetchInstallerAvailability(supabase, user.id),
+    supabase.from("profiles").select("avatar_path").eq("id", user.id).single(),
   ]);
+
+  const avatarUrl = profile?.avatar_path
+    ? supabase.storage.from("avatars").getPublicUrl(profile.avatar_path).data.publicUrl
+    : null;
 
   if (!reputation) {
     return (
@@ -58,7 +64,17 @@ export default async function InstallerProfilePage() {
         </Badge>
       </div>
 
-      <Card className="mt-6 bg-primary-soft/25">
+      <Card className="mt-6">
+        <CardContent>
+          <AvatarUpload
+            userId={user.id}
+            fullName={user.fullName}
+            publicUrl={avatarUrl}
+          />
+        </CardContent>
+      </Card>
+
+      <Card className="mt-4 bg-primary-soft/25">
         <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-medium text-muted-foreground">

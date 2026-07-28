@@ -8,6 +8,8 @@ import { EditSiteDialog } from "@/components/company/edit-site-dialog";
 import { SiteLifecycleActions } from "@/components/company/site-lifecycle-actions";
 import { SiteFiles } from "@/components/company/site-files";
 import { fetchSiteAttachments } from "@/lib/data/site-attachments";
+import { fetchSiteGallery } from "@/lib/data/site-gallery";
+import { SiteGallery } from "@/components/company/site-gallery";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,11 +20,12 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
   const { id: projectId, siteId } = await params;
   const [t, format, user] = await Promise.all([getTranslations("SiteDetail"), getFormatter(), getCurrentUser()]);
   const supabase = await createClient();
-  const [{ data: site }, { data: project }, { data: orders }, attachments] = await Promise.all([
+  const [{ data: site }, { data: project }, { data: orders }, attachments, gallery] = await Promise.all([
     supabase.from("sites").select("id, company_id, name, address, city, state, zone, lat, lng, status, external_ref, archived_at, contact_name, contact_phone, contact_email, opening_hours, access_notes, parking_notes, technical_notes, risk_notes, permanent_notes").eq("id", siteId).eq("project_id", projectId).single(),
     supabase.from("projects").select("id, name, country, zones").eq("id", projectId).single(),
     supabase.from("work_orders").select("id, order_number, title, status, scheduled_date, amount, currency, created_at").eq("site_id", siteId).order("created_at", { ascending: false }),
     fetchSiteAttachments(supabase, siteId),
+    fetchSiteGallery(supabase, siteId),
   ]);
   if (!site || !project) notFound();
 
@@ -62,6 +65,10 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         {[{ title: t("access"), value: site.access_notes }, { title: t("parking"), value: site.parking_notes }, { title: t("technical"), value: site.technical_notes }, { title: t("risks"), value: site.risk_notes }, { title: t("permanentNotes"), value: site.permanent_notes }].filter((item) => item.value).map((item) => <Card key={item.title}><CardHeader><CardTitle>{item.title}</CardTitle></CardHeader><CardContent><p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{item.value}</p></CardContent></Card>)}
+      </div>
+
+      <div className="mt-4">
+        <SiteGallery siteId={site.id} items={gallery} canDelete={user?.role === "company_manager" || user?.role === "coordinator"} />
       </div>
 
       <div className="mt-4"><SiteFiles key={attachments.map((attachment) => attachment.id).join(":")} companyId={site.company_id} siteId={site.id} initial={attachments} /></div>

@@ -101,6 +101,7 @@ export interface Database {
           full_name: string;
           phone: string | null;
           locale: Locale;
+          avatar_path: string | null;
           created_at: string;
         };
         Insert: {
@@ -110,6 +111,7 @@ export interface Database {
           full_name?: string;
           phone?: string | null;
           locale?: Locale;
+          avatar_path?: string | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;

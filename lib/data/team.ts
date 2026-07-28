@@ -9,6 +9,7 @@ export type RosterMember = {
   name: string;
   /** Coordinador: sigue en el equipo pero ya no se le ofrece "Ascender". */
   isCoordinator: boolean;
+  avatarUrl: string | null;
   status: RosterStatus;
   joinedAt: string | null;
   zones: string[];
@@ -101,7 +102,7 @@ export async function fetchRoster(
 
   const [{ data: profiles }, { data: installers }, { data: orders }] =
     await Promise.all([
-      supabase.from("profiles").select("id, full_name, role").in("id", ids),
+      supabase.from("profiles").select("id, full_name, role, avatar_path").in("id", ids),
       supabase
         .from("installers")
         .select("id, zones, rating_avg, rating_count")
@@ -132,6 +133,10 @@ export async function fetchRoster(
       installerId: r.installer_id,
       name: profile?.full_name ?? t("installer"),
       isCoordinator: profile?.role === "coordinator",
+      avatarUrl: profile?.avatar_path
+        ? supabase.storage.from("avatars").getPublicUrl(profile.avatar_path).data
+            .publicUrl
+        : null,
       status: r.status,
       joinedAt: r.joined_at,
       zones: inst?.zones ?? [],

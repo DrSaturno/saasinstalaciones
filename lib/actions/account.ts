@@ -1,7 +1,9 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
+import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 const schema = z
@@ -72,4 +74,55 @@ export async function changePassword(
   }
 
   return { error: null, ok: true };
+}
+
+const avatarSchema = z.object({
+  path: z.string().trim().min(1).max(500).nullable(),
+});
+
+/**
+ * Guarda (o quita) la foto de perfil de quien está logueado.
+ *
+ * El archivo lo sube el navegador directo al bucket público `avatars`, dentro
+ * de la carpeta del propio usuario — las políticas de Storage impiden escribir
+ * en la de otro. Acá sólo se registra la ruta, validando que sea suya.
+ */
+export async function saveAvatar(path: string | null): Promise<PasswordState> {
+  const t = await getTranslations("Errors");
+  const parsed = avatarSchema.safeParse({ path });
+  if (!parsed.success) return { error: t("invalidData") };
+
+  try {
+    const user = await getCurrentUser();
+    if (!user) return { error: t("accessDenied") };
+
+    // Defensa en profundidad: la ruta tiene que estar en la carpeta propia.
+    if (parsed.data.path && !parsed.data.path.startsWith(`${user.id}/`)) {
+      return { error: t("invalidData") };
+    }
+
+    const supabase = await createClient();
+    const { data: previous } = await supabase
+      .from("profiles")
+      .select("avatar_path")
+      .eq("id", user.id)
+      .single();
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ avatar_path: parsed.data.path })
+      .eq("id", user.id);
+    if (error) return { error: t("operation") };
+
+    // La foto anterior deja de servir para algo: se borra del bucket.
+    if (previous?.avatar_path && previous.avatar_path !== parsed.data.path) {
+      await supabase.storage.from("avatars").remove([previous.avatar_path]);
+    }
+
+    revalidatePath("/profile");
+    revalidatePath("/home");
+    return { error: null, ok: true };
+  } catch {
+    return { error: t("unexpected") };
+  }
 }

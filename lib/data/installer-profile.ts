@@ -23,6 +23,7 @@ export type InstallerProfile = {
   id: string;
   name: string;
   phone: string | null;
+  avatarUrl: string | null;
   // El email no está en el modelo: vive sólo en auth.users, que no es
   // consultable desde la app. Mostrarlo pide una migración que lo espeje en
   // `profiles` al crearse la cuenta.
@@ -58,7 +59,7 @@ export async function fetchInstallerProfile(
     await Promise.all([
       supabase
         .from("profiles")
-        .select("id, full_name, phone, created_at")
+        .select("id, full_name, phone, created_at, avatar_path")
         .eq("id", installerId)
         .maybeSingle(),
       supabase
@@ -118,6 +119,10 @@ export async function fetchInstallerProfile(
     id: installerId,
     name: profile.full_name || t("installer"),
     phone: profile.phone,
+    avatarUrl: profile.avatar_path
+      ? supabase.storage.from("avatars").getPublicUrl(profile.avatar_path).data
+          .publicUrl
+      : null,
     memberSince: roster.joined_at ?? profile.created_at,
     rosterStatus: roster.status,
     zones: installer?.zones ?? [],

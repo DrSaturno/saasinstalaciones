@@ -71,13 +71,15 @@ Estado: ⬜ pendiente · 🔶 en curso · ✅ hecho
   (`/coordination/[id]`): la orden desde adentro — datos, locación, historial,
   adjuntos, incidencias y las acciones que le tocan según estado.
 
-## FASE 2 — Imágenes y adjuntos
+## FASE 2 — Imágenes y adjuntos ✅ COMPLETA
 
-- ⬜ **2.1 Toda imagen de una orden queda ligada a su LOCACIÓN.** Galería en la
+- ✅ **2.1 Toda imagen de una orden queda ligada a su LOCACIÓN.** Galería en la
   ficha de locación que reúna adjuntos de órdenes + fotos de avances de esa
   locación. Con opción de eliminar (gerente y coordinador del proyecto).
-- ⬜ **2.2 Foto de perfil** para instalador y coordinador: bucket `avatars`,
-  subida desde /profile, se muestra en perfil, roster, ficha y chat.
+- ✅ **2.2 Foto de perfil** para instalador y coordinador: bucket público
+  `avatars` (escritura acotada a la carpeta propia por política de Storage),
+  subida directa desde el navegador en /profile, y se muestra en perfil, roster
+  y ficha. Migración `20260728000007_avatars.sql`.
 
 ## FASE 3 — Locaciones
 

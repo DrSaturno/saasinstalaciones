@@ -519,6 +519,16 @@
     "created": "Instalação criada",
     "updated": "Ficha atualizada"
   },
+  "SiteGallery": {
+    "title": "Histórico visual",
+    "help": "Todas as imagens e arquivos que passaram por este local, seja do cadastro de uma ordem ou de um progresso em obra.",
+    "empty": "Ainda não há imagens deste local.",
+    "fromOrder": "Anexo da ordem",
+    "fromUpdate": "Foto de progresso",
+    "delete": "Excluir",
+    "deleteConfirm": "Excluir esta imagem? O arquivo é apagado e não pode ser recuperado. O progresso no histórico é mantido.",
+    "deleted": "Imagem excluída"
+  },
   "SiteDetail": {
     "back": "← Voltar para {project}",
     "archived": "Arquivada",
@@ -700,6 +710,14 @@
     "history": "Histórico de candidaturas"
   },
   "Profile": {
+    "avatarAdd": "Adicionar foto",
+    "avatarChange": "Trocar foto",
+    "avatarRemove": "Remover foto",
+    "avatarSaved": "Foto de perfil atualizada",
+    "avatarRemoved": "Foto de perfil removida",
+    "avatarFailed": "Não foi possível enviar a foto. Tente de novo.",
+    "avatarOnlyImages": "O arquivo precisa ser uma imagem.",
+    "avatarTooBig": "A imagem não pode pesar mais de 5 MB.",
     "title": "Meu perfil",
     "loadError": "Não foi possível carregar seu perfil de instalador.",
     "available": "Disponível",
