@@ -83,18 +83,18 @@ insert into public.clients (id, company_id, name) values
   ('aaaaaaaa-0000-0000-0000-0000000000c2', 'aaaaaaaa-0000-0000-0000-00000000000b', 'Cliente de B');
 
 insert into public.sites (id, project_id, company_id, name) values
-  ('aaaaaaaa-0000-0000-0000-0000000000s1', 'aaaaaaaa-0000-0000-0000-0000000000a1', 'aaaaaaaa-0000-0000-0000-00000000000a', 'Sitio A1'),
-  ('aaaaaaaa-0000-0000-0000-0000000000s2', 'aaaaaaaa-0000-0000-0000-0000000000a2', 'aaaaaaaa-0000-0000-0000-00000000000a', 'Sitio A2'),
-  ('aaaaaaaa-0000-0000-0000-0000000000s3', 'aaaaaaaa-0000-0000-0000-0000000000b1', 'aaaaaaaa-0000-0000-0000-00000000000b', 'Sitio B1');
+  ('aaaaaaaa-0000-0000-0000-0000000000d1', 'aaaaaaaa-0000-0000-0000-0000000000a1', 'aaaaaaaa-0000-0000-0000-00000000000a', 'Sitio A1'),
+  ('aaaaaaaa-0000-0000-0000-0000000000d2', 'aaaaaaaa-0000-0000-0000-0000000000a2', 'aaaaaaaa-0000-0000-0000-00000000000a', 'Sitio A2'),
+  ('aaaaaaaa-0000-0000-0000-0000000000d3', 'aaaaaaaa-0000-0000-0000-0000000000b1', 'aaaaaaaa-0000-0000-0000-00000000000b', 'Sitio B1');
 
 -- Orden en A1 (P la ve como coordinador) y en A2 (P NO la coordina).
 -- Orden en B asignada a P (la ve como instalador) y otra en B ajena a P por
 -- completo — ésa es el control de fuga: ninguna membresía debería mostrársela.
 insert into public.work_orders (id, order_number, site_id, project_id, company_id, title, assigned_installer_id) values
-  ('aaaaaaaa-0000-0000-0000-0000000000w1', 'TESTFUGA-A1', 'aaaaaaaa-0000-0000-0000-0000000000s1', 'aaaaaaaa-0000-0000-0000-0000000000a1', 'aaaaaaaa-0000-0000-0000-00000000000a', 'Orden A1', null),
-  ('aaaaaaaa-0000-0000-0000-0000000000w2', 'TESTFUGA-A2', 'aaaaaaaa-0000-0000-0000-0000000000s2', 'aaaaaaaa-0000-0000-0000-0000000000a2', 'aaaaaaaa-0000-0000-0000-00000000000a', 'Orden A2', null),
-  ('aaaaaaaa-0000-0000-0000-0000000000w3', 'TESTFUGA-B1', 'aaaaaaaa-0000-0000-0000-0000000000s3', 'aaaaaaaa-0000-0000-0000-0000000000b1', 'aaaaaaaa-0000-0000-0000-00000000000b', 'Orden B asignada a P', 'aaaaaaaa-0000-0000-0000-0000000000f1'),
-  ('aaaaaaaa-0000-0000-0000-0000000000w4', 'TESTFUGA-B2', 'aaaaaaaa-0000-0000-0000-0000000000s3', 'aaaaaaaa-0000-0000-0000-0000000000b1', 'aaaaaaaa-0000-0000-0000-00000000000b', 'Orden B ajena a P', null);
+  ('aaaaaaaa-0000-0000-0000-0000000000e1', 'TESTFUGA-A1', 'aaaaaaaa-0000-0000-0000-0000000000d1', 'aaaaaaaa-0000-0000-0000-0000000000a1', 'aaaaaaaa-0000-0000-0000-00000000000a', 'Orden A1', null),
+  ('aaaaaaaa-0000-0000-0000-0000000000e2', 'TESTFUGA-A2', 'aaaaaaaa-0000-0000-0000-0000000000d2', 'aaaaaaaa-0000-0000-0000-0000000000a2', 'aaaaaaaa-0000-0000-0000-00000000000a', 'Orden A2', null),
+  ('aaaaaaaa-0000-0000-0000-0000000000e3', 'TESTFUGA-B1', 'aaaaaaaa-0000-0000-0000-0000000000d3', 'aaaaaaaa-0000-0000-0000-0000000000b1', 'aaaaaaaa-0000-0000-0000-00000000000b', 'Orden B asignada a P', 'aaaaaaaa-0000-0000-0000-0000000000f1'),
+  ('aaaaaaaa-0000-0000-0000-0000000000e4', 'TESTFUGA-B2', 'aaaaaaaa-0000-0000-0000-0000000000d3', 'aaaaaaaa-0000-0000-0000-0000000000b1', 'aaaaaaaa-0000-0000-0000-00000000000b', 'Orden B ajena a P', null);
 
 -- ---------------------------------------------------------------------------
 -- Simular la sesión de P
@@ -135,15 +135,15 @@ select n, msg from (
   union all
   select 4, msg from is(
     (select count(*)::integer from public.work_orders where id in (
-      'aaaaaaaa-0000-0000-0000-0000000000w1', 'aaaaaaaa-0000-0000-0000-0000000000w2',
-      'aaaaaaaa-0000-0000-0000-0000000000w3', 'aaaaaaaa-0000-0000-0000-0000000000w4'
+      'aaaaaaaa-0000-0000-0000-0000000000e1', 'aaaaaaaa-0000-0000-0000-0000000000e2',
+      'aaaaaaaa-0000-0000-0000-0000000000e3', 'aaaaaaaa-0000-0000-0000-0000000000e4'
     )),
     2,
     'P ve exactamente las 2 órdenes que le corresponden (A1 coordinada + B1 asignada)'
   ) msg
   union all
   select 5, msg from is(
-    (select count(*)::integer from public.work_orders where id = 'aaaaaaaa-0000-0000-0000-0000000000w4'),
+    (select count(*)::integer from public.work_orders where id = 'aaaaaaaa-0000-0000-0000-0000000000e4'),
     0,
     'P NO ve la orden de B que no le está asignada, pese a instalar ahí'
   ) msg
