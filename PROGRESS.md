@@ -1,5 +1,107 @@
 # Instala Pro — Estado del proyecto
 
+## PUNTO DE REANUDACIÓN — coordinador/instalador multi-empresa (2026-07-28)
+
+> **Trabajo en curso, a mitad del plan.** Si retomás esta sesión con otra IA:
+> leé esta sección completa antes de tocar nada. Hay un commit local sin
+> pushear y una migración ya aplicada a mano en producción.
+
+### Qué lo disparó
+
+Rogelio (instalador real) tiene un proyecto con 40 locaciones a su cargo como
+coordinador. Las 40 órdenes aparecían **también** en su bloque "Como
+instalador" (`/home`), donde no ejecuta ninguna — "Trabajos asignados: 64" y
+"Sin planificar: 64" eran exactamente el "Sin asignar: 64" del bloque
+coordinador, contado dos veces.
+
+**Causa:** el área instalador nunca filtraba por `assigned_installer_id` —
+confiaba en que RLS ya lo hacía. Cierto para un instalador puro, pero las
+policies de RLS se combinan con **OR**, y un coordinador tiene además
+`work_orders_coordinator_all`, que le da todas las órdenes de los proyectos que
+coordina. La misma query devolvía los dos conjuntos unidos.
+
+**Ya arreglado y pusheado** (commit `a71273a`, en `origin/main`): filtro
+explícito por `assigned_installer_id` en `lib/data/installer-home.ts`,
+`lib/data/tasks.ts` y `app/(installer)/route/page.tsx`. type-check, lint, 114
+tests y build OK en ese momento.
+
+### El problema de fondo (por qué esto se volvió un proyecto más grande)
+
+El usuario aclaró el caso real: **Rogelio puede ser coordinador en unas
+empresas e instalador en otras, y varias de cada una, todo simultáneo.** El
+modelo actual no lo permite:
+
+- `profiles.role` es **un solo rol global** (no por empresa).
+- `profiles.company_id` es **una sola empresa**.
+- Coordinar y ejecutar son hoy **mutuamente excluyentes** a nivel de cuenta.
+
+**Decisiones de producto ya tomadas por el usuario** (vía `AskUserQuestion`):
+1. Los roles son **excluyentes dentro de una empresa** (nunca ambos en la
+   misma) → la membresía es `(empresa, persona)` y el rol es un campo.
+2. Solo **coordinador e instalador** son multi-empresa. `company_manager`
+   sigue mono-empresa → **el área `app/(company)/` no se toca en este plan**.
+3. UI: **home unificado con N bloques**, uno por empresa-rol. Sin selector de
+   empresa activa, sin cookie de tenant.
+
+**El plan completo de 8 fases** (modelo de datos, helpers RLS nuevos, patrón de
+reescritura de las 22 policies afectadas, capa TypeScript, UI) está guardado en
+`C:\Users\nicol\.claude\plans\unified-bubbling-ember.md` (ruta local del
+usuario, fuera del repo — si esa sesión no está disponible, este resumen es la
+referencia). Hallazgo clave que guía todo el enfoque: **la mitad instalador ya
+es multi-empresa** — `company_installers(company_id, installer_id, status)` ya
+es la tabla N:N, y `profiles.company_id` ya queda NULL para instaladores. El
+trabajo es llevar al coordinador al modelo que el instalador ya tiene, no
+rediseñar el sistema.
+
+### Estado de la implementación
+
+| Fase | Contenido | Estado |
+|---|---|---|
+| **1a** | Dos bugs vivos de RLS descubiertos durante el análisis (ver abajo) | **Migración aplicada a mano en producción por el usuario.** Commiteada localmente (`5b3228c`), **NO pusheada todavía** |
+| **0** | 3 queries SELECT de auditoría sobre prod (coordinadores con órdenes abiertas en su propia empresa / sin fila en el roster / sin ficha en `installers`) | **Pendiente.** El usuario decidió correrlas él mismo, no compartió resultados aún. Es el gate antes de seguir |
+| **1b** | `company_installers.role` + FK a `profiles` + índice + backfill + helpers `auth_companies()`/`auth_has_company_role()` | No empezado — espera resultado de Fase 0 |
+| 2–6b | Reescritura de policies, funciones RPC, capa TypeScript, UI, cutover | No empezado |
+
+### Los dos bugs vivos (fuera del plan principal, encontrados al auditar RLS)
+
+Migración `20260728000011_member_company_read_and_broadcast_role.sql` +
+test `supabase/tests/member_company_read.test.sql`. **Aplicada a mano en el
+SQL Editor de Supabase producción — confirmado por el usuario** (capturas: la
+policy de `broadcasts_installer_read` corrió con "Success. No rows returned").
+El test pgTAP **no pudo correr en ese contexto** (`function plan(integer) does
+not exist` — la extensión `pgtap` no está instalada en ese proyecto de
+Supabase). Esto no indica ningún problema con la migración: sólo que el test
+automatizado necesita `create extension if not exists pgtap;` primero, o
+correrse contra un stack local (`supabase test db`, requiere Docker + `supabase
+init`, que este repo todavía no tiene).
+
+1. **Ningún instalador podía leer `companies`.** `companies_member_read` pedía
+   `id = auth_company()`, y esa columna es NULL para instaladores. Rompía en
+   silencio: `fetchInstallerAvailability` devolvía `[]` siempre (tarjetas de
+   disponibilidad por empresa vacías en `/profile`), `company_name` vacío en
+   `/tasks`, sin nombre de empresa en anuncios.
+2. **Un coordinador veía `/jobs` vacío.** `broadcasts_installer_read` exigía
+   `auth_role() = 'installer'`. El gate real (`installer_can_read_broadcast`)
+   ya alcanza para excluir a quien no tiene ficha de instalador; el chequeo de
+   rol era redundante y lo dejaba afuera.
+
+**Efecto esperado y ya visible en prod:** `/profile` ahora muestra tarjetas de
+disponibilidad por empresa (antes vacías), los nombres de empresa aparecen en
+tareas y anuncios.
+
+### Próximo paso concreto
+
+1. Usuario corre las 3 queries de Fase 0 (están en el archivo de plan y se le
+   pasaron en el chat). Si el usuario tiene órdenes abiertas asignadas a sí
+   mismo en la empresa donde coordina, es una decisión de producto a tomar
+   antes de seguir (ver "Riesgos" del plan).
+2. Con eso resuelto: Fase 1b — agregar columna `role` a `company_installers`,
+   cambiar su FK de `installers(id)` a `profiles(id)`, crear los helpers
+   `auth_companies()` / `auth_has_company_role()` / `auth_coordinates_anywhere()`
+   sin todavía usarlos en ninguna policy (aditivo, cero riesgo).
+3. Pushear `5b3228c` a `origin/main` cuando el usuario lo pida (no se pushea
+   solo).
+
 ## PUNTO DE REANUDACIÓN — tanda de correcciones (2026-07-28)
 
 > **Sin commitear ni deployar.** Los cambios están en el working tree. Las dos
