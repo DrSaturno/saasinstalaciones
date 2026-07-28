@@ -31,14 +31,27 @@ export function stopHref(stop: RouteStop): string | null {
 }
 
 /**
- * Ruta completa: la primera parada es el origen, la última el destino y el
- * resto van como waypoints intermedios en orden.
+ * Ruta completa del día.
  *
- * Devuelve null si no hay al menos dos paradas ubicables — con una sola, el
- * link correcto es el de esa parada (stopHref), no una "ruta".
+ * Si el instalador cargó su dirección base, esa es el ORIGEN: el recorrido
+ * arranca de su casa o depósito, que es como sale realmente a la calle. Sin
+ * base, se cae al comportamiento anterior — la primera parada oficia de origen.
+ *
+ * La última parada es el destino y el resto van como waypoints en orden.
+ *
+ * Devuelve null si no hay al menos dos puntos ubicables — con uno solo, el link
+ * correcto es el de esa parada (stopHref), no una "ruta".
  */
-export function buildRouteUrl(stops: RouteStop[]): string | null {
-  const points = stops.map(stopLocation).filter((value): value is string => value !== null);
+export function buildRouteUrl(
+  stops: RouteStop[],
+  base?: RouteStop | null,
+): string | null {
+  const stopPoints = stops
+    .map(stopLocation)
+    .filter((value): value is string => value !== null);
+
+  const basePoint = base ? stopLocation(base) : null;
+  const points = basePoint ? [basePoint, ...stopPoints] : stopPoints;
   if (points.length < 2) return null;
 
   const origin = encodeURIComponent(points[0]);

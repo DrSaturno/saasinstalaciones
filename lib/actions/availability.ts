@@ -28,6 +28,8 @@ function revalidateAvailability() {
 
 const coverageSchema = z.object({
   zones: z.array(z.string().trim().min(2).max(80)).max(24),
+  baseAddress: z.string().trim().max(200),
+  baseCity: z.string().trim().max(120),
   baseLat: z.union([z.literal(""), z.coerce.number().min(-90).max(90)]).transform((v) => (v === "" ? null : v)),
   baseLng: z.union([z.literal(""), z.coerce.number().min(-180).max(180)]).transform((v) => (v === "" ? null : v)),
   serviceRadiusKm: z.union([z.literal(""), z.coerce.number().int().min(1).max(3000)]).transform((v) => (v === "" ? null : v)),
@@ -36,9 +38,11 @@ const coverageSchema = z.object({
 export type CoverageState = { error: string | null; ok?: boolean };
 
 /**
- * Cobertura del instalador: qué provincias trabaja y, opcionalmente, desde dónde
- * y hasta cuántos km. Es lo que decide qué búsquedas de la bolsa le aparecen
- * (ver la función broadcast_matches_installer). Sin provincias no ve ninguna.
+ * Cobertura del instalador: qué provincias trabaja y desde dónde sale.
+ *
+ * La base cumple dos funciones: decide qué búsquedas de la bolsa le aparecen
+ * (ver `broadcast_matches_installer`, que mide contra el radio) y es el punto de
+ * partida del recorrido en "Mi ruta". Sin provincias no ve ninguna búsqueda.
  */
 export async function saveCoverage(
   _prev: CoverageState,
@@ -47,6 +51,8 @@ export async function saveCoverage(
   const t = await getTranslations("Errors");
   const parsed = coverageSchema.safeParse({
     zones: formData.getAll("zones").map(String),
+    baseAddress: formData.get("baseAddress") ?? "",
+    baseCity: formData.get("baseCity") ?? "",
     baseLat: formData.get("baseLat") ?? "",
     baseLng: formData.get("baseLng") ?? "",
     serviceRadiusKm: formData.get("serviceRadiusKm") ?? "",
@@ -68,6 +74,8 @@ export async function saveCoverage(
       .from("installers")
       .update({
         zones: parsed.data.zones,
+        base_address: parsed.data.baseAddress || null,
+        base_city: parsed.data.baseCity || null,
         base_lat: parsed.data.baseLat,
         base_lng: parsed.data.baseLng,
         service_radius_km: parsed.data.serviceRadiusKm,
@@ -81,8 +89,18 @@ export async function saveCoverage(
   }
 }
 
+/**
+ * Reactiva la disponibilidad del instalador.
+ *
+ * Sólo admite ponerse DISPONIBLE. Ausentarse no es una decisión unilateral: hay
+ * que cargar una ausencia con fechas y justificación, y la empresa la aprueba
+ * (`addUnavailability` + `reviewUnavailability`). Si esto aceptara `false`, un
+ * instalador podría desaparecer de la agenda sin avisar cuándo ni por qué,
+ * que es justo lo que el circuito de ausencias evita.
+ */
 export async function setAvailabilityEnabled(enabled: boolean): Promise<Result> {
   const t = await getTranslations("Errors");
+  if (!enabled) return { error: t("useUnavailabilityFlow") };
   try {
     const user = await getCurrentUser();
     if (!user || !isInstallerArea(user.role)) return { error: t("accessDenied") };

@@ -95,19 +95,21 @@ Estado: ⬜ pendiente · 🔶 en curso · ✅ hecho
   y empujaba los botones. Ahora muestra 3 y "+N", con el detalle en el tooltip,
   y la columna de acciones no se comprime.
 
-## FASE 4 — UX instalador / coordinador
+## FASE 4 — UX instalador / coordinador ✅ COMPLETA
 
-- ⬜ **4.1 Dirección base para "Mi ruta".** El instalador carga en su perfil una
+- ✅ **4.1 Dirección base para "Mi ruta".** El instalador carga en su perfil una
   dirección punto de partida (columnas `installers.base_lat/lng` ya existen).
-  Mirar la lógica de `proyecto1` (InstallerRoute + zones) como referencia.
-  Definir geocodificación (Nominatim u opción similar sin key).
-- ⬜ **4.2 Ausencias anticipadas.** El flujo fechas + justificación + aprobación
-  de la empresa YA existe en DB (migración 20260725000003). Verificar de punta a
-  punta que el instalador cargue fechas/motivo desde su tablero y la empresa
-  apruebe; cerrar lo que falte.
-- ⬜ **4.3 Vista lista** (además de tarjetas) en "Mis órdenes" y "Coordinación",
+  Se agregaron `base_address`/`base_city` y "Mi ruta" los usa como ORIGEN.
+  proyecto1 no tenía base: usaba la primera parada como origen, así que esto lo
+  mejora. Sin geocodificación: Maps resuelve la dirección escrita, y si el
+  instalador carga lat/lng se prefieren esas.
+- ✅ **4.2 Ausencias anticipadas.** El flujo fechas + justificación + aprobación
+  de la empresa YA existía y funciona. LO QUE FALTABA: el toggle global dejaba
+  al instalador ponerse inactivo sin fechas, sin motivo y sin aprobación,
+  saltándose el circuito. Ahora `setAvailabilityEnabled` sólo admite reactivar.
+- ✅ **4.3 Vista lista** (además de tarjetas) en "Mis órdenes" y "Coordinación",
   reusando el ViewToggle de empresa.
-- ⬜ **4.4 Bolsa: el coordinador de la empresa no ve sus búsquedas.** El
+- ✅ **4.4 Bolsa: el coordinador de la empresa no ve sus búsquedas.** El
   matching hoy excluye a quienes están en el roster; el coordinador sigue en el
   roster, así que verificarlo y, si hace falta, excluir además por
   `profiles.company_id` en `broadcast_matches_installer`.

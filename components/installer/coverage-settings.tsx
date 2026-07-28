@@ -20,11 +20,15 @@ const initial: CoverageState = { error: null };
  */
 export function CoverageSettings({
   zones,
+  baseAddress,
+  baseCity,
   baseLat,
   baseLng,
   serviceRadiusKm,
 }: {
   zones: string[];
+  baseAddress: string | null;
+  baseCity: string | null;
   baseLat: number | null;
   baseLng: number | null;
   serviceRadiusKm: number | null;
@@ -82,6 +86,35 @@ export function CoverageSettings({
               ))}
             </div>
           </fieldset>
+
+          <div className="border-t pt-4">
+            <p className="text-sm font-medium">{t("baseTitle")}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("baseHelp")}</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="coverage-address">{t("baseAddress")}</Label>
+                <Input
+                  id="coverage-address"
+                  name="baseAddress"
+                  defaultValue={baseAddress ?? ""}
+                  maxLength={200}
+                  placeholder={t("baseAddressPlaceholder")}
+                  disabled={pending}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="coverage-city">{t("baseCity")}</Label>
+                <Input
+                  id="coverage-city"
+                  name="baseCity"
+                  defaultValue={baseCity ?? ""}
+                  maxLength={120}
+                  placeholder={t("baseCityPlaceholder")}
+                  disabled={pending}
+                />
+              </div>
+            </div>
+          </div>
 
           <div className="border-t pt-4">
             <p className="text-sm font-medium">{t("radiusTitle")}</p>

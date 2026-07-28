@@ -10,6 +10,7 @@ import { recordSurvey, transitionOrder } from "@/lib/actions/orders";
 import { ORDER_TRANSITIONS } from "@/lib/domain/transitions";
 import { allowedTransitions } from "@/lib/domain/order-rules";
 import { Textarea } from "@/components/ui/textarea";
+import { ViewToggle, useViewMode } from "@/components/shared/view-toggle";
 import { ORDER_STATUS } from "@/lib/domain/status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,8 @@ export function CoordinationBoard({
 }) {
   const t = useTranslations("Coordination");
   const statusT = useTranslations("Status");
+  const common = useTranslations("Common");
+  const [mode, setMode] = useViewMode("view:coordination", "board");
   const format = useFormatter();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -100,7 +103,8 @@ export function CoordinationBoard({
 
   return (
     <>
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
         <button
           type="button"
           onClick={() => setFilter("all")}
@@ -130,16 +134,29 @@ export function CoordinationBoard({
             <span className="font-mono">{counts.get(status)}</span>
           </button>
         ))}
+        </div>
+        <ViewToggle
+          value={mode}
+          onChange={setMode}
+          labels={{ list: common("viewList"), board: common("viewBoard") }}
+        />
       </div>
 
-      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+      <div className={mode === "board" ? "mt-4 grid gap-3 lg:grid-cols-2" : "mt-4 overflow-hidden rounded-xl border bg-card"}>
         {visible.length === 0 ? (
           <div className="rounded-xl border bg-card py-12 text-center">
             <p className="text-sm text-muted-foreground">{t("empty")}</p>
           </div>
         ) : (
           visible.map((order) => (
-            <div key={order.id} className="rounded-xl border bg-card p-4">
+            <div
+              key={order.id}
+              className={
+                mode === "board"
+                  ? "rounded-xl border bg-card p-4"
+                  : "border-b p-4 last:border-b-0"
+              }
+            >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="font-mono text-xs text-muted-foreground">{order.orderNumber}</p>

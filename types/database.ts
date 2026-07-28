@@ -127,6 +127,8 @@ export interface Database {
           available: boolean;
           base_lat: number | null;
           base_lng: number | null;
+          base_address: string | null;
+          base_city: string | null;
           service_radius_km: number | null;
         };
         Insert: {
@@ -138,6 +140,8 @@ export interface Database {
           available?: boolean;
           base_lat?: number | null;
           base_lng?: number | null;
+          base_address?: string | null;
+          base_city?: string | null;
           service_radius_km?: number | null;
         };
         Update: Partial<Database["public"]["Tables"]["installers"]["Insert"]>;

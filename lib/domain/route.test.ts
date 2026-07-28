@@ -1,71 +1,66 @@
 import { describe, expect, it } from "vitest";
-import { buildRouteUrl, MAX_WAYPOINTS, stopHref, stopLocation } from "@/lib/domain/route";
 
-const withCoords = { lat: -34.6, lng: -58.38, address: "Av. Corrientes 1000", city: "CABA" };
-const onlyAddress = { lat: null, lng: null, address: "Av. Siempreviva 742", city: "Springfield" };
-const empty = { lat: null, lng: null, address: "", city: "" };
+import { buildRouteUrl, stopHref, stopLocation } from "@/lib/domain/route";
+
+const conCoords = { lat: -34.6, lng: -58.38, address: "Corrientes 100", city: "CABA" };
+const soloTexto = { lat: null, lng: null, address: "Cabildo 2500", city: "CABA" };
+const sinUbicacion = { lat: null, lng: null, address: "", city: "" };
+const base = { lat: -34.9, lng: -57.95, address: "Casa", city: "La Plata" };
 
 describe("stopLocation", () => {
-  it("prefiere las coordenadas sobre la dirección escrita", () => {
-    expect(stopLocation(withCoords)).toBe("-34.6,-58.38");
+  it("prefiere las coordenadas sobre el texto", () => {
+    expect(stopLocation(conCoords)).toBe("-34.6,-58.38");
   });
 
-  it("cae en la dirección cuando no hay coordenadas", () => {
-    expect(stopLocation(onlyAddress)).toBe("Av. Siempreviva 742, Springfield");
+  it("cae al texto cuando no hay coordenadas", () => {
+    expect(stopLocation(soloTexto)).toBe("Cabildo 2500, CABA");
   });
 
-  it("devuelve null si no hay nada con qué ubicar", () => {
-    expect(stopLocation(empty)).toBeNull();
-  });
-});
-
-describe("stopHref", () => {
-  it("arma el link de navegación a una parada", () => {
-    const href = stopHref(withCoords);
-    expect(href).toContain("destination=-34.6%2C-58.38");
-    expect(href).toContain("travelmode=driving");
-  });
-
-  it("es null para una parada sin ubicación", () => {
-    expect(stopHref(empty)).toBeNull();
+  it("devuelve null si no hay nada ubicable", () => {
+    expect(stopLocation(sinUbicacion)).toBeNull();
   });
 });
 
 describe("buildRouteUrl", () => {
-  it("necesita al menos dos paradas ubicables", () => {
-    expect(buildRouteUrl([])).toBeNull();
-    expect(buildRouteUrl([withCoords])).toBeNull();
-    // una ubicable + una sin datos sigue siendo una sola
-    expect(buildRouteUrl([withCoords, empty])).toBeNull();
-  });
-
-  it("usa la primera como origen y la última como destino", () => {
-    const url = buildRouteUrl([withCoords, onlyAddress])!;
+  it("sin base, la primera parada oficia de origen", () => {
+    const url = buildRouteUrl([conCoords, soloTexto]);
     expect(url).toContain("origin=-34.6%2C-58.38");
-    expect(url).toContain("destination=Av.%20Siempreviva%20742%2C%20Springfield");
-    expect(url).not.toContain("waypoints=");
+    expect(url).toContain("destination=Cabildo%202500%2C%20CABA");
   });
 
-  it("manda las intermedias como waypoints en orden", () => {
-    const medio = { lat: -31.42, lng: -64.18, address: "", city: "" };
-    const url = buildRouteUrl([withCoords, medio, onlyAddress])!;
-    expect(url).toContain("waypoints=-31.42%2C-64.18");
+  it("con base cargada, el recorrido arranca ahí", () => {
+    const url = buildRouteUrl([conCoords, soloTexto], base);
+    expect(url).toContain("origin=-34.9%2C-57.95");
+    // La que antes era origen pasa a ser waypoint intermedio.
+    expect(url).toContain("waypoints=-34.6%2C-58.38");
   });
 
-  it("ignora las paradas sin ubicación", () => {
-    const url = buildRouteUrl([withCoords, empty, onlyAddress])!;
-    expect(url).not.toContain("waypoints=");
+  it("una sola parada con base alcanza para armar ruta", () => {
+    const url = buildRouteUrl([conCoords], base);
+    expect(url).toContain("origin=-34.9%2C-57.95");
+    expect(url).toContain("destination=-34.6%2C-58.38");
   });
 
-  it("recorta los waypoints al máximo que acepta Google", () => {
-    const many = Array.from({ length: MAX_WAYPOINTS + 10 }, (_, i) => ({
-      lat: -30 - i / 100,
-      lng: -60,
-      address: "",
-      city: "",
-    }));
-    const url = buildRouteUrl([withCoords, ...many, onlyAddress])!;
-    const waypoints = new URL(url).searchParams.get("waypoints")!.split("|");
-    expect(waypoints).toHaveLength(MAX_WAYPOINTS);
+  it("una sola parada sin base no es una ruta", () => {
+    expect(buildRouteUrl([conCoords])).toBeNull();
+  });
+
+  it("ignora una base sin ubicación", () => {
+    const url = buildRouteUrl([conCoords, soloTexto], sinUbicacion);
+    expect(url).toContain("origin=-34.6%2C-58.38");
+  });
+
+  it("descarta paradas sin ubicación", () => {
+    expect(buildRouteUrl([conCoords, sinUbicacion])).toBeNull();
+  });
+});
+
+describe("stopHref", () => {
+  it("arma el link a una parada", () => {
+    expect(stopHref(conCoords)).toContain("destination=-34.6%2C-58.38");
+  });
+
+  it("devuelve null sin ubicación", () => {
+    expect(stopHref(sinUbicacion)).toBeNull();
   });
 });

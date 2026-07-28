@@ -641,6 +641,8 @@
     "pendingAcceptance": "Aguardando sua confirmação"
   },
   "InstallerRoute": {
+    "startsAtBase": "O trajeto começa na sua base: {place}.",
+    "noBase": "Informe seu endereço de partida no Perfil e o trajeto vai começar de lá.",
     "title": "Minha rota",
     "description": "As paradas de hoje, em ordem.",
     "openFullRoute": "Abrir rota completa",
@@ -1218,6 +1220,7 @@
     "pending": "{count, plural, =1 {# atualização para sincronizar} other {# atualizações para sincronizar}}"
   },
   "Availability": {
+    "absenceOnlyHelp": "Você está disponível. Se for faltar, registre abaixo as datas e o motivo: a empresa precisa aprovar a ausência para bloquear sua agenda.",
     "title": "Disponibilidade",
     "description": "Informe seus horários habituais e as ausências que a empresa deve considerar.",
     "pause": "Pausar disponibilidade",
@@ -1260,6 +1263,12 @@
     "description": "Define quais buscas de oportunidades aparecem para você.",
     "provinces": "Estados que você atende",
     "provincesHelp": "Se não marcar nenhum, não verá trabalhos nas oportunidades.",
+    "baseTitle": "Seu ponto de partida",
+    "baseHelp": "De onde você sai para trabalhar (casa ou depósito). É a origem do trajeto em Minha rota.",
+    "baseAddress": "Endereço",
+    "baseAddressPlaceholder": "Av. Paulista 1000",
+    "baseCity": "Cidade",
+    "baseCityPlaceholder": "São Paulo",
     "radiusTitle": "Raio de trabalho (opcional)",
     "radiusHelp": "Se informar sua base e um raio, verá apenas os trabalhos com coordenadas dentro dessa distância. Trabalhos sem coordenadas continuam aparecendo por estado.",
     "latitude": "Latitude da sua base",
@@ -1411,6 +1420,7 @@
     "excelUnreadable": "Não foi possível ler o Excel. Verifique se é a planilha baixada e se não está danificada.",
     "needsInstaller": "Atribua um instalador antes de avançar com a ordem.",
     "needsSurvey": "Registre o levantamento antes de planejar.",
+    "useUnavailabilityFlow": "Para se ausentar registre uma ausência com datas e motivo: a empresa precisa aprová-la.",
     "needsScheduledDate": "Informe a data programada antes de planejar a ordem.",
     "onlyInstallerStarts": "Apenas o instalador atribuído pode iniciar o trabalho.",
     "needsAcceptance": "O instalador precisa aceitar a ordem antes de iniciá-la.",

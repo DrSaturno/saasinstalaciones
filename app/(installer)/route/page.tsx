@@ -58,6 +58,23 @@ export default async function InstallerRoutePage() {
     .order("scheduled_date", { ascending: true })
     .overrideTypes<Stop[]>();
 
+  // Punto de partida: si cargó su base, el recorrido arranca de ahí.
+  const { data: installer } = await supabase
+    .from("installers")
+    .select("base_address, base_city, base_lat, base_lng")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const base =
+    installer && (installer.base_lat !== null || installer.base_address)
+      ? {
+          lat: installer.base_lat,
+          lng: installer.base_lng,
+          address: installer.base_address ?? "",
+          city: installer.base_city ?? "",
+        }
+      : null;
+
   const stops = (data ?? []) as Stop[];
   const routeStops = stops.map((stop) => ({
     lat: stop.sites?.lat ?? null,
@@ -65,7 +82,7 @@ export default async function InstallerRoutePage() {
     address: stop.sites?.address ?? "",
     city: stop.sites?.city ?? "",
   }));
-  const fullRoute = buildRouteUrl(routeStops);
+  const fullRoute = buildRouteUrl(routeStops, base);
   const locatable = routeStops.filter((stop) => stop.lat !== null || stop.address).length;
 
   return (
@@ -84,6 +101,14 @@ export default async function InstallerRoutePage() {
           </Button>
         ) : null}
       </header>
+
+      <p className="mt-2 text-xs text-muted-foreground">
+        {base
+          ? t("startsAtBase", {
+              place: [base.address, base.city].filter(Boolean).join(", "),
+            })
+          : t("noBase")}
+      </p>
 
       {stops.length === 0 ? (
         <Card className="mt-8">

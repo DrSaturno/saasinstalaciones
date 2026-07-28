@@ -18,6 +18,8 @@ export type InstallerReputation = {
   zones: string[];
   skills: string[];
   available: boolean;
+  baseAddress: string | null;
+  baseCity: string | null;
   baseLat: number | null;
   baseLng: number | null;
   serviceRadiusKm: number | null;
@@ -32,7 +34,7 @@ export async function fetchInstallerReputation(
   const [{ data: installer }, { data: ratings }] = await Promise.all([
     supabase
       .from("installers")
-      .select("rating_avg, rating_count, zones, skills, available, base_lat, base_lng, service_radius_km")
+      .select("rating_avg, rating_count, zones, skills, available, base_address, base_city, base_lat, base_lng, service_radius_km")
       .eq("id", installerId)
       .single(),
     supabase
@@ -65,6 +67,8 @@ export async function fetchInstallerReputation(
     zones: installer.zones,
     skills: installer.skills,
     available: installer.available,
+    baseAddress: installer.base_address,
+    baseCity: installer.base_city,
     baseLat: installer.base_lat,
     baseLng: installer.base_lng,
     serviceRadiusKm: installer.service_radius_km,

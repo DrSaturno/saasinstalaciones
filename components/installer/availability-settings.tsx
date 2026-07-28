@@ -15,13 +15,14 @@ export function AvailabilitySettings({ companies, initialEnabled }: { companies:
   const [enabled, setEnabled] = useState(initialEnabled);
   const [pending, startTransition] = useTransition();
 
-  const toggle = () => {
-    const next = !enabled;
-    setEnabled(next);
+  // Sólo se puede reactivar desde acá. Para ausentarse hay que cargar fechas y
+  // justificación abajo, y que la empresa lo apruebe.
+  const reactivate = () => {
+    setEnabled(true);
     startTransition(async () => {
-      const result = await setAvailabilityEnabled(next);
-      if (result.error) { setEnabled(!next); toast.error(result.error); return; }
-      toast.success(next ? t("enabledToast") : t("disabledToast"));
+      const result = await setAvailabilityEnabled(true);
+      if (result.error) { setEnabled(false); toast.error(result.error); return; }
+      toast.success(t("enabledToast"));
       router.refresh();
     });
   };
@@ -30,9 +31,13 @@ export function AvailabilitySettings({ companies, initialEnabled }: { companies:
     <section className="mt-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div><h2 className="text-lg font-semibold">{t("title")}</h2><p className="text-sm text-muted-foreground">{t("description")}</p></div>
-        <Button type="button" variant={enabled ? "outline" : "default"} onClick={toggle} disabled={pending}>{enabled ? t("pause") : t("enable")}</Button>
+        {enabled ? null : <Button type="button" onClick={reactivate} disabled={pending}>{t("enable")}</Button>}
       </div>
-      {!enabled ? <p className="mt-4 rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm">{t("pausedHelp")}</p> : null}
+      {!enabled ? (
+        <p className="mt-4 rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm">{t("pausedHelp")}</p>
+      ) : (
+        <p className="mt-4 rounded-xl border bg-muted/30 p-4 text-sm text-muted-foreground">{t("absenceOnlyHelp")}</p>
+      )}
       <div className="mt-4 grid gap-4">{companies.map((company) => <AvailabilityCompanyCard key={company.id} company={company} disabled={!enabled} />)}</div>
     </section>
   );

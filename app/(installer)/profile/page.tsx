@@ -142,6 +142,8 @@ export default async function InstallerProfilePage() {
       <div className="mt-8">
         <CoverageSettings
           zones={reputation.zones}
+          baseAddress={reputation.baseAddress}
+          baseCity={reputation.baseCity}
           baseLat={reputation.baseLat}
           baseLng={reputation.baseLng}
           serviceRadiusKm={reputation.serviceRadiusKm}
