@@ -57,10 +57,10 @@ rediseñar el sistema.
 
 | Fase | Contenido | Estado |
 |---|---|---|
-| **1a** | Dos bugs vivos de RLS descubiertos durante el análisis (ver abajo) | **Migración aplicada a mano en producción por el usuario.** Commiteada localmente (`5b3228c`), **NO pusheada todavía** |
-| **0** | 3 queries SELECT de auditoría sobre prod (coordinadores con órdenes abiertas en su propia empresa / sin fila en el roster / sin ficha en `installers`) | **Pendiente.** El usuario decidió correrlas él mismo, no compartió resultados aún. Es el gate antes de seguir |
-| **1b** | `company_installers.role` + FK a `profiles` + índice + backfill + helpers `auth_companies()`/`auth_has_company_role()` | No empezado — espera resultado de Fase 0 |
-| 2–6b | Reescritura de policies, funciones RPC, capa TypeScript, UI, cutover | No empezado |
+| **1a** | Dos bugs vivos de RLS descubiertos durante el análisis (ver abajo) | **Migración aplicada a mano en producción por el usuario, y ya pusheada** (`5b3228c`) |
+| **0** | 3 queries SELECT de auditoría sobre prod | **Completa — terreno limpio.** Las tres volvieron 0 filas: ningún coordinador tiene órdenes abiertas asignadas a sí mismo en la empresa que coordina, ninguno falta en el roster, ninguno falta en `installers`. No hizo falta ninguna decisión de producto extra |
+| **1b** | `company_installers.role` + FK a `profiles` + índice + backfill + helpers `auth_companies()`/`auth_has_company_role()`/`auth_coordinates_anywhere()` | **Migración escrita, commiteada (`0fba4c6`), NO aplicada todavía.** Puramente aditiva: ninguna policy usa los helpers nuevos. `pnpm test` 114 OK (el cambio es solo SQL) |
+| 2–6b | Reescritura de policies, funciones RPC, capa TypeScript, UI, cutover | No empezado. La Fase 2 es la primera que puede aflojar RLS por accidente — requiere el test de fuga cruzada antes de mergear |
 
 ### Los dos bugs vivos (fuera del plan principal, encontrados al auditar RLS)
 
@@ -91,16 +91,15 @@ tareas y anuncios.
 
 ### Próximo paso concreto
 
-1. Usuario corre las 3 queries de Fase 0 (están en el archivo de plan y se le
-   pasaron en el chat). Si el usuario tiene órdenes abiertas asignadas a sí
-   mismo en la empresa donde coordina, es una decisión de producto a tomar
-   antes de seguir (ver "Riesgos" del plan).
-2. Con eso resuelto: Fase 1b — agregar columna `role` a `company_installers`,
-   cambiar su FK de `installers(id)` a `profiles(id)`, crear los helpers
-   `auth_companies()` / `auth_has_company_role()` / `auth_coordinates_anywhere()`
-   sin todavía usarlos en ninguna policy (aditivo, cero riesgo).
-3. Pushear `5b3228c` a `origin/main` cuando el usuario lo pida (no se pushea
-   solo).
+1. Aplicar `20260728000012_company_installer_role.sql` (commit `0fba4c6`) en
+   producción — con `supabase db push` o a mano en el SQL Editor, como en la
+   Fase 1a. Es aditiva: no debería cambiar nada observable.
+2. Con eso aplicado: **Fase 2** — reescribir las 22 policies que hoy asumen un
+   solo rol/empresa, en forma dual (`rama vieja OR rama nueva`, ver patrones
+   B/C/D/E del plan). Es la fase de mayor riesgo: **requiere el test de fuga
+   cruzada** (`supabase/tests/multi_company_membership.test.sql`, todavía no
+   escrito) antes de dar por buena, porque las policies PERMISSIVE se combinan
+   con OR y cualquier reescritura floja ensancha el acceso en vez de acotarlo.
 
 ## PUNTO DE REANUDACIÓN — tanda de correcciones (2026-07-28)
 
