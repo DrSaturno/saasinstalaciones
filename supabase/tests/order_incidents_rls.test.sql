@@ -9,10 +9,12 @@ select ok(
   'order_incidents tiene RLS activa'
 );
 
+-- order_incidents_coordinator_all se sumó después (20260724000002) a las tres
+-- originales de este archivo; el conteo quedó desactualizado desde entonces.
 select is(
   (select count(*)::integer from pg_policies where schemaname = 'public' and tablename = 'order_incidents'),
-  3,
-  'order_incidents define exactamente tres políticas'
+  4,
+  'order_incidents define exactamente cuatro políticas (company/installer_read/installer_insert/coordinator)'
 );
 
 select ok(

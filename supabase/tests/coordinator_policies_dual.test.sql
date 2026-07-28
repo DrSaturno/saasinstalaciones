@@ -125,8 +125,8 @@ select n, msg from (
   union all
   select 14, msg from is(
     (select count(*)::integer from pg_policies where schemaname = 'public' and tablename = 'order_incidents'),
-    3,
-    'order_incidents sigue con sus 3 policies (no rompe supabase/tests/order_incidents_rls.test.sql)'
+    4,
+    'order_incidents sigue con sus 4 policies (company/installer_read/installer_insert/coordinator)'
   ) msg
   union all
   select 15, msg from finish() msg

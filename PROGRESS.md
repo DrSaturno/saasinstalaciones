@@ -60,10 +60,19 @@ rediseñar el sistema.
 | **1a** | Dos bugs vivos de RLS descubiertos durante el análisis (ver abajo) | **Migración aplicada a mano en producción por el usuario, y ya pusheada** (`5b3228c`) |
 | **0** | 3 queries SELECT de auditoría sobre prod | **Completa — terreno limpio.** Las tres volvieron 0 filas: ningún coordinador tiene órdenes abiertas asignadas a sí mismo en la empresa que coordina, ninguno falta en el roster, ninguno falta en `installers`. No hizo falta ninguna decisión de producto extra |
 | **1b** | `company_installers.role` + FK a `profiles` + índice + backfill + helpers `auth_companies()`/`auth_has_company_role()`/`auth_coordinates_anywhere()` | **Migración escrita, commiteada (`0fba4c6`). Aplicada en producción por el usuario** (confirmado 2026-07-28) |
-| **2** | Reescritura en forma dual (`rama vieja OR rama nueva`) de las 22 policies + `can_operate_project()`, más el test de fuga cruzada | **Migración y ambos tests escritos, commiteados, NO aplicados todavía.** Ver "Fase 2" abajo para el orden exacto de aplicación |
+| **2** | Reescritura en forma dual (`rama vieja OR rama nueva`) de las 22 policies + `can_operate_project()`, más el test de fuga cruzada | **Aplicada en producción y verificada por el usuario.** `multi_company_membership.test.sql`: 8/8 OK. `coordinator_policies_dual.test.sql`: 14/14 OK tras corregir un error de conteo propio (ver abajo) |
 | 3–6b | Funciones RPC bloqueantes, capa TypeScript, UI, cutover | No empezado |
 
-### Fase 2 — cómo aplicar y verificar (decidido con el usuario: habilitar pgtap)
+### Fase 2 — verificada (2026-07-28)
+
+Ambos tests corrieron en producción con `pgtap` habilitado por el usuario:
+
+- **`multi_company_membership.test.sql` (test de fuga cruzada, el gate del plan): 8/8 OK** de entrada. P ve exactamente el proyecto que coordina, el cliente de esa empresa, sus 2 órdenes propias — y **no** ve nada de la empresa donde sólo instala, ni la orden ajena de esa empresa, ni el resto de su roster. `can_operate_project()` funciona para P sin depender de `profiles.role='coordinator'`.
+- **`coordinator_policies_dual.test.sql`: falló 1 de 14 en la primera corrida** (`order_incidents sigue con sus 3 policies` — esperaba 3, encontró 4). Investigado: fue un error de conteo mío, no un problema de la migración. `order_incidents` **siempre tuvo 4 policies** (`company_all`, `installer_read`, `installer_insert`, `coordinator_all`); asumí mal el número base. De paso destapó que el test preexistente `supabase/tests/order_incidents_rls.test.sql` (no escrito en este plan) tenía el mismo error desde que se agregó `order_incidents_coordinator_all` en `20260724000002` sin actualizar su conteo — nunca se detectó porque nunca se pudo correr sin `pgtap`. Los dos quedaron corregidos a 4.
+
+Durante el camino también aparecieron y se corrigieron dos bugs propios del fixture de `multi_company_membership.test.sql` (documentados en los commits `e19a60b` y `7b39d63`): el trigger `validate_project_relations()` (una de las funciones que arregla la Fase 3, no ésta) bloqueaba sembrar un coordinador "sólo nuevo modelo", y los IDs de `sites`/`work_orders` usaban `s`/`w` como sufijo, que no son hex válido para un UUID.
+
+### Cómo se aplicó (para referencia futura)
 
 `20260728000013_coordinator_policies_dual.sql` reescribe `can_operate_project()`
 y las 22 policies que asumían coordinador = un solo rol/una sola empresa, en
