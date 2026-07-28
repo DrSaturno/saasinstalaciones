@@ -20,7 +20,7 @@ export type AvailabilityCompany = {
 };
 
 export async function fetchInstallerAvailability(supabase: SupabaseClient<Database>, installerId: string): Promise<AvailabilityCompany[]> {
-  const { data: roster } = await supabase.from("company_installers").select("company_id").eq("installer_id", installerId).eq("status", "active");
+  const { data: roster } = await supabase.from("company_installers").select("company_id").eq("installer_id", installerId).eq("status", "active").eq("role", "installer");
   const companyIds = (roster ?? []).map((item) => item.company_id);
   if (!companyIds.length) return [];
   const [{ data: companies }, { data: weekly }, { data: exceptions }] = await Promise.all([

@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
-import { getCurrentUser } from "@/lib/auth";
+import {
+  canOperateCompany,
+  getCurrentUser,
+  isCoordinatorSomewhere,
+} from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 const incidentSchema = z.object({
@@ -19,19 +23,37 @@ const incidentSchema = z.object({
 
 export type IncidentActionState = { error: string | null; ok?: boolean };
 
-async function requireManager() {
-  const user = await getCurrentUser();
-  if (!user || !["company_manager", "coordinator"].includes(user.role) || !user.companyId) throw new Error("access");
-  return { user, companyId: user.companyId, supabase: await createClient() };
+async function requireOperatorForOrder(orderId: string) {
+  const [user, supabase] = await Promise.all([
+    getCurrentUser(),
+    createClient(),
+  ]);
+  if (
+    !user ||
+    (user.role !== "company_manager" && !isCoordinatorSomewhere(user))
+  ) {
+    throw new Error("access");
+  }
+
+  const { data: order } = await supabase
+    .from("work_orders")
+    .select("id, company_id")
+    .eq("id", orderId)
+    .single();
+  if (!order || !canOperateCompany(user, order.company_id)) {
+    throw new Error("access");
+  }
+
+  return { user, companyId: order.company_id, supabase };
 }
 export async function createIncident(input: z.infer<typeof incidentSchema>): Promise<IncidentActionState> {
   const t = await getTranslations("Errors");
   const parsed = incidentSchema.safeParse(input);
   if (!parsed.success) return { error: t("invalidUpdate") };
   try {
-    const { user, companyId, supabase } = await requireManager();
-    const { data: order } = await supabase.from("work_orders").select("id").eq("id", parsed.data.orderId).eq("company_id", companyId).single();
-    if (!order) return { error: t("orderNotFound") };
+    const { user, companyId, supabase } = await requireOperatorForOrder(
+      parsed.data.orderId,
+    );
     const { error } = await supabase.from("order_incidents").insert({
       order_id: parsed.data.orderId,
       company_id: companyId,
@@ -57,7 +79,8 @@ export async function resolveIncident(incidentId: string, orderId: string): Prom
   const t = await getTranslations("Errors");
   if (!z.string().uuid().safeParse(incidentId).success || !z.string().uuid().safeParse(orderId).success) return { error: t("invalidUpdate") };
   try {
-    const { user, companyId, supabase } = await requireManager();
+    const { user, companyId, supabase } =
+      await requireOperatorForOrder(orderId);
     const { error } = await supabase.from("order_incidents").update({
       status: "resolved",
       resolved_by: user.id,

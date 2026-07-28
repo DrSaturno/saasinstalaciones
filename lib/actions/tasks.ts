@@ -11,7 +11,7 @@ import type { OrderStatus, OrderUpdateType } from "@/types/database";
 
 async function requireInstaller() {
   const user = await getCurrentUser();
-  if (!user || !isInstallerArea(user.role)) {
+  if (!user || !isInstallerArea(user)) {
     throw new Error("Acceso denegado");
   }
   return { user, supabase: await createClient() };

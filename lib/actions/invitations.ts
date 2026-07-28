@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isInstallerArea } from "@/lib/auth";
 
 const tokenSchema = z.string().uuid("Link inválido");
 
@@ -20,7 +20,7 @@ export async function acceptInvitation(token: string): Promise<AcceptState> {
 
   const user = await getCurrentUser();
   if (!user) return { error: t("loginRequired") };
-  if (!["installer", "coordinator"].includes(user.role)) {
+  if (!isInstallerArea(user)) {
     return { error: t("installerOnlyInvitation") };
   }
 
@@ -28,7 +28,15 @@ export async function acceptInvitation(token: string): Promise<AcceptState> {
   const { error } = await supabase.rpc("accept_invitation", {
     p_token: parsed.data,
   });
-  if (error) return { error: error.message };
+  if (error) {
+    if (error.message.includes("otro rol activo")) {
+      return { error: t("membershipRoleConflict") };
+    }
+    if (error.message.includes("órdenes abiertas")) {
+      return { error: t("coordinatorInvitationOpenOrders") };
+    }
+    return { error: error.message };
+  }
 
   return { error: null, ok: true };
 }

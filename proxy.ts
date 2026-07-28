@@ -7,7 +7,6 @@ import { isProfileLocale, LOCALE_COOKIE } from "@/i18n/config";
 const ROLE_HOME: Record<UserRole, string> = {
   platform_admin: "/master",
   company_manager: "/dashboard",
-  coordinator: "/home",
   installer: "/home",
 };
 
@@ -15,14 +14,13 @@ const ROLE_HOME: Record<UserRole, string> = {
  * Área propia de cada rol. `/messages` queda deliberadamente afuera: es
  * compartida entre empresa, coordinación e instalador.
  *
- * El coordinador usa el área INSTALADOR (es un instalador que además gestiona
- * las órdenes de su equipo en /coordination); no entra al área de empresa.
+ * La coordinación es una membresía por empresa dentro del área instalador,
+ * no un rol global adicional.
  */
 const ROLE_AREAS: Record<UserRole, readonly string[]> = {
   platform_admin: ["/master"],
   company_manager: ["/dashboard"],
-  coordinator: ["/home", "/tasks", "/route", "/jobs", "/profile", "/coordination"],
-  installer: ["/home", "/tasks", "/route", "/jobs", "/profile"],
+  installer: ["/home", "/tasks", "/route", "/jobs", "/profile", "/coordination"],
 };
 
 const ALL_AREAS = Object.values(ROLE_AREAS).flat();

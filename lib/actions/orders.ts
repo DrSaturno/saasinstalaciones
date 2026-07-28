@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/auth";
+import {
+  canOperateCompany,
+  getCurrentUser,
+  isCoordinatorSomewhere,
+  type CurrentUser,
+} from "@/lib/auth";
 import {
   orderAttachmentRegistrationSchema,
   orderEditSchema,
@@ -16,17 +21,25 @@ import { orderTransitionBlock } from "@/lib/domain/order-rules";
 import { requestPushDelivery } from "@/lib/push/events";
 import type { OrderStatus, TablesInsert } from "@/types/database";
 
-/** Toda acción de empresa resuelve company_id desde la sesión, nunca del cliente. */
-async function requireManager() {
-  const user = await getCurrentUser();
+async function requireOperator() {
+  const [user, supabase] = await Promise.all([
+    getCurrentUser(),
+    createClient(),
+  ]);
   if (
     !user ||
-    !["company_manager", "coordinator"].includes(user.role) ||
-    !user.companyId
+    (user.role !== "company_manager" && !isCoordinatorSomewhere(user))
   ) {
     throw new Error("Acceso denegado");
   }
-  return { user, supabase: await createClient(), companyId: user.companyId };
+  return { user, supabase };
+}
+
+function operatedCompany(user: CurrentUser, companyId: string): string {
+  if (!canOperateCompany(user, companyId)) {
+    throw new Error("Acceso denegado");
+  }
+  return companyId;
 }
 
 export type ActionState = { error: string | null; ok?: boolean };
@@ -80,39 +93,41 @@ export async function createOrder(
   }
 
   try {
-    const { supabase, companyId, user } = await requireManager();
+    const { supabase, user } = await requireOperator();
 
     // El punto debe ser de esta empresa: resolvemos project_id desde él,
     // nunca confiamos en un project_id que venga del cliente.
-    const [siteResult, rosterResult] = await Promise.all([
-      supabase
-        .from("sites")
-        .select("id, project_id, company_id, archived_at")
-        .eq("id", parsed.data.siteId)
-        .eq("company_id", companyId)
-        .single(),
+    const { data: site } = await supabase
+      .from("sites")
+      .select("id, project_id, company_id, archived_at")
+      .eq("id", parsed.data.siteId)
+      .single();
+    if (!site || site.archived_at) return { error: t("siteNotFound") };
+    const companyId = operatedCompany(user, site.company_id);
+
+    const [rosterResult, { data: project }] = await Promise.all([
       parsed.data.installerId
         ? supabase
             .from("company_installers")
-            .select("installer_id")
+            .select("installer_id, role")
             .eq("company_id", companyId)
             .eq("installer_id", parsed.data.installerId)
             .eq("status", "active")
             .maybeSingle()
         : Promise.resolve({ data: null }),
+      supabase
+        .from("projects")
+        .select("billing_mode, currency")
+        .eq("id", site.project_id)
+        .eq("company_id", companyId)
+        .single(),
     ]);
-    const site = siteResult.data;
-    if (!site || site.archived_at) return { error: t("siteNotFound") };
-    if (parsed.data.installerId && !rosterResult.data) {
+    if (
+      parsed.data.installerId &&
+      rosterResult.data?.role !== "installer"
+    ) {
       return { error: t("installerNotActive") };
     }
-
-    const { data: project } = await supabase
-      .from("projects")
-      .select("billing_mode, currency")
-      .eq("id", site.project_id)
-      .eq("company_id", companyId)
-      .single();
     if (!project) return { error: t("projectNotFound") };
 
     const { data: order, error } = await supabase
@@ -199,33 +214,36 @@ export async function updateOrder(
   if (!parsed.success) return { error: t("invalidData") };
 
   try {
-    const { supabase, companyId, user } = await requireManager();
+    const { supabase, user } = await requireOperator();
 
     const { data: order } = await supabase
       .from("work_orders")
-      .select("id, project_id, status, assigned_installer_id")
+      .select("id, project_id, company_id, status, assigned_installer_id")
       .eq("id", orderId)
-      .eq("company_id", companyId)
       .single();
     if (!order) return { error: t("orderNotFound") };
+    const companyId = operatedCompany(user, order.company_id);
 
-    if (parsed.data.installerId) {
-      const { data: active } = await supabase
-        .from("company_installers")
-        .select("installer_id")
+    const [{ data: active }, { data: project }] = await Promise.all([
+      parsed.data.installerId
+        ? supabase
+            .from("company_installers")
+            .select("installer_id, role")
+            .eq("company_id", companyId)
+            .eq("installer_id", parsed.data.installerId)
+            .eq("status", "active")
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+      supabase
+        .from("projects")
+        .select("billing_mode")
+        .eq("id", order.project_id)
         .eq("company_id", companyId)
-        .eq("installer_id", parsed.data.installerId)
-        .eq("status", "active")
-        .maybeSingle();
-      if (!active) return { error: t("installerNotActive") };
+        .single(),
+    ]);
+    if (parsed.data.installerId && active?.role !== "installer") {
+      return { error: t("installerNotActive") };
     }
-
-    const { data: project } = await supabase
-      .from("projects")
-      .select("billing_mode")
-      .eq("id", order.project_id)
-      .eq("company_id", companyId)
-      .single();
     if (!project) return { error: t("projectNotFound") };
 
     const { error } = await supabase
@@ -280,14 +298,14 @@ export async function getOrderFormSites(
   }
 
   try {
-    const { supabase, companyId } = await requireManager();
+    const { supabase, user } = await requireOperator();
     const { data: project } = await supabase
       .from("projects")
-      .select("id")
+      .select("id, company_id")
       .eq("id", projectId)
-      .eq("company_id", companyId)
       .single();
     if (!project) return { error: t("projectNotFound"), sites: [] };
+    const companyId = operatedCompany(user, project.company_id);
 
     const sites: OrderFormSite[] = [];
     for (let from = 0; ; from += 1_000) {
@@ -332,14 +350,14 @@ export async function registerOrderAttachments(
   }
 
   try {
-    const { supabase, companyId, user } = await requireManager();
+    const { supabase, user } = await requireOperator();
     const { data: order } = await supabase
       .from("work_orders")
-      .select("id")
+      .select("id, company_id")
       .eq("id", idResult.data)
-      .eq("company_id", companyId)
       .single();
     if (!order) return { error: t("orderNotFound") };
+    const companyId = operatedCompany(user, order.company_id);
 
     const expectedPrefix = `${companyId}/${order.id}/`;
     if (
@@ -400,22 +418,27 @@ export async function createOrdersForProject(
   ]);
   let ctx;
   try {
-    ctx = await requireManager();
+    ctx = await requireOperator();
   } catch {
     return { error: t("accessDenied"), created: 0, skipped: 0 };
   }
-  const { supabase, companyId, user } = ctx;
+  const { supabase, user } = ctx;
 
   const title = titleTemplate.trim() || createOrdersT("defaultTitle");
 
   const { data: project } = await supabase
     .from("projects")
-    .select("id, currency, country, zones, planned_installations")
+    .select("id, company_id, currency, country, zones, planned_installations")
     .eq("id", projectId)
-    .eq("company_id", companyId)
     .single();
   if (!project) {
     return { error: t("projectNotFound"), created: 0, skipped: 0 };
+  }
+  let companyId: string;
+  try {
+    companyId = operatedCompany(user, project.company_id);
+  } catch {
+    return { error: t("accessDenied"), created: 0, skipped: 0 };
   }
 
   const { count: activeSiteCount } = await supabase
@@ -525,15 +548,15 @@ export async function transitionOrder(
     getTranslations("Status"),
   ]);
   try {
-    const { supabase, companyId, user } = await requireManager();
+    const { supabase, user } = await requireOperator();
 
     const { data: order } = await supabase
       .from("work_orders")
-      .select("id, status, project_id, assigned_installer_id, installer_accepted_at, scheduled_date")
+      .select("id, company_id, status, project_id, assigned_installer_id, installer_accepted_at, scheduled_date")
       .eq("id", orderId)
-      .eq("company_id", companyId)
       .single();
     if (!order) return { error: t("orderNotFound") };
+    const companyId = operatedCompany(user, order.company_id);
 
     // ¿Quedó asentado el relevamiento? Sólo importa al salir de ese estado.
     let hasSurvey = false;
@@ -556,7 +579,13 @@ export async function transitionOrder(
         scheduledDate: order.scheduled_date,
       },
       toStatus,
-      { id: user.id, role: user.role },
+      {
+        id: user.id,
+        role:
+          user.role === "company_manager"
+            ? "company_manager"
+            : "coordinator",
+      },
     );
     if (block === "invalidTransition") {
       return {
@@ -609,30 +638,26 @@ export async function assignInstaller(
 ): Promise<ActionState> {
   const t = await getTranslations("Errors");
   try {
-    const { supabase, companyId } = await requireManager();
+    const { supabase, user } = await requireOperator();
+    const { data: order } = await supabase
+      .from("work_orders")
+      .select("id, company_id")
+      .eq("id", orderId)
+      .single();
+    if (!order) return { error: t("orderNotFound") };
+    const companyId = operatedCompany(user, order.company_id);
 
     // Si se asigna alguien, debe estar en el roster activo de la empresa.
     if (installerId) {
       const { data: roster } = await supabase
         .from("company_installers")
-        .select("installer_id")
+        .select("installer_id, role")
         .eq("company_id", companyId)
         .eq("installer_id", installerId)
         .eq("status", "active")
         .single();
-      if (!roster) {
+      if (!roster || roster.role !== "installer") {
         return { error: t("installerNotActive") };
-      }
-
-      // Un coordinador no ejecuta trabajo: coordina. Conserva las órdenes que
-      // ya tenía al ascender, pero no puede recibir nuevas.
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", installerId)
-        .single();
-      if (profile?.role !== "installer") {
-        return { error: t("coordinatorNotAssignable") };
       }
     }
 
@@ -673,7 +698,15 @@ export async function rescheduleOrder(input: {
   const parsed = rescheduleSchema.safeParse(input);
   if (!parsed.success) return { error: t("invalidData") };
   try {
-    const { supabase, companyId } = await requireManager();
+    const { supabase, user } = await requireOperator();
+    const { data: existing } = await supabase
+      .from("work_orders")
+      .select("id, company_id")
+      .eq("id", parsed.data.orderId)
+      .single();
+    if (!existing) return { error: t("orderNotFound") };
+    const companyId = operatedCompany(user, existing.company_id);
+
     const { data: order, error } = await supabase
       .from("work_orders")
       .update({
@@ -719,15 +752,15 @@ export async function recordSurvey(input: {
   if (!parsed.success) return { error: t("invalidUpdate") };
 
   try {
-    const { supabase, companyId } = await requireManager();
+    const { supabase, user } = await requireOperator();
 
     const { data: order } = await supabase
       .from("work_orders")
-      .select("id, status")
+      .select("id, company_id, status")
       .eq("id", parsed.data.orderId)
-      .eq("company_id", companyId)
       .single();
     if (!order) return { error: t("orderNotFound") };
+    const companyId = operatedCompany(user, order.company_id);
 
     const { error } = await supabase.from("order_updates").insert({
       id: crypto.randomUUID(),

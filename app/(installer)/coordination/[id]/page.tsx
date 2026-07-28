@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, MapPin, MessageSquare } from "lucide-react";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser, ROLE_HOME } from "@/lib/auth";
+import { getCurrentUser, isCoordinatorSomewhere, ROLE_HOME } from "@/lib/auth";
 import { fetchOrderAttachments } from "@/lib/data/order-attachments";
 import { signUpdatePhotos } from "@/lib/data/update-photos";
 import { googleMapsHref } from "@/lib/domain/sites";
@@ -29,7 +29,7 @@ export default async function CoordinationOrderPage({
   const { id } = await params;
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (user.role !== "coordinator") redirect(ROLE_HOME[user.role]);
+  if (!isCoordinatorSomewhere(user)) redirect(ROLE_HOME[user.role]);
 
   const [t, statusT, taskT, format, supabase] = await Promise.all([
     getTranslations("Coordination"),
@@ -42,7 +42,7 @@ export default async function CoordinationOrderPage({
   const { data: order } = await supabase
     .from("work_orders")
     .select(
-      "id, order_number, title, description, status, scheduled_date, site_id, project_id, assigned_installer_id, installer_accepted_at",
+      "id, order_number, title, description, status, scheduled_date, site_id, project_id, company_id, assigned_installer_id, installer_accepted_at",
     )
     .eq("id", id)
     .single();
@@ -140,7 +140,9 @@ export default async function CoordinationOrderPage({
             ) : null}
             {order.assigned_installer_id ? (
               <Button asChild size="sm" variant="outline">
-                <Link href={`/messages/${order.assigned_installer_id}`}>
+                <Link
+                  href={`/messages/${order.assigned_installer_id}?company=${order.company_id}`}
+                >
                   <MessageSquare className="size-4" />
                   {installer?.full_name || t("chat")}
                 </Link>

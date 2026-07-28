@@ -2,7 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
-import { getCurrentUser, isInstallerArea } from "@/lib/auth";
+import {
+  canOperateCompany,
+  getCurrentUser,
+  isCoordinatorSomewhere,
+  isInstallerArea,
+  type CurrentUser,
+} from "@/lib/auth";
 import {
   applicationSchema,
   createBroadcastSchema,
@@ -14,22 +20,46 @@ import { createClient } from "@/lib/supabase/server";
 
 export type BroadcastActionState = { error: string | null; ok?: boolean };
 
-async function requireManager() {
-  const user = await getCurrentUser();
+async function requireOperator() {
+  const [user, supabase] = await Promise.all([
+    getCurrentUser(),
+    createClient(),
+  ]);
   if (
     !user ||
-    // Sólo el gerente: la bolsa de trabajo es gestión de empresa.
-    user.role !== "company_manager" ||
-    !user.companyId
+    (user.role !== "company_manager" && !isCoordinatorSomewhere(user))
   ) {
     throw new Error("Acceso denegado");
   }
-  return { user, companyId: user.companyId, supabase: await createClient() };
+  return { user, supabase };
+}
+
+function operatedCompany(user: CurrentUser, companyId: string): string {
+  if (!canOperateCompany(user, companyId)) {
+    throw new Error("Acceso denegado");
+  }
+  return companyId;
+}
+
+async function requireOperatorForBroadcast(broadcastId: string) {
+  const { user, supabase } = await requireOperator();
+  const { data: broadcast } = await supabase
+    .from("broadcasts")
+    .select("id, company_id")
+    .eq("id", broadcastId)
+    .single();
+  if (!broadcast) throw new Error("Acceso denegado");
+
+  return {
+    user,
+    supabase,
+    companyId: operatedCompany(user, broadcast.company_id),
+  };
 }
 
 async function requireInstaller() {
   const user = await getCurrentUser();
-  if (!user || !isInstallerArea(user.role)) throw new Error("Acceso denegado");
+  if (!user || !isInstallerArea(user)) throw new Error("Acceso denegado");
   return { user, supabase: await createClient() };
 }
 
@@ -63,14 +93,14 @@ export async function createBroadcast(
   }
 
   try {
-    const { companyId, supabase, user } = await requireManager();
+    const { supabase, user } = await requireOperator();
     const { data: project } = await supabase
       .from("projects")
-      .select("id, currency")
+      .select("id, company_id, currency")
       .eq("id", parsed.data.projectId)
-      .eq("company_id", companyId)
       .single();
     if (!project) return { error: t("projectNotFound") };
+    const companyId = operatedCompany(user, project.company_id);
 
     const { data: broadcast, error } = await supabase
       .from("broadcasts")
@@ -120,7 +150,9 @@ export async function updateBroadcast(input: {
   }
 
   try {
-    const { companyId, supabase } = await requireManager();
+    const { companyId, supabase } = await requireOperatorForBroadcast(
+      parsed.data.broadcastId,
+    );
     const { count } = await supabase
       .from("broadcast_applications")
       .select("installer_id", { count: "exact", head: true })
@@ -156,7 +188,7 @@ export async function closeBroadcast(
 ): Promise<BroadcastActionState> {
   const t = await getTranslations("Errors");
   try {
-    const { supabase } = await requireManager();
+    const { supabase } = await requireOperatorForBroadcast(broadcastId);
     const { error } = await supabase.rpc("close_broadcast", {
       p_broadcast_id: broadcastId,
     });
@@ -215,7 +247,9 @@ export async function acceptApplication(input: {
   }
 
   try {
-    const { supabase } = await requireManager();
+    const { supabase } = await requireOperatorForBroadcast(
+      parsed.data.broadcastId,
+    );
     const { error } = await supabase.rpc("accept_broadcast_application", {
       p_broadcast_id: parsed.data.broadcastId,
       p_installer_id: parsed.data.installerId,
@@ -256,7 +290,9 @@ export async function rejectApplication(
   if (!parsed.success) return { error: t("invalidData") };
 
   try {
-    const { supabase } = await requireManager();
+    const { supabase } = await requireOperatorForBroadcast(
+      parsed.data.broadcastId,
+    );
     const { error } = await supabase.rpc("reject_broadcast_application", {
       p_broadcast_id: parsed.data.broadcastId,
       p_installer_id: parsed.data.installerId,

@@ -12,8 +12,8 @@ export type Json =
 export type UserRole =
   | "platform_admin"
   | "company_manager"
-  | "coordinator"
   | "installer";
+export type MembershipRole = "installer" | "coordinator";
 export type Locale = "es" | "pt";
 export type CompanyStatus = "active" | "suspended";
 export type Country = "AR" | "BR";
@@ -151,6 +151,7 @@ export interface Database {
         Row: {
           company_id: string;
           installer_id: string;
+          role: MembershipRole;
           status: RosterStatus;
           invited_at: string;
           joined_at: string | null;
@@ -158,6 +159,7 @@ export interface Database {
         Insert: {
           company_id: string;
           installer_id: string;
+          role?: MembershipRole;
           status?: RosterStatus;
           invited_at?: string;
           joined_at?: string | null;

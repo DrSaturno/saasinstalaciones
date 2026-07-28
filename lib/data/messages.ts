@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { canOperateCompany, type CurrentUser } from "@/lib/auth";
 import type { Database, Json } from "@/types/database";
 
 export type ChatThreadSummary = {
@@ -26,41 +27,64 @@ export type ChatMessage = {
 
 export async function fetchChatThreads(
   supabase: SupabaseClient<Database>,
-  role: "company_manager" | "coordinator" | "installer",
+  user: CurrentUser,
 ): Promise<ChatThreadSummary[]> {
   const { data: threads } = await supabase
     .from("chat_threads")
     .select("id, company_id, installer_id, last_message_at")
     .order("last_message_at", { ascending: false });
   if (!threads?.length) return [];
-  if (role === "installer") {
-    const ids = [...new Set(threads.map((thread) => thread.company_id))];
-    const { data: companies } = await supabase
-      .from("companies")
-      .select("id, name")
-      .in("id", ids);
-    const names = new Map((companies ?? []).map((company) => [company.id, company.name]));
-    return threads.map((thread) => ({
+
+  const visibleThreads = threads.filter(
+    (thread) =>
+      canOperateCompany(user, thread.company_id) ||
+      thread.installer_id === user.id,
+  );
+  const companyIds = [
+    ...new Set(
+      visibleThreads
+        .filter((thread) => !canOperateCompany(user, thread.company_id))
+        .map((thread) => thread.company_id),
+    ),
+  ];
+  const installerIds = [
+    ...new Set(
+      visibleThreads
+        .filter((thread) => canOperateCompany(user, thread.company_id))
+        .map((thread) => thread.installer_id),
+    ),
+  ];
+
+  const [{ data: companies }, { data: profiles }] = await Promise.all([
+    companyIds.length
+      ? supabase.from("companies").select("id, name").in("id", companyIds)
+      : Promise.resolve({ data: [] }),
+    installerIds.length
+      ? supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", installerIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+  const companyNames = new Map(
+    (companies ?? []).map((company) => [company.id, company.name]),
+  );
+  const installerNames = new Map(
+    (profiles ?? []).map((profile) => [profile.id, profile.full_name]),
+  );
+
+  return visibleThreads.map((thread) => {
+    const operatorMode = canOperateCompany(user, thread.company_id);
+    return {
       id: thread.id,
       companyId: thread.company_id,
       peerId: thread.installer_id,
-      peerName: names.get(thread.company_id) ?? "",
+      peerName: operatorMode
+        ? (installerNames.get(thread.installer_id) ?? "")
+        : (companyNames.get(thread.company_id) ?? ""),
       lastMessageAt: thread.last_message_at,
-    }));
-  }
-  const ids = [...new Set(threads.map((thread) => thread.installer_id))];
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, full_name")
-    .in("id", ids);
-  const names = new Map((profiles ?? []).map((profile) => [profile.id, profile.full_name]));
-  return threads.map((thread) => ({
-    id: thread.id,
-    companyId: thread.company_id,
-    peerId: thread.installer_id,
-    peerName: names.get(thread.installer_id) ?? "",
-    lastMessageAt: thread.last_message_at,
-  }));
+    };
+  });
 }
 
 export async function fetchConversation(

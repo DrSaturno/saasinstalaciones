@@ -2,9 +2,10 @@
 
 ## PUNTO DE REANUDACIÓN — coordinador/instalador multi-empresa (2026-07-28)
 
-> **Trabajo en curso, a mitad del plan.** Si retomás esta sesión con otra IA:
-> leé esta sección completa antes de tocar nada. Hay un commit local sin
-> pushear y una migración ya aplicada a mano en producción.
+> **Cutover aplicado en la base; código todavía sin commit/push/deploy.** El
+> usuario confirmó la ejecución del SQL de la Fase 6a antes de desplegar esta
+> versión. La base ya no admite `profiles.role='coordinator'`, por lo que el
+> deploy de la aplicación nueva es ahora el siguiente paso urgente.
 
 ### Qué lo disparó
 
@@ -61,7 +62,78 @@ rediseñar el sistema.
 | **0** | 3 queries SELECT de auditoría sobre prod | **Completa — terreno limpio.** Las tres volvieron 0 filas: ningún coordinador tiene órdenes abiertas asignadas a sí mismo en la empresa que coordina, ninguno falta en el roster, ninguno falta en `installers`. No hizo falta ninguna decisión de producto extra |
 | **1b** | `company_installers.role` + FK a `profiles` + índice + backfill + helpers `auth_companies()`/`auth_has_company_role()`/`auth_coordinates_anywhere()` | **Migración escrita, commiteada (`0fba4c6`). Aplicada en producción por el usuario** (confirmado 2026-07-28) |
 | **2** | Reescritura en forma dual (`rama vieja OR rama nueva`) de las 22 policies + `can_operate_project()`, más el test de fuga cruzada | **Aplicada en producción y verificada por el usuario.** `multi_company_membership.test.sql`: 8/8 OK. `coordinator_policies_dual.test.sql`: 14/14 OK tras corregir un error de conteo propio (ver abajo) |
-| 3–6b | Funciones RPC bloqueantes, capa TypeScript, UI, cutover | No empezado |
+| **3** | Funciones RPC bloqueantes + policies de Storage | **Aplicada por el usuario.** Ejecutó la migración 14 y los dos pgTAP (21 + 10 asserts); no reportó ningún `not ok` |
+| **4a** | `CurrentUser.memberships`, `cache()`, helpers, gates, nav y proxy | **Implementada y validada localmente** |
+| **4b** | Guards de Server Actions y prefijos de Storage derivados de la entidad | **Implementada y validada localmente** |
+| **5** | Home por membresía, agrupaciones, i18n y SW v3 | **Implementada y validada localmente.** Falta smoke visual autenticado después del deploy |
+| **6a** | Cutover de perfiles + retiro de ramas RLS legacy | **Aplicada por el usuario.** No reportó ningún error al ejecutar el SQL |
+| **6b** | Limpieza cosmética post-cutover | **Implementada localmente.** `UserRole` ya no admite `coordinator`; coordinación queda exclusivamente como rol de membresía |
+
+### Fases 4–6 — implementación local lista (2026-07-28)
+
+- `CurrentUser` trae membresías activas con empresa, nombre y rol; la lectura
+  queda memoizada por request con `cache()` de React.
+- La autorización usa `canOperateCompany()` y deriva `company_id` de la orden,
+  incidente, hilo, proyecto o convocatoria, nunca de un parámetro libre ni del
+  perfil del coordinador.
+- Los prefijos de adjuntos de orden y chat se validan contra la entidad real.
+- Invitaciones, roster, coordinadores disponibles y asignaciones ya leen el
+  rol desde `company_installers`.
+- `/home` quedó en 234 líneas y se dividió en componentes bajo
+  `components/installer/home/`: próximo destino y semana global, después N
+  bloques (coordinador primero, orden alfabético), anuncios, ausencias, clima y
+  accesos rápidos. Con una sola membresía no aparece agrupación adicional.
+- `/tasks` y `/coordination` agrupan por empresa; `/route` mantiene el orden
+  físico y agrega un chip de empresa. Service Worker: `v2` → `v3`.
+- `20260728000015_multi_company_cutover.sql` convierte los perfiles legacy,
+  retira las ramas antiguas de 13 policies de coordinación, estrecha los
+  constraints y normaliza las altas futuras.
+- El test dual fue reemplazado por `multi_company_cutover.test.sql` (**10
+  asserts**) porque sus expectativas dejan de ser válidas después del corte.
+
+Validación local de esta tanda:
+
+- `pnpm test`: **19 archivos / 118 tests OK**.
+- `pnpm lint`: OK.
+- `pnpm type-check`: OK.
+- `pnpm build`: OK (28 páginas; única advertencia: Node 20 deprecado por
+  Supabase, conviene Node 22).
+- `git diff --check`: OK.
+
+### Fase 3 — implementación local lista (2026-07-28)
+
+La migración
+`20260728000014_multi_company_functions_storage.sql` reemplaza 14 funciones
+`SECURITY DEFINER` y las 5 policies sensibles de Storage:
+
+- `validate_project_relations()` ya valida al coordinador contra la membresía
+  activa de la empresa.
+- promote/demote cambian el rol de `company_installers`; promover rechaza
+  órdenes abiertas en esa empresa y demote retira también la representación
+  legacy para que la rama vieja de RLS no conserve permisos.
+- `accept_invitation()` permite combinar roles entre empresas, rechaza el
+  conflicto dentro de la misma y crea la ficha de oficio sólo cuando el rol
+  invitado es installer.
+- disponibilidad, chat y matching de bolsa resuelven el rol desde la membresía.
+- accept/reject/close de postulaciones permiten al gerente o al coordinador
+  responsable del proyecto, sin depender de `profiles.role='coordinator'`.
+- las notificaciones de postulaciones, avances y chat llegan al coordinador
+  correcto por membresía; los emails de anuncios quedan exclusivos del gerente.
+- `evidence_*` y `chat_storage_*` validan entidad + rol. En particular, no usan
+  `auth_companies()` sin rol, porque eso abriría archivos ajenos a cualquier
+  instalador activo del roster.
+
+Pruebas:
+
+- Nuevo `multi_company_functions_storage.test.sql`: **21 asserts** estructurales.
+- `multi_company_membership.test.sql` pasa de 8 a **10 asserts**: ya no desactiva
+  `projects_validate_relations` y prueba que la disponibilidad funciona en la
+  empresa donde P es installer pero se rechaza donde es coordinator.
+- Validación local de la aplicación: **114 tests**, TypeScript, lint y build de
+  producción OK.
+
+La fase se cerró cuando el usuario confirmó la ejecución de la migración y de
+los dos tests en el SQL Editor.
 
 ### Fase 2 — verificada (2026-07-28)
 
@@ -144,15 +216,15 @@ tareas y anuncios.
 
 ### Próximo paso concreto
 
-1. Aplicar `20260728000012_company_installer_role.sql` (commit `0fba4c6`) en
-   producción — con `supabase db push` o a mano en el SQL Editor, como en la
-   Fase 1a. Es aditiva: no debería cambiar nada observable.
-2. Con eso aplicado: **Fase 2** — reescribir las 22 policies que hoy asumen un
-   solo rol/empresa, en forma dual (`rama vieja OR rama nueva`, ver patrones
-   B/C/D/E del plan). Es la fase de mayor riesgo: **requiere el test de fuga
-   cruzada** (`supabase/tests/multi_company_membership.test.sql`, todavía no
-   escrito) antes de dar por buena, porque las policies PERMISSIVE se combinan
-   con OR y cualquier reescritura floja ensancha el acceso en vez de acotarlo.
+1. Terminar la validación local de las Fases 4–6.
+2. Con autorización explícita, hacer commit y push a `main` para disparar el
+   deploy cuanto antes: la base ya está cortada al modelo definitivo.
+3. Confirmar que `multi_company_cutover.test.sql` y
+   `multi_company_membership.test.sql` dieron **10/10** si no se corrieron junto
+   con la migración.
+4. Hacer smoke autenticado a 375 px con una cuenta de 1 membresía y otra de 3:
+   `/home`, `/tasks`, `/coordination`, `/route`, `/messages`, invitación y
+   subida de adjuntos.
 
 ## PUNTO DE REANUDACIÓN — tanda de correcciones (2026-07-28)
 

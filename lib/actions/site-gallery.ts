@@ -23,7 +23,7 @@ const input = z.object({
  *    el registro de lo que pasó en obra; se le quita la foto del arreglo y se
  *    borra el archivo. El texto del avance y su fecha quedan intactos.
  *
- * Sólo el gerente y el coordinador del proyecto. RLS vuelve a validar.
+ * Sólo el gerente. RLS vuelve a validar.
  */
 export async function deleteSiteGalleryItem(payload: {
   siteId: string;
@@ -38,7 +38,7 @@ export async function deleteSiteGalleryItem(payload: {
     const user = await getCurrentUser();
     if (
       !user ||
-      !["company_manager", "coordinator"].includes(user.role) ||
+      user.role !== "company_manager" ||
       !user.companyId
     ) {
       return { error: t("accessDenied") };

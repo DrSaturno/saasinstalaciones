@@ -1,16 +1,21 @@
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isInstallerArea } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { fetchChatThreads } from "@/lib/data/messages";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default async function MessagesPage() {
   const user = await getCurrentUser();
-  if (!user || !["company_manager", "coordinator", "installer"].includes(user.role)) redirect("/");
+  if (
+    !user ||
+    (user.role !== "company_manager" && !isInstallerArea(user))
+  ) {
+    redirect("/");
+  }
   const [t, format, supabase] = await Promise.all([getTranslations("Messages"), getFormatter(), createClient()]);
-  const threads = await fetchChatThreads(supabase, user.role as "company_manager" | "coordinator" | "installer");
+  const threads = await fetchChatThreads(supabase, user);
   return (
     <main className="mx-auto w-full max-w-[1480px]">
       <h1 className="text-2xl font-bold">{t("title")}</h1><p className="mt-1 text-muted-foreground">{t("description")}</p>

@@ -1,4 +1,4 @@
-import type { OrderStatus, UserRole } from "@/types/database";
+import type { MembershipRole, OrderStatus, UserRole } from "@/types/database";
 import { canTransition } from "@/lib/domain/transitions";
 
 /**
@@ -28,7 +28,7 @@ export type OrderRuleContext = {
 
 export type Actor = {
   id: string;
-  role: UserRole;
+  role: UserRole | MembershipRole;
 };
 
 /**

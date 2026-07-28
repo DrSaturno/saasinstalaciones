@@ -168,7 +168,7 @@
     "creating": "Criando sua conta…",
     "haveAccount": "Já tem conta?",
     "login": "Entrar",
-    "wrongRole": "Este convite é para uma conta de instalador, mas você entrou com outro tipo de conta.",
+    "wrongRole": "Este convite exige uma conta de campo. Contas de empresa ou plataforma não podem aceitá-lo.",
     "joinDescription": "Ao entrar, você poderá receber ordens de serviço desta empresa.",
     "joinedToast": "Você entrou para a equipe!",
     "joined": "Pronto. Estamos levando você às suas tarefas…",
@@ -665,6 +665,7 @@
     "title": "Minhas ordens",
     "description": "As ordens atribuídas a você.",
     "empty": "Você não tem ordens atribuídas por enquanto.",
+    "companyGroup": "Trabalho para {company}",
     "closed": "Encerradas",
     "toAccept": "{count, plural, one {# ordem para aceitar} other {# ordens para aceitar}}",
     "accepted_section": "Aceitas",
@@ -683,6 +684,7 @@
     "noLocation": "Sem localização",
     "overdue": "atrasada",
     "empty": "Você não tem paradas para hoje.",
+    "company": "Empresa: {company}",
     "summary": "{stops, plural, one {# parada} other {# paradas}} · {locatable, plural, one {# com localização} other {# com localização}}",
     "needTwoStops": "Para abrir a rota completa você precisa de pelo menos duas paradas com localização."
   },
@@ -697,14 +699,17 @@
     "openJob": "Abrir ordem",
     "directions": "Como chegar",
     "week": "Sua semana",
+    "weekAllCompanies": "Agenda consolidada de todas as suas empresas.",
     "weather": "Clima nas suas regiões",
     "announcements": "Comunicados da empresa",
     "noAnnouncements": "Não há comunicados recentes.",
     "asInstaller": "Como instalador",
+    "blockInstaller": "Como instalador · {company}",
     "asInstallerHelp": "Os trabalhos que você executa.",
     "coordTotal": "Total de ordens",
     "coordByStatus": "Por status",
     "coordinationTitle": "Como coordenador",
+    "blockCoordinator": "Como coordenador · {company}",
     "coordinationSubtitle": "{count, plural, =0 {Sem projetos sob sua responsabilidade} one {# projeto sob sua responsabilidade} other {# projetos sob sua responsabilidade}}",
     "coordPendingReview": "Aguardam sua confirmação",
     "coordInProgress": "Em andamento",
@@ -723,7 +728,8 @@
       "rejected": "Recusada"
     },
     "noAbsences": "Você não tem ausências declaradas.",
-    "declareAbsence": "Avisar que não estarei"
+    "declareAbsence": "Avisar que não estarei",
+    "noMemberships": "Você ainda não tem vínculos ativos com nenhuma empresa."
   },
   "TaskDetail": {
     "openPhoto": "Abrir a foto",
@@ -1084,7 +1090,7 @@
     "remove": "Remover",
     "coordinatorBadge": "Coordenador",
     "promote": "Promover",
-    "promoteConfirm": "Promover {name} a coordenador? Continua ativo na equipe e mantém suas ordens, e ainda ganha o acesso de coordenação. Será avisado por notificação.",
+    "promoteConfirm": "Promover {name} a coordenador? Só é possível se não tiver ordens abertas nesta empresa. Será avisado por notificação.",
     "promoted": "{name} agora é coordenador",
     "demote": "Voltar a instalador",
     "demoteConfirm": "Devolver {name} ao perfil de instalador? Perde o acesso de coordenação e os projetos que coordenava ficam sem responsável para você reatribuir. Será avisado por notificação.",
@@ -1434,7 +1440,6 @@
     "roles": {
       "platform_admin": "Administrador da plataforma",
       "company_manager": "Gerente",
-      "coordinator": "Coordenador",
       "installer": "Instalador"
     },
     "securityTitle": "Senha",
@@ -1448,6 +1453,9 @@
     "passwordUpdated": "Senha atualizada"
   },
   "Errors": {
+    "promotionOpenOrders": "Não é possível promover: o instalador tem ordens abertas nesta empresa.",
+    "membershipRoleConflict": "Você já tem outro perfil ativo nesta empresa.",
+    "coordinatorInvitationOpenOrders": "Você não pode coordenar esta empresa enquanto tiver ordens abertas como instalador.",
     "coordinatorNotAssignable": "Um coordenador não pode assumir ordens como instalador. Rebaixe-o a instalador em Equipe se quiser atribuí-las.",
     "fileTooLarge": "O arquivo é grande demais. O máximo é 20 MB.",
     "excelUnreadable": "Não foi possível ler o Excel. Verifique se é a planilha baixada e se não está danificada.",
@@ -1516,6 +1524,7 @@
     "title": "Coordenação",
     "description": "As ordens dos projetos sob sua responsabilidade. Confirme os trabalhos concluídos e mova-as de status.",
     "noProjects": "Você ainda não tem projetos sob sua responsabilidade. A empresa os atribui ao criar ou editar um projeto.",
+    "companyGroup": "Coordenação para {company}",
     "filterAll": "Todas",
     "empty": "Não há ordens nesse status.",
     "surveyTitle": "Levantamento pendente de registro",

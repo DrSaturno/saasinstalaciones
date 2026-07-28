@@ -52,15 +52,15 @@ export async function signUpInstaller(
 
   const locale = (await getLocale()).startsWith("pt") ? "pt" : "es";
 
-  // 2. El rol y la empresa salen exclusivamente de la invitación validada.
+  // 2. La cuenta siempre es de campo. El rol por empresa se aplica recién al
+  // aceptar la invitación en company_installers.
   const admin = createAdminClient();
   const { error: createError } = await admin.auth.admin.createUser({
     email: invite.email,
     password,
     email_confirm: true,
     user_metadata: {
-      role: invite.invite_role,
-      company_id: invite.invite_role === "coordinator" ? invite.company_id : undefined,
+      role: "installer",
       full_name: fullName,
       locale,
     },
@@ -87,5 +87,5 @@ export async function signUpInstaller(
   });
   if (acceptError) return { error: acceptError.message };
 
-  redirect(invite.invite_role === "coordinator" ? "/dashboard" : "/tasks");
+  redirect("/home");
 }

@@ -22,7 +22,7 @@ async function requireOperator() {
   ) {
     throw new Error("Acceso denegado");
   }
-  return { user, supabase: await createClient(), companyId: user.companyId };
+  return { supabase: await createClient(), companyId: user.companyId };
 }
 
 export type ActionState = { error: string | null; ok?: boolean };
@@ -38,22 +38,20 @@ export type ActionState = { error: string | null; ok?: boolean };
 async function resolveCoordinatorId(
   supabase: Awaited<ReturnType<typeof createClient>>,
   companyId: string,
-  user: { id: string; role: string },
   coordinatorId: string | null,
 ): Promise<string | null | undefined> {
-  // Un coordinador siempre queda como responsable de lo que crea o edita.
-  const wanted = user.role === "coordinator" ? user.id : coordinatorId;
-  if (!wanted) return null;
+  if (!coordinatorId) return null;
 
   const { data } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("id", wanted)
+    .from("company_installers")
+    .select("installer_id")
     .eq("company_id", companyId)
     .eq("role", "coordinator")
+    .eq("status", "active")
+    .eq("installer_id", coordinatorId)
     .single();
 
-  return data?.id ?? undefined;
+  return data?.installer_id ?? undefined;
 }
 
 function parseProjectForm(formData: FormData) {
@@ -83,7 +81,7 @@ export async function createProject(
   }
 
   try {
-    const { supabase, companyId, user } = await requireOperator();
+    const { supabase, companyId } = await requireOperator();
     const [{ data: client }, coordinatorId] = await Promise.all([
       supabase
         .from("clients")
@@ -94,7 +92,6 @@ export async function createProject(
       resolveCoordinatorId(
         supabase,
         companyId,
-        user,
         parsed.data.coordinatorId,
       ),
     ]);
@@ -112,12 +109,9 @@ export async function createProject(
       country: parsed.data.country,
       zones: parsed.data.zones,
       planned_installations: parsed.data.plannedInstallations,
-      billing_mode:
-        user.role === "company_manager"
-          ? parsed.data.billingMode
-          : "per_installation",
+      billing_mode: parsed.data.billingMode,
       contract_amount:
-        user.role === "company_manager" && parsed.data.billingMode === "project"
+        parsed.data.billingMode === "project"
           ? parsed.data.contractAmount
           : null,
       currency: parsed.data.country === "BR" ? "BRL" : "ARS",
@@ -142,18 +136,15 @@ export async function updateProject(
   if (!parsed.success) return { error: t("invalidData") };
 
   try {
-    const { supabase, companyId, user } = await requireOperator();
+    const { supabase, companyId } = await requireOperator();
     const [{ data: current }, { data: sites }] = await Promise.all([
-      supabase.from("projects").select("contract_amount, country, billing_mode, currency, coordinator_id").eq("id", projectId).eq("company_id", companyId).single(),
+      supabase.from("projects").select("country").eq("id", projectId).eq("company_id", companyId).single(),
       supabase.from("sites").select("zone").eq("project_id", projectId).eq("company_id", companyId),
     ]);
     if (!current) return { error: t("projectNotFound") };
-    if (user.role === "coordinator" && current.coordinator_id !== user.id) {
-      return { error: t("accessDenied") };
-    }
     const [{ data: client }, coordinatorId] = await Promise.all([
       supabase.from("clients").select("id, name").eq("id", parsed.data.clientId).eq("company_id", companyId).single(),
-      resolveCoordinatorId(supabase, companyId, user, parsed.data.coordinatorId),
+      resolveCoordinatorId(supabase, companyId, parsed.data.coordinatorId),
     ]);
     if (!client || coordinatorId === undefined) return { error: t("invalidData") };
     if ((sites ?? []).length > 0 && current.country !== parsed.data.country) return { error: t("projectCountryLocked") };
@@ -172,15 +163,12 @@ export async function updateProject(
         country: parsed.data.country,
         zones: parsed.data.zones,
         planned_installations: parsed.data.plannedInstallations,
-        billing_mode: user.role === "company_manager" ? parsed.data.billingMode : current.billing_mode,
+        billing_mode: parsed.data.billingMode,
         contract_amount:
-          user.role === "company_manager" && parsed.data.billingMode === "project"
+          parsed.data.billingMode === "project"
             ? parsed.data.contractAmount
-            : current.contract_amount,
-        currency:
-          user.role === "company_manager"
-            ? parsed.data.country === "BR" ? "BRL" : "ARS"
-            : current.currency,
+            : null,
+        currency: parsed.data.country === "BR" ? "BRL" : "ARS",
       })
       .eq("id", projectId)
       .eq("company_id", companyId)
@@ -394,20 +382,15 @@ export async function setProjectArchived(
 ): Promise<ActionState> {
   const t = await getTranslations("Errors");
   try {
-    const { supabase, companyId, user } = await requireOperator();
+    const { supabase, companyId } = await requireOperator();
 
     const { data: current } = await supabase
       .from("projects")
-      .select("coordinator_id")
+      .select("id")
       .eq("id", projectId)
       .eq("company_id", companyId)
       .single();
     if (!current) return { error: t("projectNotFound") };
-
-    // Un coordinador sólo puede archivar los proyectos que tiene a cargo.
-    if (user.role === "coordinator" && current.coordinator_id !== user.id) {
-      return { error: t("accessDenied") };
-    }
 
     const { error } = await supabase
       .from("projects")

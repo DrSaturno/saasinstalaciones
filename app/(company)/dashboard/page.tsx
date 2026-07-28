@@ -26,7 +26,6 @@ import { fetchClients } from "@/lib/data/clients";
 import { fetchCoordinators } from "@/lib/data/team";
 import { fetchActiveRoster, fetchAllOrders } from "@/lib/data/orders";
 import { fetchCompanyCurrency, fetchOrderFormProjects } from "@/lib/data/order-form";
-import { getCurrentUser } from "@/lib/auth";
 
 export default async function CompanyDashboard() {
   const [t, supabase] = await Promise.all([
@@ -37,7 +36,7 @@ export default async function CompanyDashboard() {
     supabase.from("companies").select("country").limit(1).maybeSingle(),
     supabase.from("calendar_connections").select("google_email").limit(1).maybeSingle(),
   ]);
-  const [overview, clients, coordinators, roster, orders, projects, currency, user, board] =
+  const [overview, clients, coordinators, roster, orders, projects, currency, board] =
     await Promise.all([
       fetchDashboardOverview(supabase, (company?.country ?? "AR") as Country),
       fetchClients(supabase),
@@ -46,7 +45,6 @@ export default async function CompanyDashboard() {
       fetchAllOrders(supabase),
       fetchOrderFormProjects(supabase),
       fetchCompanyCurrency(supabase),
-      getCurrentUser(),
       fetchBroadcastBoard(supabase),
     ]);
   const forecasts = await fetchZoneForecasts(overview.weatherZones);
@@ -65,8 +63,7 @@ export default async function CompanyDashboard() {
           <CreateProjectDialog
             clients={clients.map(({ id, name }) => ({ id, name }))}
             coordinators={coordinators}
-            canManageFinance={user?.role === "company_manager"}
-            fixedCoordinatorId={user?.role === "coordinator" ? user.id : undefined}
+            canManageFinance
             trigger={<Button variant="outline">{t("quickActions.newProject")}</Button>}
           />
         }
@@ -75,7 +72,7 @@ export default async function CompanyDashboard() {
             projects={projects}
             roster={roster}
             currency={currency}
-            canManageFinance={user?.role === "company_manager"}
+            canManageFinance
             trigger={<Button variant="outline">{t("quickActions.urgentOrder")}</Button>}
           />
         }
@@ -87,7 +84,7 @@ export default async function CompanyDashboard() {
           <CreateBroadcastDialog
             projects={board.projects}
             zones={board.zones}
-            canManageFinance={user?.role === "company_manager"}
+            canManageFinance
             trigger={<Button variant="outline">{t("quickActions.postJob")}</Button>}
           />
         }

@@ -25,6 +25,8 @@ export type CoordinationOrder = {
   status: OrderStatus;
   scheduledDate: string | null;
   projectName: string;
+  companyId: string;
+  companyName: string;
   installerId: string | null;
   installerName: string;
   acceptedAt: string | null;
@@ -39,9 +41,11 @@ export type CoordinationOrder = {
 export function CoordinationBoard({
   orders,
   viewerId,
+  showCompanyGroups,
 }: {
   orders: CoordinationOrder[];
   viewerId: string;
+  showCompanyGroups: boolean;
 }) {
   const t = useTranslations("Coordination");
   const statusT = useTranslations("Status");
@@ -83,6 +87,7 @@ export function CoordinationBoard({
       { id: viewerId, role: "coordinator" },
       ORDER_TRANSITIONS[order.status],
     );
+  const groups = groupOrders(visible, showCompanyGroups);
 
   const move = (order: CoordinationOrder, to: OrderStatus) => {
     if (to === "cancelada" && !window.confirm(t("cancelConfirm", { number: order.orderNumber }))) {
@@ -148,7 +153,20 @@ export function CoordinationBoard({
             <p className="text-sm text-muted-foreground">{t("empty")}</p>
           </div>
         ) : (
-          visible.map((order) => (
+          groups.map((group) => (
+            <div key={group.companyId} className="contents">
+              {showCompanyGroups ? (
+                <h3
+                  className={
+                    mode === "board"
+                      ? "col-span-full mt-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                      : "border-b bg-muted/35 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                  }
+                >
+                  {t("companyGroup", { company: group.companyName })}
+                </h3>
+              ) : null}
+              {group.orders.map((order) => (
             <div
               key={order.id}
               className={
@@ -188,7 +206,7 @@ export function CoordinationBoard({
                 ) : null}
                 {order.installerId ? (
                   <Link
-                    href={`/messages/${order.installerId}`}
+                    href={`/messages/${order.installerId}?company=${order.companyId}`}
                     className="inline-flex items-center gap-1 hover:text-primary"
                   >
                     <MessageSquare className="size-3.5" />
@@ -219,11 +237,36 @@ export function CoordinationBoard({
                 </div>
               ) : null}
             </div>
+              ))}
+            </div>
           ))
         )}
       </div>
     </>
   );
+}
+
+function groupOrders(orders: CoordinationOrder[], grouped: boolean) {
+  if (!grouped) {
+    return [{ companyId: "all", companyName: "", orders }];
+  }
+
+  const groups = new Map<
+    string,
+    { companyName: string; orders: CoordinationOrder[] }
+  >();
+  for (const order of orders) {
+    const current = groups.get(order.companyId) ?? {
+      companyName: order.companyName,
+      orders: [],
+    };
+    current.orders.push(order);
+    groups.set(order.companyId, current);
+  }
+
+  return [...groups.entries()]
+    .sort(([, a], [, b]) => a.companyName.localeCompare(b.companyName))
+    .map(([companyId, group]) => ({ companyId, ...group }));
 }
 
 /** Acta de relevamiento: sin ella la orden no puede pasar a planificada. */

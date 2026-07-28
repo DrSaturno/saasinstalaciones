@@ -12,6 +12,7 @@ import type { OrderStatus } from "@/types/database";
 
 type Stop = {
   id: string;
+  company_id: string;
   order_number: string;
   title: string;
   status: OrderStatus;
@@ -23,6 +24,7 @@ type Stop = {
     lat: number | null;
     lng: number | null;
   } | null;
+  companies: { name: string } | null;
 };
 
 function localDate() {
@@ -37,7 +39,7 @@ function localDate() {
 export default async function InstallerRoutePage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!isInstallerArea(user.role)) redirect(ROLE_HOME[user.role]);
+  if (!isInstallerArea(user)) redirect(ROLE_HOME[user.role]);
 
   const [t, supabase] = await Promise.all([
     getTranslations("InstallerRoute"),
@@ -53,7 +55,7 @@ export default async function InstallerRoutePage() {
   const { data } = await supabase
     .from("work_orders")
     .select(
-      "id, order_number, title, status, scheduled_date, sites(name, address, city, lat, lng)",
+      "id, company_id, order_number, title, status, scheduled_date, sites(name, address, city, lat, lng), companies(name)",
     )
     .eq("assigned_installer_id", user.id)
     .in("status", ["planificada", "en_proceso", "relevamiento"])
@@ -155,12 +157,22 @@ export default async function InstallerRoutePage() {
                           {[site?.address, site?.city].filter(Boolean).join(", ") || stop.title}
                         </p>
                         <div className="mt-1 flex items-center justify-between gap-2">
-                          <span className="font-mono text-[11px] text-muted-foreground">
-                            {stop.order_number}
-                            {stop.scheduled_date && stop.scheduled_date < today
-                              ? ` · ${t("overdue")}`
-                              : ""}
-                          </span>
+                          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                            <span className="font-mono text-[11px] text-muted-foreground">
+                              {stop.order_number}
+                              {stop.scheduled_date && stop.scheduled_date < today
+                                ? ` · ${t("overdue")}`
+                                : ""}
+                            </span>
+                            {user.memberships.length > 1 &&
+                            stop.companies?.name ? (
+                              <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-medium text-primary">
+                                {t("company", {
+                                  company: stop.companies.name,
+                                })}
+                              </span>
+                            ) : null}
+                          </div>
                           {href ? (
                             <a
                               href={href}

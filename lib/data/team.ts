@@ -33,12 +33,20 @@ export type CoordinatorOption = { id: string; name: string };
 export async function fetchCoordinators(
   supabase: SupabaseClient<Database>,
 ): Promise<CoordinatorOption[]> {
-  const { data } = await supabase
+  const { data: memberships } = await supabase
+    .from("company_installers")
+    .select("installer_id")
+    .eq("role", "coordinator")
+    .eq("status", "active");
+  const ids = (memberships ?? []).map((item) => item.installer_id);
+  if (!ids.length) return [];
+
+  const { data: profiles } = await supabase
     .from("profiles")
     .select("id, full_name")
-    .eq("role", "coordinator")
+    .in("id", ids)
     .order("full_name");
-  return (data ?? []).map((profile) => ({
+  return (profiles ?? []).map((profile) => ({
     id: profile.id,
     name: profile.full_name,
   }));
@@ -93,7 +101,7 @@ export async function fetchRoster(
   const t = await getTranslations("DataFallbacks");
   const { data: roster } = await supabase
     .from("company_installers")
-    .select("installer_id, status, joined_at")
+    .select("installer_id, role, status, joined_at")
     .order("joined_at", { ascending: false });
 
   if (!roster || roster.length === 0) return [];
@@ -102,7 +110,7 @@ export async function fetchRoster(
 
   const [{ data: profiles }, { data: installers }, { data: orders }] =
     await Promise.all([
-      supabase.from("profiles").select("id, full_name, role, avatar_path").in("id", ids),
+      supabase.from("profiles").select("id, full_name, avatar_path").in("id", ids),
       supabase
         .from("installers")
         .select("id, zones, rating_avg, rating_count")
@@ -132,7 +140,7 @@ export async function fetchRoster(
     return {
       installerId: r.installer_id,
       name: profile?.full_name ?? t("installer"),
-      isCoordinator: profile?.role === "coordinator",
+      isCoordinator: r.role === "coordinator",
       avatarUrl: profile?.avatar_path
         ? supabase.storage.from("avatars").getPublicUrl(profile.avatar_path).data
             .publicUrl

@@ -8,10 +8,24 @@ import type {
   UnavailabilityStatus,
 } from "@/types/database";
 
+export type InstallerStats = {
+  assigned: number;
+  inProgress: number;
+  doneToday: number;
+  pending: number;
+};
+
 export type InstallerHome = {
-  stats: { assigned: number; inProgress: number; doneToday: number; pending: number };
+  stats: InstallerStats;
+  statsByCompany: {
+    companyId: string;
+    companyName: string;
+    stats: InstallerStats;
+  }[];
   nextJob: {
     id: string;
+    companyId: string;
+    companyName: string;
     orderNumber: string;
     title: string;
     siteName: string;
@@ -36,6 +50,7 @@ export type InstallerHome = {
   /** Ausencias próximas declaradas por el instalador, con su estado de revisión. */
   unavailability: {
     id: string;
+    companyName: string;
     startsAt: string;
     endsAt: string;
     reason: string;
@@ -73,7 +88,7 @@ export async function fetchInstallerHome(
     supabase
       .from("work_orders")
       .select(
-        "id, order_number, title, status, scheduled_date, finalized_at, sites(name, address, city, zone, lat, lng)",
+        "id, company_id, order_number, title, status, scheduled_date, finalized_at, sites(name, address, city, zone, lat, lng)",
       )
       .eq("assigned_installer_id", installerId)
       .order("scheduled_date", { ascending: true, nullsFirst: false }),
@@ -85,7 +100,8 @@ export async function fetchInstallerHome(
     supabase.from("companies").select("id, name"),
     supabase
       .from("installer_unavailability")
-      .select("id, starts_at, ends_at, reason, status, review_note")
+      .select("id, company_id, starts_at, ends_at, reason, status, review_note")
+      .eq("installer_id", installerId)
       .gte("ends_at", new Date().toISOString())
       .order("starts_at")
       .limit(5),
@@ -93,6 +109,7 @@ export async function fetchInstallerHome(
 
   type Row = {
     id: string;
+    company_id: string;
     order_number: string;
     title: string;
     status: OrderStatus;
@@ -125,6 +142,28 @@ export async function fetchInstallerHome(
   });
 
   const companyNames = new Map((companies ?? []).map((row) => [row.id, row.name]));
+  const statsFor = (companyRows: Row[]) => {
+    const companyLive = companyRows.filter(
+      (order) => order.status !== "cancelada",
+    );
+    const companyOpen = companyLive.filter((order) =>
+      OPEN.includes(order.status),
+    );
+    return {
+      assigned: companyOpen.length,
+      inProgress: companyOpen.filter(
+        (order) => order.status === "en_proceso",
+      ).length,
+      doneToday: companyLive.filter(
+        (order) =>
+          order.status === "finalizada" &&
+          order.finalized_at?.slice(0, 10) === today,
+      ).length,
+      pending: companyOpen.filter((order) => order.status === "pendiente")
+        .length,
+    };
+  };
+  const orderCompanyIds = [...new Set(rows.map((order) => order.company_id))];
   const zones = [
     ...new Map(
       open
@@ -135,17 +174,17 @@ export async function fetchInstallerHome(
   ].slice(0, 3);
 
   return {
-    stats: {
-      assigned: open.length,
-      inProgress: open.filter((order) => order.status === "en_proceso").length,
-      doneToday: live.filter(
-        (order) => order.status === "finalizada" && order.finalized_at?.slice(0, 10) === today,
-      ).length,
-      pending: open.filter((order) => order.status === "pendiente").length,
-    },
+    stats: statsFor(rows),
+    statsByCompany: orderCompanyIds.map((companyId) => ({
+      companyId,
+      companyName: companyNames.get(companyId) ?? "",
+      stats: statsFor(rows.filter((order) => order.company_id === companyId)),
+    })),
     nextJob: next
       ? {
           id: next.id,
+          companyId: next.company_id,
+          companyName: companyNames.get(next.company_id) ?? "",
           orderNumber: next.order_number,
           title: next.title,
           siteName: next.sites?.name ?? "—",
@@ -170,6 +209,7 @@ export async function fetchInstallerHome(
     zones,
     unavailability: (absences ?? []).map((row) => ({
       id: row.id,
+      companyName: companyNames.get(row.company_id) ?? "",
       startsAt: row.starts_at,
       endsAt: row.ends_at,
       reason: row.reason,

@@ -1,7 +1,12 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser, ROLE_HOME } from "@/lib/auth";
+import {
+  coordinatorCompanies,
+  getCurrentUser,
+  isCoordinatorSomewhere,
+  ROLE_HOME,
+} from "@/lib/auth";
 import { CoordinationBoard } from "@/components/installer/coordination-board";
 
 /**
@@ -12,14 +17,14 @@ import { CoordinationBoard } from "@/components/installer/coordination-board";
 export default async function CoordinationPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (user.role !== "coordinator") redirect(ROLE_HOME[user.role]);
+  if (!isCoordinatorSomewhere(user)) redirect(ROLE_HOME[user.role]);
 
   const t = await getTranslations("Coordination");
   const supabase = await createClient();
 
   const { data: projects } = await supabase
     .from("projects")
-    .select("id, name")
+    .select("id, name, company_id")
     .eq("coordinator_id", user.id)
     .is("archived_at", null);
 
@@ -66,6 +71,15 @@ export default async function CoordinationPage() {
   const projectName = new Map(
     (projects ?? []).map((project) => [project.id, project.name]),
   );
+  const projectCompany = new Map(
+    (projects ?? []).map((project) => [project.id, project.company_id]),
+  );
+  const companyName = new Map(
+    coordinatorCompanies(user).map((membership) => [
+      membership.companyId,
+      membership.companyName,
+    ]),
+  );
 
   return (
     <div className="mx-auto w-full max-w-[1480px] px-4 py-6">
@@ -85,6 +99,9 @@ export default async function CoordinationPage() {
             status: order.status,
             scheduledDate: order.scheduled_date,
             projectName: projectName.get(order.project_id) ?? "",
+            companyId: projectCompany.get(order.project_id) ?? "",
+            companyName:
+              companyName.get(projectCompany.get(order.project_id) ?? "") ?? "",
             installerId: order.assigned_installer_id,
             installerName: order.assigned_installer_id
               ? (installerName.get(order.assigned_installer_id) ?? "")
@@ -93,6 +110,7 @@ export default async function CoordinationPage() {
             hasSurvey: withSurvey.has(order.id),
           }))}
           viewerId={user.id}
+          showCompanyGroups={coordinatorCompanies(user).length > 1}
         />
       )}
     </div>

@@ -12,7 +12,7 @@
  *  - Todo lo demás (incluido Supabase, otro origen): pasa directo a la red. Las
  *    mutaciones offline las maneja la cola en Dexie, no el SW.
  */
-const VERSION = "v2";
+const VERSION = "v3";
 const STATIC_CACHE = `static-${VERSION}`;
 const PAGE_CACHE = `pages-${VERSION}`;
 

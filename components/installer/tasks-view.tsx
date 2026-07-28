@@ -18,6 +18,7 @@ export type TaskRow = {
   site_name: string;
   site_address: string;
   site_city: string;
+  company_id: string;
   company_name: string;
 };
 
@@ -40,10 +41,12 @@ export function TasksView({
   toAccept,
   active,
   closed,
+  showCompanyGroups,
 }: {
   toAccept: TaskRow[];
   active: TaskRow[];
   closed: TaskRow[];
+  showCompanyGroups: boolean;
 }) {
   const t = useTranslations("InstallerTasks");
   const common = useTranslations("Common");
@@ -70,42 +73,74 @@ export function TasksView({
         />
       </div>
 
-      {sections.map((section) => (
-        <section key={section.key} className="mt-6">
-          <h2 className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-            {section.highlight ? (
-              <BellRing className="size-4 text-primary" aria-hidden="true" />
-            ) : null}
-            {section.label}
-          </h2>
+      {sections.map((section) => {
+        const groups = groupTasks(section.tasks, showCompanyGroups);
+        return (
+          <section key={section.key} className="mt-6">
+            <h2 className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              {section.highlight ? (
+                <BellRing className="size-4 text-primary" aria-hidden="true" />
+              ) : null}
+              {section.label}
+            </h2>
 
-          {mode === "board" ? (
-            <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-              {section.tasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  muted={section.muted}
-                  pendingAcceptance={section.key === "toAccept"}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="mt-3 overflow-hidden rounded-xl border bg-card">
-              {section.tasks.map((task) => (
-                <TaskRowItem
-                  key={task.id}
-                  task={task}
-                  muted={section.muted}
-                  pendingAcceptance={section.key === "toAccept"}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-      ))}
+            {groups.map((group) => (
+              <div key={group.companyId}>
+                {showCompanyGroups ? (
+                  <h3 className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t("companyGroup", { company: group.companyName })}
+                  </h3>
+                ) : null}
+                {mode === "board" ? (
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                    {group.tasks.map((task) => (
+                      <TaskCard
+                        key={task.id}
+                        task={task}
+                        muted={section.muted}
+                        pendingAcceptance={section.key === "toAccept"}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-3 overflow-hidden rounded-xl border bg-card">
+                    {group.tasks.map((task) => (
+                      <TaskRowItem
+                        key={task.id}
+                        task={task}
+                        muted={section.muted}
+                        pendingAcceptance={section.key === "toAccept"}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </section>
+        );
+      })}
     </>
   );
+}
+
+function groupTasks(tasks: TaskRow[], grouped: boolean) {
+  if (!grouped) {
+    return [{ companyId: "all", companyName: "", tasks }];
+  }
+
+  const groups = new Map<string, { companyName: string; tasks: TaskRow[] }>();
+  for (const task of tasks) {
+    const current = groups.get(task.company_id) ?? {
+      companyName: task.company_name,
+      tasks: [],
+    };
+    current.tasks.push(task);
+    groups.set(task.company_id, current);
+  }
+
+  return [...groups.entries()]
+    .sort(([, a], [, b]) => a.companyName.localeCompare(b.companyName))
+    .map(([companyId, group]) => ({ companyId, ...group }));
 }
 
 function TaskRowItem({

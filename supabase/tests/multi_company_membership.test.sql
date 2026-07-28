@@ -60,14 +60,9 @@ insert into public.company_installers (company_id, installer_id, role, status, j
   ('aaaaaaaa-0000-0000-0000-00000000000b', 'aaaaaaaa-0000-0000-0000-0000000000f1', 'installer', 'active', now()),
   ('aaaaaaaa-0000-0000-0000-00000000000a', 'aaaaaaaa-0000-0000-0000-0000000000f2', 'installer', 'active', now());
 
--- validate_project_relations() todavía exige profiles.role='coordinator' (es
--- una de las funciones que arregla la Fase 3, no ésta). Se desactiva sólo para
--- sembrar el fixture: P coordina A1 exclusivamente vía company_installers, que
--- es justamente el escenario que la Fase 3 va a habilitar de punta a punta en
--- la app. El rollback final restaura el trigger solo.
-alter table public.projects disable trigger projects_validate_relations;
-
 -- Dos proyectos en A: sólo A1 lo coordina P. A2 es a propósito ajeno a P.
+-- El insert de A1 también prueba `validate_project_relations()`: P es installer
+-- global y sólo tiene el rol coordinator en su membresía de A.
 insert into public.projects (id, company_id, name, coordinator_id) values
   ('aaaaaaaa-0000-0000-0000-0000000000a1', 'aaaaaaaa-0000-0000-0000-00000000000a', 'Proyecto A1 (coordina P)', 'aaaaaaaa-0000-0000-0000-0000000000f1'),
   ('aaaaaaaa-0000-0000-0000-0000000000a2', 'aaaaaaaa-0000-0000-0000-00000000000a', 'Proyecto A2 (no coordina P)', null);
@@ -75,8 +70,6 @@ insert into public.projects (id, company_id, name, coordinator_id) values
 -- Un proyecto en B, ajeno a P (ahí sólo instala, no coordina nada).
 insert into public.projects (id, company_id, name, coordinator_id) values
   ('aaaaaaaa-0000-0000-0000-0000000000b1', 'aaaaaaaa-0000-0000-0000-00000000000b', 'Proyecto B1', null);
-
-alter table public.projects enable trigger projects_validate_relations;
 
 insert into public.clients (id, company_id, name) values
   ('aaaaaaaa-0000-0000-0000-0000000000c1', 'aaaaaaaa-0000-0000-0000-00000000000a', 'Cliente de A'),
@@ -103,7 +96,7 @@ set local role authenticated;
 set local request.jwt.claims to '{"sub":"aaaaaaaa-0000-0000-0000-0000000000f1","role":"authenticated"}';
 
 select n, msg from (
-  select 0 as n, msg from plan(8) msg
+  select 0 as n, msg from plan(10) msg
 
   -- 1-2. projects: ve A1 (la coordina), no ve A2 (misma empresa, no la coordina).
   union all
@@ -176,7 +169,31 @@ select n, msg from (
   ) msg
 
   union all
-  select 9, msg from finish() msg
+  select 9, msg from lives_ok(
+    $test$
+      select public.replace_installer_weekly_availability(
+        'aaaaaaaa-0000-0000-0000-00000000000b',
+        '[{"weekday":1,"starts_at":"09:00","ends_at":"18:00","timezone":"America/Argentina/Buenos_Aires"}]'::jsonb
+      )
+    $test$,
+    'P puede cargar disponibilidad en B, donde su membresía es installer'
+  ) msg
+
+  union all
+  select 10, msg from throws_ok(
+    $test$
+      select public.replace_installer_weekly_availability(
+        'aaaaaaaa-0000-0000-0000-00000000000a',
+        '[{"weekday":1,"starts_at":"09:00","ends_at":"18:00"}]'::jsonb
+      )
+    $test$,
+    'P0001',
+    'No sos instalador activo de esta empresa',
+    'P no puede cargar disponibilidad en A, donde su membresía es coordinator'
+  ) msg
+
+  union all
+  select 11, msg from finish() msg
 ) results
 order by n;
 

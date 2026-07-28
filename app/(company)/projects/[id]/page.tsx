@@ -12,7 +12,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { fetchClients } from "@/lib/data/clients";
 import { fetchCoordinators } from "@/lib/data/team";
-import { getCurrentUser } from "@/lib/auth";
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -22,13 +21,12 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     getFormatter(),
   ]);
   const supabase = await createClient();
-  const [{ data: project }, sites, { data: orderAmounts }, clients, coordinators, user] = await Promise.all([
+  const [{ data: project }, sites, { data: orderAmounts }, clients, coordinators] = await Promise.all([
     supabase.from("projects").select("id, name, client_name, client_id, coordinator_id, description, status, starts_at, ends_at, country, zones, planned_installations, billing_mode, contract_amount, currency, archived_at").eq("id", id).single(),
     fetchAllSites(supabase, id),
     supabase.from("work_orders").select("status, amount").eq("project_id", id).neq("status", "cancelada"),
     fetchClients(supabase),
     fetchCoordinators(supabase),
-    getCurrentUser(),
   ]);
 
   if (!project) notFound();
@@ -84,7 +82,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           {project.description ? <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground">{project.description}</p> : null}
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
-          <EditProjectDialog projectId={project.id} clients={clients.map(({ id, name }) => ({ id, name }))} coordinators={coordinators} canManageFinance={user?.role === "company_manager"} fixedCoordinatorId={user?.role === "coordinator" ? user.id : undefined} defaults={{
+          <EditProjectDialog projectId={project.id} clients={clients.map(({ id, name }) => ({ id, name }))} coordinators={coordinators} canManageFinance defaults={{
             name: project.name, clientName: project.client_name, description: project.description,
             clientId: project.client_id ?? "", coordinatorId: project.coordinator_id ?? "",
             startsAt: project.starts_at ?? "", endsAt: project.ends_at ?? "", country: project.country,
@@ -103,9 +101,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           { label: t("loaded"), value: activeSites.length },
           { label: t("completedSites"), value: completedSites },
           { label: t("openOrders"), value: Math.max(0, totalOrders - completedOrders) },
-          ...(user?.role === "company_manager"
-            ? [{ label: t("projectValue"), value: amount }]
-            : []),
+          { label: t("projectValue"), value: amount },
         ].map((metric) => <Card key={metric.label}><CardContent className="pt-5"><p className="font-mono text-xl font-semibold">{metric.value}</p><p className="mt-1 text-xs text-muted-foreground">{metric.label}</p></CardContent></Card>)}
       </div>
 

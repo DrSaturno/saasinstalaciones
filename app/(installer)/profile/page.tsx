@@ -24,7 +24,7 @@ export default async function InstallerProfilePage() {
   ]);
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!isInstallerArea(user.role)) redirect(ROLE_HOME[user.role]);
+  if (!isInstallerArea(user)) redirect(ROLE_HOME[user.role]);
 
   const supabase = await createClient();
   const [reputation, availability, { data: profile }] = await Promise.all([

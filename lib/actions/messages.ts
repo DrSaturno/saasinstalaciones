@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { getCurrentUser } from "@/lib/auth";
+import { canOperateCompany, getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 const attachmentSchema = z.object({
@@ -21,17 +21,35 @@ const schema = z.object({
 export async function sendCompanyMessage(input: z.input<typeof schema>) {
   const parsed = schema.safeParse(input);
   if (!parsed.success) return { error: "Mensaje inválido" };
-  const user = await getCurrentUser();
+  const [user, supabase] = await Promise.all([
+    getCurrentUser(),
+    createClient(),
+  ]);
+  if (!user) return { error: "Acceso denegado" };
+
+  const { data: thread } = await supabase
+    .from("chat_threads")
+    .select("id, company_id")
+    .eq("id", parsed.data.threadId)
+    .single();
+  if (!thread || !canOperateCompany(user, thread.company_id)) {
+    return { error: "Acceso denegado" };
+  }
+
+  const expectedPrefix = `${thread.company_id}/${thread.id}/`;
   if (
-    !user?.companyId ||
-    !["company_manager", "coordinator"].includes(user.role)
-  ) return { error: "Acceso denegado" };
-  const supabase = await createClient();
+    parsed.data.attachments.some(
+      (attachment) => !attachment.path.startsWith(expectedPrefix),
+    )
+  ) {
+    return { error: "Adjunto inválido" };
+  }
+
   const { error } = await supabase.from("chat_messages").upsert(
     {
       id: parsed.data.id,
       thread_id: parsed.data.threadId,
-      company_id: user.companyId,
+      company_id: thread.company_id,
       sender_id: user.id,
       body: parsed.data.body,
       attachments: parsed.data.attachments,

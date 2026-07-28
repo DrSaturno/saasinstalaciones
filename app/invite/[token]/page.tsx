@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isInstallerArea } from "@/lib/auth";
 import { AcceptInvitation } from "@/components/invite/accept-invitation";
 import { InstallerSignupForm } from "@/components/invite/installer-signup-form";
 import { Card, CardContent } from "@/components/ui/card";
@@ -77,8 +77,8 @@ export default async function InvitePage({
     );
   }
 
-  // Logueado con un rol que no es installer.
-  if (user.role !== invite.invite_role) {
+  // Gerentes y administradores no pueden sumar una membresía de campo.
+  if (!isInstallerArea(user)) {
     return (
       <InvitationFrame>
         <h1 className="text-lg font-medium">

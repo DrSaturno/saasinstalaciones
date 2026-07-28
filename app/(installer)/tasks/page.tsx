@@ -9,7 +9,7 @@ import { isTerminal } from "@/lib/domain/transitions";
 export default async function InstallerTasks() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!isInstallerArea(user.role)) redirect(ROLE_HOME[user.role]);
+  if (!isInstallerArea(user)) redirect(ROLE_HOME[user.role]);
 
   const t = await getTranslations("InstallerTasks");
   const supabase = await createClient();
@@ -31,7 +31,14 @@ export default async function InstallerTasks() {
           <p className="text-sm text-muted-foreground">{t("empty")}</p>
         </div>
       ) : (
-        <TasksView toAccept={toAccept} active={active} closed={closed} />
+        <TasksView
+          toAccept={toAccept}
+          active={active}
+          closed={closed}
+          showCompanyGroups={
+            new Set(tasks.map((task) => task.company_id)).size > 1
+          }
+        />
       )}
     </div>
   );

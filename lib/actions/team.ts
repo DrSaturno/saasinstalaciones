@@ -121,8 +121,8 @@ export async function cancelInvitation(invitationId: string): Promise<ActionStat
  *
  * El cambio de rol lo hace la RPC vetada `promote_installer_to_coordinator`
  * (SECURITY DEFINER): valida que quien llama sea manager de la misma empresa,
- * que el destino sea un instalador activo y que nadie se ascienda a sí mismo.
- * Sigue activo en el roster y conserva sus órdenes; además se le notifica.
+ * que el destino sea un instalador activo, no tenga órdenes abiertas en esa
+ * empresa y que nadie se ascienda a sí mismo.
  */
 export async function promoteToCoordinator(installerId: string): Promise<ActionState> {
   const t = await getTranslations("Errors");
@@ -131,7 +131,13 @@ export async function promoteToCoordinator(installerId: string): Promise<ActionS
     const { error } = await supabase.rpc("promote_installer_to_coordinator", {
       p_installer_id: installerId,
     });
-    if (error) return { error: error.message };
+    if (error) {
+      return {
+        error: error.message.includes("órdenes abiertas")
+          ? t("promotionOpenOrders")
+          : error.message,
+      };
+    }
 
     revalidatePath("/team");
     revalidatePath("/orders");

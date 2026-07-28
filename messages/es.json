@@ -168,7 +168,7 @@
     "creating": "Creando tu cuenta…",
     "haveAccount": "¿Ya tenés cuenta?",
     "login": "Iniciar sesión",
-    "wrongRole": "Esta invitación es para una cuenta de instalador, pero iniciaste sesión con otro tipo de cuenta.",
+    "wrongRole": "Esta invitación requiere una cuenta de campo. Las cuentas de empresa o plataforma no pueden aceptarla.",
     "joinDescription": "Al unirte vas a poder recibir órdenes de trabajo de esta empresa.",
     "joinedToast": "¡Te uniste al equipo!",
     "joined": "Listo. Te llevamos a tus tareas…",
@@ -665,6 +665,7 @@
     "title": "Mis órdenes",
     "description": "Las órdenes asignadas a vos.",
     "empty": "No tenés órdenes asignadas por ahora.",
+    "companyGroup": "Trabajo para {company}",
     "closed": "Cerradas",
     "toAccept": "{count, plural, one {# orden por aceptar} other {# órdenes por aceptar}}",
     "accepted_section": "Aceptadas",
@@ -683,6 +684,7 @@
     "noLocation": "Sin ubicación cargada",
     "overdue": "atrasada",
     "empty": "No tenés paradas para hoy.",
+    "company": "Empresa: {company}",
     "summary": "{stops, plural, one {# parada} other {# paradas}} · {locatable, plural, one {# con ubicación} other {# con ubicación}}",
     "needTwoStops": "Para abrir la ruta completa necesitás al menos dos paradas con ubicación."
   },
@@ -697,14 +699,17 @@
     "openJob": "Abrir orden",
     "directions": "Cómo llegar",
     "week": "Tu semana",
+    "weekAllCompanies": "Agenda consolidada de todas tus empresas.",
     "weather": "Clima en tus zonas",
     "announcements": "Anuncios de la empresa",
     "noAnnouncements": "No hay anuncios recientes.",
     "asInstaller": "Como instalador",
+    "blockInstaller": "Como instalador · {company}",
     "asInstallerHelp": "Los trabajos que ejecutás vos.",
     "coordTotal": "Total de órdenes",
     "coordByStatus": "Por estado",
     "coordinationTitle": "Como coordinador",
+    "blockCoordinator": "Como coordinador · {company}",
     "coordinationSubtitle": "{count, plural, =0 {Sin proyectos a cargo} one {# proyecto a cargo} other {# proyectos a cargo}}",
     "coordPendingReview": "Esperan tu confirmación",
     "coordInProgress": "En proceso",
@@ -723,7 +728,8 @@
       "rejected": "Rechazada"
     },
     "noAbsences": "No tenés ausencias declaradas.",
-    "declareAbsence": "Avisar que no voy a estar"
+    "declareAbsence": "Avisar que no voy a estar",
+    "noMemberships": "Todavía no tenés membresías activas en ninguna empresa."
   },
   "TaskDetail": {
     "openPhoto": "Abrir la foto",
@@ -1084,7 +1090,7 @@
     "remove": "Quitar",
     "coordinatorBadge": "Coordinador",
     "promote": "Ascender",
-    "promoteConfirm": "¿Ascender a {name} a coordinador? Sigue activo en el equipo y conserva sus órdenes, y además suma el acceso de coordinación. Se le avisa por notificación.",
+    "promoteConfirm": "¿Ascender a {name} a coordinador? Solo se puede si no tiene órdenes abiertas en esta empresa. Se le avisa por notificación.",
     "promoted": "{name} ahora es coordinador",
     "demote": "Volver a instalador",
     "demoteConfirm": "¿Devolver a {name} al rol de instalador? Pierde el acceso de coordinación y los proyectos que coordinaba quedan sin responsable para que los reasignes. Se le avisa por notificación.",
@@ -1434,7 +1440,6 @@
     "roles": {
       "platform_admin": "Administrador de plataforma",
       "company_manager": "Gerente",
-      "coordinator": "Coordinador",
       "installer": "Instalador"
     },
     "securityTitle": "Contraseña",
@@ -1448,6 +1453,9 @@
     "passwordUpdated": "Contraseña actualizada"
   },
   "Errors": {
+    "promotionOpenOrders": "No se puede ascender: el instalador tiene órdenes abiertas en esta empresa.",
+    "membershipRoleConflict": "Ya tenés otro rol activo en esta empresa.",
+    "coordinatorInvitationOpenOrders": "No podés coordinar esta empresa mientras tengas órdenes abiertas como instalador.",
     "coordinatorNotAssignable": "Un coordinador no puede tomar órdenes como instalador. Bajalo a instalador desde Equipo si querés asignárselas.",
     "fileTooLarge": "El archivo es demasiado grande. El máximo es 20 MB.",
     "excelUnreadable": "No se pudo leer el Excel. Verificá que sea la plantilla descargada y que no esté dañado.",
@@ -1516,6 +1524,7 @@
     "title": "Coordinación",
     "description": "Las órdenes de los proyectos que tenés a cargo. Confirmá los trabajos terminados y movelas de estado.",
     "noProjects": "Todavía no tenés proyectos a cargo. La empresa te los asigna al crear o editar un proyecto.",
+    "companyGroup": "Coordinación para {company}",
     "filterAll": "Todas",
     "empty": "No hay órdenes en ese estado.",
     "surveyTitle": "Relevamiento pendiente de registrar",

@@ -12,9 +12,9 @@ type Result = { error: string | null; ok?: boolean; id?: string };
 
 async function requireInstaller(companyId: string) {
   const user = await getCurrentUser();
-  if (!user || !isInstallerArea(user.role)) throw new Error("Acceso denegado");
+  if (!user || !isInstallerArea(user)) throw new Error("Acceso denegado");
   const supabase = await createClient();
-  const { data: roster } = await supabase.from("company_installers").select("installer_id").eq("company_id", companyId).eq("installer_id", user.id).eq("status", "active").single();
+  const { data: roster } = await supabase.from("company_installers").select("installer_id").eq("company_id", companyId).eq("installer_id", user.id).eq("status", "active").eq("role", "installer").single();
   if (!roster) throw new Error("Acceso denegado");
   return { user, supabase };
 }
@@ -68,7 +68,7 @@ export async function saveCoverage(
 
   try {
     const user = await getCurrentUser();
-    if (!user || !isInstallerArea(user.role)) return { error: t("accessDenied") };
+    if (!user || !isInstallerArea(user)) return { error: t("accessDenied") };
     const supabase = await createClient();
     const { error } = await supabase
       .from("installers")
@@ -103,7 +103,7 @@ export async function setAvailabilityEnabled(enabled: boolean): Promise<Result> 
   if (!enabled) return { error: t("useUnavailabilityFlow") };
   try {
     const user = await getCurrentUser();
-    if (!user || !isInstallerArea(user.role)) return { error: t("accessDenied") };
+    if (!user || !isInstallerArea(user)) return { error: t("accessDenied") };
     const supabase = await createClient();
     const { error } = await supabase.from("installers").update({ available: enabled }).eq("id", user.id);
     if (error) return { error: t("operation") };

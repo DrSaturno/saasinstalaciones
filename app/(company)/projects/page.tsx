@@ -5,15 +5,13 @@ import { ProjectsView } from "@/components/company/projects-view";
 import { Card, CardContent } from "@/components/ui/card";
 import { fetchClients } from "@/lib/data/clients";
 import { fetchCoordinators } from "@/lib/data/team";
-import { getCurrentUser } from "@/lib/auth";
 
 export default async function ProjectsPage() {
   const t = await getTranslations("Projects");
   const supabase = await createClient();
-  const [clients, coordinators, user] = await Promise.all([
+  const [clients, coordinators] = await Promise.all([
     fetchClients(supabase),
     fetchCoordinators(supabase),
-    getCurrentUser(),
   ]);
 
   // RLS filtra por empresa: no hace falta (ni conviene) filtrar acá.
@@ -46,10 +44,7 @@ export default async function ProjectsPage() {
         <CreateProjectDialog
           clients={clients.map(({ id, name }) => ({ id, name }))}
           coordinators={coordinators}
-          canManageFinance={user?.role === "company_manager"}
-          fixedCoordinatorId={
-            user?.role === "coordinator" ? user.id : undefined
-          }
+          canManageFinance
         />
       </div>
 
