@@ -6,6 +6,10 @@
 > La aplicación se publicó en `main` con el commit `0d37423` y Vercel confirmó
 > el deployment de producción en estado `success`. La base y la aplicación ya
 > usan el modelo definitivo por membresía; no queda SQL obligatorio por aplicar.
+>
+> **Después de eso** se agregó la recuperación de contraseña (commit `40db95d`,
+> sin deployar al momento de escribir esto). Necesita dos pasos de configuración
+> en Supabase para funcionar — ver "Recuperación de contraseña" más abajo.
 
 ### Qué lo disparó
 
@@ -246,13 +250,58 @@ mejora:
    instalador en otra. Rogelio sólo valida hoy la mitad coordinador.
 2. Completar el smoke autenticado a 375 px de `/tasks`, `/coordination`,
    `/route`, `/messages`, `/profile`, invitación y subida de adjuntos.
-3. Agregar recuperación de contraseña: actualmente sólo existe el cambio desde
-   `/settings`, que exige conocer la contraseña actual.
+3. ~~Agregar recuperación de contraseña~~ — **HECHO** (commit `40db95d`), pero
+   **requiere configuración en Supabase antes de servir**. Ver abajo.
 4. Actualizar Node 20 a Node 22; Supabase muestra una advertencia de deprecación,
-   pero no bloquea tests, build ni deploy.
+   pero no bloquea tests, build ni deploy. **No se hizo a propósito:** declarar
+   `engines.node >= 22` haría que Vercel compile con Node 22 mientras la máquina
+   local sigue en 20.15.0, y ahí un build local que pasa deja de garantizar que
+   el de Vercel pase. Conviene subir primero el Node local y recién después
+   declarar `engines`, en un cambio que se pueda verificar de punta a punta.
 5. Guardar el resultado exacto de los dos pgTAP finales si se necesita evidencia
    auditable: el usuario confirmó la ejecución de los tres SQL y no reportó
    ningún `not ok`, pero no se conservaron sus salidas.
+
+### Recuperación de contraseña (2026-07-28, commit `40db95d`)
+
+Rutas nuevas: `/forgot-password` (pide el email), `/api/auth/callback` (canjea
+el token por una sesión de recuperación) y `/reset-password` (fija la clave
+nueva). Se entra por un link en `/login`.
+
+**Dos decisiones de seguridad que no conviene revertir sin pensarlo:**
+
+- **El pedido responde igual exista o no la cuenta.** Es un formulario público:
+  una respuesta distinta lo volvería un oráculo para averiguar qué direcciones
+  están registradas. Ni el error de Supabase se propaga. Hay un test que fija
+  esa equivalencia, porque es fácil de romper sin querer al agregar manejo de
+  errores.
+- **`/reset-password` no pide la contraseña actual** — quien llega no la
+  recuerda. La prueba de identidad es la sesión que abrió el link, que sólo
+  pudo obtener quien tiene acceso a esa casilla.
+
+El callback acepta las dos formas de link: `token_hash` + `type` (funciona
+aunque el email se abra en otro dispositivo — el caso común) y `code` (PKCE,
+exige el mismo navegador que lo pidió). Si el canje falla, la página lo explica
+y ofrece pedir otro.
+
+**Configuración pendiente en Supabase — sin esto el email no llega:**
+
+1. **Redirect URL:** en Authentication → URL Configuration, agregar
+   `https://saasinstalaciones.vercel.app/api/auth/callback` a la lista de
+   Redirect URLs. Supabase rechaza cualquier `redirectTo` que no esté ahí.
+2. **SMTP propio:** el SMTP incluido de Supabase tiene un límite de pocos
+   emails por hora y en varios proyectos **sólo entrega a miembros de la
+   organización**. Para usuarios reales hay que configurar un SMTP propio en
+   Authentication → Emails → SMTP Settings (Resend sirve, ya hay `RESEND_API_KEY`,
+   pero sigue faltando el dominio verificado que el punto C de este documento
+   viene arrastrando).
+3. Opcional: traducir la plantilla del email de recuperación, que hoy está en
+   inglés por defecto.
+
+**Verificación:** 130 tests en 21 archivos, type-check, lint y build (31 rutas)
+OK. **Sin smoke de navegador**: este clon (`saasgf/saasinstalaciones`) no tiene
+`.env.local` — las claves viven en `saasgf/instalapro/.env.local`. Para levantar
+el dev server acá hay que crear ese archivo con las 3 claves de Supabase.
 
 ## PUNTO DE REANUDACIÓN — tanda de correcciones (2026-07-28)
 
