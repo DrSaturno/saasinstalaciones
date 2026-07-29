@@ -248,7 +248,12 @@ No queda ningún bloqueo para producción ni SQL obligatorio. Pendientes de QA y
 mejora:
 
 1. Probar una cuenta realmente multiempresa: coordinador en una empresa e
-   instalador en otra. Rogelio sólo valida hoy la mitad coordinador.
+   instalador en otra. Rogelio sólo valida hoy la mitad coordinador — con una
+   sola membresía el home ni siquiera renderiza el nivel de agrupación por
+   empresa, así que esa parte de la Fase 5 sigue sin ejercitarse.
+   **El SQL está listo en `supabase/qa_doble_membresia.sql`**: paso 1 lee el
+   estado (sólo SELECT), paso 2 agrega la segunda membresía, paso 3 la
+   deshace. Incluye la lista de qué mirar en cada pantalla.
 2. Completar el smoke autenticado a 375 px de `/tasks`, `/coordination`,
    `/route`, `/messages`, `/profile`, invitación y subida de adjuntos.
 3. ~~Agregar recuperación de contraseña~~ — **HECHO** (commit `40db95d`), pero
