@@ -247,13 +247,8 @@ tareas y anuncios.
 No queda ningún bloqueo para producción ni SQL obligatorio. Pendientes de QA y
 mejora:
 
-1. Probar una cuenta realmente multiempresa: coordinador en una empresa e
-   instalador en otra. Rogelio sólo valida hoy la mitad coordinador — con una
-   sola membresía el home ni siquiera renderiza el nivel de agrupación por
-   empresa, así que esa parte de la Fase 5 sigue sin ejercitarse.
-   **El SQL está listo en `supabase/qa_doble_membresia.sql`**: paso 1 lee el
-   estado (sólo SELECT), paso 2 agrega la segunda membresía, paso 3 la
-   deshace. Incluye la lista de qué mirar en cada pantalla.
+1. ~~Probar una cuenta realmente multiempresa~~ — **HECHO y verificado
+   (2026-07-29).** Ver "Doble membresía verificada" abajo.
 2. Completar el smoke autenticado a 375 px de `/tasks`, `/coordination`,
    `/route`, `/messages`, `/profile`, invitación y subida de adjuntos.
 3. ~~Agregar recuperación de contraseña~~ — **HECHO** (commit `40db95d`), pero
@@ -267,6 +262,36 @@ mejora:
 5. Guardar el resultado exacto de los dos pgTAP finales si se necesita evidencia
    auditable: el usuario confirmó la ejecución de los tres SQL y no reportó
    ningún `not ok`, pero no se conservaron sus salidas.
+
+### Doble membresía verificada (2026-07-29)
+
+Producción tenía **una sola empresa** (Gráfica Demo SA) — con una sola, este
+QA era imposible: los roles son excluyentes dentro de una empresa. Se agregó
+una segunda (`22222222-2222-2222-2222-222222222222`, "QA Doble Membresía") y a
+Rogelio (`39c8d038-a6fb-417c-af03-941a4082dd7c`) se lo sumó ahí como
+`installer`, activo. Ya coordinaba Gráfica Demo SA — su fila confirmó de paso
+que el cutover de la Fase 6a quedó bien: `profiles.role = 'installer'`,
+`company_installers.role = 'coordinator'` para esa empresa. La coordinación
+vive sólo en la membresía, como debía.
+
+**`/home` de Rogelio, verificado con captura:** dos bloques, cada uno con el
+nombre de su empresa —"Como coordinador · Gráfica Demo SA" y "Como instalador ·
+QA Doble Membresía"—, coordinador primero. Debajo de "Tu semana" apareció
+"Agenda consolidada de todas tus empresas", que sólo se renderiza con 2+
+membresías. El bloque de instalador se ve en cero, con sus 4 métricas propias
+sin mezclarse con las de coordinación. Los tres indicios que sólo se
+manifiestan con doble membresía estaban los tres — es la primera vez que se ve
+este camino funcionando, la Fase 5 estaba deployada pero nunca ejercitada así.
+
+**Sin verificar todavía:** `/tasks` y `/coordination` no van a agrupar por
+empresa con este fixture — agrupan según las empresas presentes en las
+órdenes, no en las membresías, y la empresa nueva no tiene ninguna. `/route`
+(chip de empresa) y `/profile` (tarjeta de disponibilidad por empresa) siguen
+sin revisar.
+
+**Limpieza pendiente:** la membresía y la empresa de prueba siguen en
+producción. `supabase/qa_doble_membresia.sql` (paso 3) tiene el DELETE de las
+dos, listo para correr cuando se decida terminar el QA.
 
 ### Recuperación de contraseña (2026-07-28, commit `40db95d`)
 
