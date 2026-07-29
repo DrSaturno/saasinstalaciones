@@ -41,6 +41,46 @@ from public.companies
 order by name;
 
 -- ---------------------------------------------------------------------------
+-- PASO 1.5 — Sólo si el paso 1b devolvió UNA sola empresa
+-- ---------------------------------------------------------------------------
+-- Hallazgo del 2026-07-28: producción tiene una sola empresa (Gráfica Demo SA).
+-- Con una sola, este QA es IMPOSIBLE: los roles son excluyentes dentro de una
+-- empresa, así que nadie puede ser coordinador e instalador a la vez ahí. Hace
+-- falta una segunda empresa.
+--
+-- Dos caminos:
+--
+--   (a) Por la app, desde `/master` con la cuenta platform_admin: es el flujo
+--       real de alta y de paso lo ejercita. Crea también un gerente. Preferible
+--       si además se quiere validar ese flujo.
+--
+--   (b) Por SQL, con el insert de acá abajo: más rápido y no crea usuarios de
+--       más. Alcanza para este QA, porque lo que se quiere probar es la
+--       agrupación por empresa del área instalador, no el alta.
+--
+-- `order_prefix` tiene que ser único: es lo que numera las órdenes (QAT-00001).
+
+/*
+insert into public.companies (id, name, country, order_prefix)
+values (
+  '22222222-2222-2222-2222-222222222222',
+  'QA Doble Membresía',
+  'AR',
+  'QAT'
+)
+on conflict (id) do nothing;
+*/
+
+-- Para borrarla al terminar (después del paso 3, que saca la membresía):
+--
+--   delete from public.companies
+--   where id = '22222222-2222-2222-2222-222222222222';
+--
+-- El `on delete cascade` de `company_installers` se lleva la membresía sola,
+-- pero conviene igual correr el paso 3 primero y confirmar que no quedó nada
+-- colgando.
+
+-- ---------------------------------------------------------------------------
 -- PASO 2 — Agregar la segunda membresía
 -- ---------------------------------------------------------------------------
 -- Reemplazar los dos UUID con lo que haya devuelto el paso 1. La empresa tiene
@@ -52,11 +92,21 @@ order by name;
 -- empresa, esto arma justo el caso mixto (coordina en una, ejecuta en otra),
 -- que es lo que falta probar.
 
+-- Valores reales de producción, resueltos el 2026-07-28 con el paso 1:
+--
+--   Rogelio Instalador 1 – Prueba   39c8d038-a6fb-417c-af03-941a4082dd7c
+--     · rol_de_cuenta      installer   ← el cutover de la Fase 6a ya aplicado
+--     · Gráfica Demo SA    coordinator ← la coordinación vive en la membresía
+--     · ficha de oficio    sí
+--
+-- Es el sujeto ideal: ya coordina en una empresa, así que sumarlo como
+-- instalador en la otra arma el caso mixto de una sola fila.
+
 /*
 insert into public.company_installers (company_id, installer_id, role, status, joined_at)
 values (
-  'PEGAR-AQUI-EL-COMPANY-ID',   -- empresa donde va a ser instalador
-  'PEGAR-AQUI-EL-PERSONA-ID',   -- la misma persona del paso 1
+  '22222222-2222-2222-2222-222222222222',  -- QA Doble Membresía
+  '39c8d038-a6fb-417c-af03-941a4082dd7c',  -- Rogelio
   'installer',
   'active',
   now()
@@ -72,9 +122,11 @@ do update set role = excluded.role, status = 'active';
 --                   con el nombre de su empresa). Con una sola membresía este
 --                   nivel de agrupación no se renderiza — que aparezca ES la
 --                   prueba.
---   /tasks        → agrupa por empresa, pero los grupos "para aceptar /
---                   activas / cerradas" quedan ARRIBA: la decisión urgente
---                   trasciende empresas.
+--   /tasks        → OJO: no va a agrupar todavía, y está bien. Agrupa según
+--                   las empresas presentes EN LAS ÓRDENES, no en las
+--                   membresías, y la empresa nueva no tiene ninguna. Para
+--                   ejercitar ese camino hace falta proyecto + locación +
+--                   orden asignada allá (ver "lo que esto NO cubre", al final).
 --   /coordination → sólo las órdenes de los proyectos que coordina; no se
 --                   mezclan con las que ejecuta.
 --   /route        → NO agrupa (la ruta es física y cronológica); cada parada
@@ -85,7 +137,19 @@ do update set role = excluded.role, status = 'active';
 -- persona, no por empresa. Si la persona nunca fue instaladora puede no tener
 -- fila ahí, y entonces la bolsa (`/jobs`) no le va a ofrecer nada. Eso es
 -- correcto, no un bug: `company_installers` es la pertenencia, `installers` es
--- el oficio.
+-- el oficio. (Rogelio sí tiene ficha, así que este caso no aplica.)
+--
+-- LO QUE ESTO **NO** CUBRE
+--
+-- La empresa nueva queda vacía: sin proyectos, locaciones ni órdenes. Alcanza
+-- para probar que el home arma N bloques y que `/route` pone el chip de
+-- empresa, que es el grueso de la Fase 5. Pero deja afuera la agrupación de
+-- `/tasks` y `/coordination`, que dependen de que HAYA datos de dos empresas.
+--
+-- Para cubrir eso hace falta, en la empresa nueva: un proyecto, una locación y
+-- una orden asignada a la persona. Es un fixture bastante más invasivo en
+-- producción — conviene decidirlo aparte, después de ver si los bloques del
+-- home salen bien, que es el riesgo principal.
 
 -- ---------------------------------------------------------------------------
 -- PASO 3 — Deshacer, cuando la prueba termine
@@ -98,6 +162,9 @@ do update set role = excluded.role, status = 'active';
 
 /*
 delete from public.company_installers
-where company_id = 'PEGAR-AQUI-EL-COMPANY-ID'
-  and installer_id = 'PEGAR-AQUI-EL-PERSONA-ID';
+where company_id = '22222222-2222-2222-2222-222222222222'
+  and installer_id = '39c8d038-a6fb-417c-af03-941a4082dd7c';
+
+delete from public.companies
+where id = '22222222-2222-2222-2222-222222222222';
 */
