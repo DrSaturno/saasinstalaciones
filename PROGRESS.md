@@ -7,9 +7,10 @@
 > el deployment de producción en estado `success`. La base y la aplicación ya
 > usan el modelo definitivo por membresía; no queda SQL obligatorio por aplicar.
 >
-> **Después de eso** se agregó la recuperación de contraseña (commit `40db95d`,
-> sin deployar al momento de escribir esto). Necesita dos pasos de configuración
-> en Supabase para funcionar — ver "Recuperación de contraseña" más abajo.
+> **Después de eso** se agregó la recuperación de contraseña (commit `40db95d`),
+> ya deployada y verificada en producción salvo el envío del email, que depende
+> de dos pasos de configuración en Supabase todavía pendientes — ver
+> "Recuperación de contraseña" más abajo.
 
 ### Qué lo disparó
 
@@ -298,10 +299,32 @@ y ofrece pedir otro.
 3. Opcional: traducir la plantilla del email de recuperación, que hoy está en
    inglés por defecto.
 
-**Verificación:** 130 tests en 21 archivos, type-check, lint y build (31 rutas)
-OK. **Sin smoke de navegador**: este clon (`saasgf/saasinstalaciones`) no tiene
-`.env.local` — las claves viven en `saasgf/instalapro/.env.local`. Para levantar
-el dev server acá hay que crear ese archivo con las 3 claves de Supabase.
+**Verificación local:** 130 tests en 21 archivos, type-check, lint y build
+(31 rutas) OK.
+
+**Smoke en producción a 375 px** (deploy del commit `40cca57`), sin login —
+las tres rutas son públicas:
+
+| Qué | Resultado |
+|---|---|
+| `/forgot-password` en es | "Recuperar contraseña" + campo de email + volver a ingresar |
+| `/forgot-password` en pt | "Recuperar senha" — traducciones nuevas OK |
+| `/reset-password` sin sesión | Muestra "El link no sirve" y ofrece pedir uno nuevo, en vez de rebotar a login |
+| `/reset-password` en pt | "O link não serve" |
+| `/login` | Aparece "¿Olvidaste tu contraseña?" apuntando a `/forgot-password` |
+| `/api/auth/callback?code=<inválido>` | Redirige a `/reset-password?error=link` y cae en el mensaje amable — el camino de error funciona de punta a punta |
+| Consola | Sin errores |
+
+**Lo único que falta verificar es que el email llegue**, y eso depende de la
+configuración de Supabase de arriba. No se probó el envío real a propósito: el
+SMTP incluido admite pocos pedidos por hora, y gastar uno ahora podría dejar
+sin cupo la prueba real.
+
+Nota de entorno: este clon (`saasgf/saasinstalaciones`) **no tiene**
+`.env.local` — las claves viven en `saasgf/instalapro/.env.local`, que es otro
+proyecto. Por eso el dev server local no levanta acá y la verificación se hizo
+contra producción. Para trabajar en local hay que crear ese archivo con las 3
+claves de Supabase.
 
 ## PUNTO DE REANUDACIÓN — tanda de correcciones (2026-07-28)
 
