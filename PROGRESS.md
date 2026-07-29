@@ -283,11 +283,23 @@ sin mezclarse con las de coordinación. Los tres indicios que sólo se
 manifiestan con doble membresía estaban los tres — es la primera vez que se ve
 este camino funcionando, la Fase 5 estaba deployada pero nunca ejercitada así.
 
+**`/profile` — una sola tarjeta de disponibilidad, y está bien.** Aparece
+"QA Doble Membresía" y no Gráfica Demo SA porque
+`fetchInstallerAvailability` filtra por `role = 'installer'`
+([availability.ts:23](lib/data/availability.ts)). La disponibilidad responde
+"¿cuándo podés salir a instalar?", así que sólo tiene sentido donde la persona
+ejecuta; en la empresa que coordina no sale a la calle. Que la tarjeta resuelva
+el nombre de la empresa es además la prueba inversa del bug 1 de la Fase 1a,
+donde salía vacía siempre.
+
+**`/route` — vacío, correcto:** Rogelio no tiene órdenes asignadas, así que no
+hay paradas. El chip de empresa por parada queda sin ejercitar por la misma
+razón que `/tasks`: hace falta una orden asignada en la empresa nueva.
+
 **Sin verificar todavía:** `/tasks` y `/coordination` no van a agrupar por
 empresa con este fixture — agrupan según las empresas presentes en las
-órdenes, no en las membresías, y la empresa nueva no tiene ninguna. `/route`
-(chip de empresa) y `/profile` (tarjeta de disponibilidad por empresa) siguen
-sin revisar.
+órdenes, no en las membresías, y la empresa nueva no tiene ninguna. Cubrir eso
+(y el chip de `/route`) pide proyecto + locación + orden asignada allá.
 
 **Limpieza pendiente:** la membresía y la empresa de prueba siguen en
 producción. `supabase/qa_doble_membresia.sql` (paso 3) tiene el DELETE de las
