@@ -25,8 +25,15 @@ const ROLE_AREAS: Record<UserRole, readonly string[]> = {
 
 const ALL_AREAS = Object.values(ROLE_AREAS).flat();
 
-// Rutas públicas (no requieren sesión).
-const PUBLIC_PATHS = ["/", "/login"];
+/**
+ * Rutas públicas (no requieren sesión).
+ *
+ * `/reset-password` entra acá aunque normalmente se llegue con la sesión de
+ * recuperación ya abierta: si el link venció o se abrió en otro navegador, la
+ * página necesita poder explicarlo y ofrecer pedir uno nuevo, en vez de rebotar
+ * a un login que no dice nada.
+ */
+const PUBLIC_PATHS = ["/", "/login", "/forgot-password", "/reset-password"];
 const isPublic = (path: string) =>
   PUBLIC_PATHS.includes(path) || path.startsWith("/invite/");
 

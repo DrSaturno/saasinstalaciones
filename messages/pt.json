@@ -152,7 +152,30 @@
     "password": "Senha",
     "emailPlaceholder": "voce@empresa.com",
     "submit": "Entrar",
-    "submitting": "Entrando…"
+    "submitting": "Entrando…",
+    "forgotPassword": "Esqueceu sua senha?"
+  },
+  "ForgotPassword": {
+    "title": "Recuperar senha",
+    "description": "Digite seu e-mail e enviaremos um link para escolher uma nova senha.",
+    "submit": "Enviar link",
+    "submitting": "Enviando…",
+    "sent": "Se esse endereço tiver uma conta, receberá um e-mail com o link. Confira também a pasta de spam.",
+    "backToLogin": "Voltar para entrar"
+  },
+  "ResetPassword": {
+    "title": "Escolha sua nova senha",
+    "description": "Você vai usá-la para entrar na próxima vez.",
+    "newPassword": "Nova senha",
+    "confirmPassword": "Repetir senha",
+    "hint": "Pelo menos 8 caracteres.",
+    "submit": "Salvar senha",
+    "submitting": "Salvando…",
+    "done": "Pronto, sua senha foi atualizada.",
+    "goToLogin": "Entrar",
+    "invalidLink": "O link não serve",
+    "invalidLinkDescription": "Ele pode ter expirado, já ter sido usado, ou ter sido aberto em um navegador diferente do que o solicitou. Peça um novo.",
+    "requestNew": "Pedir um novo link"
   },
   "Invitation": {
     "invalidTitle": "Convite inválido",
@@ -1518,7 +1541,8 @@
     "orderBatch": "Foram criadas {count} ordens e o lote seguinte falhou: {error}",
     "invalidOrderTransition": "Não é possível passar de “{from}” para “{to}”.",
     "systemStatusChange": "Status → {status}",
-    "systemStatusChangeNote": "Status → {status}: {note}"
+    "systemStatusChangeNote": "Status → {status}: {note}",
+    "resetLinkInvalid": "O link de recuperação expirou ou já foi usado. Peça um novo."
   },
   "Coordination": {
     "title": "Coordenação",

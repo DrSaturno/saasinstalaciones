@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { loginAction, type LoginState } from "./actions";
@@ -32,7 +33,15 @@ export function LoginForm() {
         />
       </div>
       <div className="flex flex-col gap-2">
-        <Label htmlFor="password">{t("password")}</Label>
+        <div className="flex items-baseline justify-between gap-2">
+          <Label htmlFor="password">{t("password")}</Label>
+          <Link
+            href="/forgot-password"
+            className="text-xs text-muted-foreground hover:text-primary"
+          >
+            {t("forgotPassword")}
+          </Link>
+        </div>
         <Input
           id="password"
           name="password"

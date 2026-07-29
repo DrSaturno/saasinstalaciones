@@ -152,7 +152,30 @@
     "password": "Contraseña",
     "emailPlaceholder": "tu@empresa.com",
     "submit": "Ingresar",
-    "submitting": "Ingresando…"
+    "submitting": "Ingresando…",
+    "forgotPassword": "¿Olvidaste tu contraseña?"
+  },
+  "ForgotPassword": {
+    "title": "Recuperar contraseña",
+    "description": "Escribí tu email y te mandamos un link para elegir una contraseña nueva.",
+    "submit": "Enviar link",
+    "submitting": "Enviando…",
+    "sent": "Si esa dirección tiene una cuenta, va a recibir un email con el link. Revisá también la carpeta de spam.",
+    "backToLogin": "Volver a ingresar"
+  },
+  "ResetPassword": {
+    "title": "Elegí tu contraseña nueva",
+    "description": "Vas a poder ingresar con ella la próxima vez.",
+    "newPassword": "Contraseña nueva",
+    "confirmPassword": "Repetir contraseña",
+    "hint": "Al menos 8 caracteres.",
+    "submit": "Guardar contraseña",
+    "submitting": "Guardando…",
+    "done": "Listo, tu contraseña quedó actualizada.",
+    "goToLogin": "Ingresar",
+    "invalidLink": "El link no sirve",
+    "invalidLinkDescription": "Puede haber vencido, ya haberse usado, o haberse abierto en un navegador distinto del que lo pidió. Pedí uno nuevo.",
+    "requestNew": "Pedir un link nuevo"
   },
   "Invitation": {
     "invalidTitle": "Invitación no válida",
@@ -1518,7 +1541,8 @@
     "orderBatch": "Se crearon {count} órdenes y falló el lote siguiente: {error}",
     "invalidOrderTransition": "No se puede pasar de «{from}» a «{to}».",
     "systemStatusChange": "Estado → {status}",
-    "systemStatusChangeNote": "Estado → {status}: {note}"
+    "systemStatusChangeNote": "Estado → {status}: {note}",
+    "resetLinkInvalid": "El link de recuperación venció o ya se usó. Pedí uno nuevo."
   },
   "Coordination": {
     "title": "Coordinación",

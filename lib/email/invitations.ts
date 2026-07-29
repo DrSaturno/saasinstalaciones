@@ -1,5 +1,7 @@
 import "server-only";
 
+import { applicationOrigin } from "@/lib/app-origin";
+
 export type InvitationEmailStatus = "sent" | "not_configured" | "failed";
 
 type InvitationEmailCopy = {
@@ -19,22 +21,13 @@ type SendInvitationEmailInput = {
 };
 
 export function invitationUrl(token: string): string {
-  const configured = process.env.APP_URL?.trim();
-  const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
-  const candidate = configured || (vercelHost ? `https://${vercelHost}` : "");
-
+  const path = `/invite/${encodeURIComponent(token)}`;
   try {
-    const origin = new URL(candidate || "http://localhost:3000");
-    const allowedProtocol =
-      origin.protocol === "https:" ||
-      (origin.protocol === "http:" &&
-        (origin.hostname === "localhost" || origin.hostname === "127.0.0.1"));
-    if (!allowedProtocol || origin.username || origin.password) {
-      throw new Error("Invalid application origin");
-    }
-    return new URL(`/invite/${encodeURIComponent(token)}`, origin.origin).toString();
+    return new URL(path, applicationOrigin()).toString();
   } catch {
-    return `http://localhost:3000/invite/${encodeURIComponent(token)}`;
+    // Un origen mal configurado no puede tumbar el alta: se devuelve el link
+    // local y la UI ofrece copiarlo a mano.
+    return `http://localhost:3000${path}`;
   }
 }
 
