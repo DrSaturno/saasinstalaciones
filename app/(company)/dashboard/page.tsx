@@ -14,6 +14,7 @@ import { DashboardQuality } from "@/components/company/dashboard-quality";
 import { DashboardQuickActions } from "@/components/company/dashboard-quick-actions";
 import { DashboardTodayOrders } from "@/components/company/dashboard-today-orders";
 import { Button } from "@/components/ui/button";
+import { fetchPublishedAnnouncements } from "@/lib/data/announcements";
 import { fetchDashboardOverview } from "@/lib/data/dashboard";
 import { createClient } from "@/lib/supabase/server";
 import { fetchZoneForecasts } from "@/lib/weather/forecast";
@@ -38,7 +39,7 @@ export default async function CompanyDashboard() {
     supabase.from("companies").select("country").limit(1).maybeSingle(),
     supabase.from("calendar_connections").select("google_email").limit(1).maybeSingle(),
   ]);
-  const [overview, clients, coordinators, roster, orders, projects, currency, board] =
+  const [overview, clients, coordinators, roster, orders, projects, currency, board, announcements] =
     await Promise.all([
       fetchDashboardOverview(supabase, (company?.country ?? "AR") as Country),
       fetchClients(supabase),
@@ -48,6 +49,7 @@ export default async function CompanyDashboard() {
       fetchOrderFormProjects(supabase),
       fetchCompanyCurrency(supabase),
       fetchBroadcastBoard(supabase),
+      fetchPublishedAnnouncements(supabase),
     ]);
   const forecasts = await fetchZoneForecasts(overview.weatherZones);
 
@@ -96,6 +98,7 @@ export default async function CompanyDashboard() {
       <AnnouncementComposer
         zones={overview.regions.map((region) => region.name)}
         projects={projects.map(({ id, name }) => ({ id, name }))}
+        history={announcements}
       />
       <DashboardPulse alerts={overview.alerts} forecasts={forecasts} roster={roster} />
       <DashboardOperations forecasts={forecasts} calendarEmail={calendar?.google_email ?? null} calendarConfigured={googleCalendarConfigured()} />

@@ -8,6 +8,8 @@ import {
   publishAnnouncement,
   type AnnouncementState,
 } from "@/lib/actions/announcements";
+import type { PublishedAnnouncement } from "@/lib/data/announcements";
+import { AnnouncementsHistoryDialog } from "@/components/company/announcements-history-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,9 +23,11 @@ const selectClass =
 export function AnnouncementComposer({
   zones,
   projects,
+  history,
 }: {
   zones: string[];
   projects: { id: string; name: string }[];
+  history: PublishedAnnouncement[];
 }) {
   const t = useTranslations("Announcements");
   const formRef = useRef<HTMLFormElement>(null);
@@ -42,7 +46,7 @@ export function AnnouncementComposer({
   // React remonta el formulario y el selector de público vuelve solo a "todo el
   // equipo". Con un booleano, dos envíos seguidos daban la misma key y el
   // selector se quedaba con la elección anterior.
-  return <ComposerForm key={state.announcementId ?? "draft"} {...{ t, formRef, formAction, pending, state, zones, projects }} />;
+  return <ComposerForm key={state.announcementId ?? "draft"} {...{ t, formRef, formAction, pending, state, zones, projects, history }} />;
 }
 
 function ComposerForm({
@@ -53,6 +57,7 @@ function ComposerForm({
   state,
   zones,
   projects,
+  history,
 }: {
   t: ReturnType<typeof useTranslations<"Announcements">>;
   formRef: React.RefObject<HTMLFormElement | null>;
@@ -61,17 +66,23 @@ function ComposerForm({
   state: AnnouncementState;
   zones: string[];
   projects: { id: string; name: string }[];
+  history: PublishedAnnouncement[];
 }) {
   const [audienceType, setAudienceType] = useState<"all" | "zone" | "project">("all");
 
   return (
     <Card>
       <CardHeader className="border-b">
-        <div className="flex items-center gap-2">
-          <Megaphone className="size-4 text-primary" aria-hidden="true" />
-          <CardTitle>{t("title")}</CardTitle>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <div className="flex items-center gap-2">
+              <Megaphone className="size-4 text-primary" aria-hidden="true" />
+              <CardTitle>{t("title")}</CardTitle>
+            </div>
+            <p className="text-xs text-muted-foreground">{t("description")}</p>
+          </div>
+          <AnnouncementsHistoryDialog announcements={history} />
         </div>
-        <p className="text-xs text-muted-foreground">{t("description")}</p>
       </CardHeader>
       <CardContent>
         <form ref={formRef} action={formAction} className="grid gap-4 lg:grid-cols-[1fr_260px]">

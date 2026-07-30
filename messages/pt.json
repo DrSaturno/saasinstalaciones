@@ -1472,7 +1472,12 @@
     "publishing": "Publicando…",
     "published": "{count, plural, =0 {Ninguém corresponde a esse público} one {Enviado a # instalador} other {Enviado a # instaladores}}",
     "publishedWithEmail": "{count, plural, one {Enviado a # instalador (também por e-mail)} other {Enviado a # instaladores (também por e-mail)}}",
-    "deliveryNote": "É enviado à caixa do app, como notificação push e por e-mail."
+    "deliveryNote": "É enviado à caixa do app, como notificação push e por e-mail.",
+    "historyTrigger": "Histórico",
+    "historyTitle": "Comunicados publicados",
+    "historyDescription": "Os últimos 20, do mais recente ao mais antigo.",
+    "historyEmpty": "Você ainda não publicou nenhum comunicado.",
+    "historyRecipients": "{count, plural, =0 {Não chegou a ninguém} one {Chegou a # instalador} other {Chegou a # instaladores}}"
   },
   "AnnouncementEmail": {
     "subject": "Comunicado de {company}",
