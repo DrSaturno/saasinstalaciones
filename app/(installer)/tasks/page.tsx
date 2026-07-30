@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { getCurrentUser, ROLE_HOME, isInstallerArea } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { fetchMyTasks } from "@/lib/data/tasks";
+import { PwaLaunchRedirect } from "@/components/installer/pwa-launch-redirect";
 import { TasksView } from "@/components/installer/tasks-view";
 import { isTerminal } from "@/lib/domain/transitions";
 
@@ -23,6 +24,9 @@ export default async function InstallerTasks() {
 
   return (
     <div className="mx-auto w-full max-w-[1480px]">
+      {/* Las PWA instaladas antes del cambio de `start_url` siguen arrancando
+          acá: si esta pantalla es el arranque, se va derecho al inicio. */}
+      <PwaLaunchRedirect to="/home" />
       <h1 className="text-2xl font-bold">{t("title")}</h1>
       <p className="mt-1 text-sm text-muted-foreground">{t("description")}</p>
 

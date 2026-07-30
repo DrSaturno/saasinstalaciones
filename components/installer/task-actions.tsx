@@ -20,6 +20,9 @@ type Props = {
   acceptedAt: string | null;
 };
 
+/** Estados en los que la orden todavía no arrancó y confirmarla tiene sentido. */
+const BEFORE_START: OrderStatus[] = ["pendiente", "relevamiento", "planificada"];
+
 function makePhotos(companyId: string, orderId: string, files: File[]): PendingPhoto[] {
   return files.map((file) => ({
     id: crypto.randomUUID(),
@@ -120,19 +123,28 @@ export function TaskActions({ orderId, companyId, status: initialStatus, accepte
     });
   };
 
+  // Aceptar va ANTES de mirar el estado puntual: una orden recién asignada
+  // suele estar "pendiente" o "en relevamiento", no "planificada". Atarlo a un
+  // solo estado dejaba sin botón justo el caso más común — entrar desde la
+  // notificación a una orden que todavía no se confirmó.
+  //
+  // Es además precondición de arrancar, y la valida el trigger de la base: sin
+  // este corte, "Iniciar" encolaba una transición condenada a fallar, con la
+  // orden ya movida en pantalla y el ítem reintentando en silencio en la cola.
+  //
+  // Se limita a los estados PREVIOS al arranque a propósito: las órdenes que ya
+  // estaban en proceso antes de que existiera la confirmación tienen el campo
+  // vacío, y pedirles aceptar ahora las dejaría sin poder terminarse.
+  if (!acceptedAt && BEFORE_START.includes(status)) {
+    return (
+      <div className="flex flex-col gap-3">
+        <p className="text-sm text-muted-foreground">{t("acceptFirst")}</p>
+        <AcceptOrderButton orderId={orderId} />
+      </div>
+    );
+  }
+
   if (status === "planificada") {
-    // Aceptar es precondición de arrancar: lo exige el trigger de la base. Sin
-    // este corte el botón encolaba una transición que el servidor iba a
-    // rechazar recién al sincronizar, dejando la orden "en proceso" en pantalla
-    // y un ítem fallando en la cola.
-    if (!acceptedAt) {
-      return (
-        <div className="flex flex-col gap-3">
-          <p className="text-sm text-muted-foreground">{t("acceptFirst")}</p>
-          <AcceptOrderButton orderId={orderId} />
-        </div>
-      );
-    }
     return (
       <Button onClick={start} disabled={pending} className="w-full" size="lg">
         {pending ? t("starting") : t("start")}
