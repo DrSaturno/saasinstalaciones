@@ -2,8 +2,8 @@
 
 ## PUNTO DE REANUDACIÓN — pasada de QA del usuario (2026-07-30)
 
-> **Las 8 fases están implementadas y pusheadas.** Falta una migración por
-> aplicar (F6) y la prueba a mano de todo.
+> **Las 8 fases están implementadas, pusheadas y con la migración de F6 ya
+> aplicada por el usuario.** Sólo falta la prueba a mano de todo.
 
 El usuario recorrió la app y trajo 17 pedidos. Se implementaron en 8 fases,
 cada una con su commit:
@@ -26,11 +26,9 @@ usuario.
 
 ### Lo que falta
 
-1. **Aplicar la migración de F6** en el SQL Editor:
-   `supabase/migrations/20260730000001_clients_social_links.sql`. Es aditiva
-   (4 columnas con default `''`) y no toca RLS. **Hasta que se aplique, la
-   ficha de cliente va a fallar** al guardar: el código ya manda las columnas
-   nuevas.
+1. ~~Aplicar la migración de F6~~ — **hecho, confirmado por el usuario
+   (2026-07-30)**: `supabase/migrations/20260730000001_clients_social_links.sql`
+   ya corrió en producción.
 2. **Probar a mano** todo lo de la tabla de arriba.
 
 ### Detalles que conviene recordar
