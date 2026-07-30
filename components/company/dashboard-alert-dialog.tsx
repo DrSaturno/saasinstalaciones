@@ -20,20 +20,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 
-/**
- * Alertas del pulso que se resuelven sin salir del inicio.
- *
- * Sólo cuatro tipos tienen una decisión de un click con sentido. Un proyecto
- * con desvío o una incidencia crítica necesitan mirar contexto antes de hacer
- * nada, así que ésas siguen siendo un link — fingir un botón ahí sería
- * empujar a decidir a ciegas.
- */
-const ACTIONABLE: DashboardAlertKind[] = ["overdue", "unassigned", "approval", "absencePending"];
-
-export function isActionableAlert(kind: DashboardAlertKind) {
-  return ACTIONABLE.includes(kind);
-}
-
 export function DashboardAlertDialog({
   kind,
   title,

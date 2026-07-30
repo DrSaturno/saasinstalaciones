@@ -1,14 +1,18 @@
 import Link from "next/link";
 import { AlertTriangle, ArrowUpRight, CircleCheck, CloudRainWind } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { DashboardOverview } from "@/lib/data/dashboard";
+import type { DashboardAlertKind, DashboardOverview } from "@/lib/data/dashboard";
 import type { ZoneForecast } from "@/lib/weather/forecast";
-import {
-  DashboardAlertDialog,
-  isActionableAlert,
-} from "@/components/company/dashboard-alert-dialog";
+import { DashboardAlertDialog } from "@/components/company/dashboard-alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+const ACTIONABLE_ALERTS = new Set<DashboardAlertKind>([
+  "overdue",
+  "unassigned",
+  "approval",
+  "absencePending",
+]);
 
 export function DashboardPulse({
   alerts,
@@ -67,7 +71,7 @@ export function DashboardPulse({
 
                 // Las que se pueden resolver de un click abren el diálogo; el
                 // resto necesita contexto y sigue llevando a su ficha.
-                return isActionableAlert(alert.kind) ? (
+                return ACTIONABLE_ALERTS.has(alert.kind) ? (
                   <DashboardAlertDialog key={alert.id} kind={alert.kind} title={label} items={alert.items} roster={roster}>
                     <button type="button" className={className}>{body}</button>
                   </DashboardAlertDialog>
