@@ -700,7 +700,10 @@
     "accept": "Aceitar",
     "accepting": "Aceitando…",
     "accepted": "Ordem aceita",
-    "pendingAcceptance": "Aguardando sua confirmação"
+    "pendingAcceptance": "Aguardando sua confirmação",
+    "filterAll": "Todas",
+    "searchPlaceholder": "Buscar ponto, título ou número",
+    "noMatch": "Nenhuma ordem corresponde ao filtro."
   },
   "InstallerRoute": {
     "startsAtBase": "O trajeto começa na sua base: {place}.",
@@ -1277,7 +1280,8 @@
     "completed": "Trabalho concluído. Obrigado!",
     "notReady": "A empresa ainda não liberou o início deste trabalho.",
     "photosReady": "{count, plural, =1 {# foto pronta} other {# fotos prontas}}",
-    "pickPhotos": "Tirar ou anexar fotos"
+    "pickPhotos": "Tirar ou anexar fotos",
+    "acceptFirst": "Confirme que você assume esta ordem para poder iniciá-la."
   },
   "SyncIndicator": {
     "offline": "Sem conexão",

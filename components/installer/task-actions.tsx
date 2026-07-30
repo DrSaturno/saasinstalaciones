@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { enqueue } from "@/lib/offline/sync";
 import { notifyQueued } from "@/lib/offline/use-sync";
+import { AcceptOrderButton } from "@/components/installer/accept-order-button";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { OrderStatus } from "@/types/database";
@@ -15,6 +16,8 @@ type Props = {
   orderId: string;
   companyId: string;
   status: OrderStatus;
+  /** Null mientras el instalador no confirmó que se hace cargo. */
+  acceptedAt: string | null;
 };
 
 function makePhotos(companyId: string, orderId: string, files: File[]): PendingPhoto[] {
@@ -27,7 +30,7 @@ function makePhotos(companyId: string, orderId: string, files: File[]): PendingP
   }));
 }
 
-export function TaskActions({ orderId, companyId, status: initialStatus }: Props) {
+export function TaskActions({ orderId, companyId, status: initialStatus, acceptedAt }: Props) {
   const t = useTranslations("TaskActions");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -118,6 +121,18 @@ export function TaskActions({ orderId, companyId, status: initialStatus }: Props
   };
 
   if (status === "planificada") {
+    // Aceptar es precondición de arrancar: lo exige el trigger de la base. Sin
+    // este corte el botón encolaba una transición que el servidor iba a
+    // rechazar recién al sincronizar, dejando la orden "en proceso" en pantalla
+    // y un ítem fallando en la cola.
+    if (!acceptedAt) {
+      return (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-muted-foreground">{t("acceptFirst")}</p>
+          <AcceptOrderButton orderId={orderId} />
+        </div>
+      );
+    }
     return (
       <Button onClick={start} disabled={pending} className="w-full" size="lg">
         {pending ? t("starting") : t("start")}

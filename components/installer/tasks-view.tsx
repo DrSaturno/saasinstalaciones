@@ -1,11 +1,15 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { BellRing } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { ORDER_STATUS, ORDER_STATUS_ORDER } from "@/lib/domain/status";
 import { AcceptOrderButton } from "@/components/installer/accept-order-button";
+import { FilterChip } from "@/components/shared/filter-chip";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ViewToggle, useViewMode } from "@/components/shared/view-toggle";
+import { Input } from "@/components/ui/input";
 import type { OrderStatus } from "@/types/database";
 
 export type TaskRow = {
@@ -49,29 +53,87 @@ export function TasksView({
   showCompanyGroups: boolean;
 }) {
   const t = useTranslations("InstallerTasks");
+  const statusT = useTranslations("Status");
   const common = useTranslations("Common");
   const [mode, setMode] = useViewMode("view:tasks", "board");
+  const [status, setStatus] = useState<OrderStatus | "all">("all");
+  const [query, setQuery] = useState("");
+
+  // Los contadores se calculan sobre TODO, no sobre lo ya filtrado: un chip que
+  // se recalcula con su propio filtro se queda siempre en su propio número.
+  const all = useMemo(() => [...toAccept, ...active, ...closed], [toAccept, active, closed]);
+  const counts = useMemo(() => {
+    const map = new Map<OrderStatus, number>();
+    for (const task of all) map.set(task.status, (map.get(task.status) ?? 0) + 1);
+    return map;
+  }, [all]);
+
+  const matches = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return (task: TaskRow) =>
+      (status === "all" || task.status === status) &&
+      (needle.length === 0 ||
+        [task.site_name, task.title, task.order_number, task.site_city]
+          .some((field) => field.toLowerCase().includes(needle)));
+  }, [status, query]);
+
+  const filtered = { toAccept: toAccept.filter(matches), active: active.filter(matches), closed: closed.filter(matches) };
+  const visibleCount = filtered.toAccept.length + filtered.active.length + filtered.closed.length;
+  const filtering = status !== "all" || query.trim().length > 0;
 
   const sections: Section[] = [
     {
       key: "toAccept",
-      label: t("toAccept", { count: toAccept.length }),
-      tasks: toAccept,
+      label: t("toAccept", { count: filtered.toAccept.length }),
+      tasks: filtered.toAccept,
       highlight: true,
     },
-    { key: "active", label: t("accepted_section"), tasks: active },
-    { key: "closed", label: t("closed"), tasks: closed, muted: true },
+    { key: "active", label: t("accepted_section"), tasks: filtered.active },
+    { key: "closed", label: t("closed"), tasks: filtered.closed, muted: true },
   ].filter((section) => section.tasks.length > 0);
 
   return (
     <>
-      <div className="mt-4 flex justify-end">
-        <ViewToggle
-          value={mode}
-          onChange={setMode}
-          labels={{ list: common("viewList"), board: common("viewBoard") }}
-        />
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-1 flex-wrap items-center gap-2">
+          <FilterChip
+            active={status === "all"}
+            onClick={() => setStatus("all")}
+            label={t("filterAll")}
+            count={all.length}
+          />
+          {/* Sólo los estados presentes: una lista de siete chips con seis en
+              cero es ruido, no un filtro. */}
+          {ORDER_STATUS_ORDER.filter((value) => counts.has(value)).map((value) => (
+            <FilterChip
+              key={value}
+              active={status === value}
+              onClick={() => setStatus((current) => (current === value ? "all" : value))}
+              label={statusT(ORDER_STATUS[value].key)}
+              count={counts.get(value) ?? 0}
+            />
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <Input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={t("searchPlaceholder")}
+            className="h-9 w-44 sm:w-56"
+            aria-label={t("searchPlaceholder")}
+          />
+          <ViewToggle
+            value={mode}
+            onChange={setMode}
+            labels={{ list: common("viewList"), board: common("viewBoard") }}
+          />
+        </div>
       </div>
+
+      {filtering && visibleCount === 0 ? (
+        <p className="mt-10 text-center text-sm text-muted-foreground">{t("noMatch")}</p>
+      ) : null}
 
       {sections.map((section) => {
         const groups = groupTasks(section.tasks, showCompanyGroups);

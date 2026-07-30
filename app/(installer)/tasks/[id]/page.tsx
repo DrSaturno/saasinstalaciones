@@ -29,7 +29,7 @@ export default async function TaskDetailPage({
   const { data: order } = await supabase
     .from("work_orders")
     .select(
-      "id, order_number, title, description, status, scheduled_date, scheduled_end_date, priority, indoor, requires_freight, freight_details, logistics_notes, company_id, site_id",
+      "id, order_number, title, description, status, scheduled_date, scheduled_end_date, priority, indoor, requires_freight, freight_details, logistics_notes, company_id, site_id, installer_accepted_at",
     )
     .eq("id", id)
     .single();
@@ -162,6 +162,7 @@ export default async function TaskDetailPage({
             orderId={order.id}
             companyId={order.company_id}
             status={order.status as OrderStatus}
+            acceptedAt={order.installer_accepted_at}
           />
         </CardContent>
       </Card>

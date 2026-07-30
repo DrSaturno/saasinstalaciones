@@ -9,6 +9,7 @@ import {
   projectHealth,
   type ProjectHealth,
 } from "@/lib/domain/project-health";
+import { FilterChip } from "@/components/shared/filter-chip";
 import { ViewToggle, useViewMode } from "@/components/shared/view-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -220,33 +221,5 @@ export function ProjectsView({ projects }: { projects: ProjectCard[] }) {
         </div>
       )}
     </>
-  );
-}
-
-function FilterChip({
-  active,
-  onClick,
-  label,
-  count,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  count: number;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
-        active
-          ? "border-primary bg-primary text-primary-foreground"
-          : "hover:bg-muted"
-      }`}
-    >
-      {label}
-      <span className="ml-2 font-mono text-xs opacity-70">{count}</span>
-    </button>
   );
 }
