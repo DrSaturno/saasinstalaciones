@@ -256,7 +256,8 @@
       "projectRisk": "{count, plural, =1 {# projeto com desvio} other {# projetos com desvios}}",
       "unavailable": "{count, plural, =1 {# instalador indisponível} other {# instaladores indisponíveis}}",
       "approval": "{count, plural, =1 {# trabalho aguarda aprovação} other {# trabalhos aguardam aprovação}}",
-      "criticalIncident": "{count, plural, =1 {# ocorrência prioritária aberta} other {# ocorrências prioritárias abertas}}"
+      "criticalIncident": "{count, plural, =1 {# ocorrência prioritária aberta} other {# ocorrências prioritárias abertas}}",
+      "absencePending": "{count, plural, one {# ausência aguardando sua decisão} other {# ausências aguardando sua decisão}}"
     },
     "weatherRisk": "Risco climático em {zone}",
     "weatherRiskDetail": "{rain}% chuva · {wind} km/h vento",
@@ -368,7 +369,12 @@
     "peekApplicationsEmpty": "Não há candidaturas pendentes.",
     "peekOpenApplications": "Ver todas as candidaturas",
     "peekAccept": "Somar à equipe",
-    "peekReject": "Descartar"
+    "peekReject": "Descartar",
+    "alertRescheduleTo": "Nova data",
+    "alertAbsenceNote": "Motivo (opcional)",
+    "alertApprove": "Aprovar",
+    "alertReject": "Recusar",
+    "alertOpenDetail": "Abrir o módulo completo"
   },
   "OrderIncidents": {
     "title": "Ocorrências",
@@ -684,7 +690,9 @@
     "reject": "Recusar",
     "rejectReason": "Por que você recusa a ausência de {name}? (opcional)",
     "approved": "Ausência de {name} aprovada",
-    "rejected": "Ausência de {name} recusada"
+    "rejected": "Ausência de {name} recusada",
+    "rejectReasonPlaceholder": "Ex.: precisamos de cobertura nessa semana",
+    "rejectCancel": "Cancelar"
   },
   "Broadcasts": {
     "eyebrow": "Distribuição por região",

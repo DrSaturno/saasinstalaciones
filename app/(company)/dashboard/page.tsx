@@ -97,7 +97,7 @@ export default async function CompanyDashboard() {
         zones={overview.regions.map((region) => region.name)}
         projects={projects.map(({ id, name }) => ({ id, name }))}
       />
-      <DashboardPulse alerts={overview.alerts} forecasts={forecasts} />
+      <DashboardPulse alerts={overview.alerts} forecasts={forecasts} roster={roster} />
       <DashboardOperations forecasts={forecasts} calendarEmail={calendar?.google_email ?? null} calendarConfigured={googleCalendarConfigured()} />
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(300px,0.85fr)]">

@@ -55,10 +55,24 @@ type Incident = {
 
 export type DashboardAlertKind =
   | "overdue" | "unassigned" | "projectRisk" | "unavailable"
-  | "approval" | "criticalIncident";
+  | "approval" | "criticalIncident" | "absencePending";
+
+/**
+ * Una fila dentro de una alerta del pulso.
+ *
+ * `date` sólo lo usa el reprogramado, para precargar el campo con la fecha
+ * vigente en vez de arrancar vacío.
+ */
+export type DashboardAlertItem = {
+  id: string;
+  label: string;
+  sublabel: string;
+  href: string;
+  date?: string | null;
+};
 export type DashboardOverview = {
   metrics: { activeProjects: number; pendingOrders: number; jobsToday: number; completedToday: number; dailyRate: number; overallRate: number };
-  alerts: { id: string; kind: DashboardAlertKind; severity: "warning" | "danger"; count: number; subject: string; href: string }[];
+  alerts: { id: string; kind: DashboardAlertKind; severity: "warning" | "danger"; count: number; subject: string; href: string; items: DashboardAlertItem[] }[];
   projects: { id: string; name: string; clientName: string; completed: number; total: number; progress: number; plannedProgress: number; variance: number; health: DashboardProjectHealth; forecastDate: string | null; requiredPerWeek: number }[];
   todayOrders: { id: string; number: string; title: string; projectName: string; siteName: string; zone: string; status: OrderStatus }[];
   regions: { name: string; sites: number; completedSites: number; progress: number }[];
@@ -125,6 +139,19 @@ export async function fetchDashboardOverview(supabase: SupabaseClient<Database>,
     supabase.from("installer_unavailability").select("installer_id, starts_at, ends_at, reason").eq("company_id", companyId).eq("status", "approved").in("installer_id", installerIds).gte("ends_at", new Date().toISOString()),
   ]) : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }];
 
+  // Avisos de ausencia esperando decisión. Van aparte de los aprobados de
+  // arriba: éstos NO bloquean la agenda todavía — justamente por eso hay que
+  // resolverlos, y hasta ahora sólo se veían entrando a Equipo.
+  const { data: pendingAbsences } = companyId
+    ? await supabase
+        .from("installer_unavailability")
+        .select("id, installer_id, starts_at, ends_at, reason")
+        .eq("company_id", companyId)
+        .eq("status", "pending")
+        .gte("ends_at", new Date().toISOString())
+        .order("starts_at")
+    : { data: [] };
+
   const projectIds = new Set(projects.map((project) => project.id));
   const activeSites = sites.filter((site) => projectIds.has(site.project_id));
   const relevantOrders = orders.filter((order) => projectIds.has(order.project_id));
@@ -188,13 +215,30 @@ export async function fetchDashboardOverview(supabase: SupabaseClient<Database>,
   const unavailable = installerRowsView.filter((item) => !item.available);
   const riskyProjects = projectRows.filter((project) => project.health === "delayed" || project.health === "atRisk");
   const criticalIncidents = openIncidents.filter((item) => item.severity === "critical" || item.severity === "high");
+  /** Tope de filas por alerta: el pulso asoma, no reemplaza al módulo. */
+  const ALERT_ITEMS = 12;
+  const orderItems = (rows: Order[]): DashboardAlertItem[] => rows.slice(0, ALERT_ITEMS).map((order) => ({
+    id: order.id,
+    label: `${order.order_number} · ${order.title}`,
+    sublabel: [projectById.get(order.project_id)?.name, siteById.get(order.site_id)?.name].filter(Boolean).join(" · "),
+    href: `/orders/${order.id}`,
+    date: order.scheduled_date,
+  }));
+  const absenceItems: DashboardAlertItem[] = (pendingAbsences ?? []).slice(0, ALERT_ITEMS).map((absence) => ({
+    id: absence.id,
+    label: profileNames.get(absence.installer_id) ?? "",
+    sublabel: [`${absence.starts_at.slice(0, 10)} → ${absence.ends_at.slice(0, 10)}`, absence.reason].filter(Boolean).join(" · "),
+    href: "/team",
+  }));
+
   const alerts: DashboardOverview["alerts"] = [
-    overdue.length ? { id: "overdue", kind: "overdue", severity: "danger", count: overdue.length, subject: overdue[0].order_number, href: `/orders/${overdue[0].id}` } : null,
-    unassigned.length ? { id: "unassigned", kind: "unassigned", severity: "warning", count: unassigned.length, subject: unassigned[0].order_number, href: `/orders/${unassigned[0].id}` } : null,
-    riskyProjects.length ? { id: "projects", kind: "projectRisk", severity: riskyProjects.some((item) => item.health === "delayed") ? "danger" : "warning", count: riskyProjects.length, subject: riskyProjects[0].name, href: `/projects/${riskyProjects[0].id}` } : null,
-    unavailable.length ? { id: "unavailable", kind: "unavailable", severity: "warning", count: unavailable.length, subject: unavailable[0].name, href: "/team" } : null,
-    approvals.length ? { id: "approval", kind: "approval", severity: "warning", count: approvals.length, subject: approvals[0].order_number, href: `/orders/${approvals[0].id}` } : null,
-    criticalIncidents.length ? { id: "incidents", kind: "criticalIncident", severity: "danger", count: criticalIncidents.length, subject: orderById.get(criticalIncidents[0].order_id)?.order_number ?? "", href: `/orders/${criticalIncidents[0].order_id}` } : null,
+    overdue.length ? { id: "overdue", kind: "overdue", severity: "danger", count: overdue.length, subject: overdue[0].order_number, href: `/orders/${overdue[0].id}`, items: orderItems(overdue) } : null,
+    unassigned.length ? { id: "unassigned", kind: "unassigned", severity: "warning", count: unassigned.length, subject: unassigned[0].order_number, href: `/orders/${unassigned[0].id}`, items: orderItems(unassigned) } : null,
+    absenceItems.length ? { id: "absences", kind: "absencePending", severity: "warning", count: absenceItems.length, subject: absenceItems[0].label, href: "/team", items: absenceItems } : null,
+    riskyProjects.length ? { id: "projects", kind: "projectRisk", severity: riskyProjects.some((item) => item.health === "delayed") ? "danger" : "warning", count: riskyProjects.length, subject: riskyProjects[0].name, href: `/projects/${riskyProjects[0].id}`, items: riskyProjects.slice(0, ALERT_ITEMS).map((project) => ({ id: project.id, label: project.name, sublabel: `${project.completed}/${project.total}`, href: `/projects/${project.id}` })) } : null,
+    unavailable.length ? { id: "unavailable", kind: "unavailable", severity: "warning", count: unavailable.length, subject: unavailable[0].name, href: "/team", items: unavailable.slice(0, ALERT_ITEMS).map((person) => ({ id: person.id, label: person.name, sublabel: person.reason ?? "", href: "/team" })) } : null,
+    approvals.length ? { id: "approval", kind: "approval", severity: "warning", count: approvals.length, subject: approvals[0].order_number, href: `/orders/${approvals[0].id}`, items: orderItems(approvals) } : null,
+    criticalIncidents.length ? { id: "incidents", kind: "criticalIncident", severity: "danger", count: criticalIncidents.length, subject: orderById.get(criticalIncidents[0].order_id)?.order_number ?? "", href: `/orders/${criticalIncidents[0].order_id}`, items: criticalIncidents.slice(0, ALERT_ITEMS).map((incident) => ({ id: incident.order_id, label: orderById.get(incident.order_id)?.order_number ?? "", sublabel: incident.description, href: `/orders/${incident.order_id}` })) } : null,
   ].filter((item): item is DashboardOverview["alerts"][number] => item !== null);
 
   const completedAssignmentHours = relevantOrders.filter((order) => order.assigned_at).map((order) => (new Date(order.assigned_at!).getTime() - new Date(order.created_at).getTime()) / 3_600_000);

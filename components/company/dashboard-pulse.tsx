@@ -3,15 +3,21 @@ import { AlertTriangle, ArrowUpRight, CircleCheck, CloudRainWind } from "lucide-
 import { useTranslations } from "next-intl";
 import type { DashboardOverview } from "@/lib/data/dashboard";
 import type { ZoneForecast } from "@/lib/weather/forecast";
+import {
+  DashboardAlertDialog,
+  isActionableAlert,
+} from "@/components/company/dashboard-alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function DashboardPulse({
   alerts,
   forecasts,
+  roster,
 }: {
   alerts: DashboardOverview["alerts"];
   forecasts: ZoneForecast[];
+  roster: { id: string; name: string }[];
 }) {
   const t = useTranslations("Dashboard");
   const weatherAlerts = forecasts.filter((item) => item.severity !== "ok");
@@ -45,16 +51,30 @@ export function DashboardPulse({
         ) : (
           <div className="grid divide-y lg:grid-cols-2 lg:divide-x lg:divide-y-0">
             <div className="divide-y">
-              {alerts.map((alert) => (
-                <Link key={alert.id} href={alert.href} className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/40">
-                  <span className={`size-2 shrink-0 rounded-full ${alert.severity === "danger" ? "bg-destructive" : "bg-warning"}`} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">{t(`alerts.${alert.kind}`, { count: alert.count })}</p>
-                    <p className="truncate font-mono text-[11px] text-muted-foreground">{alert.subject}</p>
-                  </div>
-                  <ArrowUpRight className="size-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
-                </Link>
-              ))}
+              {alerts.map((alert) => {
+                const label = t(`alerts.${alert.kind}`, { count: alert.count });
+                const body = (
+                  <>
+                    <span className={`size-2 shrink-0 rounded-full ${alert.severity === "danger" ? "bg-destructive" : "bg-warning"}`} />
+                    <span className="min-w-0 flex-1 text-left">
+                      <span className="block text-sm font-medium">{label}</span>
+                      <span className="block truncate font-mono text-[11px] text-muted-foreground">{alert.subject}</span>
+                    </span>
+                    <ArrowUpRight className="size-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
+                  </>
+                );
+                const className = "group flex w-full items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/40";
+
+                // Las que se pueden resolver de un click abren el diálogo; el
+                // resto necesita contexto y sigue llevando a su ficha.
+                return isActionableAlert(alert.kind) ? (
+                  <DashboardAlertDialog key={alert.id} kind={alert.kind} title={label} items={alert.items} roster={roster}>
+                    <button type="button" className={className}>{body}</button>
+                  </DashboardAlertDialog>
+                ) : (
+                  <Link key={alert.id} href={alert.href} className={className}>{body}</Link>
+                );
+              })}
             </div>
             <div className="divide-y">
               {weatherAlerts.map((forecast) => (
