@@ -359,7 +359,16 @@
     "capacityInstallers": "Instaladores",
     "capacityCoordinators": "Coordenadores",
     "coordinatorsActive": "Com projetos sob responsabilidade",
-    "coordinatedProjects": "Projetos coordenados"
+    "coordinatedProjects": "Projetos coordenados",
+    "peekOrdersEmpty": "Não há ordens abertas.",
+    "peekOpenOrders": "Ver o módulo de ordens",
+    "peekJobsEmpty": "Você não tem buscas publicadas.",
+    "peekOpenJobs": "Ver o banco de trabalho",
+    "peekWaiting": "{count, plural, one {# candidatura} other {# candidaturas}}",
+    "peekApplicationsEmpty": "Não há candidaturas pendentes.",
+    "peekOpenApplications": "Ver todas as candidaturas",
+    "peekAccept": "Somar à equipe",
+    "peekReject": "Descartar"
   },
   "OrderIncidents": {
     "title": "Ocorrências",

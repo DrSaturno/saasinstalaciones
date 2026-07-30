@@ -1,7 +1,9 @@
-import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { AnnouncementComposer } from "@/components/company/announcement-composer";
+import { DashboardApplicationsPeek } from "@/components/company/dashboard-applications-peek";
 import { DashboardInsights } from "@/components/company/dashboard-insights";
+import { DashboardJobsPeek } from "@/components/company/dashboard-jobs-peek";
+import { DashboardOrdersPeek } from "@/components/company/dashboard-orders-peek";
 import { DashboardAgenda, DashboardCapacity } from "@/components/company/dashboard-execution";
 import { DashboardMap } from "@/components/company/dashboard-map";
 import { DashboardMetrics } from "@/components/company/dashboard-metrics";
@@ -79,7 +81,7 @@ export default async function CompanyDashboard() {
         assignPending={<DashboardOrderAction mode="assign" orders={orders.filter((order) => !order.installer_id && !["finalizada", "cancelada"].includes(order.status))} roster={roster} />}
         reschedule={<DashboardOrderAction mode="reschedule" orders={orders.filter((order) => order.scheduled_date && !["finalizada", "cancelada"].includes(order.status))} roster={roster} />}
         approve={<DashboardOrderAction mode="approve" orders={orders.filter((order) => order.status === "en_revision")} roster={roster} />}
-        viewOrders={<Button asChild variant="outline"><Link href="/orders">{t("quickActions.viewOrders")}</Link></Button>}
+        viewOrders={<DashboardOrdersPeek orders={orders.filter((order) => !["finalizada", "cancelada"].includes(order.status))} />}
         postJob={
           <CreateBroadcastDialog
             projects={board.projects}
@@ -88,8 +90,8 @@ export default async function CompanyDashboard() {
             trigger={<Button variant="outline">{t("quickActions.postJob")}</Button>}
           />
         }
-        myJobs={<Button asChild variant="outline"><Link href="/broadcasts?filter=open">{t("quickActions.myJobs")}</Link></Button>}
-        applications={<Button asChild variant="outline"><Link href="/broadcasts?filter=applications">{t("quickActions.applications")}</Link></Button>}
+        myJobs={<DashboardJobsPeek broadcasts={board.broadcasts.filter((broadcast) => broadcast.status === "open")} />}
+        applications={<DashboardApplicationsPeek broadcasts={board.broadcasts} />}
       />
       <AnnouncementComposer
         zones={overview.regions.map((region) => region.name)}
