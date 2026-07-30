@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
@@ -11,6 +10,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { OrderPdfButton } from "@/components/shared/order-pdf-button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { OrderStatus, OrderUpdateType } from "@/types/database";
+import { BackLink } from "@/components/shared/back-link";
 
 export default async function TaskDetailPage({
   params,
@@ -61,12 +61,7 @@ export default async function TaskDetailPage({
 
   return (
     <div className="mx-auto w-full max-w-[1480px]">
-      <Link
-        href="/tasks"
-        className="text-sm text-muted-foreground hover:text-foreground"
-      >
-        {t("back")}
-      </Link>
+      <BackLink href="/tasks" label={t("back")} />
 
       <div className="mt-3 flex items-center gap-3">
         <span className="font-mono text-sm text-muted-foreground">

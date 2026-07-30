@@ -6,6 +6,7 @@ import { fetchClientDetail } from "@/lib/data/clients";
 import { ClientDialog } from "@/components/company/client-dialog";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BackLink } from "@/components/shared/back-link";
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -26,7 +27,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   }
   return (
     <main className="mx-auto w-full max-w-[1480px]">
-      <Link href="/clients" className="text-sm text-muted-foreground hover:text-foreground">{t("back")}</Link>
+      <BackLink href="/clients" label={t("back")} />
       <header className="mt-4 flex items-start justify-between gap-4">
         <div><h1 className="text-2xl font-bold">{detail.client.name}</h1><p className="mt-1 text-sm text-muted-foreground">{t("summary", { projects: summary.projectCount, sites: summary.siteCount })}</p></div>
         <ClientDialog client={summary} />

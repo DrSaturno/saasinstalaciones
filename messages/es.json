@@ -498,7 +498,7 @@
   "ProjectDetail": {
     "coordinatorLabel": "Coordinador",
     "noCoordinator": "sin asignar",
-    "back": "← Proyectos",
+    "back": "Proyectos",
     "completed": "{done} de {total} finalizados",
     "contracted": "Instalaciones contratadas",
     "loaded": "Locaciones cargadas",
@@ -574,7 +574,7 @@
     "deleted": "Imagen eliminada"
   },
   "SiteDetail": {
-    "back": "← Volver a {project}",
+    "back": "Volver a {project}",
     "archived": "Archivada",
     "location": "Ubicación",
     "noAddress": "Sin dirección cargada",
@@ -650,7 +650,7 @@
   },
   "OrderDetail": {
     "openPhoto": "Abrir la foto",
-    "back": "← Órdenes",
+    "back": "Órdenes",
     "site": "Punto de instalación",
     "noAddress": "Sin dirección",
     "zone": "Zona",
@@ -781,7 +781,7 @@
   },
   "TaskDetail": {
     "openPhoto": "Abrir la foto",
-    "back": "← Mis tareas",
+    "back": "Mis tareas",
     "noAddress": "Sin dirección",
     "directions": "Cómo llegar →",
     "planning": "Ficha de trabajo",
@@ -1251,7 +1251,7 @@
     "projectCount": "{count, plural, =1 {# proyecto} other {# proyectos}}",
     "siteCount": "{count, plural, =1 {# punto} other {# puntos}}",
     "empty": "Todavía no hay clientes cargados.",
-    "back": "← Clientes",
+    "back": "Clientes",
     "noOrders": "Este punto todavía no tiene órdenes.",
     "noSites": "Este cliente todavía no tiene puntos de instalación.",
     "dataTitle": "Datos del cliente",
@@ -1269,7 +1269,7 @@
     "title": "Mensajería",
     "description": "Canal oficial entre la empresa y sus instaladores.",
     "empty": "Todavía no hay conversaciones.",
-    "back": "← Conversaciones",
+    "back": "Conversaciones",
     "companyChannel": "Canal con la empresa",
     "conversation": "Conversación",
     "online": "En línea",

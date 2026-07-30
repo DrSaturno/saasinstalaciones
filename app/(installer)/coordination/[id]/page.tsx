@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, MapPin, MessageSquare } from "lucide-react";
+import { MapPin, MessageSquare } from "lucide-react";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser, isCoordinatorSomewhere, ROLE_HOME } from "@/lib/auth";
@@ -16,6 +16,7 @@ import { OrderPdfButton } from "@/components/shared/order-pdf-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { OrderUpdateType } from "@/types/database";
+import { BackLink } from "@/components/shared/back-link";
 
 /**
  * La orden vista desde adentro por el coordinador. RLS la acota a los
@@ -87,13 +88,7 @@ export default async function CoordinationOrderPage({
 
   return (
     <div className="mx-auto w-full max-w-[1480px] px-4 py-6">
-      <Link
-        href="/coordination"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" />
-        {t("backToBoard")}
-      </Link>
+      <BackLink href="/coordination" label={t("backToBoard")} />
 
       <header className="mt-4">
         <p className="font-mono text-xs text-muted-foreground">{order.order_number}</p>

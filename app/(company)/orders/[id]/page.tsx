@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { OrderStatus, OrderUpdateType } from "@/types/database";
 import { getCurrentUser } from "@/lib/auth";
+import { BackLink } from "@/components/shared/back-link";
 
 export default async function OrderDetailPage({
   params,
@@ -94,12 +95,7 @@ export default async function OrderDetailPage({
 
   return (
     <div className="mx-auto w-full max-w-[1480px]">
-      <Link
-        href="/orders"
-        className="text-sm text-muted-foreground hover:text-foreground"
-      >
-        {t("back")}
-      </Link>
+      <BackLink href="/orders" label={t("back")} />
 
       <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
         <div>

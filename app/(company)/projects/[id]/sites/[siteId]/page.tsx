@@ -14,6 +14,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BackLink } from "@/components/shared/back-link";
 
 export default async function SiteDetailPage({ params }: { params: Promise<{ id: string; siteId: string }> }) {
   const { id: projectId, siteId } = await params;
@@ -37,7 +38,7 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="mx-auto w-full max-w-[1480px]">
-      <Link href={`/projects/${projectId}`} className="text-sm text-muted-foreground hover:text-foreground">{t("back", { project: project.name })}</Link>
+      <BackLink href={`/projects/${projectId}`} label={t("back", { project: project.name })} />
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-3"><h1 className="text-2xl font-bold">{site.name}</h1><StatusBadge status={site.status} kind="site" />{site.archived_at ? <Badge variant="outline">{t("archived")}</Badge> : null}</div>

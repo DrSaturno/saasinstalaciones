@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, MessageSquare, Phone, MapPin, CalendarDays } from "lucide-react";
+import { MessageSquare, Phone, MapPin, CalendarDays } from "lucide-react";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { fetchInstallerProfile } from "@/lib/data/installer-profile";
@@ -10,6 +10,7 @@ import { StarRating } from "@/components/shared/star-rating";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BackLink } from "@/components/shared/back-link";
 
 export default async function InstallerProfilePage({
   params,
@@ -43,13 +44,7 @@ export default async function InstallerProfilePage({
 
   return (
     <div className="mx-auto w-full max-w-6xl">
-      <Link
-        href="/team"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" />
-        {t("backToTeam")}
-      </Link>
+      <BackLink href="/team" label={t("backToTeam")} />
 
       {/* Encabezado del perfil */}
       <div className="mt-4 rounded-xl border bg-card p-6">

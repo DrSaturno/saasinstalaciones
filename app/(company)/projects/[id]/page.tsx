@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { fetchClients } from "@/lib/data/clients";
 import { fetchCoordinators } from "@/lib/data/team";
 import { fetchActiveRoster } from "@/lib/data/orders";
+import { BackLink } from "@/components/shared/back-link";
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -51,7 +52,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="mx-auto w-full max-w-[1480px]">
-      <Link href="/projects" className="text-sm text-muted-foreground hover:text-foreground">{t("back")}</Link>
+      <BackLink href="/projects" label={t("back")} />
 
       <div className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import {
@@ -9,6 +8,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { fetchConversation } from "@/lib/data/messages";
 import { ChatPanel } from "@/components/messages/chat-panel";
+import { BackLink } from "@/components/shared/back-link";
 
 export default async function ConversationPage({ params, searchParams }: { params: Promise<{ installerId: string }>; searchParams: Promise<{ company?: string }> }) {
   const [{ installerId }, query, user] = await Promise.all([params, searchParams, getCurrentUser()]);
@@ -32,7 +32,7 @@ export default async function ConversationPage({ params, searchParams }: { param
   if (!conversation) notFound();
   return (
     <main className="mx-auto w-full max-w-5xl">
-      <Link href="/messages" className="text-sm text-muted-foreground hover:text-foreground">{t("back")}</Link>
+      <BackLink href="/messages" label={t("back")} />
       <h1 className="mb-5 mt-3 text-2xl font-bold">{operatorMode ? conversation.installerName : t("companyChannel")}</h1>
       <ChatPanel threadId={conversation.thread.id} companyId={conversation.thread.company_id} currentUserId={user.id} installerMode={!operatorMode} initialMessages={conversation.messages} peerName={operatorMode ? conversation.installerName : t("companyChannel")} />
     </main>
