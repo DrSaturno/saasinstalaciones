@@ -1,5 +1,63 @@
 # Instala Pro — Estado del proyecto
 
+## PUNTO DE REANUDACIÓN — pasada de QA del usuario (2026-07-30)
+
+> **Las 8 fases están implementadas y pusheadas.** Falta una migración por
+> aplicar (F6) y la prueba a mano de todo.
+
+El usuario recorrió la app y trajo 17 pedidos. Se implementaron en 8 fases,
+cada una con su commit:
+
+| Fase | Qué resolvió | Commit |
+|---|---|---|
+| F1 | Fixes del dashboard: "Publicando…" clavado, capacidad que contaba coordinadores, agenda 7/15 días, proyectos con scroll | (ver log) |
+| F7 | Instalador: arranque en Inicio, aceptar desde el detalle, filtros en Mis órdenes | `d1ada8e` |
+| F3 | Los 3 accesos rápidos que sacaban del tablero ahora abren diálogo | `a6aedfc` |
+| F4 | Pulso operativo con decisión rápida + ausencias pendientes visibles | `f04acfe` |
+| F2 | Historial de anuncios publicados | `07ea0d4` |
+| F5 | Alta masiva de órdenes con formulario completo | `59ceba0` |
+| F6 | Clientes con web, Instagram, YouTube y TikTok | `4936119` |
+| F8 | Botón volver unificado en las 8 pantallas de detalle | `a67ed96` |
+
+Validación de cada fase: `pnpm test` (130 tests, 21 archivos), `type-check`,
+`lint` y `build` — todo OK. **Sin smoke visual**: este clon no tiene
+`.env.local`, así que las pantallas autenticadas sólo las puede probar el
+usuario.
+
+### Lo que falta
+
+1. **Aplicar la migración de F6** en el SQL Editor:
+   `supabase/migrations/20260730000001_clients_social_links.sql`. Es aditiva
+   (4 columnas con default `''`) y no toca RLS. **Hasta que se aplique, la
+   ficha de cliente va a fallar** al guardar: el código ya manda las columnas
+   nuevas.
+2. **Probar a mano** todo lo de la tabla de arriba.
+
+### Detalles que conviene recordar
+
+- **El arranque de la PWA necesita dos aperturas.** El `start_url` del manifest
+  ya apunta a `/home`, pero Android graba esa URL dentro del acceso directo al
+  instalar y sólo la refresca cuando revisa el manifest por su cuenta (puede
+  tardar días). Como no se le puede pedir a cada instalador que reinstale, hay
+  un corte en el cliente (`components/installer/pwa-launch-redirect.tsx`): si
+  Mis órdenes es la pantalla de arranque, salta a Inicio. Pide cuatro
+  condiciones para no molestar a quien entra desde el menú, recarga o vuelve
+  atrás. Se retira solo cuando Android actualiza el acceso directo.
+- **El botón de aceptar en el detalle** aparece para los estados previos al
+  arranque (pendiente, relevamiento, planificada), no para cualquier estado
+  abierto: las órdenes que ya estaban en proceso antes de que existiera la
+  columna de confirmación la tienen vacía, y exigirles aceptar las habría
+  dejado sin poder terminarse.
+- **El alta masiva no lleva adjuntos** a propósito: la evidencia es de cada
+  orden, y subir el mismo archivo 30 veces multiplicaría el storage.
+- **Aceptar una postulación desde el tablero** suma la persona al equipo pero
+  no le asigna órdenes; elegir cuáles sigue viviendo en la bolsa.
+- **Tres alertas del pulso siguen siendo un link** (proyecto con desvío,
+  incidencia crítica, instalador no disponible): necesitan mirar contexto antes
+  de decidir, y un botón ahí empujaría a resolver a ciegas.
+
+---
+
 ## PUNTO DE REANUDACIÓN — coordinador/instalador multi-empresa (2026-07-28)
 
 > **Implementación completa y en producción.** Las Fases 0–6 están aplicadas.
