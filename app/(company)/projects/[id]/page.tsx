@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { fetchClients } from "@/lib/data/clients";
 import { fetchCoordinators } from "@/lib/data/team";
+import { fetchActiveRoster } from "@/lib/data/orders";
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,12 +22,13 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     getFormatter(),
   ]);
   const supabase = await createClient();
-  const [{ data: project }, sites, { data: orderAmounts }, clients, coordinators] = await Promise.all([
+  const [{ data: project }, sites, { data: orderAmounts }, clients, coordinators, roster] = await Promise.all([
     supabase.from("projects").select("id, name, client_name, client_id, coordinator_id, description, status, starts_at, ends_at, country, zones, planned_installations, billing_mode, contract_amount, currency, archived_at").eq("id", id).single(),
     fetchAllSites(supabase, id),
     supabase.from("work_orders").select("status, amount").eq("project_id", id).neq("status", "cancelada"),
     fetchClients(supabase),
     fetchCoordinators(supabase),
+    fetchActiveRoster(supabase),
   ]);
 
   if (!project) notFound();
@@ -91,7 +93,18 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             currency: project.currency,
           }} />
           <ArchiveProjectButton projectId={project.id} archived={Boolean(project.archived_at)} name={project.name} />
-          <ManageInstallationsDialog projectId={project.id} country={project.country} zones={project.zones} planned={project.planned_installations} activeCount={activeSites.length} archivedCount={archivedCount} />
+          <ManageInstallationsDialog
+            projectId={project.id}
+            country={project.country}
+            zones={project.zones}
+            planned={project.planned_installations}
+            activeCount={activeSites.length}
+            archivedCount={archivedCount}
+            roster={roster.map(({ id: rosterId, name }) => ({ id: rosterId, name }))}
+            currency={project.currency}
+            canManageFinance
+            perInstallation={project.billing_mode === "per_installation"}
+          />
         </div>
       </div>
 

@@ -87,6 +87,20 @@ export const orderIntakeSchema = z
  */
 export const orderEditSchema = z.object(orderFields).superRefine(checkOrderFields);
 
+/**
+ * Alta masiva: una orden por cada punto del proyecto que todavía no tenga.
+ *
+ * Sin `siteId` porque los puntos los resuelve el servidor recorriendo el
+ * proyecto; el resto de los campos se aplica igual a todas. El título es el
+ * mismo para el lote — la orden se distingue por su punto, no por el texto.
+ */
+export const orderBatchSchema = z
+  .object({
+    status: z.enum(ORDER_INITIAL_STATUSES).default("pendiente"),
+    ...orderFields,
+  })
+  .superRefine(checkOrderFields);
+
 export const orderAttachmentRegistrationSchema = z
   .array(
     z.object({
@@ -105,6 +119,7 @@ export const orderAttachmentRegistrationSchema = z
 
 export type OrderIntake = z.infer<typeof orderIntakeSchema>;
 export type OrderEdit = z.infer<typeof orderEditSchema>;
+export type OrderBatch = z.infer<typeof orderBatchSchema>;
 export type OrderAttachmentRegistration = z.infer<
   typeof orderAttachmentRegistrationSchema
 >[number];

@@ -916,7 +916,14 @@
     "generating": "Generando…",
     "allExist": "Todos los puntos ya tienen una orden.",
     "noSites": "No hay puntos para generar órdenes.",
-    "created": "{created, plural, =1 {# orden creada} other {# órdenes creadas}}{skipped, plural, =0 {} other { · # puntos ya tenían}}"
+    "created": "{created, plural, =1 {# orden creada} other {# órdenes creadas}}{skipped, plural, =0 {} other { · # puntos ya tenían}}",
+    "sectionWhatTitle": "Qué trabajo se genera",
+    "sectionWhatDescription": "Estos datos se aplican a las {count, plural, =1 {# orden} other {# órdenes}} por igual. Cada una queda ligada a su punto.",
+    "sectionOperationDescription": "Lo que cargues acá vale para todo el lote. Podés dejarlo vacío y resolverlo orden por orden después.",
+    "sectionBudgetDescription": "El importe es por instalación: se repite en cada orden del lote.",
+    "installerHint": "Si asignás a alguien, recibe un solo aviso por el lote entero.",
+    "batchNotificationTitle": "Nuevas órdenes asignadas",
+    "batchNotificationBody": "{count, plural, =1 {Te asignaron # orden nueva} other {Te asignaron # órdenes nuevas}}"
   },
   "CreateOrder": {
     "trigger": "Nueva orden",

@@ -12,7 +12,9 @@ import { ImportSitesDialog } from "@/components/company/import-sites-dialog";
 import { ReuseSitesDialog } from "@/components/company/reuse-sites-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import type { Country } from "@/types/database";
+import type { Country, OrderCurrency } from "@/types/database";
+
+type RosterOption = { id: string; name: string };
 
 export function ManageInstallationsDialog({
   projectId,
@@ -21,6 +23,10 @@ export function ManageInstallationsDialog({
   planned,
   activeCount,
   archivedCount,
+  roster,
+  currency,
+  canManageFinance,
+  perInstallation,
 }: {
   projectId: string;
   country: Country;
@@ -28,6 +34,10 @@ export function ManageInstallationsDialog({
   planned: number;
   activeCount: number;
   archivedCount: number;
+  roster: RosterOption[];
+  currency: OrderCurrency;
+  canManageFinance: boolean;
+  perInstallation: boolean;
 }) {
   const t = useTranslations("ManageSites");
   const router = useRouter();
@@ -79,7 +89,14 @@ export function ManageInstallationsDialog({
             <CreateSiteDialog projectId={projectId} country={country} zones={zones} />
             <ImportSitesDialog projectId={projectId} />
             <ReuseSitesDialog projectId={projectId} />
-            <CreateOrdersDialog projectId={projectId} siteCount={activeCount} />
+            <CreateOrdersDialog
+            projectId={projectId}
+            siteCount={activeCount}
+            roster={roster}
+            currency={currency}
+            canManageFinance={canManageFinance}
+            perInstallation={perInstallation}
+          />
           </div>
         </section>
       </DialogContent>

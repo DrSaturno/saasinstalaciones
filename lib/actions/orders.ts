@@ -12,6 +12,7 @@ import {
 } from "@/lib/auth";
 import {
   orderAttachmentRegistrationSchema,
+  orderBatchSchema,
   orderEditSchema,
   orderIntakeSchema,
   databaseIdSchema,
@@ -407,15 +408,41 @@ const BATCH_SIZE = 500;
 /**
  * Crea una orden por cada punto del proyecto que todavía no tenga una orden
  * abierta (evita duplicar trabajo si se corre dos veces).
+ *
+ * Los campos del formulario se aplican **a todo el lote**: cuando un proyecto
+ * tiene 30 locaciones con la misma tarea, cargar fecha, prioridad y logística
+ * una sola vez es la diferencia entre generar el trabajo de una y editar 30
+ * órdenes a mano después.
+ *
+ * No acepta adjuntos a propósito: la evidencia es de cada orden, y subir el
+ * mismo archivo 30 veces multiplicaría el storage sin agregar nada.
  */
 export async function createOrdersForProject(
   projectId: string,
-  titleTemplate: string,
+  formData: FormData,
 ): Promise<BulkResult> {
   const [t, createOrdersT] = await Promise.all([
     getTranslations("Errors"),
     getTranslations("CreateOrders"),
   ]);
+  const parsed = orderBatchSchema.safeParse({
+    title: formData.get("title") || createOrdersT("defaultTitle"),
+    description: formData.get("description") ?? "",
+    status: formData.get("status") ?? "pendiente",
+    scheduledDate: formData.get("scheduledDate") ?? "",
+    scheduledEndDate: formData.get("scheduledEndDate") ?? "",
+    priority: formData.get("priority") ?? "media",
+    indoor: formData.get("indoor") === "on",
+    requiresFreight: formData.get("requiresFreight") === "on",
+    freightDetails: formData.get("freightDetails") ?? "",
+    logisticsNotes: formData.get("logisticsNotes") ?? "",
+    amount: formData.get("amount") ?? "",
+    installerId: formData.get("installerId") ?? "",
+  });
+  if (!parsed.success) {
+    return { error: t("invalidData"), created: 0, skipped: 0 };
+  }
+
   let ctx;
   try {
     ctx = await requireOperator();
@@ -424,11 +451,11 @@ export async function createOrdersForProject(
   }
   const { supabase, user } = ctx;
 
-  const title = titleTemplate.trim() || createOrdersT("defaultTitle");
+  const title = parsed.data.title;
 
   const { data: project } = await supabase
     .from("projects")
-    .select("id, company_id, currency, country, zones, planned_installations")
+    .select("id, company_id, currency, country, zones, planned_installations, billing_mode")
     .eq("id", projectId)
     .single();
   if (!project) {
@@ -439,6 +466,21 @@ export async function createOrdersForProject(
     companyId = operatedCompany(user, project.company_id);
   } catch {
     return { error: t("accessDenied"), created: 0, skipped: 0 };
+  }
+
+  // Mismo criterio que el alta individual: sólo se asigna a alguien que esté
+  // activo en el roster Y con rol de instalador — un coordinador no ejecuta.
+  if (parsed.data.installerId) {
+    const { data: member } = await supabase
+      .from("company_installers")
+      .select("role")
+      .eq("company_id", companyId)
+      .eq("installer_id", parsed.data.installerId)
+      .eq("status", "active")
+      .maybeSingle();
+    if (member?.role !== "installer") {
+      return { error: t("installerNotActive"), created: 0, skipped: 0 };
+    }
   }
 
   const { count: activeSiteCount } = await supabase
@@ -511,7 +553,23 @@ export async function createOrdersForProject(
     project_id: projectId,
     site_id: siteId,
     title,
+    description: parsed.data.description,
+    status: parsed.data.status,
+    scheduled_date: parsed.data.scheduledDate,
+    scheduled_end_date: parsed.data.scheduledEndDate,
+    priority: parsed.data.priority,
+    indoor: parsed.data.indoor,
+    requires_freight: parsed.data.requiresFreight,
+    freight_details: parsed.data.freightDetails,
+    logistics_notes: parsed.data.logisticsNotes,
+    // El importe es por instalación: repartirlo cuando el proyecto se cobra
+    // como un todo duplicaría el monto contratado.
+    amount:
+      user.role === "company_manager" && project.billing_mode === "per_installation"
+        ? parsed.data.amount
+        : null,
     currency: project.currency,
+    assigned_installer_id: parsed.data.installerId,
     created_by: user.id,
   }));
 
@@ -529,8 +587,21 @@ export async function createOrdersForProject(
     created += batch.length;
   }
 
+  // Un solo aviso por lote: treinta notificaciones seguidas por el mismo
+  // trabajo son una alarma inútil, no información.
+  if (parsed.data.installerId && created > 0) {
+    await supabase.from("notifications").insert({
+      user_id: parsed.data.installerId,
+      type: "order_assigned",
+      title: createOrdersT("batchNotificationTitle"),
+      body: createOrdersT("batchNotificationBody", { count: created }),
+      data: { url: "/tasks", project_id: projectId },
+    });
+  }
+
   revalidatePath("/orders");
   revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/tasks");
   return { error: null, created, skipped };
 }
 
