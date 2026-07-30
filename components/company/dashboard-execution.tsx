@@ -1,21 +1,46 @@
-import { CalendarRange, Gauge, TimerReset } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { CalendarRange, Gauge, TimerReset, Users } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { DashboardOverview } from "@/lib/data/dashboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+/** Ventanas de la agenda. Los datos siempre traen 15; acá se recorta. */
+const AGENDA_RANGES = [7, 15] as const;
+
 export function DashboardAgenda({ agenda }: Pick<DashboardOverview, "agenda">) {
   const t = useTranslations("Dashboard");
   const format = useFormatter();
+  // Arranca en 7 días: es el horizonte con el que se planifica la semana. Los
+  // 15 quedan a un click para ver si lo que viene después ya está cargado.
+  const [days, setDays] = useState<number>(7);
+  const visible = agenda.slice(0, days);
 
   return (
     <Card className="flex flex-col">
       <CardHeader className="border-b">
-        <div className="flex items-center gap-2"><CalendarRange className="size-4 text-primary" aria-hidden="true" /><CardTitle>{t("agendaTitle")}</CardTitle></div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2"><CalendarRange className="size-4 text-primary" aria-hidden="true" /><CardTitle>{t("agendaTitle", { days })}</CardTitle></div>
+          <div className="flex items-center gap-1">
+            {AGENDA_RANGES.map((range) => (
+              <button
+                key={range}
+                type="button"
+                onClick={() => setDays(range)}
+                aria-pressed={days === range}
+                className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${days === range ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:text-foreground"}`}
+              >
+                {t("agendaRange", { days: range })}
+              </button>
+            ))}
+          </div>
+        </div>
         <p className="text-xs text-muted-foreground">{t("agendaDescription")}</p>
       </CardHeader>
       <CardContent className="flex-1 p-3">
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-          {agenda.map((day) => {
+          {visible.map((day) => {
             const tone = day.load > 100
               ? "border-destructive/30 bg-red-50"
               : day.load >= 80
@@ -45,19 +70,38 @@ export function DashboardAgenda({ agenda }: Pick<DashboardOverview, "agenda">) {
 
 export function DashboardCapacity({
   capacity,
+  coordination,
   sla,
-}: Pick<DashboardOverview, "capacity" | "sla">) {
+}: Pick<DashboardOverview, "capacity" | "coordination" | "sla">) {
   const t = useTranslations("Dashboard");
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
       <Card>
         <CardHeader className="border-b"><div className="flex items-center gap-2"><Gauge className="size-4 text-primary" aria-hidden="true" /><CardTitle>{t("capacityTitle")}</CardTitle></div></CardHeader>
-        <CardContent className="grid grid-cols-2 gap-4">
-          <Data label={t("availableToday")} value={`${capacity.availableToday}/${capacity.total}`} />
-          <Data label={t("weeklyAssignments")} value={capacity.weeklyAssignments} />
-          <Data label={t("freeSlots")} value={capacity.freeSlots} />
-          <Data label={t("overloadedDays")} value={capacity.overloadedDays} danger={capacity.overloadedDays > 0} />
+        <CardContent className="flex flex-col gap-4">
+          {/* Instaladores: los únicos que consumen agenda, porque son los
+              únicos a los que se les puede asignar una orden. */}
+          <div>
+            <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("capacityInstallers")}</p>
+            <div className="grid grid-cols-2 gap-4">
+              <Data label={t("availableToday")} value={`${capacity.availableToday}/${capacity.total}`} />
+              <Data label={t("weeklyAssignments")} value={capacity.weeklyAssignments} />
+              <Data label={t("freeSlots")} value={capacity.freeSlots} />
+              <Data label={t("overloadedDays")} value={capacity.overloadedDays} danger={capacity.overloadedDays > 0} />
+            </div>
+          </div>
+          {/* Coordinación: se mide por cobertura de proyectos, no por jornadas. */}
+          <div className="border-t pt-4">
+            <p className="mb-2 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              <Users className="size-3" aria-hidden="true" />
+              {t("capacityCoordinators")}
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <Data label={t("coordinatorsActive")} value={`${coordination.withProjects}/${coordination.total}`} />
+              <Data label={t("coordinatedProjects")} value={coordination.projects} />
+            </div>
+          </div>
         </CardContent>
       </Card>
       <Card>

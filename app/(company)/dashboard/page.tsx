@@ -105,7 +105,7 @@ export default async function CompanyDashboard() {
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)]">
         <DashboardProjects projects={overview.projects} />
-        <DashboardCapacity capacity={overview.capacity} sla={overview.sla} />
+        <DashboardCapacity capacity={overview.capacity} coordination={overview.coordination} sla={overview.sla} />
       </section>
 
       <DashboardInsights regions={overview.regions} installers={overview.installers} />

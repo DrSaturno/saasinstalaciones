@@ -18,8 +18,10 @@ export function DashboardProjects({ projects }: { projects: DashboardOverview["p
         {projects.length === 0 ? (
           <p className="px-4 py-10 text-center text-sm text-muted-foreground">{t("emptyProjects")}</p>
         ) : (
-          <div className="divide-y">
-            {projects.slice(0, 8).map((project) => (
+          // Muestra ~4 filas y el resto por scroll: la lista ya viene ordenada
+          // por salud, así que lo urgente queda arriba sin necesidad de cortar.
+          <div className="max-h-[26rem] divide-y overflow-y-auto">
+            {projects.map((project) => (
               <Link key={project.id} href={`/projects/${project.id}`} className="group block px-4 py-4 transition-colors hover:bg-muted/40">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">

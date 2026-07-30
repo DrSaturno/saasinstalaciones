@@ -261,7 +261,7 @@
     "weatherRisk": "Riesgo climático en {zone}",
     "weatherRiskDetail": "{rain}% lluvia · {wind} km/h viento",
     "weatherNoRisk": "Sin alertas meteorológicas para las zonas activas.",
-    "agendaTitle": "Agenda de los próximos 15 días",
+    "agendaTitle": "Agenda de los próximos {days} días",
     "agendaDescription": "Carga de trabajo comparada con la disponibilidad declarada del equipo.",
     "agendaJobs": "trabajos",
     "agendaLoad": "{load}% · capacidad {capacity}",
@@ -354,7 +354,12 @@
     "quickActionEmpty": "No hay órdenes que requieran esta acción.",
     "selectInstaller": "Elegí un instalador",
     "apply": "Aplicar",
-    "cancelledLabel": "Órdenes canceladas"
+    "cancelledLabel": "Órdenes canceladas",
+    "agendaRange": "{days} días",
+    "capacityInstallers": "Instaladores",
+    "capacityCoordinators": "Coordinadores",
+    "coordinatorsActive": "Con proyectos a cargo",
+    "coordinatedProjects": "Proyectos coordinados"
   },
   "OrderIncidents": {
     "title": "Incidencias",

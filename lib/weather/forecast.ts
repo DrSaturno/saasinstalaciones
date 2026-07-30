@@ -20,11 +20,23 @@ function severity(code: number, rain: number, wind: number): ZoneForecast["sever
   return "ok";
 }
 
+/** Open-Meteo es un tercero: si tarda, no puede arrastrar al tablero con él. */
+const WEATHER_TIMEOUT_MS = 5000;
+
+/**
+ * Pronóstico por zona. El clima es informativo, así que cualquier falla se
+ * traga y devuelve la lista sin esa zona.
+ *
+ * El timeout no es decorativo: este fetch corre dentro del render de
+ * `/dashboard`, y ese render es lo que espera `revalidatePath` al publicar un
+ * anuncio. Sin corte, una demora de Open-Meteo dejaba el botón en "Publicando…"
+ * para siempre aunque el anuncio ya hubiera salido.
+ */
 export async function fetchZoneForecasts(zones: WeatherZone[]): Promise<ZoneForecast[]> {
   const results = await Promise.allSettled(zones.map(async (zone) => {
     const [latitude, longitude] = coordinates(zone);
     const params = new URLSearchParams({ latitude: String(latitude), longitude: String(longitude), daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max", timezone: "auto", forecast_days: "1" });
-    const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`, { next: { revalidate: 1800 } });
+    const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`, { next: { revalidate: 1800 }, signal: AbortSignal.timeout(WEATHER_TIMEOUT_MS) });
     if (!response.ok) throw new Error("weather");
     const data = await response.json() as { daily?: { weather_code?: number[]; temperature_2m_max?: number[]; temperature_2m_min?: number[]; precipitation_probability_max?: number[]; wind_speed_10m_max?: number[] } };
     const code = data.daily?.weather_code?.[0] ?? 0;

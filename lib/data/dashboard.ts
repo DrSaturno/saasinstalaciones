@@ -31,7 +31,7 @@ type Project = {
   id: string; company_id: string; name: string; client_name: string;
   planned_installations: number; country: Country; status: ProjectStatus;
   starts_at: string | null; ends_at: string | null; billing_mode: BillingMode;
-  contract_amount: number | null; currency: OrderCurrency;
+  contract_amount: number | null; currency: OrderCurrency; coordinator_id: string | null;
 };
 type Site = {
   id: string; project_id: string; name: string; address: string; zone: string;
@@ -66,6 +66,8 @@ export type DashboardOverview = {
   weatherZones: { name: string; lat: number | null; lng: number | null }[];
   agenda: { date: string; total: number; assigned: number; completed: number; capacity: number; load: number }[];
   capacity: { availableToday: number; total: number; unavailable: number; weeklyAssignments: number; overloadedDays: number; freeSlots: number };
+  /** Coordinación: no es capacidad de ejecución, se mide aparte. */
+  coordination: { total: number; withProjects: number; projects: number };
   sla: { onTimeRate: number; averageAssignmentHours: number; averageCompletionDays: number; rescheduled: number; cancelled: number; averageDelayDays: number; completionChange: number | null };
   quality: { firstResolutionRate: number; finalized: number; repeatVisits: number };
   incidents: { id: string; orderId: string; number: string; title: string; siteName: string; category: IncidentCategory; severity: IncidentSeverity; description: string; requiresRevisit: boolean; status: IncidentStatus; createdAt: string }[];
@@ -99,16 +101,21 @@ async function fetchPaged<T>(fetchPage: (from: number, to: number) => Promise<{ 
 
 export async function fetchDashboardOverview(supabase: SupabaseClient<Database>, country: Country): Promise<DashboardOverview> {
   const [projects, sites, orders, incidents, rosterResult] = await Promise.all([
-    fetchPaged<Project>(async (from, to) => supabase.from("projects").select("id, company_id, name, client_name, planned_installations, country, status, starts_at, ends_at, billing_mode, contract_amount, currency").in("status", ["active", "paused"]).range(from, to).overrideTypes<Project[]>()),
+    fetchPaged<Project>(async (from, to) => supabase.from("projects").select("id, company_id, name, client_name, planned_installations, country, status, starts_at, ends_at, billing_mode, contract_amount, currency, coordinator_id").in("status", ["active", "paused"]).range(from, to).overrideTypes<Project[]>()),
     fetchPaged<Site>(async (from, to) => supabase.from("sites").select("id, project_id, name, address, zone, city, lat, lng, status, archived_at").is("archived_at", null).range(from, to).overrideTypes<Site[]>()),
     fetchPaged<Order>(async (from, to) => supabase.from("work_orders").select("id, project_id, site_id, order_number, title, status, scheduled_date, scheduled_end_date, finalized_at, assigned_installer_id, assigned_at, original_scheduled_date, reschedule_count, visit_count, amount, currency, created_at").range(from, to).overrideTypes<Order[]>()),
     fetchPaged<Incident>(async (from, to) => supabase.from("order_incidents").select("id, order_id, category, severity, description, requires_revisit, status, created_at").range(from, to).overrideTypes<Incident[]>()),
-    supabase.from("company_installers").select("company_id, installer_id").eq("status", "active"),
+    // Sólo instaladores: un coordinador no recibe órdenes, así que contarlo
+    // como capacidad inflaría la agenda y las jornadas libres con gente que
+    // nunca va a salir a la calle. Mismo criterio que `fetchActiveRoster`.
+    supabase.from("company_installers").select("company_id, installer_id, role").eq("status", "active"),
   ]);
 
-  const roster = rosterResult.data ?? [];
+  const rosterRows = rosterResult.data ?? [];
+  const roster = rosterRows.filter((item) => item.role === "installer");
+  const coordinatorIds = rosterRows.filter((item) => item.role === "coordinator").map((item) => item.installer_id);
   const installerIds = roster.map((item) => item.installer_id);
-  const companyId = roster[0]?.company_id ?? projects[0]?.company_id;
+  const companyId = rosterRows[0]?.company_id ?? projects[0]?.company_id;
   const [{ data: profiles }, { data: installerRows }, { data: weekly }, { data: exceptions }] = installerIds.length && companyId ? await Promise.all([
     supabase.from("profiles").select("id, full_name").in("id", installerIds),
     supabase.from("installers").select("id, available, rating_avg").in("id", installerIds),
@@ -236,6 +243,11 @@ export async function fetchDashboardOverview(supabase: SupabaseClient<Database>,
     weatherZones: [...new Map(weatherSource.filter((site) => site.zone).map((site) => [site.zone, { name: site.zone, lat: site.lat, lng: site.lng }])).values()].slice(0, 4),
     agenda,
     capacity: { availableToday: installerRowsView.filter((item) => item.available).length, total: installerIds.length, unavailable: unavailable.length, weeklyAssignments: agenda.slice(0, 7).reduce((sum, day) => sum + day.assigned, 0), overloadedDays: agenda.filter((day) => day.load > 100).length, freeSlots: agenda.slice(0, 7).reduce((sum, day) => sum + Math.max(0, day.capacity - day.total), 0) },
+    coordination: {
+      total: coordinatorIds.length,
+      withProjects: new Set(projects.map((project) => project.coordinator_id).filter((id): id is string => id !== null && coordinatorIds.includes(id))).size,
+      projects: projects.filter((project) => project.coordinator_id !== null).length,
+    },
     sla: { onTimeRate: percentage(onTime, finalized.length), averageAssignmentHours: Math.round(average(completedAssignmentHours) * 10) / 10, averageCompletionDays: Math.round(average(completedDays) * 10) / 10, rescheduled: relevantOrders.filter((order) => order.reschedule_count > 0).length, cancelled: relevantOrders.filter((order) => order.status === "cancelada").length, averageDelayDays: Math.round(average(delayedDays) * 10) / 10, completionChange },
     quality: { firstResolutionRate: firstResolution.rate, finalized: finalized.length, repeatVisits: firstResolution.repeats },
     incidents: incidents.map((item) => { const order = orderById.get(item.order_id); const site = order ? siteById.get(order.site_id) : null; return { id: item.id, orderId: item.order_id, number: order?.order_number ?? "—", title: order?.title ?? "—", siteName: site?.name ?? "—", category: item.category, severity: item.severity, description: item.description, requiresRevisit: item.requires_revisit, status: item.status, createdAt: item.created_at }; }).sort((a, b) => Number(a.status === "resolved") - Number(b.status === "resolved") || b.createdAt.localeCompare(a.createdAt)),

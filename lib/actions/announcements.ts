@@ -25,6 +25,13 @@ export type AnnouncementState = {
   error: string | null;
   ok?: boolean;
   recipients?: number;
+  /**
+   * Id del anuncio recién creado. El formulario lo usa como `key` de React para
+   * remontarse y volver a su estado inicial: al ser distinto en cada
+   * publicación, dos envíos seguidos también lo limpian (un booleano `ok` no,
+   * porque se queda en `true`).
+   */
+  announcementId?: string;
 };
 
 /**
@@ -91,7 +98,7 @@ export async function publishAnnouncement(
 
     revalidatePath("/dashboard");
     revalidatePath("/home");
-    return { error: null, ok: true, recipients };
+    return { error: null, ok: true, recipients, announcementId: result?.announcement_id };
   } catch {
     return { error: t("unexpected") };
   }

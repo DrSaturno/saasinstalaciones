@@ -38,9 +38,11 @@ export function AnnouncementComposer({
     }
   }, [state, t]);
 
-  // Al publicar con éxito cambia la key: React remonta el formulario y el
-  // selector de público vuelve solo a "todo el equipo", sin setState en efecto.
-  return <ComposerForm key={state.ok ? "sent" : "draft"} {...{ t, formRef, formAction, pending, state, zones, projects }} />;
+  // La key es el id del anuncio publicado: cambia en CADA publicación, así que
+  // React remonta el formulario y el selector de público vuelve solo a "todo el
+  // equipo". Con un booleano, dos envíos seguidos daban la misma key y el
+  // selector se quedaba con la elección anterior.
+  return <ComposerForm key={state.announcementId ?? "draft"} {...{ t, formRef, formAction, pending, state, zones, projects }} />;
 }
 
 function ComposerForm({
