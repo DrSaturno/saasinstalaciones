@@ -1259,7 +1259,11 @@
     "sitesTitle": "Ubicaciones y órdenes",
     "summary": "{projects, plural, =1 {# proyecto} other {# proyectos}} · {sites, plural, =1 {# ubicación} other {# ubicaciones}}",
     "projectsColumn": "Proyectos",
-    "sitesColumn": "Ubicaciones"
+    "sitesColumn": "Ubicaciones",
+    "website": "Página web",
+    "instagram": "Instagram",
+    "youtube": "YouTube",
+    "tiktok": "TikTok"
   },
   "Messages": {
     "title": "Mensajería",

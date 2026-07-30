@@ -202,6 +202,10 @@ export interface Database {
           phone: string;
           address: string;
           notes: string;
+          website: string;
+          instagram: string;
+          youtube: string;
+          tiktok: string;
           created_at: string;
           updated_at: string;
         };
@@ -215,6 +219,10 @@ export interface Database {
           phone?: string;
           address?: string;
           notes?: string;
+          website?: string;
+          instagram?: string;
+          youtube?: string;
+          tiktok?: string;
           created_at?: string;
           updated_at?: string;
         };

@@ -1259,7 +1259,11 @@
     "sitesTitle": "Locais e ordens",
     "summary": "{projects, plural, =1 {# projeto} other {# projetos}} · {sites, plural, =1 {# local} other {# locais}}",
     "projectsColumn": "Projetos",
-    "sitesColumn": "Locais"
+    "sitesColumn": "Locais",
+    "website": "Site",
+    "instagram": "Instagram",
+    "youtube": "YouTube",
+    "tiktok": "TikTok"
   },
   "Messages": {
     "title": "Mensagens",

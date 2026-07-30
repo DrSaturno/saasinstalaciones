@@ -16,6 +16,8 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
     id: detail.client.id, name: detail.client.name, taxId: detail.client.tax_id,
     contactName: detail.client.contact_name, email: detail.client.email,
     phone: detail.client.phone, address: detail.client.address, notes: detail.client.notes,
+    website: detail.client.website, instagram: detail.client.instagram,
+    youtube: detail.client.youtube, tiktok: detail.client.tiktok,
     projectCount: detail.projects.length, siteCount: detail.sites.length,
   };
   const ordersBySite = new Map<string, typeof detail.orders>();
@@ -38,6 +40,10 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           <Field label={t("phone")} value={detail.client.phone} mono />
           <Field label={t("email")} value={detail.client.email} />
           <Field label={t("address")} value={detail.client.address} />
+          <LinkField label={t("website")} value={detail.client.website} />
+          <LinkField label={t("instagram")} value={detail.client.instagram} base="https://instagram.com/" />
+          <LinkField label={t("youtube")} value={detail.client.youtube} base="https://youtube.com/" />
+          <LinkField label={t("tiktok")} value={detail.client.tiktok} base="https://tiktok.com/@" />
           {detail.client.notes ? (
             <div className="sm:col-span-2 lg:col-span-3">
               <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{t("notes")}</p>
@@ -69,6 +75,35 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         {!detail.sites.length ? <p className="text-sm text-muted-foreground">{t("noSites")}</p> : null}
       </div>
     </main>
+  );
+}
+
+/**
+ * Presencia online, como link cuando se puede.
+ *
+ * El campo es texto libre —hay quien escribe "@lamarca", quien pega la URL
+ * entera y quien pone "instagram.com/lamarca"— así que acá se arma el link con
+ * lo que haya: si ya trae protocolo se respeta, si no se le antepone la base de
+ * la red. Vale más un link que a veces no resuelve que obligar a escribir la
+ * URL canónica al cargar el cliente.
+ */
+function LinkField({ label, value, base = "https://" }: { label: string; value: string; base?: string }) {
+  if (!value) return <Field label={label} value="" />;
+  const href = /^https?:\/\//i.test(value)
+    ? value
+    : `${base}${value.replace(/^@/, "")}`;
+  return (
+    <div className="min-w-0">
+      <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer noopener"
+        className="mt-1 block truncate text-sm text-primary hover:underline"
+      >
+        {value}
+      </a>
+    </div>
   );
 }
 

@@ -12,6 +12,10 @@ export type ClientSummary = {
   phone: string;
   address: string;
   notes: string;
+  website: string;
+  instagram: string;
+  youtube: string;
+  tiktok: string;
   projectCount: number;
   siteCount: number;
 };
@@ -23,7 +27,7 @@ export async function fetchClients(
     await Promise.all([
       supabase
         .from("clients")
-        .select("id, name, tax_id, contact_name, email, phone, address, notes")
+        .select("id, name, tax_id, contact_name, email, phone, address, notes, website, instagram, youtube, tiktok")
         .order("name"),
       supabase.from("projects").select("id, client_id"),
       supabase.from("sites").select("project_id").is("archived_at", null),
@@ -56,6 +60,10 @@ export async function fetchClients(
     phone: client.phone,
     address: client.address,
     notes: client.notes,
+    website: client.website,
+    instagram: client.instagram,
+    youtube: client.youtube,
+    tiktok: client.tiktok,
     projectCount: projectsByClient.get(client.id) ?? 0,
     siteCount: sitesByClient.get(client.id) ?? 0,
   }));

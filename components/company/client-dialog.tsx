@@ -38,6 +38,10 @@ export function ClientDialog({ client }: { client?: ClientSummary }) {
     ["email", t("email"), client?.email ?? "", false],
     ["phone", t("phone"), client?.phone ?? "", false],
     ["address", t("address"), client?.address ?? "", false],
+    ["website", t("website"), client?.website ?? "", false],
+    ["instagram", t("instagram"), client?.instagram ?? "", false],
+    ["youtube", t("youtube"), client?.youtube ?? "", false],
+    ["tiktok", t("tiktok"), client?.tiktok ?? "", false],
   ] as const;
   return (
     <Dialog open={open} onOpenChange={setOpen}>
