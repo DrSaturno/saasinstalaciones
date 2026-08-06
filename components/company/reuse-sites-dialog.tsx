@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { fetchReusableSites, reuseSites } from "@/lib/actions/projects";
+import { fetchReusableSites, reuseSites } from "@/lib/actions/projects/reuse";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {

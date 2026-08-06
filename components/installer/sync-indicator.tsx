@@ -8,9 +8,9 @@ import { useTranslations } from "next-intl";
  * sincronizar. Sólo se muestra cuando hay algo que comunicar (offline o cola
  * pendiente), para no molestar en el caso normal.
  */
-export function SyncIndicator() {
+export function SyncIndicator({ userId }: { userId: string }) {
   const t = useTranslations("SyncIndicator");
-  const { online, pending, syncing } = useSync();
+  const { online, pending, syncing } = useSync(userId);
 
   if (online && pending === 0) return null;
 

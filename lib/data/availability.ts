@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fetchActiveCompanyRoleMemberships } from "@/lib/data/company-membership-roles";
 import type { Country, Database, UnavailabilityStatus } from "@/types/database";
 
 export type AvailabilityCompany = {
@@ -20,8 +21,12 @@ export type AvailabilityCompany = {
 };
 
 export async function fetchInstallerAvailability(supabase: SupabaseClient<Database>, installerId: string): Promise<AvailabilityCompany[]> {
-  const { data: roster } = await supabase.from("company_installers").select("company_id").eq("installer_id", installerId).eq("status", "active").eq("role", "installer");
-  const companyIds = (roster ?? []).map((item) => item.company_id);
+  const memberships = await fetchActiveCompanyRoleMemberships(
+    supabase,
+    "installer",
+    { userId: installerId },
+  );
+  const companyIds = [...new Set(memberships.map((item) => item.companyId))];
   if (!companyIds.length) return [];
   const [{ data: companies }, { data: weekly }, { data: exceptions }] = await Promise.all([
     supabase.from("companies").select("id, name, country").in("id", companyIds),

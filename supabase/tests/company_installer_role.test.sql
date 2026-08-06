@@ -1,5 +1,7 @@
 begin;
 
+create extension if not exists pgtap with schema extensions;
+
 select plan(8);
 
 select has_column('public', 'company_installers', 'role', 'company_installers tiene un rol propio');

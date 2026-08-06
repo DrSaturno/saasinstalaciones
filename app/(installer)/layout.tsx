@@ -44,7 +44,7 @@ export default async function InstallerLayout({
       showNotifications
     >
       <ServiceWorkerRegister userId={user.id} />
-      <SyncIndicator />
+      <SyncIndicator userId={user.id} />
       {children}
     </AppShell>
   );

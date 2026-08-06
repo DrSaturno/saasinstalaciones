@@ -3,11 +3,15 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 import { applicationOrigin } from "@/lib/app-origin";
 import { createClient } from "@/lib/supabase/server";
 
-const RECOVERY_TYPES: readonly EmailOtpType[] = ["recovery", "email"];
+const PASSWORD_SETUP_TYPES: readonly EmailOtpType[] = [
+  "recovery",
+  "email",
+  "invite",
+];
 
 /**
- * Aterrizaje de los links de email de Supabase Auth (hoy: recuperación de
- * contraseña). Canjea el token por una sesión y manda a fijar la clave nueva.
+ * Aterrizaje de recuperación e invitación de Supabase Auth. Canjea el token
+ * por una sesión y manda a fijar la clave nueva.
  *
  * Acepta las dos formas que puede tomar el link según cómo esté configurada la
  * plantilla del email:
@@ -29,7 +33,7 @@ export async function GET(request: NextRequest) {
   const type = params.get("type") as EmailOtpType | null;
   const code = params.get("code");
 
-  if (tokenHash && type && RECOVERY_TYPES.includes(type)) {
+  if (tokenHash && type && PASSWORD_SETUP_TYPES.includes(type)) {
     const { error } = await supabase.auth.verifyOtp({
       token_hash: tokenHash,
       type,

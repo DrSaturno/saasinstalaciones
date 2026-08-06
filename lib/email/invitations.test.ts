@@ -2,7 +2,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { invitationUrl, sendInvitationEmail } from "@/lib/email/invitations";
+import {
+  invitationUrl,
+  managerActivationUrl,
+  sendInvitationEmail,
+  sendManagerActivationEmail,
+} from "@/lib/email/invitations";
 
 const ORIGINAL_ENV = {
   APP_URL: process.env.APP_URL,
@@ -26,6 +31,14 @@ const INPUT = {
   },
 };
 
+const MANAGER_INPUT = {
+  to: "manager@example.com",
+  userId: "22222222-2222-2222-2222-222222222222",
+  activationUrl:
+    "https://app.example.com/api/auth/callback?token_hash=hashed-secret&type=invite",
+  copy: INPUT.copy,
+};
+
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -40,6 +53,13 @@ describe("invitation email", () => {
     process.env.APP_URL = "https://saasinstalaciones.vercel.app/path";
     expect(invitationUrl(INPUT.token)).toBe(
       `https://saasinstalaciones.vercel.app/invite/${INPUT.token}`,
+    );
+  });
+
+  it("builds a cross-device manager activation callback", () => {
+    process.env.APP_URL = "https://app.example.com";
+    expect(managerActivationUrl("hash with spaces")).toBe(
+      "https://app.example.com/api/auth/callback?token_hash=hash+with+spaces&type=invite",
     );
   });
 
@@ -82,5 +102,20 @@ describe("invitation email", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 422 })));
 
     await expect(sendInvitationEmail(INPUT)).resolves.toBe("failed");
+  });
+
+  it("does not put the manager activation token in the idempotency key", async () => {
+    process.env.RESEND_API_KEY = "re_test";
+    process.env.RESEND_FROM_EMAIL = "Instala Pro <invites@example.com>";
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(sendManagerActivationEmail(MANAGER_INPUT)).resolves.toBe("sent");
+
+    const [, request] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(request.headers).toMatchObject({
+      "Idempotency-Key": `company-manager-activation-${MANAGER_INPUT.userId}`,
+    });
+    expect(JSON.stringify(request.headers)).not.toContain("hashed-secret");
   });
 });

@@ -1,10 +1,9 @@
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
-import { logoutAction } from "@/lib/actions/session";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { LocaleSwitcher } from "@/components/shared/locale-switcher";
 import { AppShellFrame } from "@/components/shared/app-shell-frame";
-import { Button } from "@/components/ui/button";
+import { LogoutButton } from "@/components/shared/logout-button";
 import type { Locale } from "@/types/database";
 import type { NavItem } from "@/types/navigation";
 
@@ -34,11 +33,7 @@ export async function AppShell({
   const accountActions = (
     <>
       <LocaleSwitcher locale={locale} />
-      <form action={logoutAction}>
-        <Button type="submit" variant="ghost" size="sm">
-          {t("logout")}
-        </Button>
-      </form>
+      <LogoutButton label={t("logout")} />
     </>
   );
 

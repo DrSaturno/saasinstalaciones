@@ -2,13 +2,20 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getTranslations } from "next-intl/server";
-import type { Database, RosterStatus, UnavailabilityStatus } from "@/types/database";
+import { fetchActiveCompanyRoleMemberships } from "@/lib/data/company-membership-roles";
+import { rolesByUser } from "@/lib/domain/membership-roles";
+import type {
+  Database,
+  MembershipRole,
+  RosterStatus,
+  UnavailabilityStatus,
+} from "@/types/database";
 
 export type RosterMember = {
   installerId: string;
   name: string;
-  /** Coordinador: sigue en el equipo pero ya no se le ofrece "Ascender". */
-  isCoordinator: boolean;
+  /** Capacidades independientes: una persona puede tener ambas. */
+  roles: MembershipRole[];
   avatarUrl: string | null;
   status: RosterStatus;
   joinedAt: string | null;
@@ -33,12 +40,11 @@ export type CoordinatorOption = { id: string; name: string };
 export async function fetchCoordinators(
   supabase: SupabaseClient<Database>,
 ): Promise<CoordinatorOption[]> {
-  const { data: memberships } = await supabase
-    .from("company_installers")
-    .select("installer_id")
-    .eq("role", "coordinator")
-    .eq("status", "active");
-  const ids = (memberships ?? []).map((item) => item.installer_id);
+  const memberships = await fetchActiveCompanyRoleMemberships(
+    supabase,
+    "coordinator",
+  );
+  const ids = [...new Set(memberships.map((item) => item.userId))];
   if (!ids.length) return [];
 
   const { data: profiles } = await supabase
@@ -101,14 +107,19 @@ export async function fetchRoster(
   const t = await getTranslations("DataFallbacks");
   const { data: roster } = await supabase
     .from("company_installers")
-    .select("installer_id, role, status, joined_at")
+    .select("company_id, installer_id, status, joined_at")
     .order("joined_at", { ascending: false });
 
   if (!roster || roster.length === 0) return [];
 
   const ids = roster.map((r) => r.installer_id);
 
-  const [{ data: profiles }, { data: installers }, { data: orders }] =
+  const [
+    { data: profiles },
+    { data: installers },
+    { data: orders },
+    { data: roleRows },
+  ] =
     await Promise.all([
       supabase.from("profiles").select("id, full_name, avatar_path").in("id", ids),
       supabase
@@ -120,10 +131,16 @@ export async function fetchRoster(
         .select("assigned_installer_id")
         .in("assigned_installer_id", ids)
         .not("status", "in", "(finalizada,cancelada)"),
+      supabase
+        .from("company_membership_roles")
+        .select("user_id, role")
+        .in("company_id", [...new Set(roster.map((r) => r.company_id))])
+        .in("user_id", ids),
     ]);
 
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
   const instById = new Map((installers ?? []).map((i) => [i.id, i]));
+  const memberRoles = rolesByUser(roleRows ?? []);
   const openCount = new Map<string, number>();
   for (const o of orders ?? []) {
     if (o.assigned_installer_id) {
@@ -137,10 +154,11 @@ export async function fetchRoster(
   return roster.map((r) => {
     const inst = instById.get(r.installer_id);
     const profile = profileById.get(r.installer_id);
+    const roles = memberRoles.get(r.installer_id) ?? [];
     return {
       installerId: r.installer_id,
       name: profile?.full_name ?? t("installer"),
-      isCoordinator: r.role === "coordinator",
+      roles,
       avatarUrl: profile?.avatar_path
         ? supabase.storage.from("avatars").getPublicUrl(profile.avatar_path).data
             .publicUrl

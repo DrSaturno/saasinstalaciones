@@ -153,7 +153,8 @@
     "emailPlaceholder": "voce@empresa.com",
     "submit": "Entrar",
     "submitting": "Entrando…",
-    "forgotPassword": "Esqueceu sua senha?"
+    "forgotPassword": "Esqueceu sua senha?",
+    "companySuspended": "Sua empresa está suspensa. Entre em contato com o administrador da plataforma."
   },
   "ForgotPassword": {
     "title": "Recuperar senha",
@@ -174,7 +175,7 @@
     "done": "Pronto, sua senha foi atualizada.",
     "goToLogin": "Entrar",
     "invalidLink": "O link não serve",
-    "invalidLinkDescription": "Ele pode ter expirado, já ter sido usado, ou ter sido aberto em um navegador diferente do que o solicitou. Peça um novo.",
+    "invalidLinkDescription": "Ele pode ter expirado ou já ter sido usado. Peça um novo.",
     "requestNew": "Pedir um novo link"
   },
   "Invitation": {
@@ -1124,6 +1125,14 @@
     "expires": "Este link expira em 7 dias.",
     "fallback": "Se o botão não funcionar, copie e cole o link abaixo no navegador."
   },
+  "ManagerActivationEmail": {
+    "subject": "Ative seu acesso à {company}",
+    "heading": "Crie sua senha do Instala Pro",
+    "body": "A conta responsável por {company} já está pronta. Use este link seguro para ativá-la e escolher sua senha.",
+    "cta": "Ativar conta",
+    "expires": "Abra o quanto antes: o link só pode ser usado uma vez.",
+    "fallback": "Se o botão não funcionar, copie e cole o link abaixo no navegador."
+  },
   "PendingInvitations": {
     "title": "Convites pendentes",
     "expired": "Expirado",
@@ -1143,7 +1152,18 @@
     "empty": "Você ainda não tem instaladores na equipe. Convide o primeiro.",
     "reactivate": "Reativar",
     "remove": "Remover",
+    "installerBadge": "Instalador",
     "coordinatorBadge": "Coordenador",
+    "addInstallerRole": "Adicionar instalação",
+    "addCoordinatorRole": "Adicionar coordenação",
+    "removeInstallerRole": "Remover instalação",
+    "removeCoordinatorRole": "Remover coordenação",
+    "installerRoleName": "instalação",
+    "coordinatorRoleName": "coordenação",
+    "grantRoleConfirm": "Adicionar o acesso de {role} a {name}? Os outros acessos serão mantidos.",
+    "revokeRoleConfirm": "Remover o acesso de {role} de {name}? Os outros acessos serão mantidos.",
+    "roleGranted": "A função de {role} foi adicionada a {name}",
+    "roleRevoked": "A função de {role} foi removida de {name}",
     "promote": "Promover",
     "promoteConfirm": "Promover {name} a coordenador? Só é possível se não tiver ordens abertas nesta empresa. Será avisado por notificação.",
     "promoted": "{name} agora é coordenador",
@@ -1419,10 +1439,12 @@
   "CreateCompany": {
     "trigger": "Nova empresa",
     "createdTitle": "Empresa criada",
-    "createdDescription": "Compartilhe estas credenciais com o responsável. A senha é exibida uma única vez.",
-    "tempPassword": "Senha temporária",
-    "copy": "Copiar credenciais",
-    "copied": "Credenciais copiadas",
+    "createdDescriptionSent": "Enviamos para {email} um link de uso único para ativar a conta e escolher uma senha.",
+    "createdDescriptionManual": "O envio de e-mail não está configurado. Compartilhe este link de ativação com {email}.",
+    "activationLink": "Link de ativação",
+    "manualLinkWarning": "Ele é exibido uma única vez. Compartilhe por um canal seguro e não o abra: o uso consome o link.",
+    "copyActivationLink": "Copiar link de ativação",
+    "linkCopied": "Link copiado",
     "title": "Nova empresa",
     "description": "A empresa e o usuário do responsável pelo projeto serão criados.",
     "businessName": "Razão social",
@@ -1433,8 +1455,7 @@
     "managerEmail": "E-mail do responsável",
     "creating": "Criando…",
     "submit": "Criar empresa",
-    "createdToast": "Empresa “{name}” criada",
-    "clipboard": "E-mail: {email}\nSenha: {password}"
+    "createdToast": "Empresa “{name}” criada"
   },
   "Notifications": {
     "unread": "{count, plural, =0 {Nenhuma notificação não lida} =1 {# notificação não lida} other {# notificações não lidas}}",
@@ -1518,6 +1539,9 @@
     "passwordUpdated": "Senha atualizada"
   },
   "Errors": {
+    "membershipMustKeepRole": "A pessoa deve manter pelo menos uma função nesta empresa.",
+    "installerRoleOpenOrders": "Não é possível remover instalação enquanto houver ordens abertas atribuídas.",
+    "coordinatorRoleActiveProjects": "Não é possível remover coordenação enquanto houver projetos ativos atribuídos.",
     "promotionOpenOrders": "Não é possível promover: o instalador tem ordens abertas nesta empresa.",
     "membershipRoleConflict": "Você já tem outro perfil ativo nesta empresa.",
     "coordinatorInvitationOpenOrders": "Você não pode coordenar esta empresa enquanto tiver ordens abertas como instalador.",
@@ -1542,6 +1566,7 @@
     "passwordRequired": "Digite sua senha",
     "invalidCredentials": "E-mail ou senha incorretos",
     "missingProfile": "Sua conta não tem um perfil atribuído. Entre em contato com o administrador.",
+    "companySuspended": "Sua empresa está suspensa. Entre em contato com o administrador da plataforma.",
     "invalidInvitation": "Link de convite inválido",
     "loginRequired": "Entre para aceitar o convite.",
     "installerOnlyInvitation": "Somente um instalador pode aceitar este convite.",
@@ -1573,6 +1598,7 @@
     "pushActivation": "Não foi possível ativar",
     "createInvitation": "Não foi possível criar o convite",
     "createCompany": "Não foi possível criar a empresa",
+    "createCompanyInvitation": "Não foi possível entregar o convite. A empresa e sua conta responsável não foram criadas.",
     "updateCompany": "Não foi possível atualizar",
     "publishBroadcast": "Não foi possível publicar a oportunidade",
     "csvNoRows": "O arquivo não contém linhas de dados (o cabeçalho está faltando?)",

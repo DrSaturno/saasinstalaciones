@@ -54,3 +54,8 @@ next-env.d.ts
 # Ruflo / Claude Flow runtime data
 /.claude-flow/
 /.swarm/
+
+# Playwright: sesiones guardadas del seed y reportes de corrida
+/e2e/.auth/
+/playwright-report/
+/test-results/

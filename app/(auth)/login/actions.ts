@@ -6,6 +6,7 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { ROLE_HOME } from "@/lib/auth";
+import { isCompanyManagerBlocked } from "@/lib/domain/company-access";
 import { LOCALE_COOKIE } from "@/i18n/config";
 import type { Locale, UserRole } from "@/types/database";
 
@@ -44,7 +45,7 @@ export async function loginAction(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, locale")
+    .select("role, locale, company_id")
     .eq("id", data.user.id)
     .single();
 
@@ -52,6 +53,20 @@ export async function loginAction(
   if (!profile || !role) {
     await supabase.auth.signOut();
     return { error: t("missingProfile") };
+  }
+
+  const { data: company } =
+    role === "company_manager" && profile.company_id
+      ? await supabase
+          .from("companies")
+          .select("status")
+          .eq("id", profile.company_id)
+          .maybeSingle()
+      : { data: null };
+
+  if (isCompanyManagerBlocked(role, company?.status)) {
+    await supabase.auth.signOut();
+    return { error: t("companySuspended") };
   }
 
   const cookieStore = await cookies();

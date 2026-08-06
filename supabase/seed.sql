@@ -14,6 +14,11 @@ insert into public.companies (id, name, country, order_prefix)
 values ('11111111-1111-1111-1111-111111111111', 'Gráfica Demo SA', 'AR', 'DEM')
 on conflict (id) do nothing;
 
+insert into public.companies (id, name, country, order_prefix, status) values
+  ('66666666-6666-6666-6666-666666666666', 'Grafica Demo Brasil', 'BR', 'BRD', 'active'),
+  ('77777777-7777-7777-7777-777777777777', 'Empresa Demo Suspendida', 'AR', 'SUS', 'suspended')
+on conflict (id) do nothing;
+
 -- 2. Usuarios auth (el trigger handle_new_user crea profiles/installers)
 create or replace function pg_temp.seed_user(
   p_id uuid, p_email text, p_meta jsonb
@@ -65,6 +70,14 @@ select pg_temp.seed_user(
   'a0000000-0000-0000-0000-000000000005', 'instalador3@demo.dev',
   '{"role":"installer","full_name":"Carlos Córdoba"}'::jsonb);
 
+select pg_temp.seed_user(
+  'a0000000-0000-0000-0000-000000000006', 'coordinador@demo.dev',
+  '{"role":"installer","full_name":"Coordinadora Demo"}'::jsonb);
+
+select pg_temp.seed_user(
+  'a0000000-0000-0000-0000-000000000007', 'gerente.b@demo.dev',
+  '{"role":"company_manager","company_id":"66666666-6666-6666-6666-666666666666","full_name":"Gerente Demo Brasil","locale":"pt"}'::jsonb);
+
 -- 3. Zonas y skills de los instaladores
 update public.installers set zones = '{AR-BA-AMBA}', skills = '{ploteo_vehicular,vidrieras}'
   where id = 'a0000000-0000-0000-0000-000000000003';
@@ -78,6 +91,29 @@ insert into public.company_installers (company_id, installer_id, status, joined_
   ('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-000000000003', 'active', now()),
   ('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-000000000004', 'active', now())
 on conflict do nothing;
+
+-- Actores adicionales del baseline: coordinador, dual, multiempresa y tenant
+-- suspendido. El instalador 1 es dual en A e instalador en B.
+insert into public.company_installers (
+  company_id, installer_id, role, status, joined_at
+) values
+  ('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-000000000006', 'coordinator', 'active', now()),
+  ('66666666-6666-6666-6666-666666666666', 'a0000000-0000-0000-0000-000000000003', 'installer', 'active', now()),
+  ('77777777-7777-7777-7777-777777777777', 'a0000000-0000-0000-0000-000000000004', 'installer', 'active', now())
+on conflict do nothing;
+
+insert into public.company_membership_roles (company_id, user_id, role) values
+  ('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-000000000003', 'coordinator'),
+  ('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-000000000006', 'coordinator')
+on conflict do nothing;
+
+update public.company_installers
+set role = 'coordinator'
+where company_id = '11111111-1111-1111-1111-111111111111'
+  and installer_id in (
+    'a0000000-0000-0000-0000-000000000003',
+    'a0000000-0000-0000-0000-000000000006'
+  );
 
 -- 5. Proyecto demo con 20 puntos
 insert into public.projects (id, company_id, name, client_name, status, starts_at)

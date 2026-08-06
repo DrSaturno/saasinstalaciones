@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
+import { syncInstallerTransition } from "@/lib/actions/tasks";
 import { requestPushDelivery } from "@/lib/push/events";
-import type { OrderStatus } from "@/types/database";
+import { logEvent } from "@/lib/observability";
 import { db, type OutboxItem, type PendingPhoto } from "./db";
 
 /** Encola una mutación (y sus fotos) para enviar ahora o al reconectar. */
@@ -30,6 +31,7 @@ export async function flush(): Promise<number> {
   if (flushing || !navigator.onLine) return 0;
   flushing = true;
   let sent = 0;
+  let failed = 0;
 
   try {
     const supabase = createClient();
@@ -43,6 +45,8 @@ export async function flush(): Promise<number> {
     const items = await db.outbox.orderBy("createdAt").toArray();
 
     for (const item of items) {
+      if (item.blocked) continue;
+
       try {
         if (item.kind === "update") {
           // 1) Subir fotos pendientes de este update.
@@ -84,18 +88,42 @@ export async function flush(): Promise<number> {
           // Limpieza: quitar blobs ya subidos.
           for (const photoId of item.photoIds ?? []) await db.photos.delete(photoId);
         } else if (item.kind === "transition") {
-          // Leer estado actual: si ya está en destino, es no-op (idempotente).
-          const { data: order } = await supabase
-            .from("work_orders")
-            .select("status, assigned_installer_id")
-            .eq("id", item.orderId!)
-            .single();
-          if (order && order.status !== item.toStatus) {
-            const { error } = await supabase
-              .from("work_orders")
-              .update({ status: item.toStatus as OrderStatus })
-              .eq("id", item.orderId!);
-            if (error) throw error;
+          if (!item.orderId || !item.toStatus) {
+            await db.outbox.update(item.id, {
+              blocked: true,
+              tries: item.tries + 1,
+              lastError: "invalid_offline_transition",
+            });
+            logEvent("error", "offline.sync.item_blocked", {
+              kind: item.kind,
+              reason: "invalid_offline_transition",
+              tries: item.tries + 1,
+            });
+            continue;
+          }
+
+          const result = await syncInstallerTransition({
+            operationId: item.id,
+            orderId: item.orderId,
+            toStatus: item.toStatus,
+          });
+          if (result.error) {
+            if (result.retryable === false) {
+              await db.outbox.update(item.id, {
+                blocked: true,
+                tries: item.tries + 1,
+                lastError: result.error,
+              });
+              // El servidor rechazó la transición de forma definitiva: queda
+              // para la bandeja de conflictos, no para otro reintento.
+              logEvent("error", "offline.sync.item_blocked", {
+                kind: item.kind,
+                reason: result.error,
+                tries: item.tries + 1,
+              });
+              continue;
+            }
+            throw new Error(result.error);
           }
         } else if (item.kind === "chat") {
           const { error } = await supabase.from("chat_messages").upsert(
@@ -130,10 +158,28 @@ export async function flush(): Promise<number> {
           tries: item.tries + 1,
           lastError: e instanceof Error ? e.message : String(e),
         });
+        failed++;
+        // Un elemento que se reintenta sin fin es invisible desde el servidor:
+        // el contador de intentos es lo que distingue un corte de red pasajero
+        // de una operación que nunca va a entrar.
+        logEvent("warn", "offline.sync.item_failed", {
+          kind: item.kind,
+          tries: item.tries + 1,
+          age_ms: Date.now() - item.createdAt,
+          error: e,
+        });
       }
     }
   } finally {
     flushing = false;
+  }
+
+  if (sent || failed) {
+    logEvent(failed ? "warn" : "info", "offline.sync.flushed", {
+      sent,
+      failed,
+      pending: await db.outbox.count(),
+    });
   }
 
   return sent;

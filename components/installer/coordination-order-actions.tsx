@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { recordSurvey, transitionOrder } from "@/lib/actions/orders";
+import { recordSurvey, transitionOrder } from "@/lib/actions/orders/lifecycle";
 import { allowedTransitions } from "@/lib/domain/order-rules";
 import { ORDER_STATUS } from "@/lib/domain/status";
 import { ORDER_TRANSITIONS } from "@/lib/domain/transitions";

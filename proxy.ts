@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import type { Database } from "@/types/database";
-import type { UserRole } from "@/types/database";
+import type { Database, UserRole } from "@/types/database";
 import { isProfileLocale, LOCALE_COOKIE } from "@/i18n/config";
+import { isCompanyManagerBlocked } from "@/lib/domain/company-access";
 
 const ROLE_HOME: Record<UserRole, string> = {
   platform_admin: "/master",
@@ -104,7 +104,7 @@ export async function proxy(request: NextRequest) {
   // Con sesión: resolvemos el rol.
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, locale")
+    .select("role, locale, company_id")
     .eq("id", user.id)
     .single();
 
@@ -125,6 +125,33 @@ export async function proxy(request: NextRequest) {
       path: "/",
       maxAge: 60 * 60 * 24 * 365,
     });
+  }
+
+  // El gerente depende de un único tenant. Si quedó suspendido, revocamos la
+  // sesión y evitamos que un token todavía vigente llegue al área empresa.
+  if (role === "company_manager") {
+    const { data: company } = profile.company_id
+      ? await supabase
+          .from("companies")
+          .select("status")
+          .eq("id", profile.company_id)
+          .maybeSingle()
+      : { data: null };
+
+    if (isCompanyManagerBlocked(role, company?.status)) {
+      await supabase.auth.signOut();
+      if (
+        path === "/login" &&
+        request.nextUrl.searchParams.get("reason") === "company_suspended"
+      ) {
+        return response;
+      }
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      url.search = "";
+      url.searchParams.set("reason", "company_suspended");
+      return redirectKeepingSession(url);
+    }
   }
 
   // Logueado en login o landing → a su home.

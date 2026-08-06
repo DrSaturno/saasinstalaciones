@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fetchActiveCompanyRoleMemberships } from "@/lib/data/company-membership-roles";
 import { buildFinancialOverview, type FinancialOverview } from "@/lib/domain/finance";
 import type { BillingMode, Database, OrderCurrency, OrderStatus } from "@/types/database";
 
@@ -11,13 +12,13 @@ export async function fetchFinancialOverview(
   supabase: SupabaseClient<Database>,
   range?: { from: string; to: string },
 ): Promise<FinancialOverview> {
-  const [{ data: projects }, { data: orders }, { data: sites }, { data: roster }] = await Promise.all([
+  const [{ data: projects }, { data: orders }, { data: sites }, roster] = await Promise.all([
     supabase.from("projects").select("id, name, billing_mode, contract_amount, currency").neq("status", "draft").overrideTypes<ProjectRow[]>(),
     supabase.from("work_orders").select("id, project_id, site_id, status, amount, currency, assigned_installer_id, finalized_at, scheduled_date").overrideTypes<OrderRow[]>(),
     supabase.from("sites").select("id, zone"),
-    supabase.from("company_installers").select("installer_id").eq("status", "active"),
+    fetchActiveCompanyRoleMemberships(supabase, "installer"),
   ]);
-  const installerIds = (roster ?? []).map((item) => item.installer_id);
+  const installerIds = [...new Set(roster.map((item) => item.userId))];
   const { data: profiles } = installerIds.length
     ? await supabase.from("profiles").select("id, full_name").in("id", installerIds)
     : { data: [] as { id: string; full_name: string }[] };

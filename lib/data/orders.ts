@@ -2,6 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getTranslations } from "next-intl/server";
+import { fetchActiveCompanyRoleMemberships } from "@/lib/data/company-membership-roles";
 import type { Database, OrderStatus } from "@/types/database";
 
 export type OrderRow = {
@@ -118,9 +119,8 @@ export async function fetchAllOrders(
 /**
  * Roster asignable a una orden.
  *
- * Excluye a los coordinadores: coordinan el trabajo, no lo ejecutan. Los que
- * ascendieron conservan las órdenes que ya tenían hasta terminarlas, pero no
- * pueden recibir nuevas.
+ * Incluye a toda persona con capacidad de instalación. Un coordinador que
+ * también conserva esa capacidad sigue pudiendo recibir nuevas órdenes.
  */
 export async function fetchActiveRoster(
   supabase: SupabaseClient<Database>,
@@ -128,12 +128,11 @@ export async function fetchActiveRoster(
   { id: string; name: string; ratingAvg: number; ratingCount: number }[]
 > {
   const t = await getTranslations("DataFallbacks");
-  const { data: roster } = await supabase
-    .from("company_installers")
-    .select("installer_id")
-    .eq("status", "active")
-    .eq("role", "installer");
-  const ids = (roster ?? []).map((r) => r.installer_id);
+  const roster = await fetchActiveCompanyRoleMemberships(
+    supabase,
+    "installer",
+  );
+  const ids = [...new Set(roster.map((membership) => membership.userId))];
   if (ids.length === 0) return [];
 
   const [{ data: profiles }, { data: installers }] = await Promise.all([

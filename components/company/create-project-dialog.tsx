@@ -4,7 +4,8 @@ import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { createProject, type ActionState } from "@/lib/actions/projects";
+import { createProject } from "@/lib/actions/projects/crud";
+import type { ActionState } from "@/lib/actions/projects/types";
 import { ProjectFormFields } from "@/components/company/project-form-fields";
 import { Button } from "@/components/ui/button";
 import {

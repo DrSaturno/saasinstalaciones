@@ -20,6 +20,13 @@ type SendInvitationEmailInput = {
   copy: InvitationEmailCopy;
 };
 
+type SendManagerActivationEmailInput = {
+  to: string;
+  userId: string;
+  activationUrl: string;
+  copy: InvitationEmailCopy;
+};
+
 export function invitationUrl(token: string): string {
   const path = `/invite/${encodeURIComponent(token)}`;
   try {
@@ -31,9 +38,49 @@ export function invitationUrl(token: string): string {
   }
 }
 
+/**
+ * Link cross-device para activar una cuenta y fijar su primera contraseña.
+ * Recibe el hash que entrega `generateLink`; nunca usa ni expone el OTP crudo.
+ */
+export function managerActivationUrl(
+  tokenHash: string,
+  origin = applicationOrigin(),
+): string {
+  const url = new URL("/api/auth/callback", origin);
+  url.searchParams.set("token_hash", tokenHash);
+  url.searchParams.set("type", "invite");
+  return url.toString();
+}
+
 export async function sendInvitationEmail(
   input: SendInvitationEmailInput,
 ): Promise<InvitationEmailStatus> {
+  return sendEmail({
+    to: input.to,
+    url: input.invitationUrl,
+    copy: input.copy,
+    idempotencyKey: `installer-invitation-${input.token}`,
+  });
+}
+
+export async function sendManagerActivationEmail(
+  input: SendManagerActivationEmailInput,
+): Promise<InvitationEmailStatus> {
+  return sendEmail({
+    to: input.to,
+    url: input.activationUrl,
+    copy: input.copy,
+    // El token de activación no debe aparecer en headers ni logs.
+    idempotencyKey: `company-manager-activation-${input.userId}`,
+  });
+}
+
+async function sendEmail(input: {
+  to: string;
+  url: string;
+  copy: InvitationEmailCopy;
+  idempotencyKey: string;
+}): Promise<InvitationEmailStatus> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from = process.env.RESEND_FROM_EMAIL?.trim();
   if (!apiKey || !from) return "not_configured";
@@ -44,14 +91,14 @@ export async function sendInvitationEmail(
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        "Idempotency-Key": `installer-invitation-${input.token}`,
+        "Idempotency-Key": input.idempotencyKey,
       },
       body: JSON.stringify({
         from,
         to: [input.to],
         subject: input.copy.subject,
-        html: invitationHtml(input.invitationUrl, input.copy),
-        text: invitationText(input.invitationUrl, input.copy),
+        html: invitationHtml(input.url, input.copy),
+        text: invitationText(input.url, input.copy),
       }),
       cache: "no-store",
     });

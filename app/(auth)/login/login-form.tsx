@@ -16,7 +16,10 @@ export function LoginForm() {
   const common = useTranslations("Common");
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "";
+  const reason = searchParams.get("reason");
   const [state, formAction, pending] = useActionState(loginAction, initialState);
+  const error =
+    state.error ?? (reason === "company_suspended" ? t("companySuspended") : null);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -50,9 +53,9 @@ export function LoginForm() {
           required
         />
       </div>
-      {state.error && (
+      {error && (
         <p className="text-sm text-destructive" role="alert">
-          {state.error}
+          {error}
         </p>
       )}
       <Button type="submit" size="lg" disabled={pending} className="mt-2">

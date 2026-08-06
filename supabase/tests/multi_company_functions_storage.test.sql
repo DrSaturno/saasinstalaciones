@@ -10,6 +10,8 @@
 
 begin;
 
+create extension if not exists pgtap with schema extensions;
+
 select n, msg from (
   select 0 as n, msg from plan(21) msg
 

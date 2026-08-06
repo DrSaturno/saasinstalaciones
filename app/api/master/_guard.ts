@@ -40,10 +40,3 @@ export async function requirePlatformAdmin(): Promise<
 
   return { admin: createAdminClient(), userId: user.id };
 }
-
-/** Contraseña temporal legible para el primer login del gerente. */
-export function generateTempPassword(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-  const bytes = crypto.getRandomValues(new Uint8Array(12));
-  return Array.from(bytes, (b) => chars[b % chars.length]).join("") + "!2aA";
-}

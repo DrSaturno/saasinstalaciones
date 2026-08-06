@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import {
   createOrder,
   registerOrderAttachments,
-} from "@/lib/actions/orders";
+} from "@/lib/actions/orders/intake";
 import {
   isAcceptedOrderFile,
   MAX_ORDER_ATTACHMENTS,

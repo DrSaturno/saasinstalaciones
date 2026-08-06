@@ -5,6 +5,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { createCorrelationId, logEvent } from "@/lib/observability";
 
 const schema = z.object({
   token: z.string().uuid(),
@@ -55,7 +56,8 @@ export async function signUpInstaller(
   // 2. La cuenta siempre es de campo. El rol por empresa se aplica recién al
   // aceptar la invitación en company_installers.
   const admin = createAdminClient();
-  const { error: createError } = await admin.auth.admin.createUser({
+  const { data: createData, error: createError } =
+    await admin.auth.admin.createUser({
     email: invite.email,
     password,
     email_confirm: true,
@@ -64,7 +66,7 @@ export async function signUpInstaller(
       full_name: fullName,
       locale,
     },
-  });
+    });
   if (createError) {
     const code = (createError as { code?: string }).code;
     if (code === "email_exists" || /already/i.test(createError.message)) {
@@ -74,18 +76,59 @@ export async function signUpInstaller(
     return { error: t("signupFailed") };
   }
 
+  const createdUserId = createData.user?.id;
+  if (!createdUserId) return { error: t("signupFailed") };
+
+  // Auth y Postgres no comparten una transacción. Si un paso posterior falla,
+  // compensamos el alta para no dejar una cuenta/perfil huérfanos que además
+  // impedirían reintentar la invitación con el mismo email.
+  const correlationId = createCorrelationId();
+  const rollbackCreatedUser = async (step: string) => {
+    const { error } = await admin.auth.admin.deleteUser(createdUserId);
+    if (error) {
+      // Compensación fallida: quedó una cuenta que además bloquea reintentar la
+      // invitación con el mismo email. Requiere limpieza manual.
+      logEvent("error", "invite_signup.rollback_failed", {
+        correlation_id: correlationId,
+        user_id: createdUserId,
+        step,
+        auth_code: (error as { code?: string }).code ?? null,
+      });
+      return;
+    }
+    logEvent("warn", "invite_signup.rolled_back", {
+      correlation_id: correlationId,
+      user_id: createdUserId,
+      step,
+    });
+  };
+
   // 3. Iniciar sesión: setea las cookies de sesión en la respuesta.
   const { error: signInError } = await supabase.auth.signInWithPassword({
     email: invite.email,
     password,
   });
-  if (signInError) return { error: t("signupFailed") };
+  if (signInError) {
+    await rollbackCreatedUser("sign_in");
+    return { error: t("signupFailed") };
+  }
 
   // 4. Sumarse al equipo vía la RPC ya vetada, con la sesión del instalador.
   const { error: acceptError } = await supabase.rpc("accept_invitation", {
     p_token: token,
   });
-  if (acceptError) return { error: acceptError.message };
+  if (acceptError) {
+    // La sesión ya quedó escrita en cookies; la cerramos antes de borrar la
+    // cuenta para no devolver al navegador un token de un usuario inexistente.
+    await supabase.auth.signOut();
+    await rollbackCreatedUser("accept_invitation");
+    return { error: t("signupFailed") };
+  }
+
+  logEvent("info", "invite_signup.completed", {
+    correlation_id: correlationId,
+    user_id: createdUserId,
+  });
 
   redirect("/home");
 }

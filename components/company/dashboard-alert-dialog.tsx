@@ -7,7 +7,8 @@ import { ArrowUpRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { reviewUnavailability } from "@/lib/actions/availability";
-import { assignInstaller, rescheduleOrder, transitionOrder } from "@/lib/actions/orders";
+import { assignInstaller, rescheduleOrder } from "@/lib/actions/orders/assignment";
+import { transitionOrder } from "@/lib/actions/orders/lifecycle";
 import type { DashboardAlertItem, DashboardAlertKind } from "@/lib/data/dashboard";
 import { Button } from "@/components/ui/button";
 import {

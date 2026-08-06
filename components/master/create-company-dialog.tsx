@@ -23,7 +23,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type CreateResult = { company: { id: string; name: string }; tempPassword: string };
+type CreateResult = {
+  company: { id: string; name: string };
+  managerEmail: string;
+  invitation:
+    | { status: "sent" }
+    | { status: "manual"; activationUrl: string };
+};
 
 export function CreateCompanyDialog() {
   const t = useTranslations("CreateCompany");
@@ -31,9 +37,7 @@ export function CreateCompanyDialog() {
   const errors = useTranslations("Errors");
   const [open, setOpen] = useState(false);
   const [country, setCountry] = useState<"AR" | "BR">("AR");
-  const [created, setCreated] = useState<
-    (CreateResult & { managerEmail: string }) | null
-  >(null);
+  const [created, setCreated] = useState<CreateResult | null>(null);
   const queryClient = useQueryClient();
 
   const createCompany = useMutation({
@@ -52,7 +56,7 @@ export function CreateCompanyDialog() {
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error ?? errors("createCompany"));
-      return { ...(body as CreateResult), managerEmail: payload.managerEmail };
+      return body as CreateResult;
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["master"] });
@@ -80,31 +84,44 @@ export function CreateCompanyDialog() {
             <DialogHeader>
               <DialogTitle>{t("createdTitle")}</DialogTitle>
               <DialogDescription>
-                {t("createdDescription")}
+                {t(
+                  created.invitation.status === "sent"
+                    ? "createdDescriptionSent"
+                    : "createdDescriptionManual",
+                  { email: created.managerEmail },
+                )}
               </DialogDescription>
             </DialogHeader>
             <div className="rounded-xl border bg-muted/40 p-4">
               <p className="text-xs text-muted-foreground">{common("email")}</p>
               <p className="font-mono text-sm">{created.managerEmail}</p>
-              <p className="mt-3 text-xs text-muted-foreground">
-                {t("tempPassword")}
-              </p>
-              <p className="font-mono text-sm">{created.tempPassword}</p>
+              {created.invitation.status === "manual" ? (
+                <>
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    {t("activationLink")}
+                  </p>
+                  <p className="break-all font-mono text-xs">
+                    {created.invitation.activationUrl}
+                  </p>
+                  <p className="mt-3 text-xs text-amber-700">
+                    {t("manualLinkWarning")}
+                  </p>
+                </>
+              ) : null}
             </div>
-            <Button
-              variant="outline"
-              onClick={() => {
-                navigator.clipboard.writeText(
-                  t("clipboard", {
-                    email: created.managerEmail,
-                    password: created.tempPassword,
-                  }),
-                );
-                toast.success(t("copied"));
-              }}
-            >
-              {t("copy")}
-            </Button>
+            {created.invitation.status === "manual" ? (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const activationUrl = created.invitation.status === "manual" ? created.invitation.activationUrl : null;
+                  if (!activationUrl) return;
+                  navigator.clipboard.writeText(activationUrl);
+                  toast.success(t("linkCopied"));
+                }}
+              >
+                {t("copyActivationLink")}
+              </Button>
+            ) : null}
             <Button onClick={close}>{common("done")}</Button>
           </>
         ) : (

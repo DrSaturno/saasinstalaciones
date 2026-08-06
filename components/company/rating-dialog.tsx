@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { rateInstaller } from "@/lib/actions/ratings";
-import { transitionOrder } from "@/lib/actions/orders";
+import { transitionOrder } from "@/lib/actions/orders/lifecycle";
 import { StarRating } from "@/components/shared/star-rating";
 import { Button } from "@/components/ui/button";
 import {

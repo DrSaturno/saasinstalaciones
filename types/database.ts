@@ -167,6 +167,26 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["company_installers"]["Insert"]>;
         Relationships: [];
       };
+      company_membership_roles: {
+        Row: {
+          company_id: string;
+          user_id: string;
+          role: MembershipRole;
+          granted_by: string | null;
+          granted_at: string;
+        };
+        Insert: {
+          company_id: string;
+          user_id: string;
+          role: MembershipRole;
+          granted_by?: string | null;
+          granted_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["company_membership_roles"]["Insert"]
+        >;
+        Relationships: [];
+      };
       invitations: {
         Row: {
           id: string;
@@ -896,6 +916,14 @@ export interface Database {
       };
       demote_coordinator_to_installer: {
         Args: { p_coordinator_id: string };
+        Returns: void;
+      };
+      grant_company_member_role: {
+        Args: { p_user_id: string; p_role: MembershipRole };
+        Returns: void;
+      };
+      revoke_company_member_role: {
+        Args: { p_user_id: string; p_role: MembershipRole };
         Returns: void;
       };
       publish_announcement: {

@@ -7,6 +7,7 @@ vi.mock("@/lib/supabase/server", () => ({
 import {
   canOperateCompany,
   coordinatorCompanies,
+  hasCompanyRole,
   installerCompanies,
   isCoordinatorSomewhere,
   isInstallerArea,
@@ -27,6 +28,11 @@ const multiCompanyUser: CurrentUser = {
       role: "coordinator",
     },
     {
+      companyId: "company-a",
+      companyName: "Empresa A",
+      role: "installer",
+    },
+    {
       companyId: "company-b",
       companyName: "Empresa B",
       role: "installer",
@@ -40,8 +46,11 @@ describe("helpers de membresía", () => {
       "company-a",
     ]);
     expect(installerCompanies(multiCompanyUser).map((item) => item.companyId)).toEqual([
+      "company-a",
       "company-b",
     ]);
+    expect(hasCompanyRole(multiCompanyUser, "company-a", "installer")).toBe(true);
+    expect(hasCompanyRole(multiCompanyUser, "company-a", "coordinator")).toBe(true);
   });
 
   it("habilita coordinación solamente en las empresas coordinadas", () => {

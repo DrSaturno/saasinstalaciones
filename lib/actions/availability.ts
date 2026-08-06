@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { databaseIdSchema } from "@/lib/domain/order-intake";
 import { unavailabilitySchema, weeklyAvailabilitySchema, type WeeklyAvailabilityInput } from "@/lib/domain/availability";
+import { hasActiveCompanyRole } from "@/lib/data/company-membership-roles";
 import { getCurrentUser, isInstallerArea } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -14,8 +15,13 @@ async function requireInstaller(companyId: string) {
   const user = await getCurrentUser();
   if (!user || !isInstallerArea(user)) throw new Error("Acceso denegado");
   const supabase = await createClient();
-  const { data: roster } = await supabase.from("company_installers").select("installer_id").eq("company_id", companyId).eq("installer_id", user.id).eq("status", "active").eq("role", "installer").single();
-  if (!roster) throw new Error("Acceso denegado");
+  const canInstall = await hasActiveCompanyRole(
+    supabase,
+    companyId,
+    user.id,
+    "installer",
+  );
+  if (!canInstall) throw new Error("Acceso denegado");
   return { user, supabase };
 }
 

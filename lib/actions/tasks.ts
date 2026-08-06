@@ -5,9 +5,14 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser, isInstallerArea } from "@/lib/auth";
+import {
+  decideInstallerTransition,
+  type InstallerTransitionTarget,
+} from "@/lib/domain/installer-transition";
 import { orderTransitionBlock } from "@/lib/domain/order-rules";
+import { logEvent } from "@/lib/observability";
 import { requestPushDelivery } from "@/lib/push/events";
-import type { OrderStatus, OrderUpdateType } from "@/types/database";
+import type { OrderUpdateType } from "@/types/database";
 
 async function requireInstaller() {
   const user = await getCurrentUser();
@@ -18,6 +23,7 @@ async function requireInstaller() {
 }
 
 export type ActionState = { error: string | null; ok?: boolean };
+export type OfflineTransitionState = ActionState & { retryable?: boolean };
 
 /**
  * Transición del instalador sobre una orden suya. Idempotente: si la orden ya
@@ -26,20 +32,28 @@ export type ActionState = { error: string | null; ok?: boolean };
  */
 async function installerTransition(
   orderId: string,
-  toStatus: OrderStatus,
-): Promise<ActionState> {
+  toStatus: InstallerTransitionTarget,
+): Promise<OfflineTransitionState> {
   const t = await getTranslations("Errors");
   const { supabase, user } = await requireInstaller();
 
-  const { data: order } = await supabase
+  const { data: order, error: readError } = await supabase
     .from("work_orders")
     .select("id, status, assigned_installer_id, installer_accepted_at, scheduled_date")
     .eq("id", orderId)
-    .single();
+    .maybeSingle();
+  if (readError) return { error: readError.message, retryable: true };
   if (!order || order.assigned_installer_id !== user.id) {
-    return { error: t("orderNotAssigned") };
+    return { error: t("orderNotAssigned"), retryable: false };
   }
-  if (order.status === toStatus) return { error: null, ok: true }; // idempotente
+
+  const decision = decideInstallerTransition(order.status, toStatus);
+  if (decision.kind === "already_applied") {
+    return { error: null, ok: true }; // respuesta perdida: retry idempotente
+  }
+  if (decision.kind === "conflict") {
+    return { error: t("invalidTransition"), retryable: false };
+  }
 
   const block = orderTransitionBlock(
     {
@@ -54,15 +68,88 @@ async function installerTransition(
     toStatus,
     { id: user.id, role: user.role },
   );
-  if (block === "invalidTransition") return { error: t("invalidTransition") };
-  if (block) return { error: t(block) };
+  if (block === "invalidTransition") {
+    return { error: t("invalidTransition"), retryable: false };
+  }
+  if (block) return { error: t(block), retryable: false };
 
-  const { error } = await supabase
+  // Compare-and-set: si el estado o la asignación cambian entre lectura y
+  // escritura, esta operación no pisa el trabajo concurrente.
+  const { data: updated, error } = await supabase
     .from("work_orders")
     .update({ status: toStatus })
-    .eq("id", orderId);
-  if (error) return { error: error.message };
+    .eq("id", orderId)
+    .eq("assigned_installer_id", user.id)
+    .eq("status", decision.expectedStatus)
+    .select("id")
+    .maybeSingle();
+  if (error) return { error: error.message, retryable: true };
+  if (!updated) {
+    const { data: current, error: retryReadError } = await supabase
+      .from("work_orders")
+      .select("status, assigned_installer_id")
+      .eq("id", orderId)
+      .maybeSingle();
+    if (retryReadError) {
+      return { error: retryReadError.message, retryable: true };
+    }
+    if (current?.assigned_installer_id === user.id && current.status === toStatus) {
+      return { error: null, ok: true };
+    }
+    return { error: t("invalidTransition"), retryable: false };
+  }
   return { error: null, ok: true };
+}
+
+const offlineTransitionSchema = z.object({
+  operationId: z.string().uuid(),
+  orderId: z.string().uuid(),
+  toStatus: z.enum(["en_proceso", "en_revision"]),
+});
+
+/**
+ * Contrato server-side para reproducir una transición de la cola offline.
+ * Autentica, verifica asignación y aplica solamente el salto exacto esperado.
+ */
+export async function syncInstallerTransition(input: {
+  operationId: string;
+  orderId: string;
+  toStatus: InstallerTransitionTarget;
+}): Promise<OfflineTransitionState> {
+  const t = await getTranslations("Errors");
+  const parsed = offlineTransitionSchema.safeParse(input);
+  if (!parsed.success) return { error: t("invalidData"), retryable: false };
+
+  try {
+    const result = await installerTransition(
+      parsed.data.orderId,
+      parsed.data.toStatus,
+    );
+    if (!result.error) {
+      revalidatePath("/tasks");
+      revalidatePath(`/tasks/${parsed.data.orderId}`);
+      revalidatePath("/home");
+      return result;
+    }
+
+    // El cliente sólo ve un cartel; sin esto no hay forma de saber desde el
+    // servidor cuántas transiciones de campo se están rechazando ni por qué.
+    logEvent(result.retryable === false ? "error" : "warn", "offline.transition.rejected", {
+      operation_id: parsed.data.operationId,
+      order_id: parsed.data.orderId,
+      to_status: parsed.data.toStatus,
+      retryable: result.retryable !== false,
+    });
+    return result;
+  } catch (error) {
+    logEvent("error", "offline.transition.failed", {
+      operation_id: parsed.data.operationId,
+      order_id: parsed.data.orderId,
+      to_status: parsed.data.toStatus,
+      error,
+    });
+    return { error: t("unexpected"), retryable: true };
+  }
 }
 
 /**

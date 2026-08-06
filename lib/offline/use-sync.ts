@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { flush, pendingCount } from "./sync";
+import { prepareOfflineStorageForUser } from "./session-storage";
 
 function subscribeOnlineState(onStoreChange: () => void) {
   window.addEventListener("online", onStoreChange);
@@ -24,7 +25,7 @@ function getOnlineServerSnapshot() {
  * Estado de conexión + cola de sincronización del instalador.
  * Auto-flush al montar, al recuperar conexión y tras cada mutación local.
  */
-export function useSync() {
+export function useSync(userId: string) {
   const online = useSyncExternalStore(
     subscribeOnlineState,
     getOnlineSnapshot,
@@ -34,11 +35,18 @@ export function useSync() {
   const [syncing, setSyncing] = useState(false);
 
   const refresh = useCallback(async () => {
+    const ready = await prepareOfflineStorageForUser(userId);
+    if (!ready) {
+      setPending(0);
+      return;
+    }
     setPending(await pendingCount());
-  }, []);
+  }, [userId]);
 
   const runFlush = useCallback(async () => {
     if (!navigator.onLine) return;
+    const ready = await prepareOfflineStorageForUser(userId);
+    if (!ready) return;
     setSyncing(true);
     try {
       await flush();
@@ -46,10 +54,12 @@ export function useSync() {
       setSyncing(false);
       await refresh();
     }
-  }, [refresh]);
+  }, [refresh, userId]);
 
   useEffect(() => {
-    pendingCount().then((count) => {
+    prepareOfflineStorageForUser(userId).then(async (ready) => {
+      if (!ready) return;
+      const count = await pendingCount();
       setPending(count);
       if (count > 0 && navigator.onLine) runFlush();
     });
@@ -72,7 +82,7 @@ export function useSync() {
       window.removeEventListener("instalapro:queued", onQueued);
       clearInterval(interval);
     };
-  }, [refresh, runFlush]);
+  }, [refresh, runFlush, userId]);
 
   return { online, pending, syncing, refresh: runFlush };
 }

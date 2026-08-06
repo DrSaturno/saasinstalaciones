@@ -3,7 +3,8 @@
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { getOrderFormSites, type OrderFormSite } from "@/lib/actions/orders";
+import { getOrderFormSites } from "@/lib/actions/orders/intake";
+import type { OrderFormSite } from "@/lib/actions/orders/types";
 import type { OrderFormProject } from "@/lib/data/order-form";
 import type { OrderCurrency } from "@/types/database";
 import { Input } from "@/components/ui/input";

@@ -1,4 +1,5 @@
 begin;
+create extension if not exists pgtap with schema extensions;
 select plan(8);
 
 select has_column('public', 'projects', 'coordinator_id', 'projects has coordinator');

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
 import { MessageSquare } from "lucide-react";
 import { toast } from "sonner";
-import { recordSurvey, transitionOrder } from "@/lib/actions/orders";
+import { recordSurvey, transitionOrder } from "@/lib/actions/orders/lifecycle";
 import { ORDER_TRANSITIONS } from "@/lib/domain/transitions";
 import { allowedTransitions } from "@/lib/domain/order-rules";
 import { Textarea } from "@/components/ui/textarea";

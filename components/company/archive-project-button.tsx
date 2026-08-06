@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Archive, ArchiveRestore } from "lucide-react";
 import { toast } from "sonner";
-import { setProjectArchived } from "@/lib/actions/projects";
+import { setProjectArchived } from "@/lib/actions/projects/crud";
 import { Button } from "@/components/ui/button";
 
 /**

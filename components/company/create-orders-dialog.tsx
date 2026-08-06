@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { createOrdersForProject } from "@/lib/actions/orders";
+import { createOrdersForProject } from "@/lib/actions/orders/bulk";
 import { ORDER_INITIAL_STATUSES, ORDER_PRIORITIES } from "@/lib/domain/order-intake";
 import type { OrderCurrency } from "@/types/database";
 import { Button } from "@/components/ui/button";

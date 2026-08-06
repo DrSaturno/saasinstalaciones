@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from "dexie";
+import type { InstallerTransitionTarget } from "@/lib/domain/installer-transition";
 
 /**
  * Base local del instalador (IndexedDB via Dexie).
@@ -23,7 +24,7 @@ export type OutboxItem = {
   photoIds?: string[]; // referencias a la tabla photos
   companyId?: string;
   // transition:
-  toStatus?: string;
+  toStatus?: InstallerTransitionTarget;
   threadId?: string;
   messageId?: string;
   replyToId?: string | null;
@@ -32,6 +33,8 @@ export type OutboxItem = {
   createdAt: number;
   tries: number;
   lastError?: string;
+  /** Error terminal: se conserva para auditoría, pero no se reintenta. */
+  blocked?: boolean;
 };
 
 export type PendingPhoto = {
@@ -66,5 +69,16 @@ db.version(2).stores({
   photos: "id, orderId",
   tasks: "id, cachedAt",
 });
+
+/** Borra todo dato autenticado que la PWA mantiene en IndexedDB. */
+export async function clearOfflineDatabase(): Promise<void> {
+  await db.transaction("rw", db.outbox, db.photos, db.tasks, async () => {
+    await Promise.all([
+      db.outbox.clear(),
+      db.photos.clear(),
+      db.tasks.clear(),
+    ]);
+  });
+}
 
 export { db };

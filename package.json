@@ -2,6 +2,11 @@
   "name": "instalapro",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": "22.14.0",
+    "pnpm": "11.9.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -9,7 +14,9 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
@@ -44,6 +51,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@rolldown/binding-win32-x64-msvc": "^1.2.0",
     "@serwist/next": "^9.5.11",
     "@tailwindcss/postcss": "^4",
@@ -60,13 +68,5 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.10"
-  },
-  "pnpm": {
-    "comment": "Overrides de seguridad: las tres dependencias son transitivas y sus padres declaran rangos que todavia apuntan a versiones vulnerables. Revisar y quitar cuando next/shadcn actualicen.",
-    "overrides": {
-      "sharp": ">=0.35.0",
-      "postcss": ">=8.5.18",
-      "@hono/node-server": ">=2.0.5"
-    }
   }
 }

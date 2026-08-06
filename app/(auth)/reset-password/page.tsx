@@ -14,10 +14,9 @@ export default async function ResetPasswordPage(props: {
     createClient(),
   ]);
 
-  // El link del email abre una sesión de recuperación antes de llegar acá. Sin
-  // ella no hay nada que acredite quién es: puede haber vencido, ya haberse
-  // usado, o —con PKCE— haberse abierto en otro navegador distinto al que lo
-  // pidió. En los tres casos la salida es la misma: pedir uno nuevo.
+  // El link de recuperación o invitación abre una sesión antes de llegar acá.
+  // Sin ella no hay nada que acredite quién es: puede haber vencido, ya haberse
+  // usado o ser un PKCE abierto fuera del navegador que inició el pedido.
   const {
     data: { user },
   } = await supabase.auth.getUser();

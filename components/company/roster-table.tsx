@@ -1,148 +1,111 @@
 "use client";
 
 import { useTransition } from "react";
-import { ArrowUpCircle } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { promoteToCoordinator, setRosterStatus } from "@/lib/actions/team";
-import { Button } from "@/components/ui/button";
+import { RosterMemberRow } from "@/components/company/roster-member-row";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  grantMemberRole,
+  revokeMemberRole,
+  setRosterStatus,
+} from "@/lib/actions/team";
 import type { RosterMember } from "@/lib/data/team";
+import type { MembershipRole } from "@/types/database";
+
+type RoleOperation = "grant" | "revoke";
 
 export function RosterTable({
   members,
-  canPromote = false,
+  canManageRoles = false,
 }: {
   members: RosterMember[];
-  canPromote?: boolean;
+  canManageRoles?: boolean;
 }) {
   const t = useTranslations("Roster");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
-  const change = (
-    installerId: string,
+  const changeStatus = (
+    member: RosterMember,
     status: "active" | "removed",
-    name: string,
   ) => {
     startTransition(async () => {
-      const res = await setRosterStatus(installerId, status);
-      if (res.error) {
-        toast.error(res.error);
+      const result = await setRosterStatus(member.installerId, status);
+      if (result.error) {
+        toast.error(result.error);
         return;
       }
       toast.success(
         status === "removed"
-          ? t("removed", { name })
-          : t("reactivated", { name }),
+          ? t("removed", { name: member.name })
+          : t("reactivated", { name: member.name }),
       );
       router.refresh();
     });
   };
 
-  const promote = (installerId: string, name: string) => {
-    if (!window.confirm(t("promoteConfirm", { name }))) return;
+  const changeRole = (
+    member: RosterMember,
+    role: MembershipRole,
+    operation: RoleOperation,
+  ) => {
+    const roleName = t(
+      role === "installer" ? "installerRoleName" : "coordinatorRoleName",
+    );
+    const confirmation = t(
+      operation === "grant" ? "grantRoleConfirm" : "revokeRoleConfirm",
+      { name: member.name, role: roleName },
+    );
+    if (!window.confirm(confirmation)) return;
+
     startTransition(async () => {
-      const res = await promoteToCoordinator(installerId);
-      if (res.error) {
-        toast.error(res.error);
+      const result =
+        operation === "grant"
+          ? await grantMemberRole(member.installerId, role)
+          : await revokeMemberRole(member.installerId, role);
+      if (result.error) {
+        toast.error(result.error);
         return;
       }
-      toast.success(t("promoted", { name }));
+      toast.success(
+        t(operation === "grant" ? "roleGranted" : "roleRevoked", {
+          name: member.name,
+          role: roleName,
+        }),
+      );
       router.refresh();
     });
   };
 
-  const active = members.filter((m) => m.status !== "removed");
-  const removed = members.filter((m) => m.status === "removed");
+  const active = members.filter((member) => member.status !== "removed");
+  const removed = members.filter((member) => member.status === "removed");
 
   if (members.length === 0) {
     return (
       <div className="rounded-xl border bg-card py-16 text-center">
-        <p className="text-sm text-muted-foreground">
-          {t("empty")}
-        </p>
+        <p className="text-sm text-muted-foreground">{t("empty")}</p>
       </div>
     );
   }
 
-  const Row = ({ m }: { m: RosterMember }) => (
-    <TableRow>
-      <TableCell>
-        <span className="inline-flex items-center gap-2 align-middle">
-          {m.avatarUrl ? (
-            <Image
-              src={m.avatarUrl}
-              alt=""
-              width={56}
-              height={56}
-              unoptimized
-              className="size-7 shrink-0 rounded-full border object-cover"
-            />
-          ) : null}
-          <Link href={`/team/${m.installerId}`} className="font-medium hover:text-primary">
-            {m.name}
-          </Link>
-        </span>
-        {m.isCoordinator ? (
-          <Badge variant="secondary" className="ml-2 align-middle">
-            {t("coordinatorBadge")}
-          </Badge>
-        ) : null}
-      </TableCell>
-      <TableCell className="font-mono text-xs text-muted-foreground">
-        {m.zones.length ? m.zones.join(", ") : "—"}
-      </TableCell>
-      <TableCell className="text-right font-mono text-sm">
-        {m.ratingCount > 0 ? `★ ${m.ratingAvg.toFixed(1)}` : "—"}
-      </TableCell>
-      <TableCell className="text-right font-mono text-sm">{m.openOrders}</TableCell>
-      <TableCell className="text-right">
-        {m.status === "removed" ? (
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={pending}
-            onClick={() => change(m.installerId, "active", m.name)}
-          >
-            {t("reactivate")}
-          </Button>
-        ) : (
-          <div className="flex justify-end gap-2">
-            {canPromote && !m.isCoordinator ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={pending}
-                onClick={() => promote(m.installerId, m.name)}
-              >
-                <ArrowUpCircle className="size-3.5" aria-hidden="true" />
-                {t("promote")}
-              </Button>
-            ) : null}
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={pending}
-              onClick={() => change(m.installerId, "removed", m.name)}
-            >
-              {t("remove")}
-            </Button>
-          </div>
-        )}
-      </TableCell>
-    </TableRow>
+  const renderMember = (member: RosterMember) => (
+    <RosterMemberRow
+      key={member.installerId}
+      member={member}
+      canManageRoles={canManageRoles}
+      pending={pending}
+      onStatusChange={changeStatus}
+      onRoleChange={changeRole}
+    />
   );
 
   return (
@@ -158,15 +121,11 @@ export function RosterTable({
               <TableHead className="text-right">{t("actions")}</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
-            {active.map((m) => (
-              <Row key={m.installerId} m={m} />
-            ))}
-          </TableBody>
+          <TableBody>{active.map(renderMember)}</TableBody>
         </Table>
       </div>
 
-      {removed.length > 0 && (
+      {removed.length > 0 ? (
         <div>
           <h2 className="mb-3 flex items-center gap-2 text-sm font-medium text-muted-foreground">
             {t("outside")}
@@ -174,15 +133,11 @@ export function RosterTable({
           </h2>
           <div className="overflow-x-auto rounded-xl border bg-card opacity-70">
             <Table>
-              <TableBody>
-                {removed.map((m) => (
-                  <Row key={m.installerId} m={m} />
-                ))}
-              </TableBody>
+              <TableBody>{removed.map(renderMember)}</TableBody>
             </Table>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

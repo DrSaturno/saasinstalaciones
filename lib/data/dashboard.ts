@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isInstallerAvailableAt } from "@/lib/domain/availability";
 import { buildFinancialOverview } from "@/lib/domain/finance";
+import { activeMembershipRoles } from "@/lib/domain/membership-roles";
 import {
   firstResolutionSummary,
   type DashboardProjectHealth,
@@ -114,21 +115,24 @@ async function fetchPaged<T>(fetchPage: (from: number, to: number) => Promise<{ 
 }
 
 export async function fetchDashboardOverview(supabase: SupabaseClient<Database>, country: Country): Promise<DashboardOverview> {
-  const [projects, sites, orders, incidents, rosterResult] = await Promise.all([
+  const [projects, sites, orders, incidents, rosterResult, roleResult] = await Promise.all([
     fetchPaged<Project>(async (from, to) => supabase.from("projects").select("id, company_id, name, client_name, planned_installations, country, status, starts_at, ends_at, billing_mode, contract_amount, currency, coordinator_id").in("status", ["active", "paused"]).range(from, to).overrideTypes<Project[]>()),
     fetchPaged<Site>(async (from, to) => supabase.from("sites").select("id, project_id, name, address, zone, city, lat, lng, status, archived_at").is("archived_at", null).range(from, to).overrideTypes<Site[]>()),
     fetchPaged<Order>(async (from, to) => supabase.from("work_orders").select("id, project_id, site_id, order_number, title, status, scheduled_date, scheduled_end_date, finalized_at, assigned_installer_id, assigned_at, original_scheduled_date, reschedule_count, visit_count, amount, currency, created_at").range(from, to).overrideTypes<Order[]>()),
     fetchPaged<Incident>(async (from, to) => supabase.from("order_incidents").select("id, order_id, category, severity, description, requires_revisit, status, created_at").range(from, to).overrideTypes<Incident[]>()),
-    // Sólo instaladores: un coordinador no recibe órdenes, así que contarlo
-    // como capacidad inflaría la agenda y las jornadas libres con gente que
-    // nunca va a salir a la calle. Mismo criterio que `fetchActiveRoster`.
-    supabase.from("company_installers").select("company_id, installer_id, role").eq("status", "active"),
+    supabase.from("company_installers").select("company_id, installer_id").eq("status", "active"),
+    supabase.from("company_membership_roles").select("company_id, user_id, role"),
   ]);
 
   const rosterRows = rosterResult.data ?? [];
-  const roster = rosterRows.filter((item) => item.role === "installer");
-  const coordinatorIds = rosterRows.filter((item) => item.role === "coordinator").map((item) => item.installer_id);
-  const installerIds = roster.map((item) => item.installer_id);
+  const activeRoles = activeMembershipRoles(rosterRows, roleResult.data ?? []);
+  const coordinatorIds = [...new Set(activeRoles
+    .filter((item) => item.role === "coordinator")
+    .map((item) => item.user_id))];
+  // La capacidad de instalación cuenta aunque la persona también coordine.
+  const installerIds = [...new Set(activeRoles
+    .filter((item) => item.role === "installer")
+    .map((item) => item.user_id))];
   const companyId = rosterRows[0]?.company_id ?? projects[0]?.company_id;
   const [{ data: profiles }, { data: installerRows }, { data: weekly }, { data: exceptions }] = installerIds.length && companyId ? await Promise.all([
     supabase.from("profiles").select("id, full_name").in("id", installerIds),

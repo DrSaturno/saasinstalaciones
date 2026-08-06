@@ -3,7 +3,7 @@
 import { Banknote, ClipboardList, MapPin, UserRound } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { OrderFormProject } from "@/lib/data/order-form";
-import type { OrderFormSite } from "@/lib/actions/orders";
+import type { OrderFormSite } from "@/lib/actions/orders/types";
 import type { OrderCurrency } from "@/types/database";
 
 type Props = {

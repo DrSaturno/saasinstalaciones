@@ -5,7 +5,8 @@ import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { updateOrder, type ActionState } from "@/lib/actions/orders";
+import { updateOrder } from "@/lib/actions/orders/intake";
+import type { ActionState } from "@/lib/actions/orders/types";
 import { ORDER_PRIORITIES } from "@/lib/domain/order-intake";
 import { Button } from "@/components/ui/button";
 import {

@@ -1,0 +1,20 @@
+packages:
+  - "."
+
+# Turbopack no resuelve bien los symlinks anidados en Windows + OneDrive.
+nodeLinker: hoisted
+
+# Dependencias nativas requeridas por Next/Vitest. Pnpm 11 bloquea cualquier
+# script de instalacion que no este aprobado explicitamente.
+allowBuilds:
+  "@parcel/watcher": true
+  "@swc/core": true
+  esbuild: true
+  unrs-resolver: true
+
+# Overrides de seguridad para dependencias transitivas. Pnpm 11 lee esta
+# configuracion desde el workspace, no desde `package.json#pnpm`.
+overrides:
+  sharp: ">=0.35.0"
+  postcss: ">=8.5.18"
+  "@hono/node-server": ">=2.0.5"

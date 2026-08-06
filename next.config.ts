@@ -2,6 +2,22 @@ import type { NextConfig } from "next";
 import path from "node:path";
 import createNextIntlPlugin from "next-intl/plugin";
 
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "object-src 'none'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https://*.supabase.co https://*.supabase.net",
+  "font-src 'self' data:",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.supabase.net wss://*.supabase.net",
+  "frame-src https://www.google.com",
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
+].join("; ");
+
 const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname),
@@ -42,6 +58,15 @@ const nextConfig: NextConfig = {
           {
             key: "Strict-Transport-Security",
             value: "max-age=63072000; includeSubDomains; preload",
+          },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(self), geolocation=(self), microphone=(), payment=(), usb=(), browsing-topics=()",
+          },
+          {
+            // Se releva en staging antes de pasar a enforcement con nonce.
+            key: "Content-Security-Policy-Report-Only",
+            value: contentSecurityPolicy,
           },
         ],
       },

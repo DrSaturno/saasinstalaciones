@@ -11,7 +11,7 @@ import {
   type InvitationEmailStatus,
 } from "@/lib/email/invitations";
 import { INTL_LOCALE } from "@/i18n/config";
-import type { RosterStatus } from "@/types/database";
+import type { MembershipRole, RosterStatus } from "@/types/database";
 
 async function requireManager() {
   const user = await getCurrentUser();
@@ -99,6 +99,79 @@ export async function inviteInstaller(
 
 export type ActionState = { error: string | null; ok?: boolean };
 
+const memberRoleSchema = z.object({
+  userId: z.string().uuid(),
+  role: z.enum(["installer", "coordinator"]),
+});
+
+function revalidateMemberRolePaths() {
+  revalidatePath("/team");
+  revalidatePath("/orders");
+  revalidatePath("/projects");
+  revalidatePath("/dashboard");
+  revalidatePath("/home");
+  revalidatePath("/jobs");
+}
+
+function membershipRoleErrorKey(message: string) {
+  if (message.includes("conservar al menos")) return "membershipMustKeepRole";
+  if (message.includes("rdenes abiertas")) return "installerRoleOpenOrders";
+  if (message.includes("proyectos activos")) {
+    return "coordinatorRoleActiveProjects";
+  }
+  return null;
+}
+
+async function changeMemberRole(
+  userId: string,
+  role: MembershipRole,
+  operation: "grant" | "revoke",
+): Promise<ActionState> {
+  const t = await getTranslations("Errors");
+  const parsed = memberRoleSchema.safeParse({ userId, role });
+  if (!parsed.success) return { error: t("invalidData") };
+
+  try {
+    const { supabase } = await requireManager();
+    const { error } =
+      operation === "grant"
+        ? await supabase.rpc("grant_company_member_role", {
+            p_user_id: parsed.data.userId,
+            p_role: parsed.data.role,
+          })
+        : await supabase.rpc("revoke_company_member_role", {
+            p_user_id: parsed.data.userId,
+            p_role: parsed.data.role,
+          });
+
+    if (error) {
+      const errorKey = membershipRoleErrorKey(error.message);
+      return { error: errorKey ? t(errorKey) : error.message };
+    }
+
+    revalidateMemberRolePaths();
+    return { error: null, ok: true };
+  } catch {
+    return { error: t("unexpected") };
+  }
+}
+
+/** Agrega una capacidad sin quitar las que la persona ya tenía. */
+export async function grantMemberRole(
+  userId: string,
+  role: MembershipRole,
+): Promise<ActionState> {
+  return changeMemberRole(userId, role, "grant");
+}
+
+/** Quita una capacidad; la RPC impide dejar la membresía sin ninguna. */
+export async function revokeMemberRole(
+  userId: string,
+  role: MembershipRole,
+): Promise<ActionState> {
+  return changeMemberRole(userId, role, "revoke");
+}
+
 export async function cancelInvitation(invitationId: string): Promise<ActionState> {
   const t = await getTranslations("Errors");
   try {
@@ -116,61 +189,16 @@ export async function cancelInvitation(invitationId: string): Promise<ActionStat
   return { error: null, ok: true };
 }
 
-/**
- * Asciende a un instalador del roster a coordinador de la empresa.
- *
- * El cambio de rol lo hace la RPC vetada `promote_installer_to_coordinator`
- * (SECURITY DEFINER): valida que quien llama sea manager de la misma empresa,
- * que el destino sea un instalador activo, no tenga órdenes abiertas en esa
- * empresa y que nadie se ascienda a sí mismo.
- */
+/** Wrapper de compatibilidad: agrega coordinación sin quitar instalación. */
 export async function promoteToCoordinator(installerId: string): Promise<ActionState> {
-  const t = await getTranslations("Errors");
-  try {
-    const { supabase } = await requireManager();
-    const { error } = await supabase.rpc("promote_installer_to_coordinator", {
-      p_installer_id: installerId,
-    });
-    if (error) {
-      return {
-        error: error.message.includes("órdenes abiertas")
-          ? t("promotionOpenOrders")
-          : error.message,
-      };
-    }
-
-    revalidatePath("/team");
-    revalidatePath("/orders");
-    revalidatePath("/dashboard");
-  } catch {
-    return { error: t("unexpected") };
-  }
-  return { error: null, ok: true };
+  return grantMemberRole(installerId, "coordinator");
 }
 
-/**
- * Vuelve a un coordinador a su rol de instalador.
- *
- * Contraparte de `promoteToCoordinator`, con las mismas validaciones del lado
- * de la base. Los proyectos que coordinaba quedan sin responsable para que el
- * gerente los reasigne.
- */
+/** Wrapper legacy: garantiza instalación y luego intenta quitar coordinación. */
 export async function demoteToInstaller(coordinatorId: string): Promise<ActionState> {
-  const t = await getTranslations("Errors");
-  try {
-    const { supabase } = await requireManager();
-    const { error } = await supabase.rpc("demote_coordinator_to_installer", {
-      p_coordinator_id: coordinatorId,
-    });
-    if (error) return { error: error.message };
-
-    revalidatePath("/team");
-    revalidatePath("/projects");
-    revalidatePath("/dashboard");
-  } catch {
-    return { error: t("unexpected") };
-  }
-  return { error: null, ok: true };
+  const granted = await grantMemberRole(coordinatorId, "installer");
+  if (granted.error) return granted;
+  return revokeMemberRole(coordinatorId, "coordinator");
 }
 
 /** Cambia el estado de un miembro del roster (quitar / reactivar). */

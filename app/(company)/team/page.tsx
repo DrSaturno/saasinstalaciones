@@ -39,7 +39,10 @@ export default async function TeamPage() {
         {user?.role === "company_manager" ? (
           <PendingInvitations invitations={invitations} />
         ) : null}
-        <RosterTable members={roster} canPromote={user?.role === "company_manager"} />
+        <RosterTable
+          members={roster}
+          canManageRoles={user?.role === "company_manager"}
+        />
         <TeamAvailability
           coordinators={coordinators}
           unavailable={unavailable}

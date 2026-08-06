@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { isCompanyManagerBlocked } from "@/lib/domain/company-access";
 import type { MembershipRole, UserRole } from "@/types/database";
 
 /** Ruta home de cada tipo global de cuenta tras el login. */
@@ -33,6 +34,17 @@ export function isCoordinatorSomewhere(user: CurrentUser): boolean {
   return coordinatorCompanies(user).length > 0;
 }
 
+export function hasCompanyRole(
+  user: CurrentUser,
+  companyId: string,
+  role: MembershipRole,
+): boolean {
+  return user.memberships.some(
+    (membership) =>
+      membership.companyId === companyId && membership.role === role,
+  );
+}
+
 export function canOperateCompany(
   user: CurrentUser,
   companyId: string,
@@ -41,11 +53,7 @@ export function canOperateCompany(
     return user.companyId === companyId;
   }
 
-  return user.memberships.some(
-    (membership) =>
-      membership.companyId === companyId &&
-      membership.role === "coordinator",
-  );
+  return hasCompanyRole(user, companyId, "coordinator");
 }
 
 export function isInstallerArea(user: CurrentUser): boolean {
@@ -77,7 +85,11 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [{ data: profile }, { data: membershipRows }] = await Promise.all([
+  const [
+    { data: profile },
+    { data: membershipRows },
+    { data: membershipRoleRows },
+  ] = await Promise.all([
     supabase
       .from("profiles")
       .select("role, company_id, full_name, locale")
@@ -85,18 +97,38 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
       .single(),
     supabase
       .from("company_installers")
-      .select("company_id, role, companies(name)")
+      .select("company_id, companies(name, status)")
       .eq("installer_id", user.id)
       .eq("status", "active")
       .overrideTypes<
         {
           company_id: string;
-          role: MembershipRole;
-          companies: { name: string } | null;
+          companies: { name: string; status: "active" | "suspended" } | null;
         }[]
       >(),
+    supabase
+      .from("company_membership_roles")
+      .select("company_id, role")
+      .eq("user_id", user.id),
   ]);
   if (!profile) return null;
+
+  const { data: company } =
+    profile.role === "company_manager" && profile.company_id
+      ? await supabase
+          .from("companies")
+          .select("status")
+          .eq("id", profile.company_id)
+          .maybeSingle()
+      : { data: null };
+
+  if (isCompanyManagerBlocked(profile.role, company?.status)) return null;
+
+  const activeCompanies = new Map(
+    (membershipRows ?? [])
+      .filter((membership) => membership.companies?.status === "active")
+      .map((membership) => [membership.company_id, membership.companies!]),
+  );
 
   return {
     id: user.id,
@@ -106,10 +138,12 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
       profile.role === "company_manager" ? profile.company_id : null,
     fullName: profile.full_name,
     locale: profile.locale,
-    memberships: (membershipRows ?? []).map((membership) => ({
-      companyId: membership.company_id,
-      companyName: membership.companies?.name ?? "",
-      role: membership.role,
-    })),
+    memberships: (membershipRoleRows ?? [])
+      .filter((membership) => activeCompanies.has(membership.company_id))
+      .map((membership) => ({
+        companyId: membership.company_id,
+        companyName: activeCompanies.get(membership.company_id)?.name ?? "",
+        role: membership.role,
+      })),
   };
 });

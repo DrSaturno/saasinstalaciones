@@ -6,18 +6,16 @@
  *
  * Estrategia:
  *  - Estáticos (_next/static, íconos, manifest): stale-while-revalidate → la
- *    app "shell" abre al instante y sin señal.
- *  - Navegaciones del área instalador: network-first con fallback a caché → ve
- *    su inicio, su lista y su tarea aunque esté sin conexión.
+ *    app shell carga sus recursos sin depender de una cuenta.
+ *  - Navegaciones autenticadas: siempre red. Cachearlas por URL mezclaría HTML
+ *    entre cuentas que comparten un dispositivo. La lectura offline privada se
+ *    habilitará cuando exista un snapshot particionado por identidad.
  *  - Todo lo demás (incluido Supabase, otro origen): pasa directo a la red. Las
  *    mutaciones offline las maneja la cola en Dexie, no el SW.
  */
-const VERSION = "v4";
+const VERSION = "v5";
 
-/** Rutas del área instalador que valen la pena tener disponibles sin señal. */
-const CACHED_PAGES = ["/home", "/tasks", "/jobs", "/profile"];
 const STATIC_CACHE = `static-${VERSION}`;
-const PAGE_CACHE = `pages-${VERSION}`;
 
 self.addEventListener("install", () => {
   self.skipWaiting();
@@ -56,25 +54,6 @@ async function staleWhileRevalidate(request, cacheName) {
   return cached || network;
 }
 
-async function networkFirst(request, cacheName) {
-  const cache = await caches.open(cacheName);
-  try {
-    const res = await fetch(request);
-    if (res.ok) cache.put(request, res.clone());
-    return res;
-  } catch {
-    const cached = await cache.match(request);
-    if (cached) return cached;
-    // Sin caché ni red: servimos el shell de la primera página que tengamos.
-    // /home va primero porque es el punto de entrada de la PWA.
-    for (const path of CACHED_PAGES) {
-      const shell = await cache.match(path);
-      if (shell) return shell;
-    }
-    throw new Error("offline");
-  }
-}
-
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
@@ -88,15 +67,6 @@ self.addEventListener("fetch", (event) => {
     url.pathname === "/manifest.webmanifest"
   ) {
     event.respondWith(staleWhileRevalidate(request, STATIC_CACHE));
-    return;
-  }
-
-  // Sólo cacheamos navegaciones del área instalador.
-  if (
-    request.mode === "navigate" &&
-    CACHED_PAGES.some((path) => url.pathname.startsWith(path))
-  ) {
-    event.respondWith(networkFirst(request, PAGE_CACHE));
   }
 });
 
