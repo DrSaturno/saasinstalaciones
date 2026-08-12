@@ -2,38 +2,91 @@
 
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
-import { z } from "zod";
-import { parseCsv, normalizeHeader } from "@/lib/csv";
+import { parseCsv } from "@/lib/csv";
 import { SITE_TEMPLATE_HEADERS } from "@/lib/domain/site-template";
+import {
+  analyzeSiteRows,
+  type ParsedSiteRow,
+  type SiteImportIssue,
+} from "@/lib/domain/site-import";
 import type { TablesInsert } from "@/types/database";
 import { BATCH_SIZE, requireOperator } from "./context";
-import type { ImportResult } from "./types";
+import type { ImportPreflight, ImportResult } from "./types";
 
 // ---------------------------------------------------------------------------
 // Importación masiva de puntos
+//
+// El análisis de la planilla vive en `lib/domain/site-import.ts` y se corre dos
+// veces sobre el mismo archivo: una para el preview y otra al confirmar. El
+// navegador nunca devuelve las filas ya parseadas — se vuelve a leer el archivo
+// original — porque aceptar filas armadas por el cliente permitiría insertar
+// registros que nunca pasaron por la validación.
 // ---------------------------------------------------------------------------
 
-const COLUMN_ALIASES: Record<string, string[]> = {
-  name: ["nombre", "name", "punto", "sitio", "local", "estacion", "sucursal"],
-  address: ["direccion", "address", "domicilio", "endereco", "calle"],
-  city: ["ciudad", "city", "localidad", "cidade"],
-  state: ["provincia", "state", "estado", "departamento"],
-  zone: ["zona", "zone", "region", "regiao"],
-  externalRef: ["codigo", "ref", "referencia", "external", "id", "externalref"],
-  lat: ["lat", "latitud", "latitude"],
-  lng: ["lng", "lon", "longitud", "longitude"],
-};
+type OperatorContext = Awaited<ReturnType<typeof requireOperator>>;
 
-const siteRowSchema = z.object({
-  name: z.string().min(1, "Falta el nombre"),
-  address: z.string().default(""),
-  city: z.string().default(""),
-  state: z.string().default(""),
-  zone: z.string().default(""),
-  externalRef: z.string().optional(),
-  lat: z.union([z.literal(""), z.coerce.number().min(-90).max(90)]),
-  lng: z.union([z.literal(""), z.coerce.number().min(-180).max(180)]),
-});
+/**
+ * Referencias externas ya cargadas en el proyecto.
+ *
+ * Paginado: PostgREST corta en 1000 y un proyecto grande tiene miles de puntos.
+ */
+async function fetchKnownExternalRefs(
+  supabase: OperatorContext["supabase"],
+  projectId: string,
+): Promise<string[]> {
+  const refs: string[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase
+      .from("sites")
+      .select("external_ref")
+      .eq("project_id", projectId)
+      .not("external_ref", "is", null)
+      .range(from, from + 999);
+    if (error || !data) break;
+    for (const row of data) {
+      if (row.external_ref) refs.push(row.external_ref);
+    }
+    if (data.length < 1000) break;
+  }
+  return refs;
+}
+
+type ErrorTranslator = Awaited<ReturnType<typeof getTranslations<"Errors">>>;
+
+/** Convierte el código de la fila descartada en el texto que ve el usuario. */
+function describeIssue(t: ErrorTranslator, issue: SiteImportIssue): string {
+  switch (issue.code) {
+    case "missingName":
+      return t("missingName");
+    case "invalidCoordinates":
+      return t("siteInvalidCoordinates");
+    case "zoneOutsideProject":
+      return t("siteZoneOutsideProject", { zone: issue.detail || "—" });
+    case "duplicateInFile":
+      return t("siteDuplicateInFile", { ref: issue.detail || "—" });
+    case "alreadyImported":
+      return t("siteAlreadyImported", { ref: issue.detail || "—" });
+  }
+}
+
+function toInsertRow(
+  row: ParsedSiteRow,
+  projectId: string,
+  companyId: string,
+): TablesInsert<"sites"> {
+  return {
+    project_id: projectId,
+    company_id: companyId,
+    name: row.name,
+    address: row.address,
+    city: row.city,
+    state: row.state,
+    zone: row.zone,
+    external_ref: row.externalRef,
+    lat: row.lat,
+    lng: row.lng,
+  };
+}
 
 export async function importSites(
   projectId: string,
@@ -44,11 +97,7 @@ export async function importSites(
   try {
     ctx = await requireOperator();
   } catch {
-    return {
-      error: t("accessDenied"),
-      inserted: 0,
-      skipped: [],
-    };
+    return { error: t("accessDenied"), inserted: 0, skipped: [] };
   }
   const { supabase, companyId } = ctx;
 
@@ -66,21 +115,15 @@ export async function importSites(
 
   const rows = parseCsv(csvText);
   if (rows.length < 2) {
-    return {
-      error: t("csvNoRows"),
-      inserted: 0,
-      skipped: [],
-    };
+    return { error: t("csvNoRows"), inserted: 0, skipped: [] };
   }
 
-  // Mapear encabezados a nuestros campos.
-  const headers = rows[0].map(normalizeHeader);
-  const indexOf: Record<string, number> = {};
-  for (const [field, aliases] of Object.entries(COLUMN_ALIASES)) {
-    const idx = headers.findIndex((h) => aliases.includes(h));
-    if (idx >= 0) indexOf[field] = idx;
-  }
-  if (indexOf.name === undefined) {
+  const analysis = analyzeSiteRows(rows, {
+    projectZones: project.zones,
+    knownExternalRefs: await fetchKnownExternalRefs(supabase, projectId),
+  });
+  if (analysis.counts.found === 0 && analysis.issues.length === 0) {
+    // Sin columna de nombre no se puede identificar ninguna locación.
     return {
       error: t("csvMissingName", { headers: rows[0].join(", ") }),
       inserted: 0,
@@ -88,66 +131,17 @@ export async function importSites(
     };
   }
 
-  const valid: TablesInsert<"sites">[] = [];
-  const skipped: ImportResult["skipped"] = [];
-
-  rows.slice(1).forEach((cells, i) => {
-    const get = (field: string) =>
-      indexOf[field] !== undefined ? (cells[indexOf[field]] ?? "") : "";
-
-    // Provincia = zona = state. Puede venir de la columna "zona" o "provincia";
-    // si el proyecto opera una sola provincia, se usa esa por defecto.
-    const importedZone = get("zone").trim();
-    const importedState = get("state").trim();
-    const zone = importedZone || importedState ||
-      (project.zones.length === 1 ? project.zones[0] : "");
-
-    const parsed = siteRowSchema.safeParse({
-      name: get("name"),
-      address: get("address"),
-      city: get("city"),
-      state: zone,
-      zone,
-      externalRef: get("externalRef") || undefined,
-      lat: get("lat"),
-      lng: get("lng"),
-    });
-
-    if (!parsed.success) {
-      // +2: fila 1 es el encabezado y las filas se cuentan desde 1.
-      skipped.push({
-        row: i + 2,
-        reason: t("missingName"),
-      });
-      return;
-    }
-
-    if (!project.zones.includes(parsed.data.zone)) {
-      skipped.push({
-        row: i + 2,
-        reason: t("siteZoneOutsideProject", { zone: parsed.data.zone || "—" }),
-      });
-      return;
-    }
-
-    valid.push({
-      project_id: projectId,
-      company_id: companyId,
-      name: parsed.data.name,
-      address: parsed.data.address,
-      city: parsed.data.city,
-      state: parsed.data.state,
-      zone: parsed.data.zone,
-      external_ref: parsed.data.externalRef ?? null,
-      lat: parsed.data.lat === "" ? null : parsed.data.lat,
-      lng: parsed.data.lng === "" ? null : parsed.data.lng,
-    });
-  });
+  const skipped = analysis.issues.map((issue) => ({
+    row: issue.row,
+    reason: describeIssue(t, issue),
+  }));
 
   // Insertar en lotes: 2000 filas en un solo insert es frágil y lento.
   let inserted = 0;
-  for (let i = 0; i < valid.length; i += BATCH_SIZE) {
-    const batch = valid.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < analysis.valid.length; i += BATCH_SIZE) {
+    const batch = analysis.valid
+      .slice(i, i + BATCH_SIZE)
+      .map((row) => toInsertRow(row, projectId, companyId));
     const { error } = await supabase.from("sites").insert(batch);
     if (error) {
       return {
@@ -164,11 +158,11 @@ export async function importSites(
 }
 
 /**
- * Importa locaciones desde un archivo, sea Excel (.xlsx) o CSV.
+ * Lee el archivo subido y lo devuelve como texto CSV.
  *
- * El Excel se convierte a las mismas filas que produce el parser de CSV y se
- * delega en `importSites`, así hay UN solo camino de validación e inserción.
- * Convertir en el servidor evita mandar la librería de lectura al navegador.
+ * El Excel se convierte a las mismas filas que produce el parser de CSV, así
+ * hay UN solo camino de validación. Convertir en el servidor evita mandar la
+ * librería de lectura al navegador.
  *
  * Se lee con SheetJS (`xlsx`), no con exceljs (que sí se usa para ESCRIBIR la
  * plantilla, en /api/site-template). exceljs es estricto con el XML interno
@@ -178,27 +172,22 @@ export async function importSites(
  * completada y re-guardada, con datos perfectamente buenos. SheetJS es mucho
  * más tolerante con esas variantes y es el que de hecho pudo abrirla.
  */
-export async function importSitesFile(
-  projectId: string,
-  formData: FormData,
-): Promise<ImportResult> {
-  const t = await getTranslations("Errors");
-  const file = formData.get("file");
+async function readUploadAsCsv(
+  file: unknown,
+): Promise<{ text: string } | { errorKey: "invalidData" | "fileTooLarge" | "csvNoRows" | "excelUnreadable" }> {
   if (!(file instanceof File) || file.size === 0) {
-    return { error: t("invalidData"), inserted: 0, skipped: [] };
+    return { errorKey: "invalidData" };
   }
   // 20 MB cubre planillas de decenas de miles de filas.
   if (file.size > 20 * 1_024 * 1_024) {
-    return { error: t("fileTooLarge"), inserted: 0, skipped: [] };
+    return { errorKey: "fileTooLarge" };
   }
 
   const isExcel =
     file.name.toLowerCase().endsWith(".xlsx") ||
     file.type.includes("spreadsheetml");
 
-  if (!isExcel) {
-    return importSites(projectId, await file.text());
-  }
+  if (!isExcel) return { text: await file.text() };
 
   try {
     const XLSX = await import("xlsx");
@@ -213,7 +202,7 @@ export async function importSitesFile(
         return String(firstCell?.v ?? "").toLowerCase().includes("nombre");
       }) ?? workbook.SheetNames[0];
     const sheet = sheetName ? workbook.Sheets[sheetName] : undefined;
-    if (!sheet) return { error: t("csvNoRows"), inserted: 0, skipped: [] };
+    if (!sheet) return { errorKey: "csvNoRows" };
 
     const rows = XLSX.utils.sheet_to_json<string[]>(sheet, {
       header: 1,
@@ -236,12 +225,95 @@ export async function importSitesFile(
       }
     }
 
-    if (lines.length < 2) {
-      return { error: t("csvNoRows"), inserted: 0, skipped: [] };
-    }
-
-    return importSites(projectId, lines.join("\r\n"));
+    if (lines.length < 2) return { errorKey: "csvNoRows" };
+    return { text: lines.join("\r\n") };
   } catch {
-    return { error: t("excelUnreadable"), inserted: 0, skipped: [] };
+    return { errorKey: "excelUnreadable" };
   }
+}
+
+/**
+ * Analiza la planilla y devuelve el resumen SIN escribir nada.
+ *
+ * Es el control que pide la operación: si el proyecto declara 50 sucursales y
+ * la planilla trae 47, hay que verlo antes de dar la carga por terminada, no
+ * después. Devuelve además cuántas filas quedarían afuera y por qué.
+ */
+export async function analyzeSiteImport(
+  projectId: string,
+  formData: FormData,
+): Promise<ImportPreflight> {
+  const t = await getTranslations("Errors");
+  const empty = {
+    expected: 0,
+    found: 0,
+    valid: 0,
+    incomplete: 0,
+    outsideZone: 0,
+    duplicated: 0,
+    difference: 0,
+    issues: [],
+  };
+
+  let ctx;
+  try {
+    ctx = await requireOperator();
+  } catch {
+    return { error: t("accessDenied"), ...empty };
+  }
+  const { supabase, companyId } = ctx;
+
+  const { data: project } = await supabase
+    .from("projects")
+    .select("id, zones, planned_installations")
+    .eq("id", projectId)
+    .eq("company_id", companyId)
+    .single();
+  if (!project) return { error: t("projectNotFound"), ...empty };
+
+  const read = await readUploadAsCsv(formData.get("file"));
+  if ("errorKey" in read) return { error: t(read.errorKey), ...empty };
+
+  const rows = parseCsv(read.text);
+  if (rows.length < 2) return { error: t("csvNoRows"), ...empty };
+
+  const analysis = analyzeSiteRows(rows, {
+    projectZones: project.zones,
+    knownExternalRefs: await fetchKnownExternalRefs(supabase, projectId),
+  });
+  if (analysis.counts.found === 0 && analysis.issues.length === 0) {
+    return {
+      error: t("csvMissingName", { headers: rows[0].join(", ") }),
+      ...empty,
+    };
+  }
+
+  const expected = project.planned_installations ?? 0;
+  return {
+    error: null,
+    expected,
+    found: analysis.counts.found,
+    valid: analysis.counts.valid,
+    incomplete: analysis.counts.incomplete,
+    outsideZone: analysis.counts.outsideZone,
+    duplicated: analysis.counts.duplicated,
+    difference: expected - analysis.counts.valid,
+    issues: analysis.issues.map((issue) => ({
+      row: issue.row,
+      reason: describeIssue(t, issue),
+    })),
+  };
+}
+
+/** Importa locaciones desde un archivo, sea Excel (.xlsx) o CSV. */
+export async function importSitesFile(
+  projectId: string,
+  formData: FormData,
+): Promise<ImportResult> {
+  const t = await getTranslations("Errors");
+  const read = await readUploadAsCsv(formData.get("file"));
+  if ("errorKey" in read) {
+    return { error: t(read.errorKey), inserted: 0, skipped: [] };
+  }
+  return importSites(projectId, read.text);
 }

@@ -160,6 +160,33 @@ describe("regla: a revisión sólo la manda el instalador asignado", () => {
   });
 });
 
+describe("regla: nadie aprueba ni reabre su propia entrega (ADR-001)", () => {
+  // El mismo id que assignedInstallerId, pero actuando con capacidad de
+  // coordinador: es el caso de rol dual que R1 habilita.
+  const INSTALADOR_COORDINADOR = { id: "inst-1", role: "coordinator" as const };
+  const enRevision = orden({ status: "en_revision" });
+
+  it("bloquea al instalador asignado que también coordina", () => {
+    expect(
+      orderTransitionBlock(enRevision, "finalizada", INSTALADOR_COORDINADOR),
+    ).toBe("noSelfApproval");
+  });
+
+  it("también bloquea reabrir su propia entrega", () => {
+    expect(
+      orderTransitionBlock(enRevision, "en_proceso", INSTALADOR_COORDINADOR),
+    ).toBe("noSelfApproval");
+  });
+
+  it("un coordinador distinto del instalador asignado sí puede aprobar", () => {
+    expect(orderTransitionBlock(enRevision, "finalizada", COORDINADOR)).toBeNull();
+  });
+
+  it("la empresa, que nunca es la asignada, también puede aprobar", () => {
+    expect(orderTransitionBlock(enRevision, "finalizada", GERENTE)).toBeNull();
+  });
+});
+
 describe("allowedTransitions", () => {
   it("al coordinador no le ofrece 'en revisión' sobre una orden en proceso", () => {
     const enProceso = orden({ status: "en_proceso" });

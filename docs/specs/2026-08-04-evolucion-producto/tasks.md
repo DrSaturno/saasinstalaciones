@@ -4,12 +4,118 @@ Estado: R0 en curso — plataforma y correcciones de seguridad cerradas; faltan 
 Unidad de planificación: release vertical; los tamaños `S/M/L/XL` son relativos, no estimaciones calendario  
 Regla: cada tarea de producto referencia requisitos y cada release pasa sus gates antes del siguiente
 
-> Última verificación: 06-08-2026 sobre la rama `feat/sdd-evolution-20260805`.
-> Lo tildado abajo está verificado con `lint`, `type-check`, `test` (169) y
-> `build` en verde. Las migraciones `20260805*` están escritas y con pgTAP, pero
-> **no aplicadas todavía a ningún entorno**: eso es parte del gate de R0.
+> Última verificación: 12-08-2026. `lint`, `type-check`, `test` (191) y `build`
+> en verde. Las migraciones `20260805*` y `20260812000000` **ya están aplicadas**
+> — ver «Estado de la base» abajo, que reemplaza la nota anterior de 06-08-2026
+> que las daba por no aplicadas.
 >
 > `[~]` marca trabajo escrito pero todavía no ejecutado en ningún entorno.
+
+## Estado de la base (12-08-2026)
+
+Sección de traspaso: describe qué hay realmente en la base, para no volver a
+planificar sobre suposiciones. **Leer antes de tocar migraciones.**
+
+**Proyecto Supabase: `rpdjjvcmtcpvmwrjqhke` («Saas de Instalaciones»), que es el
+que usa la app.** Existe además `jibvorqudveqgankoeak` («Se Instala Pro»), que
+NO es el productivo. No tiene backups configurados.
+
+`supabase_migrations.schema_migrations` **no es una fuente confiable** en este
+proyecto: hubo SQL aplicado a mano en el SQL Editor sin registrar, así que la
+tabla decía `20260722000002` mientras el schema ya tenía objetos de fines de
+julio. Para saber qué falta hay que consultar `information_schema` objeto por
+objeto, no el registro.
+
+Aplicadas el 12-08-2026 con el MCP de Supabase (`apply_migration`), en orden:
+
+| Migración | Efecto sobre datos reales |
+|---|---|
+| `20260805000000_release_foundation` | 9 feature flags creados, todos en `false` |
+| `20260805000001_company_suspension_enforcement` | Sólo funciones y policies |
+| `20260805000002_multi_role_memberships` | Backfill: 3 membresías → 3 capacidades |
+| `20260805000003_canonical_locations` | Backfill: 130 sites → 129 vinculados, **119 locaciones únicas** (10 puntos repetidos entre proyectos), 129 `project_locations`, 3 filas en cola de revisión |
+| `20260805000004_activities_agenda_outbox` | Backfill de actividades/asignaciones sobre 118 `work_orders` |
+| `20260812000000_no_self_approval` | Redefine `validate_order_transition` |
+
+Cola de revisión pendiente en `location_backfill_issues`: 1 `missing_external_ref`
+y 2 `conflicting_source_data`. Ninguna fila se perdió; hay que resolverlas a mano
+(es el insumo de R2-UI-03).
+
+**Dos bugs corregidos al aplicar**, ambos habrían fallado en cualquier base — o
+sea que estas migraciones nunca se habían ejecutado en ningún entorno:
+
+1. `notification_outbox_attempts_check` / `notification_deliveries_attempts_check`
+   colisionaban con el nombre que Postgres autogenera para el check inline de la
+   columna `attempts`. Renombrados a `..._attempts_budget_check`.
+2. En `validate_survey_submission` había un `CASE ... THEN ... END` dentro de la
+   condición de un `IF`: plpgsql corta la condición en el primer `THEN`, se come
+   un `end if` y la función queda desbalanceada. Reescrito con la variable
+   `v_previous_status`.
+
+**Regeneración de tipos.** `types/database.ts` no es un archivo puramente
+generado: lleva 23 alias de dominio y 29 columnas estrechadas que `supabase gen
+types` no produce (los CHECK de texto no son enums). Ese trabajo se perdía en
+cada regeneración. Ahora es reproducible:
+
+```
+pnpm db:types   # gen types + node scripts/narrow-database-types.mjs
+```
+
+El script es idempotente y vive en `scripts/narrow-database-types.mjs`, con los
+alias en `scripts/database-domain-aliases.ts`. **Correr el generador solo deja el
+repo sin compilar.**
+
+### Verificación post-migración (12-08-2026)
+
+Hecha con SQL impersonando usuarios reales (`set_config('request.jwt.claims')`
++ `set local role authenticated`) dentro de transacciones revertidas. Sirve para
+comprobar RLS sin levantar la app.
+
+- **Gerente** (`a0000000-…-0002`): lee 7 proyectos, 130 sites, 118 órdenes, 119
+  locaciones, 129 asociaciones, 3 de la cola, 120 actividades, 9 flags. Las
+  policies reescritas en `20260805000001/2` no lo dejaron afuera de nada.
+- **Usuario con rol dual** (`39c8d038-…`, `coordinator+installer` — el escenario
+  de ADR-001, existe en datos reales): 2 empresas, coordina en 1 e instala en 1;
+  ve 2 de 7 proyectos y 12 de 119 locaciones. El aislamiento por tenant se
+  sostiene con capacidades coexistentes. Ve 0 órdenes porque los 2 proyectos que
+  coordina no tienen ninguna — verificado, no es una regresión.
+- **Bloqueo de autoaprobación (R1 / ADR-001), probado contra el trigger real:**
+  aprobar la propia entrega → bloqueado; reabrirla → bloqueado; que la apruebe un
+  tercero → permitido. Los 118 `work_orders` quedaron intactos.
+
+**En navegador, sin sesión:** landing, `/login` y `/invite/<token>` renderizan
+contra el schema migrado, con cero errores de consola y todas las peticiones en
+200. `/invite` es la más informativa de las tres: ejercita `invitation_preview`,
+que `20260805000001` borra y recrea con otra firma — anon la invoca bien y
+devuelve el mensaje correcto.
+
+**Pendiente: las pantallas autenticadas** (equipo, proyectos, importación). No se
+verificaron porque requieren iniciar sesión y el asistente no ingresa
+contraseñas. Lo tiene que hacer una persona en el navegador; después se pueden
+recorrer e inspeccionar consola/red normalmente.
+
+> **El objetivo declarado de R0 no se cumplió, y esto lo deja a la vista.** R0
+> dice «poder evolucionar el dominio **sin probar sobre producción**». Hoy no
+> existe ningún entorno que no sea producción: `rpdjjvcmtcpvmwrjqhke` es la base
+> que usa la app desplegada, y `playwright.config.ts` prohíbe explícitamente
+> apuntar la suite ahí porque escribe con cuentas reales. Resultado: **las
+> pruebas autenticadas no tienen dónde correr.** Las migraciones de este lote se
+> aplicaron directo sobre producción por la misma razón.
+>
+> Mientras eso siga así, cada release repite el mismo problema. El desbloqueo es
+> crear un segundo proyecto Supabase, aplicarle las migraciones (ahora se puede
+> con el MCP, sin Docker) y apuntar ahí `E2E_BASE_URL` + el seed. Eso cierra
+> R0-PLAT-04 de verdad y recién entonces R1-QA-03 (E2E de rol dual) es
+> ejecutable.
+
+Notas de entorno para levantarlo: se creó `.env.local` en `saasinstalaciones/`
+(no existía; sólo estaba en la carpeta vieja `instalapro/`) con
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `APP_URL` — son las
+únicas obligatorias; el resto está detrás de guardas y su ausencia sólo apaga la
+función. **Arrancar con `node node_modules/next/dist/bin/next dev`**: `pnpm dev`
+dispara un chequeo que intenta purgar `node_modules` (pnpm 11 contra un lockfile
+más viejo), y reinstalar en esta máquina es problemático por los symlinks en
+OneDrive.
 
 ## Preparación de la especificación
 
@@ -70,37 +176,55 @@ Objetivo: una persona puede coordinar e instalar en la misma empresa sin perder 
 Requisitos: REQ-09.1..09.6, NFR-SEC-01..03.  
 Dependencia: R0. Tamaño: L.
 
+> Auditoría 12-08-2026: al revisar el código antes de arrancar R1 se encontró
+> que buena parte ya estaba construida desde R0 (la migración de roles duales
+> se escribió junto con las demás, aunque el checklist nunca se actualizó).
+> Lo marcado abajo con evidencia se verificó leyendo el código fuente, no por
+> confianza en commits previos.
+
 ### Especificación
 
-- [ ] **R1-SPEC-01** — Aprobar ADR-001: tablas de membresía/roles, capacidades por contexto y prohibición de autoaprobación.
-- [ ] **R1-SPEC-02** — Matriz actor × recurso × acción para manager, coordinador, instalador, dual, multiempresa y admin.
+- [x] **R1-SPEC-01** — Aprobar ADR-001: tablas de membresía/roles, capacidades por contexto y prohibición de autoaprobación. El documento ya declara `Estado: Aceptado`; la prohibición de autoaprobación que describe se implementó recién ahora (ver R1-SRV-03).
+- [ ] **R1-SPEC-02** — Matriz actor × recurso × acción para manager, coordinador, instalador, dual, multiempresa y admin. No existe como documento explícito; las reglas están repartidas en RLS y en `lib/domain/order-rules.ts`.
 
 ### Datos y servidor
 
-- [ ] **R1-DB-01** — Migración aditiva para membresía base y roles N:N; backfill del rol actual con reconciliación 100%.
-- [ ] **R1-DB-02** — Reescribir helpers RLS y policies sin usar un rol escalar; crear adaptador legacy temporal.
-- [ ] **R1-SRV-01** — Convertir invitar/agregar/quitar rol en comandos idempotentes y auditados.
-- [ ] **R1-SRV-02** — Impedir retiro de capacidad con asignaciones/proyectos activos o exigir transferencia transaccional.
-- [ ] **R1-SRV-03** — Centralizar `canApprove` y bloquear autoaprobación por actor, no por label de UI.
+- [x] **R1-DB-01** — Migración aditiva para membresía base y roles N:N; backfill del rol actual con reconciliación 100%. `20260805000002_multi_role_memberships.sql`: tabla `company_membership_roles`, backfill desde `company_installers` con `on conflict do nothing`, trigger `sync_legacy_company_membership_role` para mantener la proyección legacy sincronizada en ambos sentidos.
+- [~] **R1-DB-02** — Reescribir helpers RLS y policies sin usar un rol escalar; crear adaptador legacy temporal. Los helpers (`auth_has_company_role`, `auth_coordinates_anywhere`, `auth_companies`) y las funciones `validate_project_relations`/`accept_broadcast_application` ya fueron redefinidas en `20260805000002` para leer `company_membership_roles`. Quedan sin migrar tres triggers de notificación (`notify_broadcast_application`, `notify_order_update`, `notify_chat_message` en `20260728000014_multi_company_functions_storage.sql`) que siguen comparando `company_installers.role = 'coordinator'` directo — no están rotos (la proyección legacy se mantiene sincronizada a propósito), pero conviene migrarlos antes del cutover final.
+- [x] **R1-SRV-01** — Convertir invitar/agregar/quitar rol en comandos idempotentes y auditados. RPCs `grant_company_member_role`/`revoke_company_member_role` (mismo archivo), cableados desde `lib/actions/team.ts:125-173` (`changeMemberRole`, `grantMemberRole`, `revokeMemberRole`).
+- [x] **R1-SRV-02** — Impedir retiro de capacidad con asignaciones/proyectos activos o exigir transferencia transaccional. `revoke_company_member_role` bloquea quitar `installer` con órdenes abiertas y `coordinator` con proyectos activos (`20260805000002_multi_role_memberships.sql:387-405`); cubierto por pgTAP en `multi_role_memberships.test.sql`.
+- [x] **R1-SRV-03** — Centralizar `canApprove` y bloquear autoaprobación por actor, no por label de UI. Era el único gap real encontrado en la auditoría: ni el dominio (`lib/domain/order-rules.ts`) ni el trigger `validate_order_transition` impedían que un coordinador aprobara o reabriera su propia entrega cuando también era el instalador asignado. Agregado el bloqueo `noSelfApproval` en ambos lados (`lib/domain/order-rules.ts`, nueva migración `20260812000000_no_self_approval.sql`), con test unitario, pgTAP (`no_self_approval.test.sql`) y claves i18n es/pt.
 
 ### UI
 
-- [ ] **R1-UI-01** — Equipo: capacidades coexistentes, alta y revocación con impacto explicado.
-- [ ] **R1-UI-02** — Selector de contexto/área para usuario dual sin duplicar cuenta.
-- [ ] **R1-UI-03** — Navegación y Server Components derivados de capacidades y empresa activa.
+- [x] **R1-UI-01** — Equipo: capacidades coexistentes, alta y revocación con impacto explicado. `components/company/roster-member-row.tsx:88-118` ya muestra un botón independiente por rol (no un selector excluyente) y bloquea quitar la última capacidad.
+- [x] **R1-UI-02** — Selector de contexto/área para usuario dual sin duplicar cuenta. Resuelto con un enfoque distinto al de la spec original: en vez de un selector, `app/(installer)/coordination/page.tsx` agrupa todas las empresas donde la persona coordina en un solo tablero, y el layout instalador agrega el tab "Coordinación" cuando corresponde. Ambas capacidades conviven sin forzar una elección.
+- [x] **R1-UI-03** — Navegación y Server Components derivados de capacidades y empresa activa. `app/(installer)/layout.tsx` deriva el tab de coordinación de `isCoordinatorSomewhere(user)`, no de un rol escalar.
 
 ### Pruebas y gate
 
-- [ ] **R1-QA-01** — Unitarias de resolución de capacidades y separación de funciones.
-- [ ] **R1-QA-02** — pgTAP de toda policy migrada con A/B, dual y coordinador P1/no P2.
-- [ ] **R1-QA-03** — E2E: instalar + coordinar, cambio de empresa, revocación y autoaprobación denegada.
-- [ ] **R1-GATE** — Cero divergencias dual-read, matriz RLS verde y ninguna consulta nueva depende del rol escalar.
+- [x] **R1-QA-01** — Unitarias de resolución de capacidades y separación de funciones. `lib/domain/order-rules.test.ts` cubre el bloqueo de autoaprobación (4 casos nuevos); helpers de capacidad (`hasCompanyRole`, `isCoordinatorSomewhere`, etc. en `lib/auth.ts`) sin test unitario dedicado todavía.
+- [~] **R1-QA-02** — pgTAP de toda policy migrada con A/B, dual y coordinador P1/no P2. `multi_role_memberships.test.sql` (16 asserts) y `no_self_approval.test.sql` (6 asserts, nuevo) cubren membresía y autoaprobación. Sin ejecutar todavía: requiere Docker, se valida en CI.
+- [ ] **R1-QA-03** — E2E: instalar + coordinar, cambio de empresa, revocación y autoaprobación denegada. No hay caso E2E de Playwright para rol dual; los 32 casos actuales (`e2e/roles.spec.ts`) no cubren este escenario.
+- [ ] **R1-GATE** — Cero divergencias dual-read, matriz RLS verde y ninguna consulta nueva depende del rol escalar. Bloqueado por R1-DB-02 (3 triggers sin migrar), R1-SPEC-02 (matriz sin documento) y R1-QA-03 (falta E2E dual).
 
 ## R2 — Locación canónica e import/export
 
 Objetivo: una identidad física estable, historial acumulado e intercambio de datos determinista.  
 Requisitos: REQ-04.1..04.7, REQ-08.1..08.7.  
 Dependencia: R1. Tamaño: XL.
+
+> **El bloqueador de tipos que tenía esta sección quedó resuelto el 12-08-2026.**
+> Decía que R2-DB-03/04 y R2-UI-01/02/03 estaban trabados porque
+> `types/database.ts` no incluía `locations`. Las migraciones ya están aplicadas
+> y los tipos regenerados: `locations`, `project_locations`,
+> `location_attachments`, `location_requirements`, `location_change_events` y
+> `location_backfill_issues` están disponibles y tipadas. **La capa de aplicación
+> canónica se puede escribir.**
+>
+> Lo que sigue faltando no es el esquema sino la UI: nada en `app/` lee todavía
+> las tablas canónicas. `sites` sigue siendo la proyección que usan todas las
+> pantallas.
 
 ### Especificación
 
@@ -110,23 +234,27 @@ Dependencia: R1. Tamaño: XL.
 
 ### Datos y migración
 
-- [ ] **R2-DB-01** — Crear `locations`, asociación proyecto–locación, requisitos/permisos, adjuntos permanentes y eventos de cambio.
-- [ ] **R2-DB-02** — Agregar FK de compatibilidad a `sites`; crear RLS/Storage por actor y alcance.
-- [ ] **R2-DB-03** — Backfill reanudable por referencia externa; reporte de nuevos/seguros/ambiguos y revisión manual.
-- [ ] **R2-DB-04** — Dual-read y reconciliación de ficha, galería, historial, rutas y órdenes; cortar sólo con divergencia cero aceptada.
+- [x] **R2-DB-01** — Crear `locations`, asociación proyecto–locación, requisitos/permisos, adjuntos permanentes y eventos de cambio. `20260805000003_canonical_locations.sql` (1204 líneas) crea las seis tablas con triggers de validación y auditoría. **Aplicada el 12-08-2026.**
+- [x] **R2-DB-02** — Agregar FK de compatibilidad a `sites`; crear RLS/Storage por actor y alcance. Misma migración: `sites.location_id` con índice, `can_read_location()` y ~20 policies por actor (manager/coordinador/instalador) sobre las seis tablas. **Aplicada.**
+- [x] **R2-DB-03** — Backfill reanudable por referencia externa; reporte de nuevos/seguros/ambiguos y revisión manual. Corregido respecto de la nota anterior: el backfill **sí existe**, es la sección 4 de `20260805000003` (no un proceso aparte). Deduplica por `(company_id, client_id, normalized_external_ref)`, es reanudable por `on conflict do nothing`, y lo que no puede resolver va a `location_backfill_issues` en vez de fusionarse por nombre. Ejecutado: 130 sites → 129 vinculados, 119 locaciones, 3 en cola. Existe la vista `location_backfill_report` con los conteos RLS-aware. **Falta la UI de revisión (R2-UI-03).**
+- [ ] **R2-DB-04** — Dual-read y reconciliación de ficha, galería, historial, rutas y órdenes; cortar sólo con divergencia cero aceptada. Ya no está bloqueado: los tipos existen. Nadie lee todavía las tablas canónicas desde `app/`.
 
 ### Import/export
 
-- [ ] **R2-IMP-01** — Separar acciones Descargar plantilla / Importar / Exportar.
-- [ ] **R2-IMP-02** — Parser/preflight sin escritura con preview y conteos esperadas/encontradas/válidas/incompletas/duplicadas.
-- [ ] **R2-IMP-03** — Confirmación idempotente por `import_id`, upsert canónico y reporte descargable por fila.
+- [~] **R2-IMP-01** — Separar acciones Descargar plantilla / Importar / Exportar. «Descargar planilla Excel» ya existía como acción propia (`/api/site-template`) y la importación es un diálogo separado. **Falta exportar**, que todavía no existe para locaciones (ver R2-IMP-04).
+- [x] **R2-IMP-02** — Parser/preflight sin escritura con preview y conteos esperadas/encontradas/válidas/incompletas/duplicadas. `lib/domain/site-import.ts` concentra el análisis como función pura y `analyzeSiteImport()` lo expone sin escribir nada; el diálogo pasó a dos pasos (revisar → confirmar) y muestra informados/encontrados/a importar/diferencia, con el aviso del caso de la minuta (50 vs 47). 18 tests unitarios en `site-import.test.ts`. El servidor reparsea el archivo original al confirmar: nunca acepta filas armadas por el cliente.
+- [~] **R2-IMP-03** — Confirmación idempotente por `import_id`, upsert canónico y reporte descargable por fila. Se agregó deduplicación por referencia externa (dentro de la planilla y contra lo ya cargado en el proyecto), que hace que reimportar el mismo archivo no duplique puntos. **Falta** el `import_id` explícito, el upsert canónico (depende del esquema bloqueado) y el reporte descargable.
 - [ ] **R2-IMP-04** — Exportación XLSX seleccionada/completa con contrato de round-trip.
 - [ ] **R2-IMP-05** — Spike separado para PDF/Word/Excel variable; no incorporar al MVP determinista sin especificación nueva.
 
 ### UI
 
+Ya no están bloqueadas: el esquema y los tipos existen. Es trabajo de UI pendiente.
+**R2-UI-03 es la más urgente de las tres**, porque hay 3 filas reales esperando
+resolución en `location_backfill_issues` y hoy no hay forma de verlas desde la app.
+
 - [ ] **R2-UI-01** — Ficha canónica con proyectos, OTs, evidencias, incidentes, requisitos y auditoría.
-- [ ] **R2-UI-02** — Reutilizar locación existente al crear oportunidad/proyecto sin copiarla.
+- [ ] **R2-UI-02** — Reutilizar locación existente al crear oportunidad/proyecto sin copiarla. Existe `lib/actions/projects/reuse.ts`, que reutiliza `sites` de proyectos anteriores del mismo cliente — es el antecesor de esta tarea sobre el modelo viejo, no la ficha canónica.
 - [ ] **R2-UI-03** — Cola de revisión de matches ambiguos y acción de merge/split auditada.
 
 ### Pruebas y gate
@@ -150,15 +278,22 @@ Dependencias: R1, R2. Tamaño: XL.
 
 ### Actividades y relevamiento
 
-- [ ] **R3-ACT-01** — Crear actividades, submissions versionadas, checklist/mediciones y proyecciones legacy.
-- [ ] **R3-ACT-02** — Migrar OTs actuales; las que están en `relevamiento` conservan su acta/evidencia sin inventar aprobación.
-- [ ] **R3-ACT-03** — Comandos guardar/enviar/aprobar/pedir cambios con segregación de funciones.
+> La migración `20260805000004_activities_agenda_outbox.sql` (1570 líneas) **ya
+> está aplicada** (12-08-2026), aunque R3 nunca se planificó formalmente: venía
+> escrita del lote de R0. Cubre la capa de datos de las tres subsecciones de
+> abajo. **Nada de `app/` la usa todavía**: las OTs se siguen operando por
+> `work_orders` y su estado escalar. Antes de retomar R3, leer la migración: gran
+> parte de lo que dicen estas tareas ya existe en la base.
+
+- [x] **R3-ACT-01** — Crear actividades, submissions versionadas, checklist/mediciones y proyecciones legacy. `work_activities`, `survey_submissions` (versionadas, con `one_draft` único) y `survey_submission_decisions`. **Sólo datos: falta la capa de aplicación.**
+- [x] **R3-ACT-02** — Migrar OTs actuales; las que están en `relevamiento` conservan su acta/evidencia sin inventar aprobación. Backfill ejecutado sobre las 118 OTs: la evidencia legacy entra como `submitted`, nunca como `approved`, y la ejecución ya empezada recibe un waiver explícito en vez de una aprobación fabricada.
+- [ ] **R3-ACT-03** — Comandos guardar/enviar/aprobar/pedir cambios con segregación de funciones. El RPC `decide_survey_submission` existe y bloquea autoaprobación; **falta la Server Action y la UI**.
 - [ ] **R3-ACT-04** — UI para relevamiento independiente y como prerequisito de ejecución.
 
 ### Agenda y asignación
 
-- [ ] **R3-AG-01** — Crear horario/duración/zona/precisión y disponibilidad personal global.
-- [ ] **R3-AG-02** — Implementar RPC transaccional con lock para chequear y asignar cross-company devolviendo códigos opacos.
+- [x] **R3-AG-01** — Crear horario/duración/zona/precisión y disponibilidad personal global. `work_assignments` (versionadas, con `schedule_range` y exclusión por GiST), `installer_global_weekly_availability` e `installer_global_unavailability`. La disponibilidad global es privada: sólo la lee su dueño.
+- [ ] **R3-AG-02** — Implementar RPC transaccional con lock para chequear y asignar cross-company devolviendo códigos opacos. Existe `assignment_command_receipts` con los códigos opacos y la idempotencia por `operation_id`, pero **el RPC que los emite no está escrito**.
 - [ ] **R3-AG-03** — Migrar creación, edición, asignación directa/lote, bolsa y reasignación al mismo RPC.
 - [ ] **R3-AG-04** — Primera versión de traslado con coordenadas/buffer; fallback y override auditado.
 - [ ] **R3-AG-05** — Crear `/agenda` para empresa e instalador con al menos mes anterior y filtros acordados.
@@ -166,8 +301,8 @@ Dependencias: R1, R2. Tamaño: XL.
 
 ### Kernel de notificación
 
-- [ ] **R3-NOT-01** — Outbox/scheduler idempotente, delivery por canal y prueba de notificación in-app.
-- [ ] **R3-NOT-02** — Correlation IDs, reintento/dead-letter y observabilidad antes de usar deadlines.
+- [~] **R3-NOT-01** — Outbox/scheduler idempotente, delivery por canal y prueba de notificación in-app. `notification_outbox` y `notification_deliveries` creadas, con `persist_in_app_notification()` para el canal in-app. **Falta el scheduler** que drene la outbox: hoy sólo se escribe en el camino sincrónico.
+- [~] **R3-NOT-02** — Correlation IDs, reintento/dead-letter y observabilidad antes de usar deadlines. `correlation_id` y `dedupe_key` agregados a `notifications`; `record_notification_delivery_attempt()` implementa backoff exponencial y dead-letter. **Falta la observabilidad** y quien lo invoque.
 
 ### Pruebas y gate
 

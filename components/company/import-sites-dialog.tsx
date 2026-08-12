@@ -4,8 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { importSitesFile } from "@/lib/actions/projects/import";
-import type { ImportResult } from "@/lib/actions/projects/types";
+import { analyzeSiteImport, importSitesFile } from "@/lib/actions/projects/import";
+import type { ImportPreflight, ImportResult } from "@/lib/actions/projects/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,17 +18,58 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+/** Fila del resumen de conteos. `tone` resalta la que exige atención. */
+function CountRow({
+  label,
+  value,
+  tone = "normal",
+}: {
+  label: string;
+  value: number;
+  tone?: "normal" | "warning";
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 py-1">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span
+        className={`font-mono text-lg ${tone === "warning" ? "text-warning" : ""}`}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
 export function ImportSitesDialog({ projectId }: { projectId: string }) {
   const t = useTranslations("ImportSites");
   const common = useTranslations("Common");
   const [open, setOpen] = useState(false);
+  // El archivo se conserva para volver a mandarlo al confirmar: el servidor
+  // reparsea el original en vez de confiar en filas armadas por el navegador.
+  const [file, setFile] = useState<File | null>(null);
+  const [preflight, setPreflight] = useState<ImportPreflight | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
-  // El archivo se manda entero al servidor: ahí se distingue Excel de CSV y se
-  // convierte. Así el navegador no carga la librería de Excel.
-  const handleFile = (file: File) => {
+  const analyze = (selected: File) => {
+    const formData = new FormData();
+    formData.set("file", selected);
+    startTransition(async () => {
+      const res = await analyzeSiteImport(projectId, formData);
+      if (res.error) {
+        toast.error(res.error);
+        setPreflight(null);
+        setFile(null);
+        return;
+      }
+      setFile(selected);
+      setPreflight(res);
+    });
+  };
+
+  const confirm = () => {
+    if (!file) return;
     const formData = new FormData();
     formData.set("file", file);
     startTransition(async () => {
@@ -43,10 +84,18 @@ export function ImportSitesDialog({ projectId }: { projectId: string }) {
     });
   };
 
-  const close = () => {
-    setOpen(false);
+  const reset = () => {
+    setFile(null);
+    setPreflight(null);
     setResult(null);
   };
+
+  const close = () => {
+    setOpen(false);
+    reset();
+  };
+
+  const issues = preflight?.issues ?? result?.skipped ?? [];
 
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? setOpen(true) : close())}>
@@ -55,10 +104,10 @@ export function ImportSitesDialog({ projectId }: { projectId: string }) {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t("title")}</DialogTitle>
-          <DialogDescription>
-            {t("description")}
-          </DialogDescription>
+          <DialogTitle>
+            {preflight && !result ? t("reviewTitle") : t("title")}
+          </DialogTitle>
+          <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
 
         {result && !result.error ? (
@@ -73,9 +122,7 @@ export function ImportSitesDialog({ projectId }: { projectId: string }) {
                   </p>
                   <ul className="mt-1 max-h-32 overflow-auto text-xs text-muted-foreground">
                     {result.skipped.slice(0, 20).map((s) => (
-                      <li key={s.row}>
-                        {t("row", { row: s.row, reason: s.reason })}
-                      </li>
+                      <li key={s.row}>{t("row", { row: s.row, reason: s.reason })}</li>
                     ))}
                     {result.skipped.length > 20 && (
                       <li>{t("more", { count: result.skipped.length - 20 })}</li>
@@ -85,6 +132,80 @@ export function ImportSitesDialog({ projectId }: { projectId: string }) {
               )}
             </div>
             <Button onClick={close}>{common("done")}</Button>
+          </div>
+        ) : preflight ? (
+          <div className="flex flex-col gap-4">
+            <div className="rounded-xl border bg-muted/40 p-4">
+              <CountRow label={t("expected")} value={preflight.expected} />
+              <CountRow label={t("found")} value={preflight.found} />
+              <CountRow label={t("willImport")} value={preflight.valid} />
+              {preflight.difference !== 0 && (
+                <CountRow
+                  label={t("difference")}
+                  value={Math.abs(preflight.difference)}
+                  tone="warning"
+                />
+              )}
+            </div>
+
+            {/* El aviso de cantidad es el control que pide la operación: una
+                carga a la que le faltan sucursales no debe darse por cerrada. */}
+            {preflight.difference > 0 ? (
+              <p className="text-sm text-warning">
+                {t("differenceWarning", { count: preflight.difference })}
+              </p>
+            ) : preflight.difference < 0 ? (
+              <p className="text-sm text-warning">
+                {t("differenceExtra", { count: -preflight.difference })}
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">{t("matches")}</p>
+            )}
+
+            {(preflight.incomplete > 0 ||
+              preflight.outsideZone > 0 ||
+              preflight.duplicated > 0) && (
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                {preflight.incomplete > 0 && (
+                  <span>{t("incomplete", { count: preflight.incomplete })}</span>
+                )}
+                {preflight.outsideZone > 0 && (
+                  <span>{t("outsideZone", { count: preflight.outsideZone })}</span>
+                )}
+                {preflight.duplicated > 0 && (
+                  <span>{t("duplicated", { count: preflight.duplicated })}</span>
+                )}
+              </div>
+            )}
+
+            {issues.length > 0 && (
+              <ul className="max-h-32 overflow-auto text-xs text-muted-foreground">
+                {issues.slice(0, 20).map((s) => (
+                  <li key={s.row}>{t("row", { row: s.row, reason: s.reason })}</li>
+                ))}
+                {issues.length > 20 && (
+                  <li>{t("more", { count: issues.length - 20 })}</li>
+                )}
+              </ul>
+            )}
+
+            {preflight.valid === 0 ? (
+              <p className="text-sm text-destructive">{t("nothingToImport")}</p>
+            ) : (
+              <Button type="button" onClick={confirm} disabled={pending}>
+                {pending
+                  ? t("importing")
+                  : t("confirm", { count: preflight.valid })}
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={reset}
+              disabled={pending}
+            >
+              {t("back")}
+            </Button>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
@@ -96,8 +217,8 @@ export function ImportSitesDialog({ projectId }: { projectId: string }) {
                 accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
                 disabled={pending}
                 onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFile(file);
+                  const selected = e.target.files?.[0];
+                  if (selected) analyze(selected);
                 }}
               />
             </div>
@@ -112,7 +233,7 @@ export function ImportSitesDialog({ projectId }: { projectId: string }) {
               </a>
             </Button>
             {pending && (
-              <p className="text-sm text-muted-foreground">{t("importing")}</p>
+              <p className="text-sm text-muted-foreground">{t("analyzing")}</p>
             )}
             {result?.error && (
               <p className="text-sm text-destructive">{result.error}</p>

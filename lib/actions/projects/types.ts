@@ -12,3 +12,23 @@ export type ImportResult = {
   inserted: number;
   skipped: { row: number; reason: string }[];
 };
+
+/**
+ * Resultado de analizar la planilla sin escribir nada.
+ *
+ * `expected` es la cantidad de locaciones que el proyecto declara tener
+ * (`planned_installations`) y `difference` cuánto falta para llegar a esa
+ * cantidad: es el control que evita dar por cerrada una carga a la que le
+ * faltan sucursales.
+ */
+export type ImportPreflight = {
+  error: string | null;
+  expected: number;
+  found: number;
+  valid: number;
+  incomplete: number;
+  outsideZone: number;
+  duplicated: number;
+  difference: number;
+  issues: { row: number; reason: string }[];
+};

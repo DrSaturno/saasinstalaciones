@@ -1,0 +1,64 @@
+// Alias de dominio para columnas con CHECK cerrado.
+//
+// Postgres no expone los CHECK de texto como enums, asi que
+// `supabase gen types` los emite como `string`. Este bloque lo inyecta
+// scripts/narrow-database-types.mjs despues de cada regeneracion.
+// Mantener sincronizado con los CHECK de supabase/migrations/.
+
+export type UserRole =
+  | "platform_admin"
+  | "company_manager"
+  | "installer";
+export type MembershipRole = "installer" | "coordinator";
+export type Locale = "es" | "pt";
+export type CompanyStatus = "active" | "suspended";
+export type Country = "AR" | "BR";
+export type ProjectStatus = "draft" | "active" | "paused" | "done";
+export type OrderStatus =
+  | "pendiente"
+  | "relevamiento"
+  | "planificada"
+  | "en_proceso"
+  | "en_revision"
+  | "finalizada"
+  | "cancelada";
+export type OrderSource = "roster" | "broadcast";
+export type OrderPriority = "baja" | "media" | "alta" | "urgente";
+export type OrderCurrency = "ARS" | "BRL";
+export type BillingMode = "project" | "per_installation";
+export type OrderUpdateType =
+  | "checkin"
+  | "progress"
+  | "blocker"
+  | "done"
+  | "survey"
+  | "system";
+export type IncidentCategory =
+  | "failed_visit"
+  | "missing_materials"
+  | "client_absent"
+  | "technical_issue"
+  | "revisit_required"
+  | "complaint"
+  | "rejected_work"
+  | "incomplete_work"
+  | "other";
+export type IncidentSeverity = "low" | "medium" | "high" | "critical";
+export type IncidentStatus = "open" | "resolved";
+export type InvitationStatus = "pending" | "accepted" | "expired";
+export type RosterStatus = "invited" | "active" | "removed";
+export type UnavailabilityStatus = "pending" | "approved" | "rejected";
+export type AnnouncementSeverity = "info" | "warning" | "critical";
+export type AnnouncementAudience = "all" | "zone" | "project";
+export type BroadcastStatus = "open" | "closed";
+export type ApplicationStatus = "applied" | "accepted" | "rejected";
+export type SiteStatus =
+  | "sin_ordenes"
+  | "pendiente"
+  | "planificada"
+  | "en_proceso"
+  | "finalizada";
+
+// supabase-js infiere los tipos de consulta a partir de esta forma exacta:
+// cada tabla necesita `Relationships` y el schema necesita
+// `Views`/`Functions`/`Enums`/`CompositeTypes`, o el typing colapsa a `never`.

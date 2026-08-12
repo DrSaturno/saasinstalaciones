@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "instalapro",
+      "//": "next directo, no `pnpm dev`: pnpm dispara un chequeo de dependencias que intenta purgar node_modules por un desajuste de version.",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["node_modules/next/dist/bin/next", "dev"],
+      "port": 3000
+    }
+  ]
+}

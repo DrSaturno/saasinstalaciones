@@ -16,6 +16,7 @@ SaaS B2B multi-tenant para gestionar equipos de instaladores de gráfica de gran
 - `pnpm test` — Vitest
 - `supabase db push` — Aplicar migraciones
 - `supabase gen types typescript --linked > types/database.ts` — Regenerar tipos (tras CADA migración)
+- `node scripts/narrow-database-types.mjs` — Obligatorio **después** de regenerar. El generador borra los alias de dominio y emite `string` para las columnas con CHECK cerrado; este paso reinyecta `scripts/database-domain-aliases.ts` y vuelve a estrechar. Es idempotente. Sin él, `pnpm type-check` falla.
 
 ## Validación y Testing
 
