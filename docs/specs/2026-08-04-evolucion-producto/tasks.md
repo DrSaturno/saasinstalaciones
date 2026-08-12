@@ -94,19 +94,59 @@ verificaron porque requieren iniciar sesión y el asistente no ingresa
 contraseñas. Lo tiene que hacer una persona en el navegador; después se pueden
 recorrer e inspeccionar consola/red normalmente.
 
-> **El objetivo declarado de R0 no se cumplió, y esto lo deja a la vista.** R0
-> dice «poder evolucionar el dominio **sin probar sobre producción**». Hoy no
-> existe ningún entorno que no sea producción: `rpdjjvcmtcpvmwrjqhke` es la base
-> que usa la app desplegada, y `playwright.config.ts` prohíbe explícitamente
-> apuntar la suite ahí porque escribe con cuentas reales. Resultado: **las
-> pruebas autenticadas no tienen dónde correr.** Las migraciones de este lote se
-> aplicaron directo sobre producción por la misma razón.
->
-> Mientras eso siga así, cada release repite el mismo problema. El desbloqueo es
-> crear un segundo proyecto Supabase, aplicarle las migraciones (ahora se puede
-> con el MCP, sin Docker) y apuntar ahí `E2E_BASE_URL` + el seed. Eso cierra
-> R0-PLAT-04 de verdad y recién entonces R1-QA-03 (E2E de rol dual) es
-> ejecutable.
+### Entorno de staging (12-08-2026) — R0-PLAT-04 cerrado
+
+Hasta hoy no existía ningún entorno que no fuera producción, que es exactamente
+lo que R0 se proponía evitar («evolucionar el dominio sin probar sobre
+producción»). Por eso este lote de migraciones se aplicó directo sobre la base
+viva. Ya no hace falta repetirlo.
+
+**Proyecto: `krxewmfauohixmmzsvkp` («InstalaPro Staging»), us-east-1, plan free.**
+Para crearlo hubo que pausar `jibvorqudveqgankoeak` («Se Instala Pro»), que topaba
+el límite de 2 proyectos gratis. **Ese proyecto NO es descartable**: es la base
+del legacy `proyecto2 seinstalapro`, con 88 cuentas de usuario reales. Está
+pausado, no borrado, y se restaura desde el dashboard cuando haga falta.
+
+El historial completo se aplica **sin Docker** — el CLI por `npx` alcanza, y ya
+está autenticado:
+
+```
+npx supabase link --project-ref krxewmfauohixmmzsvkp
+npx supabase db push --include-all
+```
+
+Las 39 migraciones se aplicaron limpias desde una base vacía. Eso además valida
+las dos correcciones de `20260805000004`: es el escenario donde antes fallaba.
+Después se corre `supabase/seed.sql` (crea 7 actores, entre ellos uno dual:
+instalador1 es coordinador en la empresa A e instalador en la B).
+
+Para correr la suite hay que levantar el server apuntando al staging y pasarle
+la URL a Playwright:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://krxewmfauohixmmzsvkp.supabase.co \
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon del staging> \
+node node_modules/next/dist/bin/next dev -p 3100
+
+E2E_BASE_URL=http://127.0.0.1:3100 npx playwright test
+```
+
+Next 16 no deja levantar dos dev servers en el mismo directorio: hay que bajar el
+que apunte a producción antes.
+
+**Resultado: 32/32 en verde.** Es la primera vez que la suite corre entera.
+Los tres fallos que aparecieron eran de los tests, no de la app — se habían
+escrito sin ejecutarse nunca, igual que las migraciones:
+
+1. `locator("main, body")` resolvía a tres elementos (el layout de empresa anida
+   dos `<main>`), y en modo estricto eso es error aunque la página cargue bien.
+2. El test de aislamiento entre empresas afirmaba sobre un redirect que la app no
+   hace: ante un id de otro tenant deja la URL y renderiza el `main` vacío.
+   Reescrito para afirmar lo que importa —que no aparezca el nombre del proyecto
+   ajeno—, que además es una prueba más fuerte. **El aislamiento nunca estuvo
+   roto:** el `main` vino vacío en la corrida fallida.
+3. El chequeo del service worker consultaba el registro apenas navegaba; el
+   componente lo hace después del `load`. Era una carrera, no un SW roto.
 
 Notas de entorno para levantarlo: se creó `.env.local` en `saasinstalaciones/`
 (no existía; sólo estaba en la carpeta vieja `instalapro/`) con
@@ -144,7 +184,7 @@ Tamaño: L.
 - [x] **R0-PLAT-01** — Fijar versiones soportadas de Node/pnpm (`engines`/`packageManager` o equivalente), corregir configuración de overrides y verificar lockfile reproducible. Node `22.14.0` y pnpm `11.9.0` fijados en `engines`/`packageManager`/`.nvmrc`; overrides movidos a `pnpm-workspace.yaml` (pnpm 11 los lee ahí, no desde `package.json#pnpm`) y lockfile reinstalado con `--frozen-lockfile`.
 - [x] **R0-PLAT-02** — Crear Supabase local/staging aislado y `supabase/config.toml`; documentar seed mínimo con dos empresas y actores de prueba. `supabase/config.toml` creado y `seed.sql` con dos empresas activas, una suspendida y actores manager/coordinador/instalador/dual.
 - [x] **R0-PLAT-03** — Agregar CI para install frozen, lint, type-check, unit/integration, pgTAP/RLS y build. `.github/workflows/ci.yml`: job de aplicación (install frozen, lint, type-check, test, build) y job de base (`supabase db start` + `supabase test db`).
-- [~] **R0-PLAT-04** — Incorporar Playwright E2E y recorridos mínimos autenticados por rol. `playwright.config.ts` + `e2e/` con 32 casos: login por rol, denegación cruzada de áreas, aislamiento entre empresas y smoke installer a 375 px. Corre en el job `e2e` de CI, que levanta la pila Supabase con seed. **Sin ejecutar todavía**: requiere Docker, que no estaba disponible en la máquina donde se escribió. La primera corrida de CI es la que lo valida.
+- [x] **R0-PLAT-04** — Incorporar Playwright E2E y recorridos mínimos autenticados por rol. `playwright.config.ts` + `e2e/` con 32 casos: login por rol, denegación cruzada de áreas, aislamiento entre empresas y smoke installer a 375 px. **Ejecutados el 12-08-2026: 32/32 en verde** contra el proyecto de staging (ver «Entorno de staging» arriba). No hizo falta Docker: el CLI por `npx` empuja las migraciones a un proyecto remoto. Los tres fallos de la primera corrida eran de los tests, no de la app, y quedaron corregidos.
 - [x] **R0-PLAT-05** — Agregar observabilidad estructurada de servidor/cliente, RPC, jobs y sincronización; definir alertas y runbook. `lib/observability.ts` cableado en alta master, alta por invitación, alta masiva de órdenes, la RPC de transición offline y el flush de la cola; catálogo de eventos y 7 alertas con severidad en `docs/operations/observability.md`. Los `console.error` sueltos de los caminos de compensación fueron reemplazados.
 - [x] **R0-PLAT-06** — Completar CSP/Permissions-Policy con modo reporte y luego enforcement. CSP completa en `Content-Security-Policy-Report-Only` más Permissions-Policy, HSTS y X-Frame-Options en `next.config.ts`. El enforcement con nonce queda para después del relevamiento en staging.
 
@@ -205,7 +245,7 @@ Dependencia: R0. Tamaño: L.
 
 - [x] **R1-QA-01** — Unitarias de resolución de capacidades y separación de funciones. `lib/domain/order-rules.test.ts` cubre el bloqueo de autoaprobación (4 casos nuevos); helpers de capacidad (`hasCompanyRole`, `isCoordinatorSomewhere`, etc. en `lib/auth.ts`) sin test unitario dedicado todavía.
 - [~] **R1-QA-02** — pgTAP de toda policy migrada con A/B, dual y coordinador P1/no P2. `multi_role_memberships.test.sql` (16 asserts) y `no_self_approval.test.sql` (6 asserts, nuevo) cubren membresía y autoaprobación. Sin ejecutar todavía: requiere Docker, se valida en CI.
-- [ ] **R1-QA-03** — E2E: instalar + coordinar, cambio de empresa, revocación y autoaprobación denegada. No hay caso E2E de Playwright para rol dual; los 32 casos actuales (`e2e/roles.spec.ts`) no cubren este escenario.
+- [ ] **R1-QA-03** — E2E: instalar + coordinar, cambio de empresa, revocación y autoaprobación denegada. Sigue sin cubrirse: los 32 casos verdes no incluyen el rol dual. **Ya no está bloqueado**: hay staging y el seed crea al actor dual (instalador1 es coordinador en la empresa A e instalador en la B), así que es sólo escribir el spec. La autoaprobación denegada sí está probada, pero contra el trigger por SQL, no por E2E.
 - [ ] **R1-GATE** — Cero divergencias dual-read, matriz RLS verde y ninguna consulta nueva depende del rol escalar. Bloqueado por R1-DB-02 (3 triggers sin migrar), R1-SPEC-02 (matriz sin documento) y R1-QA-03 (falta E2E dual).
 
 ## R2 — Locación canónica e import/export

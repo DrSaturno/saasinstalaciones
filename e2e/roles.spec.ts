@@ -30,7 +30,10 @@ for (const [name, actor] of Object.entries(ACTORS) as [ActorName, (typeof ACTORS
       await expect(page).toHaveURL(new RegExp(`${actor.landing}$`));
       // Si la sesión no valiera, el proxy habría redirigido al login.
       await expect(page).not.toHaveURL(/\/login/);
-      await expect(page.locator("main, body")).toBeVisible();
+      // `main` y no `main, body`: el layout de empresa anida dos <main>, y un
+      // selector que además matchea <body> resuelve a tres elementos, lo que en
+      // modo estricto es error aunque la página haya cargado bien.
+      await expect(page.locator("main").first()).toBeVisible();
     });
 
     for (const forbidden of actor.forbidden) {
@@ -81,11 +84,18 @@ test.describe("aislamiento entre empresas", () => {
 
       const href = await projectLink.getAttribute("href");
       expect(href).toBeTruthy();
+      const projectName = (await projectLink.innerText()).trim();
+      expect(projectName).not.toBe("");
 
       const pageB = await b.newPage();
       await pageB.goto(href!);
-      // Cruzar el id de otra empresa no puede devolver la ficha.
-      await expect(pageB).not.toHaveURL(new RegExp(`${href}$`));
+
+      // Lo que hay que probar es que no se filtren datos, no que haya un
+      // redirect: ante un id de otra empresa la app deja la URL puesta y
+      // renderiza el `main` vacío. Afirmar sobre la URL daba un rojo que no
+      // correspondía a ninguna falla real de aislamiento.
+      await expect(pageB.getByText(projectName, { exact: false })).toHaveCount(0);
+      await expect(pageB.locator("main").first()).toBeEmpty();
     } finally {
       await a.close();
       await b.close();
