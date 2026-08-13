@@ -92,10 +92,12 @@ test.describe("aislamiento entre empresas", () => {
 
       // Lo que hay que probar es que no se filtren datos, no que haya un
       // redirect: ante un id de otra empresa la app deja la URL puesta y
-      // renderiza el `main` vacío. Afirmar sobre la URL daba un rojo que no
+      // devuelve su propio 404. Afirmar sobre la URL daba un rojo que no
       // correspondía a ninguna falla real de aislamiento.
       await expect(pageB.getByText(projectName, { exact: false })).toHaveCount(0);
-      await expect(pageB.locator("main").first()).toBeEmpty();
+      // El "404" va en dígitos en las dos locales; el texto que lo acompaña no,
+      // y el gerente B ve la app en pt-BR.
+      await expect(pageB.getByText("404")).toBeVisible();
     } finally {
       await a.close();
       await b.close();

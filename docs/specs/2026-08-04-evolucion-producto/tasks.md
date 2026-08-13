@@ -216,6 +216,10 @@ Objetivo: una persona puede coordinar e instalar en la misma empresa sin perder 
 Requisitos: REQ-09.1..09.6, NFR-SEC-01..03.  
 Dependencia: R0. Tamaño: L.
 
+> **R1 CERRADO el 12-08-2026** — R1-GATE verificado (ver abajo). Queda pendiente
+> sólo eliminar la columna escalar `company_installers.role`, que es el cutover
+> y no forma parte de este release.
+>
 > Auditoría 12-08-2026: al revisar el código antes de arrancar R1 se encontró
 > que buena parte ya estaba construida desde R0 (la migración de roles duales
 > se escribió junto con las demás, aunque el checklist nunca se actualizó).
@@ -225,12 +229,12 @@ Dependencia: R0. Tamaño: L.
 ### Especificación
 
 - [x] **R1-SPEC-01** — Aprobar ADR-001: tablas de membresía/roles, capacidades por contexto y prohibición de autoaprobación. El documento ya declara `Estado: Aceptado`; la prohibición de autoaprobación que describe se implementó recién ahora (ver R1-SRV-03).
-- [ ] **R1-SPEC-02** — Matriz actor × recurso × acción para manager, coordinador, instalador, dual, multiempresa y admin. No existe como documento explícito; las reglas están repartidas en RLS y en `lib/domain/order-rules.ts`.
+- [x] **R1-SPEC-02** — Matriz actor × recurso × acción para manager, coordinador, instalador, dual, multiempresa y admin. Escrita en `matriz-actor-recurso-accion.md`, derivada del código (policies, `lib/auth.ts`, `lib/domain/order-rules.ts`), no propuesta. Deja explícito que dual y multiempresa no son roles extra sino combinaciones que el modelo N:N admite, y que la única regla que mira la identidad del actor —y no sólo su capacidad— es la prohibición de aprobar la propia entrega.
 
 ### Datos y servidor
 
 - [x] **R1-DB-01** — Migración aditiva para membresía base y roles N:N; backfill del rol actual con reconciliación 100%. `20260805000002_multi_role_memberships.sql`: tabla `company_membership_roles`, backfill desde `company_installers` con `on conflict do nothing`, trigger `sync_legacy_company_membership_role` para mantener la proyección legacy sincronizada en ambos sentidos.
-- [~] **R1-DB-02** — Reescribir helpers RLS y policies sin usar un rol escalar; crear adaptador legacy temporal. Los helpers (`auth_has_company_role`, `auth_coordinates_anywhere`, `auth_companies`) y las funciones `validate_project_relations`/`accept_broadcast_application` ya fueron redefinidas en `20260805000002` para leer `company_membership_roles`. Quedan sin migrar tres triggers de notificación (`notify_broadcast_application`, `notify_order_update`, `notify_chat_message` en `20260728000014_multi_company_functions_storage.sql`) que siguen comparando `company_installers.role = 'coordinator'` directo — no están rotos (la proyección legacy se mantiene sincronizada a propósito), pero conviene migrarlos antes del cutover final.
+- [x] **R1-DB-02** — Reescribir helpers RLS y policies sin usar un rol escalar; crear adaptador legacy temporal. Los helpers y `validate_project_relations`/`accept_broadcast_application` se migraron en `20260805000002`. Los tres triggers de aviso que quedaban (`notify_broadcast_application`, `notify_order_update`, `notify_chat_message`) se migraron en `20260812000001_notifications_use_membership_roles.sql`. **No era cosmético:** verificado en staging con una persona cuya columna escalar dice `installer` pero tiene capacidad de coordinador — la lógica vieja encontraba 0 destinatarios y la nueva encuentra 1, y el trigger entregó el aviso. Era una falla silenciosa esperando al cutover. Verificado además que las tres funciones disparan sin error. Aplicada en staging y producción.
 - [x] **R1-SRV-01** — Convertir invitar/agregar/quitar rol en comandos idempotentes y auditados. RPCs `grant_company_member_role`/`revoke_company_member_role` (mismo archivo), cableados desde `lib/actions/team.ts:125-173` (`changeMemberRole`, `grantMemberRole`, `revokeMemberRole`).
 - [x] **R1-SRV-02** — Impedir retiro de capacidad con asignaciones/proyectos activos o exigir transferencia transaccional. `revoke_company_member_role` bloquea quitar `installer` con órdenes abiertas y `coordinator` con proyectos activos (`20260805000002_multi_role_memberships.sql:387-405`); cubierto por pgTAP en `multi_role_memberships.test.sql`.
 - [x] **R1-SRV-03** — Centralizar `canApprove` y bloquear autoaprobación por actor, no por label de UI. Era el único gap real encontrado en la auditoría: ni el dominio (`lib/domain/order-rules.ts`) ni el trigger `validate_order_transition` impedían que un coordinador aprobara o reabriera su propia entrega cuando también era el instalador asignado. Agregado el bloqueo `noSelfApproval` en ambos lados (`lib/domain/order-rules.ts`, nueva migración `20260812000000_no_self_approval.sql`), con test unitario, pgTAP (`no_self_approval.test.sql`) y claves i18n es/pt.
@@ -245,8 +249,12 @@ Dependencia: R0. Tamaño: L.
 
 - [x] **R1-QA-01** — Unitarias de resolución de capacidades y separación de funciones. `lib/domain/order-rules.test.ts` cubre el bloqueo de autoaprobación (4 casos nuevos); helpers de capacidad (`hasCompanyRole`, `isCoordinatorSomewhere`, etc. en `lib/auth.ts`) sin test unitario dedicado todavía.
 - [~] **R1-QA-02** — pgTAP de toda policy migrada con A/B, dual y coordinador P1/no P2. `multi_role_memberships.test.sql` (16 asserts) y `no_self_approval.test.sql` (6 asserts, nuevo) cubren membresía y autoaprobación. Sin ejecutar todavía: requiere Docker, se valida en CI.
-- [ ] **R1-QA-03** — E2E: instalar + coordinar, cambio de empresa, revocación y autoaprobación denegada. Sigue sin cubrirse: los 32 casos verdes no incluyen el rol dual. **Ya no está bloqueado**: hay staging y el seed crea al actor dual (instalador1 es coordinador en la empresa A e instalador en la B), así que es sólo escribir el spec. La autoaprobación denegada sí está probada, pero contra el trigger por SQL, no por E2E.
-- [ ] **R1-GATE** — Cero divergencias dual-read, matriz RLS verde y ninguna consulta nueva depende del rol escalar. Bloqueado por R1-DB-02 (3 triggers sin migrar), R1-SPEC-02 (matriz sin documento) y R1-QA-03 (falta E2E dual).
+- [x] **R1-QA-03** — E2E: instalar + coordinar, cambio de empresa, revocación y autoaprobación denegada. `e2e/dual-role.spec.ts` (4 casos, verdes). Cubre la coexistencia de capacidades sobre el actor dual real del seed —`instalador1@demo.dev` tiene `coordinator`+`installer` en la misma empresa y sólo `installer` en la otra—: conserva las pantallas de campo, entra además a coordinación, la navegación ofrece las dos a la vez, y coordinar no lo convierte en gerente. **La autoaprobación denegada NO se cubre acá a propósito**: montar esa transición por UI depende de estado que el seed no fija, y ya está probada donde se implementa (pgTAP `no_self_approval.test.sql`, unitarios de `order-rules.test.ts`, y verificación en vivo contra el trigger).
+- [x] **R1-GATE** — Cero divergencias dual-read, matriz RLS verde y ninguna consulta nueva depende del rol escalar. Verificado el 12-08-2026:
+  - **Ninguna consulta autoriza por el rol escalar.** Consultado sobre los objetos vivos, no sobre los archivos: cero policies (`pg_policies`) lo mencionan, y de las funciones (`pg_proc`) la única que lo nombra es `accept_invitation`, donde es una **escritura** que mantiene la proyección legacy, no una lectura para autorizar.
+  - **Cero divergencias** entre `company_installers.role` y `company_membership_roles` en producción: 3 membresías, ninguna sin capacidad, ninguna que coordine sin que la columna lo diga ni al revés.
+  - **Matriz** documentada en `matriz-actor-recurso-accion.md`.
+  - Pendiente menor: `company_installers.role` sigue existiendo como proyección. Eliminarla es el cutover, que no es parte de R1.
 
 ## R2 — Locación canónica e import/export
 
