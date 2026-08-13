@@ -1061,7 +1061,11 @@
     "duplicated": "{count, plural, =1 {# linha duplicada} other {# linhas duplicadas}}",
     "nothingToImport": "Nenhuma linha da planilha pode ser importada.",
     "confirm": "Importar {count} locais",
-    "back": "Escolher outra planilha"
+    "back": "Escolher outra planilha",
+    "downloadReport": "Baixar relatório linha por linha",
+    "outcomeImported": "Importada",
+    "outcomeReused": "Reutilizada",
+    "outcomeSkipped": "Ignorada"
   },
   "CreateOrders": {
     "defaultTitle": "Instalação",

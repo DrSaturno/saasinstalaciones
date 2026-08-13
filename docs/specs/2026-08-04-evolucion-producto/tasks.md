@@ -398,7 +398,59 @@ Dependencia: R1. Tamaño: XL.
 
 - [x] **R2-IMP-01** — Separar acciones Descargar plantilla / Importar / Exportar. Las tres son acciones distintas en «Adm. instalaciones»: plantilla vacía (`/api/site-template`), diálogo de importación, y exportación (R2-IMP-04). El botón de exportar se oculta si el proyecto no tiene locaciones, donde daría un archivo vacío.
 - [x] **R2-IMP-02** — Parser/preflight sin escritura con preview y conteos esperadas/encontradas/válidas/incompletas/duplicadas. `lib/domain/site-import.ts` concentra el análisis como función pura y `analyzeSiteImport()` lo expone sin escribir nada; el diálogo pasó a dos pasos (revisar → confirmar) y muestra informados/encontrados/a importar/diferencia, con el aviso del caso de la minuta (50 vs 47). 18 tests unitarios en `site-import.test.ts`. El servidor reparsea el archivo original al confirmar: nunca acepta filas armadas por el cliente.
-- [~] **R2-IMP-03** — Confirmación idempotente por `import_id`, upsert canónico y reporte descargable por fila. Se agregó deduplicación por referencia externa dentro de la planilla y contra el proyecto; la confirmación busca además la referencia normalizada en `locations`: si ya existe para el cliente, asocia esa identidad sin sobrescribirla; si no, crea la ficha canónica y su proyección. Reimportar al mismo proyecto no duplica. **Falta** el `import_id` explícito, transacción/reanudación del lote y el reporte descargable.
+- [x] **R2-IMP-03** — Confirmación idempotente por `import_id`, upsert canónico y reporte descargable por fila. Se agregó deduplicación por referencia externa dentro de la planilla y contra el proyecto; la confirmación busca además la referencia normalizada en `locations`: si ya existe para el cliente, asocia esa identidad sin sobrescribirla; si no, crea la ficha canónica y su proyección. Reimportar al mismo proyecto no duplica.
+
+  **Completado el 13-08-2026 con `20260813000002_site_import_batches.sql`.**
+
+  > **El agujero que faltaba tapar no era el que decía el título.** El dedupe por
+  > referencia ya protegía a las filas CON código. Las que no lo traen generaban
+  > un uuid nuevo en cada intento, así que un lote que fallaba a mitad de camino
+  > (la inserción va de a 500) duplicaba, al reintentar, todas las filas sin
+  > código de las tandas que sí habían entrado. `attachCanonicalLocations` ya era
+  > idempotente; esto no.
+
+  El lote (`site_import_batches`) es la unidad idempotente y su id se **deriva de
+  un checksum de (proyecto + contenido del archivo)**, no viene del cliente: el
+  mismo archivo cae siempre en el mismo lote, y no hay id ajeno que validar.
+  Reconfirmar un lote ya cerrado devuelve lo que entró sin volver a escribir.
+  `site_import_rows` guarda el resultado por fila y cumple doble función a
+  propósito: es el registro que permite reanudar (qué fila produjo qué locación)
+  y es el reporte descargable. Las filas se anotan **después de cada tanda**, no
+  al final, que es lo que hace que la reanudación sirva.
+
+  Reporte en `GET /api/projects/[id]/imports/[importId]/report` (xlsx: fila,
+  nombre, código, resultado, motivo), con `lib/domain/import-report.ts` puro
+  (10 tests) y enlace desde el diálogo al terminar.
+
+  **Verificado contra staging con 2 casos E2E nuevos** (`site-import.spec.ts`):
+  uno con código externo que además baja el reporte y verifica la numeración
+  contra la planilla; y otro **sin código externo**, que es el caso decisivo —
+  ahí el dedupe por referencia no puede hacer nada y sólo el lote evita duplicar.
+  Se contó sobre la exportación real del proyecto: 4 filas → 4 puntos, no 8.
+  Confirmado también por SQL: cada fila importada tiene exactamente 1 site y 1
+  asociación.
+
+  **Lo que NO se cubrió** (queda en R2-QA-03): el volumen real de 2.000 filas
+  —se probó con 6 y 4— y el fallo intermedio con reanudación fila por fila, que
+  necesita forzar un error a mitad del lote y no se puede provocar desde
+  Playwright. La reanudación está implementada y su mecanismo verificado, pero
+  no ejercitada con una interrupción real.
+
+  > **Dos hallazgos al construir esto, ninguno buscado:**
+  >
+  > 1. **`types/database.ts` no es puramente generado.** Regenerarlo y punto
+  >    rompe el type-check en ~40 lugares: el generador emite `string` para las
+  >    columnas con CHECK cerrado y borra los alias de dominio. `AGENTS.md` lo
+  >    documenta —hay que correr `node scripts/narrow-database-types.mjs`
+  >    después— y es fácil no verlo. Se sumaron ahí `SiteImportBatchStatus` y
+  >    `SiteImportRowOutcome`.
+  > 2. **El seed tenía el proyecto con `zones` vacío** y 20 sites en
+  >    `AR-BA-AMBA`/`AR-CBA`: inconsistente consigo mismo. Con la lista vacía la
+  >    importación rechazaba **toda** fila por «zona fuera del proyecto», y
+  >    editar el proyecto también fallaba, porque `updateProject` exige que las
+  >    zonas elegidas incluyan las que ya están en uso. Es decir: el camino de
+  >    importación **no era testeable de punta a punta** en staging. Corregido en
+  >    `supabase/seed.sql` y en staging.
 - [x] **R2-IMP-04** — Exportación XLSX seleccionada/completa con contrato de round-trip. `GET /api/projects/[id]/sites/export` baja las locaciones activas del proyecto, paginado de a 1000 para que un proyecto grande no exporte sólo la primera página. **El contrato de round-trip está probado, no declarado**: `lib/domain/site-export.ts` toma las columnas de `SITE_TEMPLATE_HEADERS` (misma fuente que la plantilla y el lector), y el test alimenta lo exportado de vuelta a `analyzeSiteRows` verificando que las 3 filas vuelven íntegras, con coordenadas y referencias. Cubre también que reimportar al mismo proyecto no duplica: las filas con código se reconocen como ya cargadas. 10 tests unitarios + 2 E2E (uno verifica el .xlsx real que sale del servidor, otro que un instalador recibe 404 en vez de la planilla de otra empresa). Verificado en vivo contra staging: 20 filas, encabezado exacto, nombre de archivo sin acentos.
   - **Alcance:** exporta por proyecto, que es donde ocurre la importación. La variante «completa» (todas las locaciones de la empresa) no se hizo: sin la ficha canónica en la UI (R2-UI-01) no está claro desde dónde se pediría.
 - [ ] **R2-IMP-05** — Spike separado para PDF/Word/Excel variable; no incorporar al MVP determinista sin especificación nueva.
@@ -430,7 +482,7 @@ porque había 3 filas reales esperando en producción sin forma de verlas.
 
 - [ ] **R2-QA-01** — Backfill sobre copia representativa, conteos/checksum, duplicados y rollback.
 - [ ] **R2-QA-02** — pgTAP/RLS/Storage para manager, coordinador P1/no P2, instalador asignado y A/B.
-- [ ] **R2-QA-03** — Import de 2.000 filas, fallo intermedio, reanudación, dedupe y round-trip export/import.
+- [~] **R2-QA-03** — Import de 2.000 filas, fallo intermedio, reanudación, dedupe y round-trip export/import. **Dedupe, idempotencia y round-trip** cubiertos por los 2 casos E2E de `site-import.spec.ts` (ver R2-IMP-03). **Falta** el volumen real de 2.000 filas y el fallo intermedio con reanudación: forzar un error a mitad del lote no se puede desde Playwright, necesita un punto de inyección de fallo o un test de integración que llame la acción directamente.
 - [ ] **R2-GATE** — Historial reconciliado, ambiguos resueltos, import/export estable y eliminación de proyecto no borra locación.
 
 ## R3 — Actividades, relevamiento, agenda y kernel de avisos

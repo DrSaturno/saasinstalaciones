@@ -52,6 +52,12 @@ export type SiteImportIssue = {
 };
 
 export type ParsedSiteRow = {
+  /**
+   * Fila de la planilla de la que salió, numerada como la ve el usuario (la 1
+   * es el encabezado). La importación la persiste para poder reanudar un lote
+   * interrumpido y para el reporte por fila.
+   */
+  row: number;
   name: string;
   address: string;
   city: string;
@@ -206,6 +212,7 @@ export function analyzeSiteRows(
     }
 
     valid.push({
+      row,
       name: parsed.data.name,
       address: parsed.data.address,
       city: parsed.data.city,

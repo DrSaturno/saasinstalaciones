@@ -38,6 +38,8 @@ const NARROWING = {
     currency: "OrderCurrency",
   },
   sites: { status: "SiteStatus" },
+  site_import_batches: { status: "SiteImportBatchStatus" },
+  site_import_rows: { outcome: "SiteImportRowOutcome" },
   work_orders: {
     status: "OrderStatus",
     priority: "OrderPriority",

@@ -42,7 +42,10 @@ test.describe("gerente", () => {
     // Sin el "*" que sí lleva la plantilla en blanco: acá no se pide completar
     // nada, y el asterisco volvería pegado al encabezado al reimportar.
     expect(filas[0]).toEqual([...SITE_TEMPLATE_HEADERS]);
-    expect(filas.length - 1).toBe(20);
+    // Las 20 del seed como piso, no como igualdad: `site-import.spec.ts` carga
+    // sobre este mismo proyecto y sus filas quedan. Lo que este test cuida es
+    // el contrato de columnas y que la exportación no venga vacía ni cortada.
+    expect(filas.length - 1).toBeGreaterThanOrEqual(20);
     expect(filas[1][0]).not.toBe("");
   });
 });

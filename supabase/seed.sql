@@ -116,9 +116,15 @@ where company_id = '11111111-1111-1111-1111-111111111111'
   );
 
 -- 5. Proyecto demo con 20 puntos
-insert into public.projects (id, company_id, name, client_name, status, starts_at)
+-- `zones` tiene que declarar las mismas zonas que usan los sites de abajo. Con
+-- la lista vacía el seed quedaba inconsistente consigo mismo y eso rompía dos
+-- cosas de verdad: la importación rechazaba TODA fila por «zona fuera del
+-- proyecto», y editar el proyecto fallaba porque `updateProject` exige que las
+-- zonas elegidas incluyan las que ya están en uso.
+insert into public.projects (id, company_id, name, client_name, status, starts_at, zones)
 values ('22222222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111',
-        'Refacción Estaciones Norte', 'Shell Argentina', 'active', current_date)
+        'Refacción Estaciones Norte', 'Shell Argentina', 'active', current_date,
+        '{AR-BA-AMBA,AR-CBA}')
 on conflict (id) do nothing;
 
 insert into public.sites (project_id, company_id, name, address, city, state, zone, external_ref)

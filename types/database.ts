@@ -60,6 +60,8 @@ export type AnnouncementSeverity = "info" | "warning" | "critical";
 export type AnnouncementAudience = "all" | "zone" | "project";
 export type BroadcastStatus = "open" | "closed";
 export type ApplicationStatus = "applied" | "accepted" | "rejected";
+export type SiteImportBatchStatus = "in_progress" | "completed" | "failed";
+export type SiteImportRowOutcome = "imported" | "reused" | "skipped";
 export type SiteStatus =
   | "sin_ordenes"
   | "pendiente"
@@ -75,7 +77,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.15"
   }
   public: {
     Tables: {
@@ -2519,6 +2521,134 @@ export type Database = {
           },
         ]
       }
+      site_import_batches: {
+        Row: {
+          checksum: string
+          company_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          error: string | null
+          found: number
+          id: string
+          imported: number
+          project_id: string
+          reused: number
+          skipped: number
+          status: SiteImportBatchStatus
+        }
+        Insert: {
+          checksum: string
+          company_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          found?: number
+          id: string
+          imported?: number
+          project_id: string
+          reused?: number
+          skipped?: number
+          status?: SiteImportBatchStatus
+        }
+        Update: {
+          checksum?: string
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          found?: number
+          id?: string
+          imported?: number
+          project_id?: string
+          reused?: number
+          skipped?: number
+          status?: SiteImportBatchStatus
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_import_batches_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_import_batches_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_import_batches_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_import_rows: {
+        Row: {
+          batch_id: string
+          company_id: string
+          created_at: string
+          external_ref: string | null
+          location_id: string | null
+          name: string
+          outcome: SiteImportRowOutcome
+          reason: string | null
+          row_number: number
+        }
+        Insert: {
+          batch_id: string
+          company_id: string
+          created_at?: string
+          external_ref?: string | null
+          location_id?: string | null
+          name?: string
+          outcome: SiteImportRowOutcome
+          reason?: string | null
+          row_number: number
+        }
+        Update: {
+          batch_id?: string
+          company_id?: string
+          created_at?: string
+          external_ref?: string | null
+          location_id?: string | null
+          name?: string
+          outcome?: SiteImportRowOutcome
+          reason?: string | null
+          row_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_import_rows_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "site_import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_import_rows_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_import_rows_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sites: {
         Row: {
           access_notes: string
@@ -3168,63 +3298,8 @@ export type Database = {
           },
         ]
       }
-      pg_all_foreign_keys: {
-        Row: {
-          fk_columns: unknown[] | null
-          fk_constraint_name: unknown
-          fk_schema_name: unknown
-          fk_table_name: unknown
-          fk_table_oid: unknown
-          is_deferrable: boolean | null
-          is_deferred: boolean | null
-          match_type: string | null
-          on_delete: string | null
-          on_update: string | null
-          pk_columns: unknown[] | null
-          pk_constraint_name: unknown
-          pk_index_name: unknown
-          pk_schema_name: unknown
-          pk_table_name: unknown
-          pk_table_oid: unknown
-        }
-        Relationships: []
-      }
-      tap_funky: {
-        Row: {
-          args: string | null
-          is_definer: boolean | null
-          is_strict: boolean | null
-          is_visible: boolean | null
-          kind: unknown
-          langoid: unknown
-          name: unknown
-          oid: unknown
-          owner: unknown
-          returns: string | null
-          returns_set: boolean | null
-          schema: unknown
-          volatility: string | null
-        }
-        Relationships: []
-      }
     }
     Functions: {
-      _cleanup: { Args: never; Returns: boolean }
-      _contract_on: { Args: { "": string }; Returns: unknown }
-      _currtest: { Args: never; Returns: number }
-      _db_privs: { Args: never; Returns: unknown[] }
-      _extensions: { Args: never; Returns: unknown[] }
-      _get: { Args: { "": string }; Returns: number }
-      _get_latest: { Args: { "": string }; Returns: number[] }
-      _get_note: { Args: { "": string }; Returns: string }
-      _is_verbose: { Args: never; Returns: boolean }
-      _prokind: { Args: { p_oid: unknown }; Returns: unknown }
-      _query: { Args: { "": string }; Returns: string }
-      _refine_vol: { Args: { "": string }; Returns: string }
-      _retval: { Args: { "": string }; Returns: string }
-      _table_privs: { Args: never; Returns: unknown[] }
-      _temptypes: { Args: { "": string }; Returns: string }
-      _todo: { Args: never; Returns: string }
       accept_broadcast_application: {
         Args: {
           p_broadcast_id: string
@@ -3275,42 +3350,6 @@ export type Database = {
       can_operate_project: { Args: { p_project_id: string }; Returns: boolean }
       can_read_location: { Args: { p_location_id: string }; Returns: boolean }
       close_broadcast: { Args: { p_broadcast_id: string }; Returns: undefined }
-      col_is_null:
-        | {
-            Args: {
-              column_name: unknown
-              description?: string
-              schema_name: unknown
-              table_name: unknown
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              column_name: unknown
-              description?: string
-              table_name: unknown
-            }
-            Returns: string
-          }
-      col_not_null:
-        | {
-            Args: {
-              column_name: unknown
-              description?: string
-              schema_name: unknown
-              table_name: unknown
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              column_name: unknown
-              description?: string
-              table_name: unknown
-            }
-            Returns: string
-          }
       company_is_active: { Args: { p_company_id: string }; Returns: boolean }
       company_path_is_active: {
         Args: { p_company_id: string }
@@ -3329,43 +3368,18 @@ export type Database = {
         Args: { p_coordinator_id: string }
         Returns: undefined
       }
-      diag:
-        | {
-            Args: { msg: unknown }
-            Returns: {
-              error: true
-            } & "Could not choose the best candidate function between: public.diag(msg => text), public.diag(msg => anyelement). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
-          }
-        | {
-            Args: { msg: string }
-            Returns: {
-              error: true
-            } & "Could not choose the best candidate function between: public.diag(msg => text), public.diag(msg => anyelement). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
-          }
-      diag_test_name: { Args: { "": string }; Returns: string }
       distance_km: {
         Args: { p_lat1: number; p_lat2: number; p_lng1: number; p_lng2: number }
         Returns: number
       }
-      do_tap:
-        | { Args: never; Returns: string[] }
-        | { Args: { "": string }; Returns: string[] }
-      fail:
-        | { Args: never; Returns: string }
-        | { Args: { "": string }; Returns: string }
       feature_enabled: {
         Args: { p_company_id?: string; p_flag_key: string }
         Returns: boolean
       }
-      findfuncs: { Args: { "": string }; Returns: string[] }
-      finish: { Args: { exception_on_failure?: boolean }; Returns: string[] }
-      format_type_string: { Args: { "": string }; Returns: string }
       grant_company_member_role: {
         Args: { p_role: string; p_user_id: string }
         Returns: undefined
       }
-      has_unique: { Args: { "": string }; Returns: string }
-      in_todo: { Args: never; Returns: boolean }
       installer_can_read_broadcast: {
         Args: { p_broadcast_id: string }
         Returns: boolean
@@ -3380,23 +3394,14 @@ export type Database = {
           valid: boolean
         }[]
       }
-      is_empty: { Args: { "": string }; Returns: string }
-      isnt_empty: { Args: { "": string }; Returns: string }
-      lives_ok: { Args: { "": string }; Returns: string }
       next_regional_order_number: {
         Args: { p_company_id: string; p_site_id: string }
         Returns: string
       }
-      no_plan: { Args: never; Returns: boolean[] }
       normalize_location_external_ref: {
         Args: { p_value: string }
         Returns: string
       }
-      num_failed: { Args: never; Returns: number }
-      os_name: { Args: never; Returns: string }
-      pass:
-        | { Args: never; Returns: string }
-        | { Args: { "": string }; Returns: string }
       persist_in_app_notification: {
         Args: {
           p_aggregate_id: string
@@ -3413,9 +3418,6 @@ export type Database = {
         }
         Returns: string
       }
-      pg_version: { Args: never; Returns: string }
-      pg_version_num: { Args: never; Returns: number }
-      pgtap_version: { Args: never; Returns: number }
       promote_installer_to_coordinator: {
         Args: { p_installer_id: string }
         Returns: undefined
@@ -3454,30 +3456,12 @@ export type Database = {
         Args: { p_role: string; p_user_id: string }
         Returns: undefined
       }
-      runtests:
-        | { Args: never; Returns: string[] }
-        | { Args: { "": string }; Returns: string[] }
-      skip:
-        | { Args: { "": string }; Returns: string }
-        | { Args: { how_many: number; why: string }; Returns: string }
-      throws_ok: { Args: { "": string }; Returns: string }
-      todo:
-        | { Args: { how_many: number }; Returns: boolean[] }
-        | { Args: { how_many: number; why: string }; Returns: boolean[] }
-        | { Args: { why: string }; Returns: boolean[] }
-        | { Args: { how_many: number; why: string }; Returns: boolean[] }
-      todo_end: { Args: never; Returns: boolean[] }
-      todo_start:
-        | { Args: never; Returns: boolean[] }
-        | { Args: { "": string }; Returns: boolean[] }
     }
     Enums: {
       [_ in never]: never
     }
     CompositeTypes: {
-      _time_trial_type: {
-        a_time: number | null
-      }
+      [_ in never]: never
     }
   }
 }

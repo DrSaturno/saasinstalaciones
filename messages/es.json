@@ -1061,7 +1061,11 @@
     "duplicated": "{count, plural, =1 {# fila duplicada} other {# filas duplicadas}}",
     "nothingToImport": "Ninguna fila de la planilla se puede importar.",
     "confirm": "Importar {count} locaciones",
-    "back": "Elegir otra planilla"
+    "back": "Elegir otra planilla",
+    "downloadReport": "Descargar reporte fila por fila",
+    "outcomeImported": "Importada",
+    "outcomeReused": "Reutilizada",
+    "outcomeSkipped": "Omitida"
   },
   "CreateOrders": {
     "defaultTitle": "Instalación",

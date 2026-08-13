@@ -11,6 +11,12 @@ export type ImportResult = {
   error: string | null;
   inserted: number;
   skipped: { row: number; reason: string }[];
+  /**
+   * Lote de la confirmación. Falta cuando se rechazó antes de llegar a crearlo
+   * (acceso denegado, proyecto ajeno, planilla ilegible): en esos casos no hay
+   * nada que reanudar ni que reportar.
+   */
+  importId?: string;
 };
 
 /**

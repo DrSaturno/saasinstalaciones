@@ -1,5 +1,6 @@
 "use server";
 
+import { createHash } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { attachCanonicalLocations } from "@/lib/actions/canonical-locations";
@@ -26,9 +27,45 @@ import type { ImportPreflight, ImportResult } from "./types";
 // navegador nunca devuelve las filas ya parseadas — se vuelve a leer el archivo
 // original — porque aceptar filas armadas por el cliente permitiría insertar
 // registros que nunca pasaron por la validación.
+//
+// **Idempotencia y reanudación (R2-IMP-03).** La confirmación se agrupa en un
+// lote (`site_import_batches`) cuyo id se deriva de un checksum del proyecto más
+// el contenido del archivo. Reintentar el mismo archivo cae en el mismo lote:
+// las filas ya resueltas se reutilizan en vez de volver a crearse. Sin esto, un
+// lote que falla a mitad de camino duplicaba al reintentar todas las filas SIN
+// código externo — las que lo tienen ya estaban protegidas por el dedupe, las
+// que no, generaban un uuid nuevo en cada intento.
+//
+// El id se deriva en el servidor y no se acepta del cliente: así no hay id ajeno
+// que validar ni forma de escribir sobre el lote de otra empresa.
 // ---------------------------------------------------------------------------
 
 type OperatorContext = Awaited<ReturnType<typeof requireOperator>>;
+
+/**
+ * Id determinista del lote a partir del proyecto y el contenido del archivo.
+ *
+ * Se le da forma de uuid porque la columna es `uuid`. No es un uuid aleatorio
+ * ni pretende serlo: es un checksum, y esa es exactamente la propiedad que se
+ * busca — el mismo archivo sobre el mismo proyecto siempre cae en el mismo lote.
+ */
+function deriveImportId(
+  projectId: string,
+  csvText: string,
+): { importId: string; checksum: string } {
+  const checksum = createHash("sha256")
+    .update(`${projectId}\n${csvText}`)
+    .digest("hex");
+  const hex = checksum.slice(0, 32);
+  const importId = [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20, 32),
+  ].join("-");
+  return { importId, checksum };
+}
 
 /**
  * Referencias externas ya cargadas en el proyecto.
@@ -106,6 +143,55 @@ function toCanonicalProjection(
   };
 }
 
+/**
+ * Anota el resultado de un conjunto de filas del lote.
+ *
+ * `upsert` y no `insert`: reanudar vuelve a pasar por filas ya anotadas y no
+ * tiene que fallar por eso.
+ */
+async function recordImportRows(
+  supabase: OperatorContext["supabase"],
+  batchId: string,
+  companyId: string,
+  entries: readonly {
+    row: ParsedSiteRow;
+    outcome: "imported" | "reused" | "skipped";
+    locationId: string | null;
+    reason?: string;
+  }[],
+): Promise<string | null> {
+  for (let index = 0; index < entries.length; index += BATCH_SIZE) {
+    const slice = entries.slice(index, index + BATCH_SIZE);
+    const { error } = await supabase.from("site_import_rows").upsert(
+      slice.map((entry) => ({
+        batch_id: batchId,
+        row_number: entry.row.row,
+        company_id: companyId,
+        name: entry.row.name,
+        external_ref: entry.row.externalRef,
+        outcome: entry.outcome,
+        reason: entry.reason ?? null,
+        location_id: entry.locationId,
+      })),
+      { onConflict: "batch_id,row_number" },
+    );
+    if (error) return error.message;
+  }
+  return null;
+}
+
+/** Deja el lote marcado como fallido para que el reintento sepa reanudarlo. */
+async function failBatch(
+  supabase: OperatorContext["supabase"],
+  batchId: string,
+  message: string,
+): Promise<void> {
+  await supabase
+    .from("site_import_batches")
+    .update({ status: "failed", error: message })
+    .eq("id", batchId);
+}
+
 export async function importSites(
   projectId: string,
   csvText: string,
@@ -154,6 +240,61 @@ export async function importSites(
     reason: describeIssue(t, issue),
   }));
 
+  const { importId, checksum } = deriveImportId(projectId, csvText);
+
+  // El lote ya cerrado se devuelve tal cual: reconfirmar el mismo archivo no
+  // vuelve a escribir nada. Es el caso del doble clic y el del reintento
+  // después de un error de red que en realidad había llegado.
+  const { data: previous } = await supabase
+    .from("site_import_batches")
+    .select("id, status, imported, reused")
+    .eq("id", importId)
+    .eq("company_id", companyId)
+    .maybeSingle();
+  if (previous?.status === "completed") {
+    return {
+      error: null,
+      inserted: previous.imported + previous.reused,
+      skipped,
+      importId,
+    };
+  }
+
+  if (!previous) {
+    const { error: batchError } = await supabase
+      .from("site_import_batches")
+      .insert({
+        id: importId,
+        company_id: companyId,
+        project_id: projectId,
+        checksum,
+        status: "in_progress",
+        found: analysis.counts.found,
+        skipped: analysis.issues.length,
+        created_by: userId,
+      });
+    // Sin lote no hay reanudación posible, así que no se sigue a ciegas.
+    if (batchError) return { error: t("operation"), inserted: 0, skipped };
+  }
+
+  // Filas que un intento anterior ya resolvió. Es lo que evita duplicar las
+  // filas sin código externo, que no tienen cómo reconocerse solas.
+  const recordedByRow = new Map<number, string>();
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase
+      .from("site_import_rows")
+      .select("row_number, location_id")
+      .eq("batch_id", importId)
+      .not("location_id", "is", null)
+      .range(from, from + 999);
+    if (error) return { error: t("operation"), inserted: 0, skipped };
+    if (!data) break;
+    for (const row of data) {
+      if (row.location_id) recordedByRow.set(row.row_number, row.location_id);
+    }
+    if (data.length < 1000) break;
+  }
+
   const clientId = project.client_id;
   const requestedRefs = new Set(
     analysis.valid
@@ -186,9 +327,35 @@ export async function importSites(
     }
   }
 
+  // Las locaciones que un intento anterior alcanzó a crear. Se releen para
+  // confirmar que siguen existiendo: si alguien borró una entremedio, la fila
+  // se vuelve a procesar como nueva en vez de asociar un id fantasma.
+  const resumedById = new Map<string, CanonicalLocationProjection>();
+  const recordedIds = [...new Set(recordedByRow.values())];
+  for (let index = 0; index < recordedIds.length; index += 1000) {
+    const slice = recordedIds.slice(index, index + 1000);
+    const { data, error } = await supabase
+      .from("locations")
+      .select("id, company_id, client_id, name, address, city, state, zone, country, lat, lng, external_ref, contact_name, contact_phone, contact_email, opening_hours, access_notes, parking_notes, technical_notes, risk_notes, permanent_notes")
+      .eq("company_id", companyId)
+      .in("id", slice);
+    if (error) return { error: t("operation"), inserted: 0, skipped };
+    for (const location of data ?? []) resumedById.set(location.id, location);
+  }
+
   const targetLocations: CanonicalLocationProjection[] = [];
   const newLocations: (TablesInsert<"locations"> & { id: string })[] = [];
+  /** Fila de planilla de cada locación nueva, en el mismo orden. */
+  const newRows: ParsedSiteRow[] = [];
+  const reusedRows: ParsedSiteRow[] = [];
   for (const row of analysis.valid) {
+    const resumedId = recordedByRow.get(row.row);
+    const resumed = resumedId ? resumedById.get(resumedId) : undefined;
+    if (resumed) {
+      targetLocations.push(resumed);
+      continue;
+    }
+
     const normalizedRef = normalizeLocationExternalRef(row.externalRef);
     const existing = normalizedRef ? existingByRef.get(normalizedRef) : undefined;
     if (existing) {
@@ -199,6 +366,7 @@ export async function importSites(
         return { error: t("invalidData"), inserted: 0, skipped };
       }
       targetLocations.push(existing);
+      reusedRows.push(row);
       continue;
     }
     const id = crypto.randomUUID();
@@ -216,6 +384,7 @@ export async function importSites(
       source: "import",
       created_by: userId,
     });
+    newRows.push(row);
   }
 
   let createdLocations = 0;
@@ -223,6 +392,7 @@ export async function importSites(
     const batch = newLocations.slice(index, index + BATCH_SIZE);
     const { error } = await supabase.from("locations").insert(batch);
     if (error) {
+      await failBatch(supabase, importId, error.message);
       return {
         error: t("importBatch", {
           count: createdLocations,
@@ -230,9 +400,70 @@ export async function importSites(
         }),
         inserted: 0,
         skipped,
+        importId,
       };
     }
+    // Se registra inmediatamente después de cada tanda, no al final: si la
+    // siguiente falla, lo ya creado queda anotado y el reintento lo reutiliza
+    // en vez de duplicarlo. Ese es todo el punto de la reanudación.
+    const recordError = await recordImportRows(
+      supabase,
+      importId,
+      companyId,
+      batch.map((location, offset) => ({
+        row: newRows[index + offset],
+        outcome: "imported" as const,
+        locationId: location.id,
+      })),
+    );
+    if (recordError) {
+      await failBatch(supabase, importId, recordError);
+      return { error: t("operation"), inserted: 0, skipped, importId };
+    }
     createdLocations += batch.length;
+  }
+
+  const reusedError = await recordImportRows(
+    supabase,
+    importId,
+    companyId,
+    reusedRows.map((row) => ({
+      row,
+      outcome: "reused" as const,
+      locationId:
+        existingByRef.get(normalizeLocationExternalRef(row.externalRef) ?? "")?.id ??
+        null,
+    })),
+  );
+  if (reusedError) {
+    await failBatch(supabase, importId, reusedError);
+    return { error: t("operation"), inserted: 0, skipped, importId };
+  }
+
+  const skippedError = await recordImportRows(
+    supabase,
+    importId,
+    companyId,
+    analysis.issues.map((issue) => ({
+      row: {
+        row: issue.row,
+        name: "",
+        address: "",
+        city: "",
+        state: "",
+        zone: "",
+        externalRef: issue.detail ?? null,
+        lat: null,
+        lng: null,
+      },
+      outcome: "skipped" as const,
+      locationId: null,
+      reason: describeIssue(t, issue),
+    })),
+  );
+  if (skippedError) {
+    await failBatch(supabase, importId, skippedError);
+    return { error: t("operation"), inserted: 0, skipped, importId };
   }
 
   const attached = await attachCanonicalLocations(
@@ -242,6 +473,7 @@ export async function importSites(
     userId,
   );
   if (attached.error) {
+    await failBatch(supabase, importId, attached.error);
     return {
       error: t("importBatch", {
         count: attached.inserted,
@@ -249,12 +481,24 @@ export async function importSites(
       }),
       inserted: attached.inserted,
       skipped,
+      importId,
     };
   }
 
+  await supabase
+    .from("site_import_batches")
+    .update({
+      status: "completed",
+      imported: newLocations.length + recordedByRow.size,
+      reused: reusedRows.length,
+      error: null,
+      completed_at: new Date().toISOString(),
+    })
+    .eq("id", importId);
+
   revalidatePath(`/projects/${projectId}`);
   revalidatePath("/clients");
-  return { error: null, inserted: attached.inserted, skipped };
+  return { error: null, inserted: attached.inserted, skipped, importId };
 }
 
 /**

@@ -131,6 +131,18 @@ export function ImportSitesDialog({ projectId }: { projectId: string }) {
                 </div>
               )}
             </div>
+            {result.importId && (
+              // El detalle por fila no entra en pantalla cuando la planilla
+              // tiene miles: el resumen queda acá y el detalle se baja.
+              <Button variant="outline" asChild>
+                <a
+                  href={`/api/projects/${projectId}/imports/${result.importId}/report`}
+                  download
+                >
+                  {t("downloadReport")}
+                </a>
+              </Button>
+            )}
             <Button onClick={close}>{common("done")}</Button>
           </div>
         ) : preflight ? (

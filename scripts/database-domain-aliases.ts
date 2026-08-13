@@ -52,6 +52,8 @@ export type AnnouncementSeverity = "info" | "warning" | "critical";
 export type AnnouncementAudience = "all" | "zone" | "project";
 export type BroadcastStatus = "open" | "closed";
 export type ApplicationStatus = "applied" | "accepted" | "rejected";
+export type SiteImportBatchStatus = "in_progress" | "completed" | "failed";
+export type SiteImportRowOutcome = "imported" | "reused" | "skipped";
 export type SiteStatus =
   | "sin_ordenes"
   | "pendiente"
