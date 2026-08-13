@@ -359,9 +359,40 @@ Dependencia: R1. Tamaño: XL.
   ("Ciudad Autónoma de Buenos Aires") de antes de que `20260722000002` normalizara
   las provincias argentinas. Corregido. **Medición final: 130 de 130 alineados.**
 
-  Con esto el prerrequisito del cutover está cumplido. **Falta** migrar las
-  lecturas operativas de `sites` a `locations` en proyectos, rutas y órdenes —
-  trabajo de código, ya sin bloqueo de datos.
+  **El corte se hizo en la base, no reescribiendo las lecturas (13-08-2026).**
+  La divergencia en cero era una foto: nada impedía que volviera a abrirse. El
+  write path de la app sincroniza, pero eso depende de que todo camino futuro se
+  acuerde de hacerlo —importaciones, SQL directo, backfills, código nuevo—. El
+  plan ya declara que «`sites` queda como proyección necesaria para OTs/rutas»;
+  `20260813000001_sites_projection_sync.sql` hace que efectivamente lo sea:
+  un trigger deriva la identidad del site desde su ficha canónica y otro propaga
+  al revés cuando se edita la ficha. Escribir identidad divergente sobre `sites`
+  ya no prospera.
+
+  Se eligió esto en vez de reescribir las ~10 consultas que hoy leen identidad de
+  `sites`, porque con el invariante garantizado esas lecturas devuelven el dato
+  canónico por construcción, y el reescritura habría tocado las policies por actor
+  de cada pantalla —incluido el instalador asignado— sin ningún cambio observable.
+  **Queda como limpieza opcional, ya no como requisito de corrección.**
+
+  **Alcance deliberado:** sólo se deriva la identidad. `archived_at` y `status`
+  siguen siendo de la relación proyecto–punto (archivar es por proyecto; la ficha
+  sigue viva para los demás), y un `site` sin `location_id` conserva identidad
+  propia.
+
+  Verificado en vivo por SQL contra staging, en bloques revertidos: insertar la
+  proyección con otro nombre no crea divergencia, escribirla a mano se corrige
+  solo, editar la ficha se propaga, `archived_at`/`status` no se pisan, y el site
+  sin ficha conserva lo suyo. Cubierto para CI en
+  `supabase/tests/sites_projection_sync.test.sql` (8 asserts; el cuerpo se ejecutó
+  contra staging para confirmar que las columnas existen y el test corre de
+  verdad, ya que pgTAP sigue sin poder ejecutarse desde esta máquina).
+  **E2E 44/44 en verde contra staging**, más type-check, lint, build y 233
+  unitarios limpios. Divergencia tras aplicar en el entorno principal: **130/130.**
+
+  Efecto lateral: el update explícito a `sites` dentro de `updateSite`
+  (`lib/actions/sites.ts`) quedó redundante. Se dejó como está —es idempotente
+  con el trigger— para no mezclar el cambio de datos con refactor de acciones.
 
 ### Import/export
 
