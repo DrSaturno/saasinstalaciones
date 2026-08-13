@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { getCurrentUser, ROLE_HOME } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import { countPendingLocationIssues } from "@/lib/data/location-issues";
 import { AppShell } from "@/components/shared/app-shell";
 import { ServiceWorkerRegister } from "@/components/installer/service-worker-register";
 
@@ -17,6 +19,12 @@ export default async function CompanyLayout({
     redirect(ROLE_HOME[user.role]);
   }
   const t = await getTranslations("Navigation");
+  // La cola de revisión del backfill es transitoria: sólo se muestra mientras
+  // haya filas sin decidir. Un ítem fijo para un artefacto de migración sería
+  // ruido permanente en el menú.
+  const pendingLocationIssues = await countPendingLocationIssues(
+    await createClient(),
+  );
   const nav = [
     { href: "/dashboard", label: t("home"), icon: "dashboard" as const },
     { href: "/projects", label: t("projects"), icon: "projects" as const },
@@ -27,6 +35,15 @@ export default async function CompanyLayout({
     { href: "/messages", label: t("messages"), icon: "messages" as const },
     ...(user.role === "company_manager"
       ? [{ href: "/finance", label: t("finance"), icon: "finance" as const }]
+      : []),
+    ...(pendingLocationIssues > 0
+      ? [
+          {
+            href: "/locations/review",
+            label: t("locationReview"),
+            icon: "orders" as const,
+          },
+        ]
       : []),
     { href: "/settings", label: t("settings"), icon: "settings" as const },
   ];

@@ -177,6 +177,60 @@ insert into public.broadcasts (company_id, project_id, zone, title, description,
 values ('11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222',
         'AR-CBA', 'Refuerzo en Córdoba', 'Necesitamos 1 instalador para 6 estaciones zona Córdoba capital.', 1);
 
+-- 10. Cola de revisión del backfill canónico (R2-UI-03)
+-- Reproduce los dos casos que aparecieron de verdad al migrar producción, para
+-- que la pantalla de revisión tenga con qué probarse. El primero es el
+-- interesante: la misma referencia externa apuntando a dos locales que están en
+-- ciudades distintas, o sea un error de carga y no un duplicado.
+insert into public.clients (id, company_id, name)
+values ('33333333-3333-3333-3333-333333333333',
+        '11111111-1111-1111-1111-111111111111', 'YPF Demo')
+on conflict (id) do nothing;
+
+update public.projects
+set client_id = '33333333-3333-3333-3333-333333333333'
+where id = '22222222-2222-2222-2222-222222222222'
+  and client_id is null;
+
+insert into public.location_backfill_issues (
+  company_id, client_id, project_id, source_site_id,
+  issue_code, normalized_external_ref, source_site_ids, details
+)
+select
+  '11111111-1111-1111-1111-111111111111',
+  '33333333-3333-3333-3333-333333333333',
+  '22222222-2222-2222-2222-222222222222',
+  s.id,
+  'conflicting_source_data',
+  'ypf001',
+  array[s.id],
+  '{"matched_by":"company_client_external_ref","variants":[
+     {"city":"caba","name":"ypf - local 1","state":"ciudad autónoma de buenos aires",
+      "address":"monroe y libertador","contact_name":"raul perez","contact_phone":"114534 5676"},
+     {"city":"la plata","name":"local ypf 001","state":"buenos aires",
+      "address":"av. horizonte 473","contact_name":"","contact_phone":""}]}'::jsonb
+from public.sites s
+where s.project_id = '22222222-2222-2222-2222-222222222222'
+order by s.name limit 1
+on conflict (source_site_id, issue_code) do nothing;
+
+insert into public.location_backfill_issues (
+  company_id, client_id, project_id, source_site_id,
+  issue_code, source_site_ids, details
+)
+select
+  '11111111-1111-1111-1111-111111111111',
+  '33333333-3333-3333-3333-333333333333',
+  '22222222-2222-2222-2222-222222222222',
+  s.id,
+  'missing_external_ref',
+  array[s.id],
+  '{"name":"shell001","address":"","city":"","state":"Buenos Aires","possible_source_site_ids":[]}'::jsonb
+from public.sites s
+where s.project_id = '22222222-2222-2222-2222-222222222222'
+order by s.name offset 1 limit 1
+on conflict (source_site_id, issue_code) do nothing;
+
 -- Verificación rápida
 select 'companies' t, count(*) from public.companies
 union all select 'profiles', count(*) from public.profiles

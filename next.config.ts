@@ -23,6 +23,16 @@ const nextConfig: NextConfig = {
     root: path.join(__dirname),
   },
   /**
+   * Sólo afecta a `next dev`: en producción esta clave se ignora.
+   *
+   * Playwright apunta a `127.0.0.1` (ver `playwright.config.ts`), pero el dev
+   * server considera `localhost` su origen y bloquea la carga de sus propios
+   * chunks desde cualquier otro host. El resultado es una página que renderiza
+   * el HTML del servidor pero nunca hidrata: los tests de navegación pasan y
+   * cualquiera que necesite un clic falla, sin mensaje que lo explique.
+   */
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
+  /**
    * Identidad del despliegue, para el desfasaje de versiones ("skew").
    *
    * Con una pestaña abierta desde antes de un deploy, el navegador conserva el

@@ -31,6 +31,7 @@
     "team": "Equipe",
     "broadcasts": "Oportunidades por região",
     "finance": "Finanças",
+    "locationReview": "Revisar locais",
     "settings": "Configurações",
     "tasks": "Minhas ordens",
     "jobs": "Oportunidades",
@@ -1265,6 +1266,49 @@
     "submit": "Enviar candidatura",
     "sent": "Candidatura enviada"
   },
+  "LocationReview": {
+    "title": "Revisão de locais",
+    "description": "Ao unificar os locais nada foi mesclado por semelhança: quando a referência externa não bastou para decidir, a linha ficou aqui para uma pessoa resolver.",
+    "empty": "Não há nada para revisar",
+    "emptyHint": "Todos os locais puderam ser unificados pela referência externa.",
+    "pendingCount": "{count, plural, =1 {# pendente} other {# pendentes}}",
+    "closedCount": "{count, plural, =1 {# resolvida} other {# resolvidas}}",
+    "scope": "Cliente {client} · Projeto {project}",
+    "affects": "{count, plural, =1 {# ponto} other {# pontos}}",
+    "differing": "{count, plural, =1 {# campo não coincide entre as variantes} other {# campos não coincidem entre as variantes}}",
+    "code": {
+      "conflicting_source_data": "Mesma referência, dados diferentes",
+      "missing_client": "O projeto não tem cliente",
+      "missing_external_ref": "Sem referência externa"
+    },
+    "hint": {
+      "conflicting_source_data": "Foi vinculado a um único local usando os dados de uma das variantes. Se forem locais diferentes, corrija a referência na origem antes de dar isto por encerrado.",
+      "missing_client": "Sem cliente não há como saber a qual local permanente corresponde. Atribua o cliente ao projeto e importe de novo.",
+      "missing_external_ref": "Não se deduplica por nome nem endereço: sem uma referência confiável, duas linhas parecidas podem ser dois locais reais."
+    },
+    "field": {
+      "name": "Nome",
+      "address": "Endereço",
+      "city": "Cidade",
+      "state": "Estado",
+      "contact_name": "Contato",
+      "contact_phone": "Telefone"
+    },
+    "action": {
+      "resolved": "Marcar como resolvida",
+      "ignored": "Ignorar"
+    },
+    "confirm": {
+      "resolved": "Confirmar resolução",
+      "ignored": "Confirmar que será ignorada"
+    },
+    "noteLabel": "O que foi decidido",
+    "notePlaceholder": "Ex.: são dois postos diferentes; a referência do de La Plata foi corrigida no sistema do cliente.",
+    "noteWhy": "Fica registrado com seu nome e a data. É a única coisa que vai explicar a decisão a quem olhar isto depois.",
+    "saving": "Salvando…",
+    "cancel": "Cancelar",
+    "closed": "Pronto, ficou registrada."
+  },
   "Clients": {
     "title": "Clientes",
     "description": "Agenda de empresas, pontos instalados e histórico de trabalhos.",
@@ -1629,7 +1673,10 @@
     "invalidOrderTransition": "Não é possível passar de “{from}” para “{to}”.",
     "systemStatusChange": "Status → {status}",
     "systemStatusChangeNote": "Status → {status}: {note}",
-    "resetLinkInvalid": "O link de recuperação expirou ou já foi usado. Peça um novo."
+    "resetLinkInvalid": "O link de recuperação expirou ou já foi usado. Peça um novo.",
+    "locationIssueNoteRequired": "Escreva ao menos uma linha explicando a decisão.",
+    "locationIssueUpdate": "Não foi possível salvar a revisão.",
+    "locationIssueAlreadyClosed": "Alguém já resolveu esta linha. Recarregue para ver como ficou."
   },
   "Coordination": {
     "title": "Coordenação",

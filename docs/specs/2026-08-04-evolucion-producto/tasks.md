@@ -333,13 +333,20 @@ Dependencia: R1. Tamaño: XL.
 
 ### UI
 
-Ya no están bloqueadas: el esquema y los tipos existen. Es trabajo de UI pendiente.
-**R2-UI-03 es la más urgente de las tres**, porque hay 3 filas reales esperando
-resolución en `location_backfill_issues` y hoy no hay forma de verlas desde la app.
+Ya no están bloqueadas: el esquema y los tipos existen. R2-UI-03 se hizo primero
+porque había 3 filas reales esperando en producción sin forma de verlas.
+
+> **Hallazgo al construir R2-UI-03:** `playwright.config.ts` apunta a `127.0.0.1`
+> y el dev server de Next considera `localhost` su origen, así que bloqueaba la
+> carga de sus propios chunks y **la página nunca hidrataba**. Los tests de
+> navegación pasaban igual y sólo fallaba el primero que necesitó un clic, sin
+> ningún mensaje que lo explicara. Resuelto con `allowedDevOrigins` en
+> `next.config.ts` (sólo afecta a `next dev`). Cualquier test de interactividad
+> anterior habría fallado por esto.
 
 - [ ] **R2-UI-01** — Ficha canónica con proyectos, OTs, evidencias, incidentes, requisitos y auditoría.
 - [ ] **R2-UI-02** — Reutilizar locación existente al crear oportunidad/proyecto sin copiarla. Existe `lib/actions/projects/reuse.ts`, que reutiliza `sites` de proyectos anteriores del mismo cliente — es el antecesor de esta tarea sobre el modelo viejo, no la ficha canónica.
-- [ ] **R2-UI-03** — Cola de revisión de matches ambiguos y acción de merge/split auditada.
+- [~] **R2-UI-03** — Cola de revisión de matches ambiguos y acción de merge/split auditada. `/locations/review` para gerencia, con `lib/domain/location-issues.ts` (puro, 11 tests), `lib/data/location-issues.ts` y la acción `resolveLocationIssue`. Muestra las variantes enfrentadas y **resalta los campos que difieren**, que es lo que hace rápida la decisión: en el caso real de producción se ve de un vistazo que `ypf001` son dos locales distintos (CABA y La Plata), no un duplicado. La nota es obligatoria y queda con autor y fecha. El ítem de menú aparece sólo si hay pendientes: es un artefacto de migración, no una sección permanente. 3 casos E2E (`location-review.spec.ts`), incluida la denegación al instalador. **Falta la acción de merge/split propiamente dicha** — hoy se registra la decisión, no se re-vinculan sites a otra locación; eso necesita definir antes qué pasa con las OTs y la evidencia ya asociadas.
 
 ### Pruebas y gate
 
