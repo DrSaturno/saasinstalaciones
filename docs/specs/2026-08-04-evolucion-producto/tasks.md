@@ -20,11 +20,47 @@ planificar sobre suposiciones. **Leer antes de tocar migraciones.**
 que usa la app.** Existe además `jibvorqudveqgankoeak` («Se Instala Pro»), que
 NO es el productivo. No tiene backups configurados.
 
-`supabase_migrations.schema_migrations` **no es una fuente confiable** en este
-proyecto: hubo SQL aplicado a mano en el SQL Editor sin registrar, así que la
-tabla decía `20260722000002` mientras el schema ya tenía objetos de fines de
-julio. Para saber qué falta hay que consultar `information_schema` objeto por
-objeto, no el registro.
+### Historial de migraciones: reparado el 12-08-2026
+
+**Ya no aplica la advertencia anterior**, que decía que `schema_migrations` no era
+confiable. Lo era: la tabla registraba `20260722000002` mientras el schema tenía
+objetos de fines de julio (SQL aplicado a mano sin registrar), y encima las 7
+migraciones que apliqué por MCP habían quedado con versiones inventadas
+(`20260812100433`…) que no coincidían con los nombres del repo. Con eso,
+`supabase db push` contra producción habría intentado reaplicar ~30 migraciones.
+
+Antes de reparar hubo que **probar** que las 40 estaban realmente aplicadas —
+marcar de más habría causado deriva silenciosa. La prueba: una huella md5 del
+esquema (columnas de tablas base + funciones propias + policies de `public` y
+`storage`, excluyendo lo que pertenece a extensiones) dio **idéntica en
+producción y en staging**: `2a253803b23502f956da62083595cc6e`, 738 objetos.
+Staging se había construido limpio desde las 40, así que la igualdad prueba que
+producción también las tiene.
+
+La reparación, con el CLI vinculado a producción:
+
+```
+npx supabase migration repair --status reverted <las 7 versiones inventadas>
+npx supabase migration repair --status applied  <las 31 que faltaban>
+```
+
+`migration repair` sólo toca la tabla de seguimiento, nunca ejecuta SQL.
+Resultado verificado: `supabase db push --dry-run` responde **«Remote database is
+up to date»** y `migration list` no tiene desajustes. **Producción ya se puede
+manejar con `db push` como staging.**
+
+Dejar el CLI vinculado a staging al terminar: es el destino por defecto correcto,
+y evita empujar a producción por descuido.
+
+> **Hallazgo sin resolver: pgTAP está instalado en el schema `public` de
+> producción** (v1.3.3). Es el origen de las ~1079 funciones, 2 vistas y 29
+> columnas que producción tiene de más respecto de staging. Ninguna migración del
+> repo lo instala, así que alguien lo puso a mano para correr los tests ahí —
+> justo lo que `playwright.config.ts` desaconseja. No rompe nada, pero deja
+> funciones que exponen metadatos del esquema (`has_table`, `policies_are`…)
+> ejecutables por cualquier usuario autenticado. Conviene sacarlo
+> (`drop extension pgtap;`) o moverlo a un schema aparte; no se hizo todavía
+> porque es un cambio en producción que hay que decidir aparte.
 
 Aplicadas el 12-08-2026 con el MCP de Supabase (`apply_migration`), en orden:
 
