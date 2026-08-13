@@ -192,6 +192,76 @@ set client_id = '33333333-3333-3333-3333-333333333333'
 where id = '22222222-2222-2222-2222-222222222222'
   and client_id is null;
 
+-- El seed corre despues de las migraciones: las 20 filas demo no existian
+-- cuando se ejecuto el backfill de R2. Se replica ese paso aca para que la
+-- ficha canonica y el dual-read tengan datos reales en los E2E locales.
+insert into public.locations (
+  company_id, client_id, external_ref, name, address, city, state, zone,
+  country, contact_name, contact_phone, contact_email, opening_hours,
+  access_notes, parking_notes, technical_notes, risk_notes, permanent_notes,
+  source, created_at, updated_at
+)
+select
+  s.company_id,
+  p.client_id,
+  s.external_ref,
+  s.name,
+  s.address,
+  s.city,
+  s.state,
+  s.zone,
+  p.country,
+  s.contact_name,
+  s.contact_phone,
+  s.contact_email,
+  s.opening_hours,
+  s.access_notes,
+  s.parking_notes,
+  s.technical_notes,
+  s.risk_notes,
+  s.permanent_notes,
+  'backfill',
+  s.created_at,
+  s.updated_at
+from public.sites s
+join public.projects p on p.id = s.project_id
+where s.project_id = '22222222-2222-2222-2222-222222222222'
+  and p.client_id is not null
+on conflict (company_id, client_id, normalized_external_ref)
+  where normalized_external_ref is not null
+do nothing;
+
+update public.sites s
+set location_id = l.id
+from public.projects p, public.locations l
+where p.id = s.project_id
+  and l.company_id = s.company_id
+  and l.client_id = p.client_id
+  and l.normalized_external_ref = public.normalize_location_external_ref(s.external_ref)
+  and s.project_id = '22222222-2222-2222-2222-222222222222'
+  and s.location_id is null;
+
+insert into public.project_locations (
+  company_id, client_id, project_id, location_id, status,
+  operational_snapshot, created_at, updated_at
+)
+select
+  s.company_id,
+  p.client_id,
+  s.project_id,
+  s.location_id,
+  'active',
+  jsonb_build_object('legacy_site_ids', jsonb_agg(s.id order by s.id)),
+  min(s.created_at),
+  max(s.updated_at)
+from public.sites s
+join public.projects p on p.id = s.project_id
+where s.project_id = '22222222-2222-2222-2222-222222222222'
+  and s.location_id is not null
+  and p.client_id is not null
+group by s.company_id, p.client_id, s.project_id, s.location_id
+on conflict (project_id, location_id) do nothing;
+
 insert into public.location_backfill_issues (
   company_id, client_id, project_id, source_site_id,
   issue_code, normalized_external_ref, source_site_ids, details

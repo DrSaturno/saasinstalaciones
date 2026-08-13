@@ -5,7 +5,7 @@
  * `ActionState` e `ImportResult`, y este archivo no arrastra nada de servidor.
  */
 
-export type ActionState = { error: string | null; ok?: boolean };
+export type ActionState = { error: string | null; ok?: boolean; id?: string };
 
 export type ImportResult = {
   error: string | null;

@@ -3,22 +3,25 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
-import type { createClient } from "@/lib/supabase/server";
-import type { TablesInsert } from "@/types/database";
-import { BATCH_SIZE, requireOperator } from "./context";
+import { attachCanonicalLocations } from "@/lib/actions/canonical-locations";
+import type { CanonicalLocationProjection } from "@/lib/domain/canonical-locations";
+import { requireOperator } from "./context";
 import type { ImportResult } from "./types";
 
+const PAGE = 1000;
+const ID_BATCH = 200;
+const LOCATION_FIELDS =
+  "id, company_id, client_id, name, address, city, state, zone, country, lat, lng, external_ref, contact_name, contact_phone, contact_email, opening_hours, access_notes, parking_notes, technical_notes, risk_notes, permanent_notes" as const;
+
 /**
- * Locaciones que ese cliente ya tiene cargadas en OTROS proyectos.
+ * Identidades permanentes del cliente que todavia no estan en este proyecto.
  *
- * Un cliente que vuelve suele instalar en los mismos locales, así que cargarlos
- * de nuevo a mano (o volver a importar la planilla) es trabajo repetido. Sólo
- * se ofrecen las que todavía no están en este proyecto, comparando por código
- * interno y, si no lo tienen, por nombre y dirección.
+ * Ya no deduplica copias de `sites` por nombre/direccion: la identidad es
+ * `locations.id` y la asociacion existente es `project_locations`.
  */
-export async function fetchReusableSites(projectId: string): Promise<{
+export async function fetchReusableLocations(projectId: string): Promise<{
   error: string | null;
-  sites: {
+  locations: {
     id: string;
     name: string;
     address: string;
@@ -31,213 +34,182 @@ export async function fetchReusableSites(projectId: string): Promise<{
   const t = await getTranslations("Errors");
   try {
     const { supabase, companyId } = await requireOperator();
-
     const { data: project } = await supabase
       .from("projects")
-      .select("id, client_id")
+      .select("id, client_id, country, zones")
       .eq("id", projectId)
       .eq("company_id", companyId)
       .single();
-    if (!project?.client_id) return { error: null, sites: [] };
+    if (!project?.client_id) return { error: null, locations: [] };
+    if (project.zones.length === 0) return { error: null, locations: [] };
+    const clientId = project.client_id;
 
-    // Los demás proyectos del mismo cliente.
-    const { data: siblings } = await supabase
-      .from("projects")
-      .select("id, name")
-      .eq("company_id", companyId)
-      .eq("client_id", project.client_id)
-      .neq("id", projectId);
-    const siblingIds = (siblings ?? []).map((sibling) => sibling.id);
-    if (siblingIds.length === 0) return { error: null, sites: [] };
-
-    const nameById = new Map((siblings ?? []).map((s) => [s.id, s.name]));
-
-    const [{ data: candidates }, { data: current }] = await Promise.all([
-      supabase
-        .from("sites")
-        .select("id, project_id, name, address, city, state, external_ref")
-        .in("project_id", siblingIds)
-        .is("archived_at", null)
-        .order("name"),
-      supabase
-        .from("sites")
-        .select("name, address, external_ref")
-        .eq("project_id", projectId),
+    const [locationRows, { data: associations }] = await Promise.all([
+      (async () => {
+        const rows: {
+          id: string;
+          name: string;
+          address: string;
+          city: string;
+          state: string;
+          external_ref: string | null;
+        }[] = [];
+        for (let from = 0; ; from += PAGE) {
+          const { data, error } = await supabase
+            .from("locations")
+            .select("id, name, address, city, state, external_ref")
+            .eq("client_id", clientId)
+            .eq("country", project.country)
+            .in("zone", project.zones)
+            .is("archived_at", null)
+            .order("name")
+            .range(from, from + PAGE - 1);
+          if (error || !data) break;
+          rows.push(...data);
+          if (data.length < PAGE) break;
+        }
+        return rows;
+      })(),
+      (async () => {
+        const rows: {
+          location_id: string;
+          project_id: string;
+          created_at: string;
+          status: string;
+        }[] = [];
+        for (let from = 0; ; from += PAGE) {
+          const { data, error } = await supabase
+            .from("project_locations")
+            .select("location_id, project_id, created_at, status")
+            .eq("client_id", clientId)
+            .order("created_at", { ascending: false })
+            .range(from, from + PAGE - 1);
+          if (error || !data) break;
+          rows.push(...data);
+          if (data.length < PAGE) break;
+        }
+        return { data: rows };
+      })(),
     ]);
 
-    const takenRefs = new Set(
-      (current ?? [])
-        .map((site) => site.external_ref?.trim().toLowerCase())
-        .filter((ref): ref is string => Boolean(ref)),
+    const current = new Set(
+      (associations ?? [])
+        .filter(
+          (association) =>
+            association.project_id === projectId &&
+            association.status !== "cancelled",
+        )
+        .map((association) => association.location_id),
     );
-    const takenPairs = new Set(
-      (current ?? []).map(
-        (site) =>
-          `${site.name.trim().toLowerCase()}|${site.address.trim().toLowerCase()}`,
-      ),
-    );
+    const previousProjectByLocation = new Map<string, string>();
+    for (const association of associations ?? []) {
+      if (
+        association.project_id !== projectId &&
+        !previousProjectByLocation.has(association.location_id)
+      ) {
+        previousProjectByLocation.set(
+          association.location_id,
+          association.project_id,
+        );
+      }
+    }
+    const previousProjectIds = [...new Set(previousProjectByLocation.values())];
+    const projectName = new Map<string, string>();
+    for (let index = 0; index < previousProjectIds.length; index += ID_BATCH) {
+      const { data } = await supabase
+        .from("projects")
+        .select("id, name")
+        .in("id", previousProjectIds.slice(index, index + ID_BATCH));
+      for (const row of data ?? []) projectName.set(row.id, row.name);
+    }
 
-    const seen = new Set<string>();
-    const sites = (candidates ?? [])
-      .filter((site) => {
-        const ref = site.external_ref?.trim().toLowerCase();
-        const pair = `${site.name.trim().toLowerCase()}|${site.address.trim().toLowerCase()}`;
-        if (ref ? takenRefs.has(ref) : takenPairs.has(pair)) return false;
-        // El mismo local puede estar en varios proyectos previos: una sola vez.
-        const dedupe = ref || pair;
-        if (seen.has(dedupe)) return false;
-        seen.add(dedupe);
-        return true;
-      })
-      .map((site) => ({
-        id: site.id,
-        name: site.name,
-        address: site.address,
-        city: site.city ?? "",
-        state: site.state ?? "",
-        externalRef: site.external_ref,
-        projectName: nameById.get(site.project_id) ?? "",
-      }));
-
-    return { error: null, sites };
+    return {
+      error: null,
+      locations: locationRows
+        .filter((location) => !current.has(location.id))
+        .map((location) => {
+          const previousProjectId = previousProjectByLocation.get(location.id);
+          return {
+            id: location.id,
+            name: location.name,
+            address: location.address,
+            city: location.city,
+            state: location.state,
+            externalRef: location.external_ref,
+            projectName: previousProjectId
+              ? (projectName.get(previousProjectId) ?? "")
+              : "",
+          };
+        }),
+    };
   } catch {
-    return { error: t("unexpected"), sites: [] };
+    return { error: t("unexpected"), locations: [] };
   }
 }
 
-/** Copia al proyecto actual las locaciones elegidas de proyectos anteriores. */
-export async function reuseSites(
+/** Asocia las identidades elegidas; no copia la locacion ni sus documentos. */
+export async function reuseLocations(
   projectId: string,
-  siteIds: string[],
+  locationIds: string[],
 ): Promise<ImportResult> {
   const t = await getTranslations("Errors");
-  const ids = z.array(z.string().uuid()).min(1).max(2000).safeParse(siteIds);
+  const ids = z.array(z.string().uuid()).min(1).max(2000).safeParse(locationIds);
   if (!ids.success) return { error: t("invalidData"), inserted: 0, skipped: [] };
 
   try {
-    const { supabase, companyId } = await requireOperator();
-
+    const { supabase, companyId, userId } = await requireOperator();
     const { data: project } = await supabase
       .from("projects")
-      .select("id, country, zones")
+      .select("id, company_id, client_id, country, zones")
       .eq("id", projectId)
       .eq("company_id", companyId)
       .single();
-    if (!project) return { error: t("projectNotFound"), inserted: 0, skipped: [] };
-
-    const { data: origin } = await supabase
-      .from("sites")
-      .select(
-        "id, name, address, city, state, zone, lat, lng, external_ref, contact_name, contact_phone, contact_email, opening_hours, access_notes, parking_notes, technical_notes, risk_notes, permanent_notes",
-      )
-      .in("id", ids.data);
-    if (!origin?.length) {
+    if (!project?.client_id) {
+      return { error: t("projectNotFound"), inserted: 0, skipped: [] };
+    }
+    if (project.zones.length === 0) {
       return { error: t("invalidData"), inserted: 0, skipped: [] };
     }
 
-    // La zona tiene que ser una de las del proyecto destino; si la original no
-    // aplica, se usa la primera del proyecto para no dejarla huérfana.
-    const fallbackZone = project.zones?.[0] ?? "";
-
-    const rows = origin.map((site) => ({
-      project_id: projectId,
-      company_id: companyId,
-      name: site.name,
-      address: site.address,
-      city: site.city,
-      state: site.state,
-      zone: project.zones?.includes(site.zone ?? "") ? site.zone : fallbackZone,
-      lat: site.lat,
-      lng: site.lng,
-      external_ref: site.external_ref,
-      contact_name: site.contact_name,
-      contact_phone: site.contact_phone,
-      contact_email: site.contact_email,
-      opening_hours: site.opening_hours,
-      access_notes: site.access_notes,
-      parking_notes: site.parking_notes,
-      technical_notes: site.technical_notes,
-      risk_notes: site.risk_notes,
-      permanent_notes: site.permanent_notes,
-    }));
-
-    let inserted = 0;
-    const created: { newId: string; originId: string }[] = [];
-    for (let index = 0; index < rows.length; index += BATCH_SIZE) {
-      const batch = rows.slice(index, index + BATCH_SIZE);
-      const { data: createdBatch, error } = await supabase
-        .from("sites")
-        .insert(batch)
-        .select("id");
-      if (error) {
-        return {
-          error: t("importBatch", { count: inserted, error: error.message }),
-          inserted,
-          skipped: [],
-        };
-      }
-      (createdBatch ?? []).forEach((row, position) => {
-        const source = origin[index + position];
-        if (source) created.push({ newId: row.id, originId: source.id });
-      });
-      inserted += batch.length;
+    const locations: CanonicalLocationProjection[] = [];
+    for (let index = 0; index < ids.data.length; index += ID_BATCH) {
+      const { data, error } = await supabase
+        .from("locations")
+        .select(LOCATION_FIELDS)
+        .in("id", ids.data.slice(index, index + ID_BATCH))
+        .eq("client_id", project.client_id)
+        .eq("company_id", companyId)
+        .eq("country", project.country)
+        .in("zone", project.zones)
+        .is("archived_at", null);
+      if (error) return { error: t("operation"), inserted: 0, skipped: [] };
+      locations.push(...(data ?? []));
+    }
+    if (locations.length !== new Set(ids.data).size) {
+      return { error: t("invalidData"), inserted: 0, skipped: [] };
     }
 
-    // Los archivos permanentes de la ficha (planos, fotos de fachada) viajan
-    // con el local: son del lugar, no del proyecto. Se copia el archivo en el
-    // bucket para que borrar el proyecto viejo no rompa el nuevo.
-    await copySiteAttachments(supabase, companyId, created);
+    const result = await attachCanonicalLocations(
+      supabase,
+      { ...project, client_id: project.client_id },
+      locations,
+      userId,
+    );
+    if (result.error) {
+      return {
+        error: t("importBatch", {
+          count: result.inserted,
+          error: result.error,
+        }),
+        inserted: result.inserted,
+        skipped: [],
+      };
+    }
 
     revalidatePath(`/projects/${projectId}`);
-    return { error: null, inserted, skipped: [] };
+    revalidatePath("/clients");
+    return { error: null, inserted: result.inserted, skipped: [] };
   } catch {
     return { error: t("unexpected"), inserted: 0, skipped: [] };
   }
-}
-
-/** Duplica los adjuntos permanentes de cada locación de origen a su copia. */
-async function copySiteAttachments(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  companyId: string,
-  pairs: { newId: string; originId: string }[],
-) {
-  if (pairs.length === 0) return;
-
-  const { data: attachments } = await supabase
-    .from("site_attachments")
-    .select("site_id, storage_path, file_name, mime_type, size_bytes")
-    .in(
-      "site_id",
-      pairs.map((pair) => pair.originId),
-    );
-  if (!attachments?.length) return;
-
-  const newIdByOrigin = new Map(pairs.map((pair) => [pair.originId, pair.newId]));
-  const rows: TablesInsert<"site_attachments">[] = [];
-
-  for (const attachment of attachments) {
-    const newSiteId = newIdByOrigin.get(attachment.site_id);
-    if (!newSiteId) continue;
-
-    const fileName = attachment.storage_path.split("/").pop() ?? "archivo";
-    const destination = `${companyId}/${newSiteId}/${crypto.randomUUID()}-${fileName}`;
-
-    const { error } = await supabase.storage
-      .from("evidence")
-      .copy(attachment.storage_path, destination);
-    // Si un archivo falla, se omite: no vale la pena tumbar toda la copia de
-    // locaciones porque un adjunto ya no esté en el bucket.
-    if (error) continue;
-
-    rows.push({
-      site_id: newSiteId,
-      company_id: companyId,
-      storage_path: destination,
-      file_name: attachment.file_name,
-      mime_type: attachment.mime_type,
-      size_bytes: attachment.size_bytes,
-    });
-  }
-
-  if (rows.length) await supabase.from("site_attachments").insert(rows);
 }

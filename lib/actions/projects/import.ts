@@ -2,7 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
+import { attachCanonicalLocations } from "@/lib/actions/canonical-locations";
 import { parseCsv } from "@/lib/csv";
+import {
+  normalizeLocationExternalRef,
+  type CanonicalLocationProjection,
+} from "@/lib/domain/canonical-locations";
 import { SITE_TEMPLATE_HEADERS } from "@/lib/domain/site-template";
 import {
   analyzeSiteRows,
@@ -69,22 +74,35 @@ function describeIssue(t: ErrorTranslator, issue: SiteImportIssue): string {
   }
 }
 
-function toInsertRow(
+function toCanonicalProjection(
   row: ParsedSiteRow,
-  projectId: string,
+  id: string,
   companyId: string,
-): TablesInsert<"sites"> {
+  clientId: string,
+  country: CanonicalLocationProjection["country"],
+): CanonicalLocationProjection {
   return {
-    project_id: projectId,
+    id,
     company_id: companyId,
+    client_id: clientId,
     name: row.name,
     address: row.address,
     city: row.city,
     state: row.state,
     zone: row.zone,
+    country,
     external_ref: row.externalRef,
     lat: row.lat,
     lng: row.lng,
+    contact_name: "",
+    contact_phone: "",
+    contact_email: "",
+    opening_hours: "",
+    access_notes: "",
+    parking_notes: "",
+    technical_notes: "",
+    risk_notes: "",
+    permanent_notes: "",
   };
 }
 
@@ -99,17 +117,17 @@ export async function importSites(
   } catch {
     return { error: t("accessDenied"), inserted: 0, skipped: [] };
   }
-  const { supabase, companyId } = ctx;
+  const { supabase, companyId, userId } = ctx;
 
   // Verificar que el proyecto sea de esta empresa (RLS ya lo garantiza,
   // pero así damos un error claro en vez de un insert vacío).
   const { data: project } = await supabase
     .from("projects")
-    .select("id, country, zones")
+    .select("id, company_id, client_id, country, zones")
     .eq("id", projectId)
     .eq("company_id", companyId)
     .single();
-  if (!project) {
+  if (!project?.client_id) {
     return { error: t("projectNotFound"), inserted: 0, skipped: [] };
   }
 
@@ -136,25 +154,107 @@ export async function importSites(
     reason: describeIssue(t, issue),
   }));
 
-  // Insertar en lotes: 2000 filas en un solo insert es frágil y lento.
-  let inserted = 0;
-  for (let i = 0; i < analysis.valid.length; i += BATCH_SIZE) {
-    const batch = analysis.valid
-      .slice(i, i + BATCH_SIZE)
-      .map((row) => toInsertRow(row, projectId, companyId));
-    const { error } = await supabase.from("sites").insert(batch);
+  const clientId = project.client_id;
+  const requestedRefs = new Set(
+    analysis.valid
+      .map((row) => normalizeLocationExternalRef(row.externalRef))
+      .filter((ref): ref is string => Boolean(ref)),
+  );
+  const existingByRef = new Map<string, CanonicalLocationProjection>();
+  if (requestedRefs.size > 0) {
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await supabase
+        .from("locations")
+        .select("id, company_id, client_id, name, address, city, state, zone, country, lat, lng, external_ref, normalized_external_ref, contact_name, contact_phone, contact_email, opening_hours, access_notes, parking_notes, technical_notes, risk_notes, permanent_notes")
+        .eq("company_id", companyId)
+        .eq("client_id", clientId)
+        .not("normalized_external_ref", "is", null)
+        .range(from, from + 999);
+      if (error) {
+        return { error: t("operation"), inserted: 0, skipped };
+      }
+      if (!data) break;
+      for (const location of data) {
+        if (
+          location.normalized_external_ref &&
+          requestedRefs.has(location.normalized_external_ref)
+        ) {
+          existingByRef.set(location.normalized_external_ref, location);
+        }
+      }
+      if (data.length < 1000) break;
+    }
+  }
+
+  const targetLocations: CanonicalLocationProjection[] = [];
+  const newLocations: (TablesInsert<"locations"> & { id: string })[] = [];
+  for (const row of analysis.valid) {
+    const normalizedRef = normalizeLocationExternalRef(row.externalRef);
+    const existing = normalizedRef ? existingByRef.get(normalizedRef) : undefined;
+    if (existing) {
+      if (
+        existing.country !== project.country ||
+        !project.zones.includes(existing.zone)
+      ) {
+        return { error: t("invalidData"), inserted: 0, skipped };
+      }
+      targetLocations.push(existing);
+      continue;
+    }
+    const id = crypto.randomUUID();
+    const projection = toCanonicalProjection(
+      row,
+      id,
+      companyId,
+      clientId,
+      project.country,
+    );
+    targetLocations.push(projection);
+    newLocations.push({
+      ...projection,
+      country: project.country,
+      source: "import",
+      created_by: userId,
+    });
+  }
+
+  let createdLocations = 0;
+  for (let index = 0; index < newLocations.length; index += BATCH_SIZE) {
+    const batch = newLocations.slice(index, index + BATCH_SIZE);
+    const { error } = await supabase.from("locations").insert(batch);
     if (error) {
       return {
-        error: t("importBatch", { count: inserted, error: error.message }),
-        inserted,
+        error: t("importBatch", {
+          count: createdLocations,
+          error: error.message,
+        }),
+        inserted: 0,
         skipped,
       };
     }
-    inserted += batch.length;
+    createdLocations += batch.length;
+  }
+
+  const attached = await attachCanonicalLocations(
+    supabase,
+    { ...project, client_id: clientId },
+    targetLocations,
+    userId,
+  );
+  if (attached.error) {
+    return {
+      error: t("importBatch", {
+        count: attached.inserted,
+        error: attached.error,
+      }),
+      inserted: attached.inserted,
+      skipped,
+    };
   }
 
   revalidatePath(`/projects/${projectId}`);
-  return { error: null, inserted, skipped };
+  revalidatePath("/clients");
+  return { error: null, inserted: attached.inserted, skipped };
 }
 
 /**

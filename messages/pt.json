@@ -578,6 +578,7 @@
   },
   "SiteDetail": {
     "back": "Voltar para {project}",
+    "canonicalHistory": "Ver histórico completo",
     "archived": "Arquivada",
     "location": "Localização",
     "noAddress": "Sem endereço cadastrado",
@@ -601,6 +602,146 @@
     "delete": "Excluir definitivamente",
     "deleteConfirm": "Esta instalação não possui histórico. Deseja excluí-la definitivamente?",
     "deleted": "Instalação excluída"
+  },
+  "CanonicalLocation": {
+    "backToClient": "Voltar para {client}",
+    "backToProjects": "Voltar para projetos",
+    "eyebrow": "Ficha permanente do local",
+    "archived": "Arquivada",
+    "identity": "Identidade física",
+    "noAddress": "Sem endereço cadastrado",
+    "openMaps": "Abrir no Maps",
+    "openingHours": "Horários e janelas de acesso",
+    "updated": "Ficha atualizada em {date}",
+    "source": {
+      "manual": "Cadastro manual",
+      "backfill": "Histórico unificado",
+      "import": "Importada",
+      "opportunity": "A partir de oportunidade",
+      "unknown": "Origem não informada"
+    },
+    "metrics": {
+      "projects": "Projetos",
+      "orders": "Ordens de serviço",
+      "evidence": "Evidências",
+      "incidents": "Ocorrências",
+      "open": "abertas"
+    },
+    "conditions": {
+      "title": "Condições permanentes",
+      "description": "Informações que acompanham o local mesmo quando o projeto e a ordem mudam.",
+      "empty": "Ainda não foram cadastradas condições permanentes para este local.",
+      "access": "Acesso, permissões e chaves",
+      "parking": "Estacionamento e descarga",
+      "technical": "Informação técnica",
+      "risks": "Riscos e precauções",
+      "notes": "Notas permanentes"
+    },
+    "association": {
+      "planned": "Planejada",
+      "active": "Ativa",
+      "paused": "Pausada",
+      "completed": "Concluída",
+      "cancelled": "Cancelada",
+      "archived": "Arquivada",
+      "unreconciled": "Pendente de conciliação"
+    },
+    "history": {
+      "title": "Trajetória entre projetos",
+      "description": "O mesmo local, organizado por cada campanha e suas ordens de serviço.",
+      "empty": "Este local ainda não foi associado a um projeto.",
+      "unknownProject": "Projeto não disponível",
+      "archivedProject": "Projeto arquivado",
+      "noScope": "Sem escopo detalhado",
+      "units": "{count, plural, one {# unidade} other {# unidades}}",
+      "noOrders": "Este projeto não possui ordens para o local.",
+      "unscheduled": "Sem data programada",
+      "incidents": "{count, plural, one {# ocorrência} other {# ocorrências}}"
+    },
+    "evidence": {
+      "title": "Evidência acumulada",
+      "description": "Anexos e fotos de progresso de todas as ordens realizadas neste local.",
+      "empty": "Ainda não há evidências associadas a este local.",
+      "progressPhoto": "Foto de progresso",
+      "orderAttachment": "Anexo da ordem"
+    },
+    "incidents": {
+      "title": "Ocorrências do local",
+      "description": "Problemas registrados em qualquer visita, inclusive em projetos anteriores.",
+      "empty": "Não há ocorrências registradas neste local.",
+      "open": "Aberta"
+    },
+    "requirements": {
+      "title": "Requisitos e permissões",
+      "description": "Validades que devem ser verificadas antes de planejar uma visita.",
+      "empty": "Não há requisitos nem permissões cadastrados.",
+      "requirement": "Requisito",
+      "permit": "Permissão",
+      "expires": "Vence em {date}",
+      "status": {
+        "pending": "Pendente",
+        "valid": "Vigente",
+        "expired": "Vencido",
+        "rejected": "Rejeitado",
+        "not_required": "Não exigido",
+        "unknown": "Sem status"
+      }
+    },
+    "documents": {
+      "title": "Documentos permanentes",
+      "description": "Plantas, permissões e referências que pertencem ao local.",
+      "empty": "Ainda não há documentos permanentes.",
+      "sizeMb": "{size} MB",
+      "category": {
+        "general": "Geral",
+        "permit": "Permissão",
+        "access": "Acesso",
+        "risk": "Risco",
+        "plan": "Planta",
+        "other": "Outro"
+      }
+    },
+    "audit": {
+      "title": "Auditoria da ficha",
+      "description": "Quem alterou os dados permanentes e quando.",
+      "empty": "A ficha ainda não possui eventos de auditoria.",
+      "event": {
+        "backfilled": "Histórico unificado",
+        "created": "Ficha criada",
+        "updated": "Ficha atualizada",
+        "change_proposed": "Alteração proposta",
+        "unknown": "Alteração registrada"
+      },
+      "actor": {
+        "company_manager": "Gerência",
+        "coordinator": "Coordenação",
+        "installer": "Instalador",
+        "system": "Sistema",
+        "migration": "Migração",
+        "unknown": "Ator não disponível"
+      },
+      "field": {
+        "externalRef": "Referência",
+        "name": "Nome",
+        "address": "Endereço",
+        "city": "Cidade",
+        "state": "Província/estado",
+        "zone": "Zona",
+        "country": "País",
+        "coordinates": "Coordenadas",
+        "contact": "Contato",
+        "phone": "Telefone",
+        "email": "E-mail",
+        "openingHours": "Horários",
+        "access": "Acesso",
+        "parking": "Estacionamento",
+        "technical": "Dados técnicos",
+        "risks": "Riscos",
+        "notes": "Notas",
+        "archivedAt": "Arquivamento",
+        "unknown": "Outro campo"
+      }
+    }
   },
   "SiteFiles": {
     "title": "Fotos e documentos permanentes",
@@ -879,9 +1020,9 @@
   "ReuseSites": {
     "trigger": "Trazer de outro projeto",
     "title": "Reutilizar locais do cliente",
-    "description": "Locais que este cliente já tem cadastrados em projetos anteriores. São copiados com a ficha completa: contato, horários, acessos e notas.",
+    "description": "A ficha já existe para o cliente. Ao adicioná-la, ela não é copiada: identidade, documentos e histórico continuam sendo únicos.",
     "loading": "Buscando locais…",
-    "empty": "Este cliente não tem locais em outros projetos, ou todos já estão neste.",
+    "empty": "Este cliente não possui locais disponíveis ou todos já estão associados a este projeto.",
     "search": "Buscar por nome, endereço ou código",
     "found": "{count, plural, one {# local disponível} other {# locais disponíveis}}",
     "selectAll": "Selecionar todos",

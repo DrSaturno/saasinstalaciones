@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { normalizeHeader } from "@/lib/csv";
+import { normalizeLocationExternalRef } from "@/lib/domain/canonical-locations";
 
 /**
  * Análisis de una planilla de locaciones, sin tocar la base.
@@ -88,7 +89,7 @@ export type SiteImportOptions = {
  * sucursal: quien completa la planilla no siempre respeta el formato.
  */
 export function normalizeExternalRef(value: string): string {
-  return value.trim().toLowerCase();
+  return normalizeLocationExternalRef(value) ?? "";
 }
 
 /**

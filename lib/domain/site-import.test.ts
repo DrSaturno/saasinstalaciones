@@ -158,6 +158,15 @@ describe("duplicados", () => {
     expect(analysis.issues[0]).toMatchObject({ code: "alreadyImported" });
   });
 
+  it("usa la misma normalización alfanumérica que la clave canónica", () => {
+    const analysis = analyzeSiteRows([HEADER, fila("Sucursal 1", { ref: "YPF-001" })], {
+      projectZones: ZONAS,
+      knownExternalRefs: [" ypf 001 "],
+    });
+    expect(analysis.counts.valid).toBe(0);
+    expect(analysis.issues[0]).toMatchObject({ code: "alreadyImported" });
+  });
+
   it("dos filas sin referencia no son duplicados: no hay con qué compararlas", () => {
     const analysis = analyzeSiteRows(
       [HEADER, fila("Sucursal 1"), fila("Sucursal 1")],
@@ -169,8 +178,8 @@ describe("duplicados", () => {
 });
 
 describe("normalizeExternalRef", () => {
-  it("recorta espacios y baja a minúscula", () => {
-    expect(normalizeExternalRef("  S-001 ")).toBe("s-001");
+  it("recorta, baja a minúscula y elimina separadores", () => {
+    expect(normalizeExternalRef("  S-001 ")).toBe("s001");
   });
 });
 

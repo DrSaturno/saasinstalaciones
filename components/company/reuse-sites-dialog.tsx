@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { fetchReusableSites, reuseSites } from "@/lib/actions/projects/reuse";
+import {
+  fetchReusableLocations,
+  reuseLocations,
+} from "@/lib/actions/projects/reuse";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,7 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-type ReusableSite = {
+type ReusableLocation = {
   id: string;
   name: string;
   address: string;
@@ -30,33 +33,47 @@ type ReusableSite = {
  * Trae al proyecto actual locaciones que el mismo cliente ya tiene cargadas en
  * proyectos anteriores, para no volver a cargarlas a mano.
  */
-export function ReuseSitesDialog({ projectId }: { projectId: string }) {
+export function ReuseSitesDialog({
+  projectId,
+  autoOpen = false,
+  hideTrigger = false,
+}: {
+  projectId: string;
+  autoOpen?: boolean;
+  hideTrigger?: boolean;
+}) {
   const t = useTranslations("ReuseSites");
   const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [sites, setSites] = useState<ReusableSite[] | null>(null);
+  const [open, setOpen] = useState(autoOpen);
+  const [locations, setLocations] = useState<ReusableLocation[] | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [pending, startTransition] = useTransition();
 
-  const load = () => {
+  const load = useCallback(() => {
     startTransition(async () => {
-      const res = await fetchReusableSites(projectId);
+      const res = await fetchReusableLocations(projectId);
       if (res.error) {
         toast.error(res.error);
         return;
       }
-      setSites(res.sites);
+      setLocations(res.locations);
       setSelected([]);
     });
-  };
+  }, [projectId]);
 
-  const visible = (sites ?? []).filter((site) => {
+  useEffect(() => {
+    if (autoOpen && locations === null) load();
+  }, [autoOpen, load, locations]);
+
+  const visible = (locations ?? []).filter((site) => {
     if (!search.trim()) return true;
     const haystack =
       `${site.name} ${site.address} ${site.city} ${site.externalRef ?? ""}`.toLowerCase();
     return haystack.includes(search.trim().toLowerCase());
   });
+  const allVisibleSelected =
+    visible.length > 0 && visible.every((site) => selected.includes(site.id));
 
   const toggle = (id: string) => {
     setSelected((current) =>
@@ -68,15 +85,16 @@ export function ReuseSitesDialog({ projectId }: { projectId: string }) {
 
   const confirm = () => {
     startTransition(async () => {
-      const res = await reuseSites(projectId, selected);
+      const res = await reuseLocations(projectId, selected);
       if (res.error) {
         toast.error(res.error);
         return;
       }
       toast.success(t("added", { count: res.inserted }));
       setOpen(false);
-      setSites(null);
+      setLocations(null);
       setSelected([]);
+      if (autoOpen) router.replace(`/projects/${projectId}`, { scroll: false });
       router.refresh();
     });
   };
@@ -86,24 +104,29 @@ export function ReuseSitesDialog({ projectId }: { projectId: string }) {
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        if (next && sites === null) load();
-        if (!next) setSearch("");
+        if (next && locations === null) load();
+        if (!next) {
+          setSearch("");
+          if (autoOpen) router.replace(`/projects/${projectId}`, { scroll: false });
+        }
       }}
     >
-      <DialogTrigger asChild>
-        <Button variant="outline">{t("trigger")}</Button>
-      </DialogTrigger>
+      {!hideTrigger ? (
+        <DialogTrigger asChild>
+          <Button variant="outline">{t("trigger")}</Button>
+        </DialogTrigger>
+      ) : null}
       <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{t("title")}</DialogTitle>
           <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
 
-        {sites === null ? (
+        {locations === null ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
             {t("loading")}
           </p>
-        ) : sites.length === 0 ? (
+        ) : locations.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
             {t("empty")}
           </p>
@@ -122,14 +145,15 @@ export function ReuseSitesDialog({ projectId }: { projectId: string }) {
                 type="button"
                 className="hover:text-primary"
                 onClick={() =>
-                  setSelected(
-                    selected.length === visible.length
-                      ? []
-                      : visible.map((site) => site.id),
-                  )
+                  setSelected((current) => {
+                    const visibleIds = new Set(visible.map((site) => site.id));
+                    return allVisibleSelected
+                      ? current.filter((id) => !visibleIds.has(id))
+                      : [...new Set([...current, ...visibleIds])];
+                  })
                 }
               >
-                {selected.length === visible.length ? t("clearAll") : t("selectAll")}
+                {allVisibleSelected ? t("clearAll") : t("selectAll")}
               </button>
             </div>
 
@@ -160,9 +184,11 @@ export function ReuseSitesDialog({ projectId }: { projectId: string }) {
                         .filter(Boolean)
                         .join(", ")}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {t("fromProject", { project: site.projectName })}
-                    </p>
+                    {site.projectName ? (
+                      <p className="text-xs text-muted-foreground">
+                        {t("fromProject", { project: site.projectName })}
+                      </p>
+                    ) : null}
                   </div>
                 </label>
               ))}

@@ -19,11 +19,15 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
     phone: detail.client.phone, address: detail.client.address, notes: detail.client.notes,
     website: detail.client.website, instagram: detail.client.instagram,
     youtube: detail.client.youtube, tiktok: detail.client.tiktok,
-    projectCount: detail.projects.length, siteCount: detail.sites.length,
+    projectCount: detail.projects.length, siteCount: detail.locations.length,
   };
-  const ordersBySite = new Map<string, typeof detail.orders>();
+  const ordersByLocation = new Map<string, typeof detail.orders>();
   for (const order of detail.orders) {
-    ordersBySite.set(order.site_id, [...(ordersBySite.get(order.site_id) ?? []), order]);
+    if (!order.location_id) continue;
+    ordersByLocation.set(order.location_id, [
+      ...(ordersByLocation.get(order.location_id) ?? []),
+      order,
+    ]);
   }
   return (
     <main className="mx-auto w-full max-w-[1480px]">
@@ -56,24 +60,24 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
 
       <h2 className="mt-8 text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t("sitesTitle")}</h2>
       <div className="mt-3 space-y-4">
-        {detail.sites.map((site) => (
-          <Card key={site.id}>
-            <CardHeader><CardTitle><Link href={`/projects/${site.project_id}/sites/${site.id}`} className="hover:text-primary">{site.name}</Link></CardTitle></CardHeader>
+        {detail.locations.map((location) => (
+          <Card key={location.id}>
+            <CardHeader><CardTitle><Link href={`/locations/${location.id}`} className="hover:text-primary">{location.name}</Link></CardTitle></CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">{[site.address, site.city, site.state, site.zone].filter(Boolean).join(" · ")}</p>
+              <p className="text-sm text-muted-foreground">{[location.address, location.city, location.state, location.zone].filter(Boolean).join(" · ")}</p>
               <div className="mt-4 space-y-2">
-                {(ordersBySite.get(site.id) ?? []).map((order) => (
+                {(ordersByLocation.get(location.id) ?? []).map((order) => (
                   <Link key={order.id} href={`/orders/${order.id}`} className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm hover:border-primary/30">
                     <span><span className="font-mono">{order.order_number}</span> · {order.title}</span>
                     <StatusBadge status={order.status} />
                   </Link>
                 ))}
-                {!(ordersBySite.get(site.id)?.length) ? <p className="text-xs text-muted-foreground">{t("noOrders")}</p> : null}
+                {!(ordersByLocation.get(location.id)?.length) ? <p className="text-xs text-muted-foreground">{t("noOrders")}</p> : null}
               </div>
             </CardContent>
           </Card>
         ))}
-        {!detail.sites.length ? <p className="text-sm text-muted-foreground">{t("noSites")}</p> : null}
+        {!detail.locations.length ? <p className="text-sm text-muted-foreground">{t("noSites")}</p> : null}
       </div>
     </main>
   );

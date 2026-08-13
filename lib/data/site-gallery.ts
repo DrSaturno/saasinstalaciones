@@ -47,7 +47,7 @@ export async function fetchSiteGallery(
 
   const { data: site } = await supabase
     .from("sites")
-    .select("id, project_id, name, address, external_ref")
+    .select("id, project_id, location_id, name, address, external_ref")
     .eq("id", siteId)
     .single();
   if (!site) return [];
@@ -165,11 +165,21 @@ async function gatherTwinSites(
   site: {
     id: string;
     project_id: string;
+    location_id: string | null;
     name: string;
     address: string;
     external_ref: string | null;
   },
 ): Promise<string[]> {
+  if (site.location_id) {
+    const { data: projections } = await supabase
+      .from("sites")
+      .select("id")
+      .eq("location_id", site.location_id);
+    const ids = (projections ?? []).map((projection) => projection.id);
+    return ids.length ? ids : [site.id];
+  }
+
   const { data: project } = await supabase
     .from("projects")
     .select("client_id")
