@@ -1449,7 +1449,20 @@
     "noteWhy": "Fica registrado com seu nome e a data. É a única coisa que vai explicar a decisão a quem olhar isto depois.",
     "saving": "Salvando…",
     "cancel": "Cancelar",
-    "closed": "Pronto, ficou registrada."
+    "closed": "Pronto, ficou registrada.",
+    "divergence": {
+      "title": "Estado da unificação",
+      "description": "Cada ponto de um projeto precisa poder ser lido a partir da sua ficha permanente sem perder dados. Enquanto isto não der zero, as telas continuam lendo da projeção antiga.",
+      "ratio": "{clean} de {total} alinhados",
+      "safe": "Todos os pontos coincidem com a sua ficha permanente. O corte para a ficha canônica é seguro.",
+      "blocked": "{count, plural, =1 {# ponto ainda não coincide} other {# pontos ainda não coincidem}}.",
+      "kind": {
+        "unlinked": "sem ficha permanente associada",
+        "missingLocation": "apontam para uma ficha inexistente",
+        "missingAssociation": "a ficha existe mas não está associada ao projeto",
+        "fieldMismatch": "têm dados diferentes dos da sua ficha"
+      }
+    }
   },
   "Clients": {
     "title": "Clientes",

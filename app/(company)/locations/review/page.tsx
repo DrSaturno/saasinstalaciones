@@ -1,7 +1,9 @@
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { fetchLocationIssues } from "@/lib/data/location-issues";
+import { fetchDivergenceReport } from "@/lib/data/canonical-divergence";
 import { LocationIssueCard } from "@/components/company/location-issue-card";
+import { DivergencePanel } from "@/components/company/divergence-panel";
 
 /**
  * Cola de revisión del backfill canónico (R2-UI-03).
@@ -16,9 +18,10 @@ export default async function LocationReviewPage() {
     getTranslations("LocationReview"),
     createClient(),
   ]);
-  const [pending, closed] = await Promise.all([
+  const [pending, closed, divergence] = await Promise.all([
     fetchLocationIssues(supabase, { status: "pending" }),
     fetchLocationIssues(supabase, { status: "resolved" }),
+    fetchDivergenceReport(supabase),
   ]);
 
   return (
@@ -29,6 +32,8 @@ export default async function LocationReviewPage() {
           {t("description")}
         </p>
       </header>
+
+      <DivergencePanel report={divergence} />
 
       {pending.length === 0 ? (
         <div className="rounded-xl border bg-muted/30 p-6">

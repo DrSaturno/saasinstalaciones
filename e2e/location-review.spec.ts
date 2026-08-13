@@ -35,6 +35,16 @@ test.describe("gerente", () => {
     await expect(main.getByText(/campos no coinciden/)).toBeVisible();
   });
 
+  test("mide la divergencia contra el modelo canónico", async ({ page }) => {
+    await page.goto("/locations/review");
+    const main = page.locator("main").last();
+
+    // El corte a la ficha canónica sólo es seguro con divergencia cero, así que
+    // el número tiene que estar a la vista y no escondido en un log.
+    await expect(main.getByText("Estado de la unificación")).toBeVisible();
+    await expect(main.getByText(/\d+ de \d+ alineados/)).toBeVisible();
+  });
+
   test("exige explicar la decisión antes de cerrar una fila", async ({ page }) => {
     await page.goto("/locations/review");
 
