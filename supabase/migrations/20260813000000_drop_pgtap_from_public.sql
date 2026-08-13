@@ -1,0 +1,16 @@
+-- Saca pgTAP del schema `public`.
+--
+-- Apareció instalado a mano en producción (v1.3.3), no por ninguna migración de
+-- este repo. Son ~1079 funciones dentro de `public`, contra 66 propias de la
+-- aplicación: además del ruido, deja expuestas funciones que describen el
+-- esquema (`has_table`, `policies_are`, `columns_are`…) a cualquier usuario
+-- autenticado, porque las extensiones instaladas en `public` otorgan EXECUTE a
+-- PUBLIC por defecto.
+--
+-- No rompe las pruebas: los archivos de `supabase/tests/` hacen
+-- `create extension if not exists pgtap with schema extensions`, o sea que la
+-- piden en otro schema y se la crean solas dentro de su propia transacción.
+--
+-- `if exists` porque en los entornos donde nunca se instaló —staging, y
+-- cualquiera creado desde cero— esta migración no tiene nada que hacer.
+drop extension if exists pgtap;

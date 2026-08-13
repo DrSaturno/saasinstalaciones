@@ -52,15 +52,20 @@ manejar con `db push` como staging.**
 Dejar el CLI vinculado a staging al terminar: es el destino por defecto correcto,
 y evita empujar a producción por descuido.
 
-> **Hallazgo sin resolver: pgTAP está instalado en el schema `public` de
-> producción** (v1.3.3). Es el origen de las ~1079 funciones, 2 vistas y 29
-> columnas que producción tiene de más respecto de staging. Ninguna migración del
-> repo lo instala, así que alguien lo puso a mano para correr los tests ahí —
-> justo lo que `playwright.config.ts` desaconseja. No rompe nada, pero deja
-> funciones que exponen metadatos del esquema (`has_table`, `policies_are`…)
-> ejecutables por cualquier usuario autenticado. Conviene sacarlo
-> (`drop extension pgtap;`) o moverlo a un schema aparte; no se hizo todavía
-> porque es un cambio en producción que hay que decidir aparte.
+**pgTAP fuera de `public` (13-08-2026).** Estaba instalado a mano en producción
+(v1.3.3), no por ninguna migración: ~1079 funciones dentro de `public` contra 66
+propias de la app, varias de ellas describiendo el esquema (`has_table`,
+`policies_are`…) y ejecutables por cualquier autenticado, porque una extensión en
+`public` otorga EXECUTE a PUBLIC. Se sacó con
+`20260813000000_drop_pgtap_from_public.sql`. No afecta a las pruebas: los
+archivos de `supabase/tests/` la piden en el schema `extensions` y se la crean
+solos dentro de su transacción.
+
+Esa fue **la primera migración aplicada a producción con `supabase db push`**, que
+es lo que la reparación del historial venía a habilitar. Después del cambio,
+producción y staging quedaron con la **misma huella completa**
+(`70b51d6ae78a5a262a38d7f8c3126931`, 746 objetos, extensiones incluidas): antes
+diferían en 1108 objetos.
 
 Aplicadas el 12-08-2026 con el MCP de Supabase (`apply_migration`), en orden:
 
@@ -284,7 +289,7 @@ Dependencia: R0. Tamaño: L.
 ### Pruebas y gate
 
 - [x] **R1-QA-01** — Unitarias de resolución de capacidades y separación de funciones. `lib/domain/order-rules.test.ts` cubre el bloqueo de autoaprobación (4 casos nuevos); helpers de capacidad (`hasCompanyRole`, `isCoordinatorSomewhere`, etc. en `lib/auth.ts`) sin test unitario dedicado todavía.
-- [~] **R1-QA-02** — pgTAP de toda policy migrada con A/B, dual y coordinador P1/no P2. `multi_role_memberships.test.sql` (16 asserts) y `no_self_approval.test.sql` (6 asserts, nuevo) cubren membresía y autoaprobación. Sin ejecutar todavía: requiere Docker, se valida en CI.
+- [~] **R1-QA-02** — pgTAP de toda policy migrada con A/B, dual y coordinador P1/no P2. `multi_role_memberships.test.sql` (16 asserts) y `no_self_approval.test.sql` (6 asserts) cubren membresía y autoaprobación. **Siguen sin ejecutarse.** Verificado el 13-08-2026 que no hay forma de correrlos desde esta máquina: `supabase test db --linked` también necesita Docker (usa un contenedor `pg_prove`), y por el MCP no se puede sacar un veredicto agregado porque esta versión de pgTAP no materializa los resultados en una tabla — sólo los devuelve como texto de cada `select`, y el MCP entrega únicamente el último. Queda para CI, que sí tiene Docker. Lo que sí se verificó en vivo contra el trigger, por SQL directo, es la regla de autoaprobación (aprobar lo propio y reabrir lo propio bloqueados, tercero permitido).
 - [x] **R1-QA-03** — E2E: instalar + coordinar, cambio de empresa, revocación y autoaprobación denegada. `e2e/dual-role.spec.ts` (4 casos, verdes). Cubre la coexistencia de capacidades sobre el actor dual real del seed —`instalador1@demo.dev` tiene `coordinator`+`installer` en la misma empresa y sólo `installer` en la otra—: conserva las pantallas de campo, entra además a coordinación, la navegación ofrece las dos a la vez, y coordinar no lo convierte en gerente. **La autoaprobación denegada NO se cubre acá a propósito**: montar esa transición por UI depende de estado que el seed no fija, y ya está probada donde se implementa (pgTAP `no_self_approval.test.sql`, unitarios de `order-rules.test.ts`, y verificación en vivo contra el trigger).
 - [x] **R1-GATE** — Cero divergencias dual-read, matriz RLS verde y ninguna consulta nueva depende del rol escalar. Verificado el 12-08-2026:
   - **Ninguna consulta autoriza por el rol escalar.** Consultado sobre los objetos vivos, no sobre los archivos: cero policies (`pg_policies`) lo mencionan, y de las funciones (`pg_proc`) la única que lo nombra es `accept_invitation`, donde es una **escritura** que mantiene la proyección legacy, no una lectura para autorizar.
