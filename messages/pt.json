@@ -525,7 +525,8 @@
     "addOne": "Adicionar uma instalação contratada",
     "quantityUpdated": "Quantidade contratada atualizada",
     "actionsTitle": "Cadastro e ordens",
-    "actionsDescription": "Há {archived} locais arquivados. Você pode adicionar uma ficha, importar CSV ou gerar ordens."
+    "actionsDescription": "Há {archived} locais arquivados. Você pode adicionar uma ficha, importar CSV ou gerar ordens.",
+    "export": "Exportar para Excel"
   },
   "SiteForm": {
     "add": "Adicionar instalação",

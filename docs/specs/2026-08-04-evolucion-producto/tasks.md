@@ -16,9 +16,18 @@ Regla: cada tarea de producto referencia requisitos y cada release pasa sus gate
 Sección de traspaso: describe qué hay realmente en la base, para no volver a
 planificar sobre suposiciones. **Leer antes de tocar migraciones.**
 
-**Proyecto Supabase: `rpdjjvcmtcpvmwrjqhke` («Saas de Instalaciones»), que es el
-que usa la app.** Existe además `jibvorqudveqgankoeak` («Se Instala Pro»), que
-NO es el productivo. No tiene backups configurados.
+**Los tres entornos, y qué es cada uno** (aclarado con producto el 13-08-2026):
+
+| Proyecto Supabase | Qué es |
+|---|---|
+| `rpdjjvcmtcpvmwrjqhke` «Saas de Instalaciones» | **Entorno principal. NO es producción.** La app todavía no salió a producción: se está terminando de afinar. Sus 130 sites, 118 órdenes y 5 usuarios son **data demo** de referencia para ir probando. Sin backups configurados. |
+| `krxewmfauohixmmzsvkp` «InstalaPro Staging» | Entorno de pruebas creado el 12-08-2026. Es donde corre la suite E2E. |
+| `jibvorqudveqgankoeak` «Se Instala Pro» | **No tocar.** Pese al nombre, es la base del legacy `proyecto2 seinstalapro`, con otro esquema y 88 cuentas reales. Pausado para liberar cupo del plan free. |
+
+Este documento dice «producción» en varios lugares por el proyecto principal.
+Léase «entorno principal»: el plan es cerrar los pendientes de este plan, hacer
+una revisión con el equipo, y **recién entonces** la primera prueba real con una
+empresa ya seleccionada.
 
 ### Historial de migraciones: reparado el 12-08-2026
 
@@ -330,10 +339,11 @@ Dependencia: R1. Tamaño: XL.
 
 ### Import/export
 
-- [~] **R2-IMP-01** — Separar acciones Descargar plantilla / Importar / Exportar. «Descargar planilla Excel» ya existía como acción propia (`/api/site-template`) y la importación es un diálogo separado. **Falta exportar**, que todavía no existe para locaciones (ver R2-IMP-04).
+- [x] **R2-IMP-01** — Separar acciones Descargar plantilla / Importar / Exportar. Las tres son acciones distintas en «Adm. instalaciones»: plantilla vacía (`/api/site-template`), diálogo de importación, y exportación (R2-IMP-04). El botón de exportar se oculta si el proyecto no tiene locaciones, donde daría un archivo vacío.
 - [x] **R2-IMP-02** — Parser/preflight sin escritura con preview y conteos esperadas/encontradas/válidas/incompletas/duplicadas. `lib/domain/site-import.ts` concentra el análisis como función pura y `analyzeSiteImport()` lo expone sin escribir nada; el diálogo pasó a dos pasos (revisar → confirmar) y muestra informados/encontrados/a importar/diferencia, con el aviso del caso de la minuta (50 vs 47). 18 tests unitarios en `site-import.test.ts`. El servidor reparsea el archivo original al confirmar: nunca acepta filas armadas por el cliente.
 - [~] **R2-IMP-03** — Confirmación idempotente por `import_id`, upsert canónico y reporte descargable por fila. Se agregó deduplicación por referencia externa (dentro de la planilla y contra lo ya cargado en el proyecto), que hace que reimportar el mismo archivo no duplique puntos. **Falta** el `import_id` explícito, el upsert canónico (depende del esquema bloqueado) y el reporte descargable.
-- [ ] **R2-IMP-04** — Exportación XLSX seleccionada/completa con contrato de round-trip.
+- [x] **R2-IMP-04** — Exportación XLSX seleccionada/completa con contrato de round-trip. `GET /api/projects/[id]/sites/export` baja las locaciones activas del proyecto, paginado de a 1000 para que un proyecto grande no exporte sólo la primera página. **El contrato de round-trip está probado, no declarado**: `lib/domain/site-export.ts` toma las columnas de `SITE_TEMPLATE_HEADERS` (misma fuente que la plantilla y el lector), y el test alimenta lo exportado de vuelta a `analyzeSiteRows` verificando que las 3 filas vuelven íntegras, con coordenadas y referencias. Cubre también que reimportar al mismo proyecto no duplica: las filas con código se reconocen como ya cargadas. 10 tests unitarios + 2 E2E (uno verifica el .xlsx real que sale del servidor, otro que un instalador recibe 404 en vez de la planilla de otra empresa). Verificado en vivo contra staging: 20 filas, encabezado exacto, nombre de archivo sin acentos.
+  - **Alcance:** exporta por proyecto, que es donde ocurre la importación. La variante «completa» (todas las locaciones de la empresa) no se hizo: sin la ficha canónica en la UI (R2-UI-01) no está claro desde dónde se pediría.
 - [ ] **R2-IMP-05** — Spike separado para PDF/Word/Excel variable; no incorporar al MVP determinista sin especificación nueva.
 
 ### UI

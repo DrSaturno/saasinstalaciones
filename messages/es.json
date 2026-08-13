@@ -525,7 +525,8 @@
     "addOne": "Sumar una instalación contratada",
     "quantityUpdated": "Cantidad contratada actualizada",
     "actionsTitle": "Carga y órdenes",
-    "actionsDescription": "Hay {archived} locaciones archivadas. Podés agregar una ficha individual, importar un CSV o generar órdenes."
+    "actionsDescription": "Hay {archived} locaciones archivadas. Podés agregar una ficha individual, importar un CSV o generar órdenes.",
+    "export": "Exportar a Excel"
   },
   "SiteForm": {
     "add": "Agregar instalación",

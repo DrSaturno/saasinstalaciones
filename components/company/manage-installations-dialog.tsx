@@ -88,6 +88,16 @@ export function ManageInstallationsDialog({
           <div className="flex flex-wrap gap-2">
             <CreateSiteDialog projectId={projectId} country={country} zones={zones} />
             <ImportSitesDialog projectId={projectId} />
+            {/* Exportar cierra el ida y vuelta con importar: bajás la planilla,
+                la corregís en Excel y la volvés a subir sin duplicar nada. Se
+                oculta sin locaciones, donde daría un archivo vacío. */}
+            {activeCount > 0 && (
+              <Button type="button" variant="outline" asChild>
+                <a href={`/api/projects/${projectId}/sites/export`} download>
+                  {t("export")}
+                </a>
+              </Button>
+            )}
             <ReuseSitesDialog projectId={projectId} />
             <CreateOrdersDialog
             projectId={projectId}
