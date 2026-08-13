@@ -344,7 +344,24 @@ Dependencia: R1. Tamaño: XL.
 
   > **Los dos problemas son el mismo.** Los 5 desalineados son exactamente los 3 casos que están sin resolver en la cola de revisión: `ypf-001` y `ypf-002` (el backfill eligió los datos de una variante, y los sites que perdieron conservan los suyos) y `shell001`, que quedó sin vincular por no tener referencia. **Resolver la cola es lo que lleva la divergencia a cero**, y recién entonces migrar las lecturas es seguro. Sin esta medición, migrarlas habría hecho que 5 puntos mostraran datos de otro local.
 
-  **Falta**, en este orden: resolver los 3 casos de la cola, confirmar que el panel da cero, y recién ahí migrar las lecturas operativas de `sites` a `locations`.
+  **Cola resuelta y divergencia en cero (13-08-2026).** Los 3 casos eran la misma
+  historia: el mismo código puesto por error en dos locales de ciudades distintas
+  (`YPF-001` y `YPF-002`, cada uno con una copia en CABA y otra en La Plata) más
+  uno sin referencia (`shell001`). Se separó cada local real en su propia ficha
+  canónica, con su propia referencia externa, en vez de forzarlos a compartir una.
+  Las tres filas de la cola quedaron `resolved`, con la nota explicando la
+  decisión y quién la tomó.
+
+  Al remedir apareció una **cuarta divergencia que no estaba en la cola**: dos
+  fichas nuevas no habían heredado coordenadas o zona del site de origen (un
+  descuido al escribir la corrección, no un problema del backfill), y un site
+  que sí coincidía en todo lo demás traía una zona vieja
+  ("Ciudad Autónoma de Buenos Aires") de antes de que `20260722000002` normalizara
+  las provincias argentinas. Corregido. **Medición final: 130 de 130 alineados.**
+
+  Con esto el prerrequisito del cutover está cumplido. **Falta** migrar las
+  lecturas operativas de `sites` a `locations` en proyectos, rutas y órdenes —
+  trabajo de código, ya sin bloqueo de datos.
 
 ### Import/export
 
