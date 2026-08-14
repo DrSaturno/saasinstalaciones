@@ -115,6 +115,34 @@ jobs:
             | sed 's/"//g' >> "$GITHUB_ENV"
           echo "APP_URL=http://127.0.0.1:3000" >> "$GITHUB_ENV"
 
+      # Comprobar acá que las credenciales sirven Y que un usuario del seed
+      # puede iniciar sesión. Sin este paso, cualquier problema de credenciales
+      # o de seed aparece nueve minutos después disfrazado de «el login no
+      # redirige», que es el síntoma menos informativo posible: así falló la
+      # primera corrida de esta suite.
+      - name: Verify credentials and seeded login
+        run: |
+          if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] || [ -z "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]; then
+            echo "::error::Faltan credenciales. Revisar los --override-name contra lo que emite esta versión del CLI:"
+            supabase status -o env
+            exit 1
+          fi
+          echo "URL: $NEXT_PUBLIC_SUPABASE_URL"
+          code=$(curl -sS -o /tmp/login.json -w '%{http_code}' \
+            -X POST "$NEXT_PUBLIC_SUPABASE_URL/auth/v1/token?grant_type=password" \
+            -H "apikey: $NEXT_PUBLIC_SUPABASE_ANON_KEY" \
+            -H 'Content-Type: application/json' \
+            -d '{"email":"gerente@demo.dev","password":"InstalaPro2026!"}')
+          echo "POST /auth/v1/token para gerente@demo.dev → $code"
+          if [ "$code" != "200" ]; then
+            echo "::error::El usuario del seed no puede iniciar sesión; el E2E no tiene con qué autenticarse."
+            cat /tmp/login.json
+            echo "--- usuarios en la base ---"
+            supabase db query "select email, email_confirmed_at is not null as confirmado from auth.users order by email" 2>/dev/null \
+              || echo "(no se pudo consultar auth.users)"
+            exit 1
+          fi
+
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
 

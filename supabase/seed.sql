@@ -20,7 +20,13 @@ insert into public.companies (id, name, country, order_prefix, status) values
 on conflict (id) do nothing;
 
 -- 2. Usuarios auth (el trigger handle_new_user crea profiles/installers)
-create or replace function pg_temp.seed_user(
+--
+-- La función va en `public` y se borra al final, no en `pg_temp`. El esquema
+-- temporal es por sesión y el CLI de Supabase manda el seed en lotes que no
+-- comparten sesión: con `pg_temp` el seed muere con
+-- «schema "pg_temp" does not exist» y se lleva puesto todo el arranque de la
+-- base. Es lo que tenía a la CI en rojo desde el 07-08-2026.
+create or replace function public.seed_user(
   p_id uuid, p_email text, p_meta jsonb
 ) returns void language plpgsql as $$
 begin
@@ -50,33 +56,36 @@ begin
 end;
 $$;
 
-select pg_temp.seed_user(
+select public.seed_user(
   'a0000000-0000-0000-0000-000000000001', 'admin@instalapro.dev',
   '{"role":"platform_admin","full_name":"Admin Instala Pro"}'::jsonb);
 
-select pg_temp.seed_user(
+select public.seed_user(
   'a0000000-0000-0000-0000-000000000002', 'gerente@demo.dev',
   '{"role":"company_manager","company_id":"11111111-1111-1111-1111-111111111111","full_name":"Gerente Demo"}'::jsonb);
 
-select pg_temp.seed_user(
+select public.seed_user(
   'a0000000-0000-0000-0000-000000000003', 'instalador1@demo.dev',
   '{"role":"installer","full_name":"Iván Instalador"}'::jsonb);
 
-select pg_temp.seed_user(
+select public.seed_user(
   'a0000000-0000-0000-0000-000000000004', 'instalador2@demo.dev',
   '{"role":"installer","full_name":"Paula Ploteo"}'::jsonb);
 
-select pg_temp.seed_user(
+select public.seed_user(
   'a0000000-0000-0000-0000-000000000005', 'instalador3@demo.dev',
   '{"role":"installer","full_name":"Carlos Córdoba"}'::jsonb);
 
-select pg_temp.seed_user(
+select public.seed_user(
   'a0000000-0000-0000-0000-000000000006', 'coordinador@demo.dev',
   '{"role":"installer","full_name":"Coordinadora Demo"}'::jsonb);
 
-select pg_temp.seed_user(
+select public.seed_user(
   'a0000000-0000-0000-0000-000000000007', 'gerente.b@demo.dev',
   '{"role":"company_manager","company_id":"66666666-6666-6666-6666-666666666666","full_name":"Gerente Demo Brasil","locale":"pt"}'::jsonb);
+
+-- Ya cumplió: no queda una función de seed suelta en `public`.
+drop function if exists public.seed_user(uuid, text, jsonb);
 
 -- 3. Zonas y skills de los instaladores
 update public.installers set zones = '{AR-BA-AMBA}', skills = '{ploteo_vehicular,vidrieras}'
