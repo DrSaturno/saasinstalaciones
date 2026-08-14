@@ -12,6 +12,7 @@ import {
 import { SITE_TEMPLATE_HEADERS } from "@/lib/domain/site-template";
 import {
   analyzeSiteRows,
+  issueExternalRef,
   type ParsedSiteRow,
   type SiteImportIssue,
 } from "@/lib/domain/site-import";
@@ -450,12 +451,12 @@ export async function importSites(
     analysis.issues.map((issue) => ({
       row: {
         row: issue.row,
-        name: "",
+        name: issue.name ?? "",
         address: "",
         city: "",
         state: "",
         zone: "",
-        externalRef: issue.detail ?? null,
+        externalRef: issueExternalRef(issue),
         lat: null,
         lng: null,
       },

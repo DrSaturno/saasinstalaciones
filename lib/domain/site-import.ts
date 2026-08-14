@@ -49,7 +49,34 @@ export type SiteImportIssue = {
   code: SiteImportIssueCode;
   /** Dato que explica el problema (la zona rechazada, la referencia repetida). */
   detail?: string;
+  /**
+   * Nombre que traía la fila, si traía alguno.
+   *
+   * Sólo para el reporte descargable: una fila descartada identificada nada más
+   * que por su número obliga a ir a buscarla a la planilla. Está vacío cuando el
+   * problema es justamente que no tiene nombre.
+   */
+  name?: string;
 };
+
+/**
+ * Referencia externa de una fila descartada, para el reporte.
+ *
+ * `detail` significa cosas distintas según el problema —para «fuera de zona» es
+ * la zona rechazada, no un código—, así que no se puede volcar tal cual en la
+ * columna de código sin mentir.
+ */
+export function issueExternalRef(issue: SiteImportIssue): string | null {
+  switch (issue.code) {
+    case "duplicateInFile":
+    case "alreadyImported":
+      return issue.detail ?? null;
+    case "missingName":
+    case "invalidCoordinates":
+    case "zoneOutsideProject":
+      return null;
+  }
+}
 
 export type ParsedSiteRow = {
   /**
@@ -181,7 +208,7 @@ export function analyzeSiteRows(
     if (!parsed.success) {
       // El nombre ya se validó arriba, así que lo único que puede fallar acá
       // son las coordenadas: valor no numérico o fuera de rango.
-      issues.push({ row, code: "invalidCoordinates" });
+      issues.push({ row, code: "invalidCoordinates", name: get("name").trim() });
       return;
     }
 
@@ -190,6 +217,7 @@ export function analyzeSiteRows(
         row,
         code: "zoneOutsideProject",
         detail: parsed.data.zone || undefined,
+        name: parsed.data.name,
       });
       return;
     }
@@ -201,11 +229,21 @@ export function analyzeSiteRows(
     if (ref) {
       const key = normalizeExternalRef(ref);
       if (seenInFile.has(key)) {
-        issues.push({ row, code: "duplicateInFile", detail: ref });
+        issues.push({
+          row,
+          code: "duplicateInFile",
+          detail: ref,
+          name: parsed.data.name,
+        });
         return;
       }
       if (known.has(key)) {
-        issues.push({ row, code: "alreadyImported", detail: ref });
+        issues.push({
+          row,
+          code: "alreadyImported",
+          detail: ref,
+          name: parsed.data.name,
+        });
         return;
       }
       seenInFile.add(key);

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   analyzeSiteRows,
   mapSiteHeaders,
+  issueExternalRef,
   normalizeExternalRef,
 } from "@/lib/domain/site-import";
 
@@ -195,5 +196,56 @@ describe("caso de la minuta: 50 informados, 47 en la planilla", () => {
     // El proyecto declara 50: la diferencia la calcula la acción con
     // planned_installations, pero el conteo que la alimenta sale de acá.
     expect(50 - analysis.counts.valid).toBe(3);
+  });
+});
+
+describe("issueExternalRef", () => {
+  it("no devuelve la zona como si fuera un código", () => {
+    // `detail` de zoneOutsideProject es la zona rechazada. Volcarlo tal cual en
+    // la columna «Código» del reporte mostraba la zona como si fuera el
+    // código de la sucursal.
+    const analysis = analyzeSiteRows(
+      [HEADER, fila("Fuera de zona", { zone: "Mendoza", ref: "S-9" })],
+      { projectZones: ZONAS },
+    );
+    const [issue] = analysis.issues;
+    expect(issue.code).toBe("zoneOutsideProject");
+    expect(issue.detail).toBe("Mendoza");
+    expect(issueExternalRef(issue)).toBeNull();
+  });
+
+  it("sí devuelve la referencia cuando el problema es la referencia", () => {
+    const analysis = analyzeSiteRows(
+      [HEADER, fila("Uno", { ref: "S-1" }), fila("Dos", { ref: "s 1" })],
+      { projectZones: ZONAS },
+    );
+    const [issue] = analysis.issues;
+    expect(issue.code).toBe("duplicateInFile");
+    expect(issueExternalRef(issue)).toBe("s 1");
+  });
+
+  it("no inventa referencia cuando la fila no tiene nombre", () => {
+    const analysis = analyzeSiteRows([HEADER, fila("", {})], {
+      projectZones: ZONAS,
+    });
+    expect(issueExternalRef(analysis.issues[0])).toBeNull();
+  });
+});
+
+describe("nombre en la fila descartada", () => {
+  it("acompaña al motivo para no tener que buscarla en la planilla", () => {
+    const analysis = analyzeSiteRows(
+      [HEADER, fila("Estación Norte", { zone: "Mendoza" })],
+      { projectZones: ZONAS },
+    );
+    expect(analysis.issues[0].name).toBe("Estación Norte");
+  });
+
+  it("queda vacío justamente cuando el problema es que no hay nombre", () => {
+    const analysis = analyzeSiteRows([HEADER, fila("", {})], {
+      projectZones: ZONAS,
+    });
+    expect(analysis.issues[0].code).toBe("missingName");
+    expect(analysis.issues[0].name).toBeUndefined();
   });
 });
