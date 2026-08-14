@@ -481,9 +481,44 @@ porque había 3 filas reales esperando en producción sin forma de verlas.
 ### Pruebas y gate
 
 - [ ] **R2-QA-01** — Backfill sobre copia representativa, conteos/checksum, duplicados y rollback.
-- [ ] **R2-QA-02** — pgTAP/RLS/Storage para manager, coordinador P1/no P2, instalador asignado y A/B.
-- [~] **R2-QA-03** — Import de 2.000 filas, fallo intermedio, reanudación, dedupe y round-trip export/import. **Dedupe, idempotencia y round-trip** cubiertos por los 2 casos E2E de `site-import.spec.ts` (ver R2-IMP-03). **Falta** el volumen real de 2.000 filas y el fallo intermedio con reanudación: forzar un error a mitad del lote no se puede desde Playwright, necesita un punto de inyección de fallo o un test de integración que llame la acción directamente.
-- [ ] **R2-GATE** — Historial reconciliado, ambiguos resueltos, import/export estable y eliminación de proyecto no borra locación.
+- [~] **R2-QA-02** — pgTAP/RLS/Storage para manager, coordinador P1/no P2, instalador asignado y A/B. Las seis tablas canónicas ya estaban cubiertas por `canonical_locations.test.sql` (28 asserts). Se agregó `site_import_batches.test.sql` (12 asserts) para las dos tablas nuevas de importación.
+
+  **Verificado en vivo contra staging el 13-08-2026, no sólo escrito:** impersonando a cada actor por `request.jwt.claims`, 7 de 7 sin fugas — el gerente A ve sus 3 lotes y sus 1010 filas, el gerente B no ve **nada** de la empresa A, y ni el coordinador ni el instalador ven un solo lote. Importa porque el detalle por fila lleva nombre y código de todos los puntos de un cliente.
+
+  > **Al escribir el pgTAP aparecieron dos trampas del esquema**, ambas encontradas porque se ejecutó el cuerpo del test contra la base en vez de darlo por bueno: insertar en `public.profiles` explota con clave duplicada (lo crea el trigger `handle_new_user`), y corregir el perfil después tampoco se puede porque `prevent_privilege_change` bloquea tocar `role`/`company_id` fuera del tablero maestro. La forma correcta es pasar el rol y la empresa en `raw_user_meta_data` al insertar en `auth.users`. Un pgTAP escrito de la forma intuitiva habría fallado recién en CI.
+
+  **Falta** lo de Storage: las policies de bucket por actor no se probaron.
+- [x] **R2-QA-03** — Import de 2.000 filas, fallo intermedio, reanudación, dedupe y round-trip export/import. **Dedupe, idempotencia y round-trip** quedan cubiertos de forma permanente por los 2 casos E2E de `site-import.spec.ts`. **Volumen, fallo intermedio y reanudación** se ejercitaron el 13-08-2026 con un montaje manual contra staging (no queda como test automático: 2.000 filas tardan minutos y no corresponde en la suite).
+
+  **Montaje:** planilla de 2.000 filas **sin código externo** —donde el dedupe por referencia no puede ayudar— y un trigger veneno temporal en `locations` que revienta la tercera tanda de 500.
+
+  1. **Corrida con el veneno:** el lote quedó `failed` con su mensaje, 1.000 locaciones creadas, 1.000 filas anotadas y 0 sites. Exactamente la interrupción que el diseño supone.
+  2. **Corrida sin el veneno, mismo archivo:** lote `completed`, `imported=2000`. Resultado final **2.000 locaciones, 2.000 sites, 2.000 asociaciones y 0 nombres duplicados** — reutilizó las 1.000 anotadas y creó sólo las 1.000 que faltaban, en vez de dejar 3.000.
+
+  Staging quedó restaurado a su estado original (20 sites / 20 locaciones).
+
+  > **La prueba encontró un bug real, y era del código escrito ese mismo día.**
+  > La reanudación quedaba **colgada 14 minutos sin escribir nada**. Causa: al
+  > recuperar las locaciones ya creadas se pedían hasta 1.000 uuids en un solo
+  > `.in()`, y eso viaja en la URL — unos 37 KB de query string. Corregido a
+  > tandas de 100: **la misma reanudación pasó de 14 minutos a 16 segundos.**
+  >
+  > Con 6 filas la reanudación andaba perfecto: el bug **sólo aparecía a
+  > volumen**, que es justamente para lo que existía esta tarea.
+
+  > **Pendiente de rendimiento, no de corrección:** la importación corre a
+  > ~250 ms por fila (2.000 filas ≈ 4 minutos de reloj) y el diálogo no muestra
+  > progreso mientras tanto. No bloquea el gate porque el resultado es correcto,
+  > pero a este ritmo una carga real de 2.000 puntos es una espera ciega larga.
+  > Merece decidirse aparte: o se acelera (menos viajes por tanda) o se le pone
+  > progreso visible.
+- [~] **R2-GATE** — Historial reconciliado, ambiguos resueltos, import/export estable y eliminación de proyecto no borra locación. Estado al 13-08-2026:
+  - **Historial reconciliado: sí.** 130/130 alineados, y el invariante ahora lo sostiene la base (R2-DB-04).
+  - **Ambiguos resueltos: sí.** Las 3 filas de la cola quedaron `resolved` con su nota.
+  - **Eliminación de proyecto no borra locación: verificado en vivo.** Estructuralmente `locations` no referencia a `projects`, y se comprobó con un fixture revertido: borrar el proyecto se lleva la proyección `sites` y la asociación `project_locations`, mientras la ficha canónica, **sus documentos permanentes y su auditoría sobreviven**.
+  - **Import/export estable: sí.** Verificado a 2.000 filas con fallo intermedio y reanudación (R2-QA-03), después de corregir el bug de volumen que esa prueba destapó.
+
+  **Lo que queda para cerrar el gate formalmente** no es de import/export: son `R2-SPEC-01/02/03` (ADR-002 y los dos contratos, que son decisiones a aprobar, no código), la acción de merge/split de `R2-UI-03`, `R2-QA-01` (backfill sobre copia con rollback) y las policies de Storage de `R2-QA-02`.
 
 ## R3 — Actividades, relevamiento, agenda y kernel de avisos
 

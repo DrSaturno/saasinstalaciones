@@ -332,8 +332,11 @@ export async function importSites(
   // se vuelve a procesar como nueva en vez de asociar un id fantasma.
   const resumedById = new Map<string, CanonicalLocationProjection>();
   const recordedIds = [...new Set(recordedByRow.values())];
-  for (let index = 0; index < recordedIds.length; index += 1000) {
-    const slice = recordedIds.slice(index, index + 1000);
+  // De a 100 y no de a 1000: `in` viaja en la URL, y mil uuids son ~37 KB de
+  // query string. Un lote grande interrumpido dejaba la reanudación colgada
+  // (medido: 14 minutos sin avanzar sobre 1.000 filas ya anotadas).
+  for (let index = 0; index < recordedIds.length; index += 100) {
+    const slice = recordedIds.slice(index, index + 100);
     const { data, error } = await supabase
       .from("locations")
       .select("id, company_id, client_id, name, address, city, state, zone, country, lat, lng, external_ref, contact_name, contact_phone, contact_email, opening_hours, access_notes, parking_notes, technical_notes, risk_notes, permanent_notes")
