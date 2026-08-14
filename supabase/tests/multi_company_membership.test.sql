@@ -97,7 +97,11 @@ insert into public.work_orders (id, order_number, site_id, project_id, company_i
 set local role authenticated;
 set local request.jwt.claims to '{"sub":"aaaaaaaa-0000-0000-0000-0000000000f1","role":"authenticated"}';
 
-select n, msg from (
+-- Se emite SOLO la columna de texto: pg_prove lee TAP de la salida de psql y
+-- una segunda columna la vuelve ilegible («No subtests run»). El `order by n`
+-- se conserva porque el orden de un union all no esta garantizado y TAP se lee
+-- en secuencia. Sigue sirviendo para pegar en Supabase Studio.
+select msg from (
   select 0 as n, msg from plan(10) msg
 
   -- 1-2. projects: ve A1 (la coordina), no ve A2 (misma empresa, no la coordina).
