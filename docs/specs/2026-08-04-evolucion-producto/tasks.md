@@ -480,7 +480,20 @@ porque había 3 filas reales esperando en producción sin forma de verlas.
 
 ### Pruebas y gate
 
-- [ ] **R2-QA-01** — Backfill sobre copia representativa, conteos/checksum, duplicados y rollback.
+- [x] **R2-QA-01** — Backfill sobre copia representativa, conteos/checksum, duplicados y rollback. Ejecutado el 13-08-2026 **contra el entorno principal** —los 130 sites reales, que son el dato representativo— dentro de bloques que revierten al terminar. Se corrió el backfill tal como está en la sección 4 de `20260805000003`, no una transcripción.
+
+  **Prueba 1 — re-ejecución sobre la base ya migrada (reanudabilidad):**
+  - **0 fichas nuevas** al volver a correrlo: es reanudable de verdad, no sólo por el `on conflict`.
+  - **Conteo estable**: 122 locaciones antes y después.
+  - **Checksum del conjunto canónico intacto**: no pisa identidades existentes.
+  - **0 duplicados** de clave canónica `(empresa, cliente, referencia normalizada)`.
+  - **0 sites** con referencia resoluble y sin ficha; **0 fichas** sin proyección viva.
+
+  **Prueba 2 — reproducción desde cero (determinismo):** se arrasó toda la capa canónica (fichas, asociaciones, adjuntos, requisitos, auditoría y cola) y se volvió a correr el backfill sobre los mismos sites.
+  - **121 de 122 reproducidas**, y **las 121 coinciden con una identidad original**: no inventa ninguna.
+  - **La única que no reproduce es `shell001`**, que es precisamente la que se creó a mano el 13-08-2026 por **no tener referencia externa**. El backfill sólo procesa filas con referencia resoluble, así que no recrearla es su comportamiento conservador correcto, no un agujero.
+
+  **Rollback verificado:** al terminar, el entorno principal quedó idéntico — 122 locaciones, 130 sites, 0 sin ficha, 133 asociaciones, la cola con sus 3 filas resueltas y 124 eventos de auditoría.
 - [~] **R2-QA-02** — pgTAP/RLS/Storage para manager, coordinador P1/no P2, instalador asignado y A/B. Las seis tablas canónicas ya estaban cubiertas por `canonical_locations.test.sql` (28 asserts). Se agregó `site_import_batches.test.sql` (12 asserts) para las dos tablas nuevas de importación.
 
   **Verificado en vivo contra staging el 13-08-2026, no sólo escrito:** impersonando a cada actor por `request.jwt.claims`, 7 de 7 sin fugas — el gerente A ve sus 3 lotes y sus 1010 filas, el gerente B no ve **nada** de la empresa A, y ni el coordinador ni el instalador ven un solo lote. Importa porque el detalle por fila lleva nombre y código de todos los puntos de un cliente.
@@ -518,7 +531,7 @@ porque había 3 filas reales esperando en producción sin forma de verlas.
   - **Eliminación de proyecto no borra locación: verificado en vivo.** Estructuralmente `locations` no referencia a `projects`, y se comprobó con un fixture revertido: borrar el proyecto se lleva la proyección `sites` y la asociación `project_locations`, mientras la ficha canónica, **sus documentos permanentes y su auditoría sobreviven**.
   - **Import/export estable: sí.** Verificado a 2.000 filas con fallo intermedio y reanudación (R2-QA-03), después de corregir el bug de volumen que esa prueba destapó.
 
-  **Lo que queda para cerrar el gate formalmente** no es de import/export: son `R2-SPEC-01/02/03` (ADR-002 y los dos contratos, que son decisiones a aprobar, no código), la acción de merge/split de `R2-UI-03`, `R2-QA-01` (backfill sobre copia con rollback) y las policies de Storage de `R2-QA-02`.
+  **Lo que queda para cerrar el gate formalmente** ya no es verificación de datos: son `R2-SPEC-01/02/03` (ADR-002 y los dos contratos, que son decisiones a aprobar, no código), la acción de merge/split de `R2-UI-03` —que necesita definir antes qué pasa con las OTs y la evidencia ya asociadas— y las policies de Storage de `R2-QA-02`. `R2-QA-01` y `R2-QA-03` quedaron cerradas el 13-08-2026.
 
 ## R3 — Actividades, relevamiento, agenda y kernel de avisos
 
