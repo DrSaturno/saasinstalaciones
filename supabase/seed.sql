@@ -21,71 +21,64 @@ on conflict (id) do nothing;
 
 -- 2. Usuarios auth (el trigger handle_new_user crea profiles/installers)
 --
--- La función va en `public` y se borra al final, no en `pg_temp`. El esquema
--- temporal es por sesión y el CLI de Supabase manda el seed en lotes que no
--- comparten sesión: con `pg_temp` el seed muere con
--- «schema "pg_temp" does not exist» y se lleva puesto todo el arranque de la
--- base. Es lo que tenía a la CI en rojo desde el 07-08-2026.
-create or replace function public.seed_user(
-  p_id uuid, p_email text, p_meta jsonb
-) returns void language plpgsql as $$
-begin
-  -- Las columnas de token DEBEN ir en '' y no NULL: GoTrue las lee como
-  -- string de Go y un NULL rompe el login con "Database error querying schema".
-  insert into auth.users (
-    instance_id, id, aud, role, email, encrypted_password,
-    email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
-    created_at, updated_at,
-    confirmation_token, recovery_token, email_change,
-    email_change_token_new, email_change_token_current,
-    phone_change, phone_change_token, reauthentication_token
-  ) values (
-    '00000000-0000-0000-0000-000000000000', p_id, 'authenticated', 'authenticated',
-    p_email, extensions.crypt('InstalaPro2026!', extensions.gen_salt('bf')),
-    now(), '{"provider":"email","providers":["email"]}', p_meta, now(), now(),
-    '', '', '', '', '', '', '', ''
-  ) on conflict (id) do nothing;
+-- Sin función auxiliar. El CLI de Supabase manda el seed en lotes y no trata un
+-- bloque `$$...$$` como una unidad, así que definir una función acá y llamarla
+-- más abajo falla: primero con «schema "pg_temp" does not exist» y, al moverla
+-- a `public`, con «function public.seed_user does not exist». Es lo que tuvo la
+-- CI en rojo desde el 07-08-2026 y, de paso, lo que impidió que las 14 suites
+-- pgTAP del repo llegaran a ejecutarse alguna vez. Un insert por conjunto no
+-- tiene ese problema y encima es más corto.
+--
+-- Las columnas de token DEBEN ir en '' y no NULL: GoTrue las lee como string de
+-- Go y un NULL rompe el login con "Database error querying schema".
+insert into auth.users (
+  instance_id, id, aud, role, email, encrypted_password,
+  email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
+  created_at, updated_at,
+  confirmation_token, recovery_token, email_change,
+  email_change_token_new, email_change_token_current,
+  phone_change, phone_change_token, reauthentication_token
+)
+select
+  '00000000-0000-0000-0000-000000000000', d.id, 'authenticated', 'authenticated',
+  d.email, extensions.crypt('InstalaPro2026!', extensions.gen_salt('bf')),
+  now(), '{"provider":"email","providers":["email"]}', d.meta, now(), now(),
+  '', '', '', '', '', '', '', ''
+from (values
+  ('a0000000-0000-0000-0000-000000000001'::uuid, 'admin@instalapro.dev',
+   '{"role":"platform_admin","full_name":"Admin Instala Pro"}'::jsonb),
+  ('a0000000-0000-0000-0000-000000000002', 'gerente@demo.dev',
+   '{"role":"company_manager","company_id":"11111111-1111-1111-1111-111111111111","full_name":"Gerente Demo"}'::jsonb),
+  ('a0000000-0000-0000-0000-000000000003', 'instalador1@demo.dev',
+   '{"role":"installer","full_name":"Iván Instalador"}'::jsonb),
+  ('a0000000-0000-0000-0000-000000000004', 'instalador2@demo.dev',
+   '{"role":"installer","full_name":"Paula Ploteo"}'::jsonb),
+  ('a0000000-0000-0000-0000-000000000005', 'instalador3@demo.dev',
+   '{"role":"installer","full_name":"Carlos Córdoba"}'::jsonb),
+  ('a0000000-0000-0000-0000-000000000006', 'coordinador@demo.dev',
+   '{"role":"installer","full_name":"Coordinadora Demo"}'::jsonb),
+  ('a0000000-0000-0000-0000-000000000007', 'gerente.b@demo.dev',
+   '{"role":"company_manager","company_id":"66666666-6666-6666-6666-666666666666","full_name":"Gerente Demo Brasil","locale":"pt"}'::jsonb)
+) as d(id, email, meta)
+on conflict (id) do nothing;
 
-  insert into auth.identities (
-    id, user_id, provider_id, provider, identity_data, last_sign_in_at, created_at, updated_at
-  ) values (
-    gen_random_uuid(), p_id, p_id::text, 'email',
-    jsonb_build_object('sub', p_id::text, 'email', p_email, 'email_verified', true),
-    now(), now(), now()
-  ) on conflict do nothing;
-end;
-$$;
-
-select public.seed_user(
-  'a0000000-0000-0000-0000-000000000001', 'admin@instalapro.dev',
-  '{"role":"platform_admin","full_name":"Admin Instala Pro"}'::jsonb);
-
-select public.seed_user(
-  'a0000000-0000-0000-0000-000000000002', 'gerente@demo.dev',
-  '{"role":"company_manager","company_id":"11111111-1111-1111-1111-111111111111","full_name":"Gerente Demo"}'::jsonb);
-
-select public.seed_user(
-  'a0000000-0000-0000-0000-000000000003', 'instalador1@demo.dev',
-  '{"role":"installer","full_name":"Iván Instalador"}'::jsonb);
-
-select public.seed_user(
-  'a0000000-0000-0000-0000-000000000004', 'instalador2@demo.dev',
-  '{"role":"installer","full_name":"Paula Ploteo"}'::jsonb);
-
-select public.seed_user(
-  'a0000000-0000-0000-0000-000000000005', 'instalador3@demo.dev',
-  '{"role":"installer","full_name":"Carlos Córdoba"}'::jsonb);
-
-select public.seed_user(
-  'a0000000-0000-0000-0000-000000000006', 'coordinador@demo.dev',
-  '{"role":"installer","full_name":"Coordinadora Demo"}'::jsonb);
-
-select public.seed_user(
-  'a0000000-0000-0000-0000-000000000007', 'gerente.b@demo.dev',
-  '{"role":"company_manager","company_id":"66666666-6666-6666-6666-666666666666","full_name":"Gerente Demo Brasil","locale":"pt"}'::jsonb);
-
--- Ya cumplió: no queda una función de seed suelta en `public`.
-drop function if exists public.seed_user(uuid, text, jsonb);
+-- La identidad de email es lo que GoTrue busca al iniciar sesion; sin esta fila
+-- el usuario existe pero no puede entrar.
+insert into auth.identities (
+  id, user_id, provider_id, provider, identity_data, last_sign_in_at, created_at, updated_at
+)
+select
+  gen_random_uuid(), u.id, u.id::text, 'email',
+  jsonb_build_object('sub', u.id::text, 'email', u.email, 'email_verified', true),
+  now(), now(), now()
+from auth.users u
+where u.id in (
+  'a0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000002',
+  'a0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000004',
+  'a0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000006',
+  'a0000000-0000-0000-0000-000000000007'
+)
+on conflict do nothing;
 
 -- 3. Zonas y skills de los instaladores
 update public.installers set zones = '{AR-BA-AMBA}', skills = '{ploteo_vehicular,vidrieras}'
