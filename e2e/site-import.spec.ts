@@ -18,6 +18,11 @@ import { ACTORS } from "./actors";
 const PROYECTO_SEED = "22222222-2222-2222-2222-222222222222";
 const FILAS = 6;
 
+// Margen amplio a propósito: el análisis reparsea el archivo y consulta la base
+// en el servidor, y en CI la primera invocación de una Server Action paga el
+// arranque en frío. Con 20 s este archivo paso dos corridas y fallo la tercera
+// sin que cambiara nada de la aplicacion; lo que se verifica no cambia.
+
 function planilla(prefijo: string): Buffer {
   const filas = [
     ["nombre", "direccion", "ciudad", "provincia", "codigo", "lat", "lng"],
@@ -62,14 +67,14 @@ test.describe("gerente", () => {
         });
       // Paso de revisión: el conteo tiene que salir del análisis real.
       const confirmar = page.getByRole("button", { name: /^Importar \d+ locaciones$/ });
-      await expect(confirmar).toBeVisible({ timeout: 20_000 });
+      await expect(confirmar).toBeVisible({ timeout: 60_000 });
       const etiqueta = (await confirmar.textContent()) ?? "";
       await confirmar.click();
       // `exact`: el toast dice «6 puntos importados» y el panel sólo «puntos
       // importados». Sin esto el selector agarra los dos.
       await expect(
         page.getByText("puntos importados", { exact: true }),
-      ).toBeVisible({ timeout: 30_000 });
+      ).toBeVisible({ timeout: 60_000 });
       return Number(etiqueta.match(/\d+/)?.[0] ?? 0);
     };
 
@@ -112,7 +117,7 @@ test.describe("gerente", () => {
     });
     await expect(
       page.getByText("Ninguna fila de la planilla se puede importar."),
-    ).toBeVisible({ timeout: 20_000 });
+    ).toBeVisible({ timeout: 60_000 });
   });
 
   /**
@@ -155,10 +160,10 @@ test.describe("gerente", () => {
       const boton = page.getByRole("button", {
         name: /^Importar \d+ locaciones$/,
       });
-      await expect(boton).toBeVisible({ timeout: 20_000 });
+      await expect(boton).toBeVisible({ timeout: 60_000 });
       await boton.click();
       const toast = page.getByText(/^\d+ puntos importados$/);
-      await expect(toast).toBeVisible({ timeout: 30_000 });
+      await expect(toast).toBeVisible({ timeout: 60_000 });
       return Number((await toast.textContent())?.match(/\d+/)?.[0] ?? "0");
     };
 
