@@ -351,16 +351,21 @@ select is(
   'compartir identidad no filtra datos contractuales del proyecto A2'
 );
 
+-- El intento va como sentencia propia: Postgres no admite un `with` que
+-- escribe dentro de una subconsulta, y meterlo ahí abortaba la suite entera en
+-- esta línea (15 de 28 pruebas quedaban sin correr). RLS lo deja en 0 filas
+-- afectadas, sin error, así que lo que hay que comprobar es el efecto.
+update public.locations
+set permanent_notes = 'edición directa no autorizada',
+    updated_by = 'c2000000-0000-0000-0000-000000000011'
+where id = 'c2000000-0000-0000-0000-000000000040';
+
 select is(
   (
-    with changed as (
-      update public.locations
-      set permanent_notes = 'edición directa no autorizada',
-          updated_by = 'c2000000-0000-0000-0000-000000000011'
-      where id = 'c2000000-0000-0000-0000-000000000040'
-      returning 1
-    )
-    select count(*)::integer from changed
+    select count(*)::integer
+    from public.locations
+    where id = 'c2000000-0000-0000-0000-000000000040'
+      and permanent_notes = 'edición directa no autorizada'
   ),
   0,
   'el coordinador no modifica datos permanentes directamente'
