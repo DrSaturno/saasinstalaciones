@@ -351,22 +351,23 @@ select is(
   'compartir identidad no filtra datos contractuales del proyecto A2'
 );
 
--- El intento va como sentencia propia: Postgres no admite un `with` que
--- escribe dentro de una subconsulta, y meterlo ahí abortaba la suite entera en
--- esta línea (15 de 28 pruebas quedaban sin correr). RLS lo deja en 0 filas
--- afectadas, sin error, así que lo que hay que comprobar es el efecto.
-update public.locations
-set permanent_notes = 'edición directa no autorizada',
-    updated_by = 'c2000000-0000-0000-0000-000000000011'
-where id = 'c2000000-0000-0000-0000-000000000040';
+-- Postgres no admite un `with` que escribe metido dentro de una subconsulta, y
+-- así estaban escritas las cuatro comprobaciones de escritura de este archivo:
+-- abortaban la suite entera en la primera de ellas. La forma que sí vale es
+-- dejar el `with` al tope de una sentencia propia y guardar el resultado, que
+-- además conserva lo que se quería medir —filas afectadas— en vez de conformarse
+-- con mirar el efecto. RLS bloquea sin lanzar error: la señal son las 0 filas.
+with changed as (
+  update public.locations
+  set permanent_notes = 'edición directa no autorizada',
+      updated_by = 'c2000000-0000-0000-0000-000000000011'
+  where id = 'c2000000-0000-0000-0000-000000000040'
+  returning 1
+)
+select count(*)::integer as filas into temp table _escritura_coordinador from changed;
 
 select is(
-  (
-    select count(*)::integer
-    from public.locations
-    where id = 'c2000000-0000-0000-0000-000000000040'
-      and permanent_notes = 'edición directa no autorizada'
-  ),
+  (select filas from _escritura_coordinador),
   0,
   'el coordinador no modifica datos permanentes directamente'
 );
@@ -436,17 +437,17 @@ select is(
   'el instalador asignado puede leer adjuntos permanentes'
 );
 
+with changed as (
+  update public.locations
+  set risk_notes = 'edición directa no autorizada',
+      updated_by = 'c2000000-0000-0000-0000-000000000012'
+  where id = 'c2000000-0000-0000-0000-000000000040'
+  returning 1
+)
+select count(*)::integer as filas into temp table _escritura_instalador from changed;
+
 select is(
-  (
-    with changed as (
-      update public.locations
-      set risk_notes = 'edición directa no autorizada',
-          updated_by = 'c2000000-0000-0000-0000-000000000012'
-      where id = 'c2000000-0000-0000-0000-000000000040'
-      returning 1
-    )
-    select count(*)::integer from changed
-  ),
+  (select filas from _escritura_instalador),
   0,
   'el instalador no modifica datos permanentes directamente'
 );
@@ -491,32 +492,32 @@ select is(
   'el manager A ve sus locaciones y no la del tenant B'
 );
 
+with changed as (
+  update public.locations
+  set permanent_notes = 'dato permanente validado',
+      updated_by = 'c2000000-0000-0000-0000-000000000010'
+  where id = 'c2000000-0000-0000-0000-000000000040'
+  returning 1
+)
+select count(*)::integer as filas into temp table _escritura_manager from changed;
+
 select is(
-  (
-    with changed as (
-      update public.locations
-      set permanent_notes = 'dato permanente validado',
-          updated_by = 'c2000000-0000-0000-0000-000000000010'
-      where id = 'c2000000-0000-0000-0000-000000000040'
-      returning 1
-    )
-    select count(*)::integer from changed
-  ),
+  (select filas from _escritura_manager),
   1,
   'el manager administra datos permanentes de su tenant'
 );
 
+with changed as (
+  update public.locations
+  set permanent_notes = 'fuga',
+      updated_by = 'c2000000-0000-0000-0000-000000000010'
+  where id = 'c2000000-0000-0000-0000-000000000042'
+  returning 1
+)
+select count(*)::integer as filas into temp table _fuga_entre_tenants from changed;
+
 select is(
-  (
-    with changed as (
-      update public.locations
-      set permanent_notes = 'fuga',
-          updated_by = 'c2000000-0000-0000-0000-000000000010'
-      where id = 'c2000000-0000-0000-0000-000000000042'
-      returning 1
-    )
-    select count(*)::integer from changed
-  ),
+  (select filas from _fuga_entre_tenants),
   0,
   'el manager A no modifica la locación del tenant B'
 );
