@@ -20,12 +20,12 @@ const fragmentMono = Fragment_Mono({
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Metadata");
   return {
-    title: "Instala Pro",
+    title: "Se Instala",
     description: t("description"),
     appleWebApp: {
       capable: true,
       statusBarStyle: "default",
-      title: "Instala Pro",
+      title: "Se Instala",
     },
     icons: {
       icon: [

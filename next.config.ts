@@ -23,6 +23,18 @@ const nextConfig: NextConfig = {
     root: path.join(__dirname),
   },
   /**
+   * Empaquetado autocontenido para hosting propio (SiteGround).
+   *
+   * La aplicación no es un sitio estático: tiene middleware, rutas de API y ~30
+   * módulos de Server Actions, así que necesita un proceso Node corriendo. Con
+   * `standalone`, el build produce en `.next/standalone` un servidor con sólo
+   * las dependencias que realmente usa —sin `node_modules` completo—, que es lo
+   * que se sube y se arranca con `node server.js`.
+   *
+   * En Vercel esta opción se ignora, así que no cambia el despliegue actual.
+   */
+  output: "standalone",
+  /**
    * Sólo afecta a `next dev`: en producción esta clave se ignora.
    *
    * Playwright apunta a `127.0.0.1` (ver `playwright.config.ts`), pero el dev

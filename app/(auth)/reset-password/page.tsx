@@ -27,7 +27,7 @@ export default async function ResetPasswordPage(props: {
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <Link href="/" className="font-mono text-sm text-muted-foreground">
-            Instala Pro
+            Se Instala
           </Link>
         </div>
         <Card>

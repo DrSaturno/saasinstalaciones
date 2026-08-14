@@ -75,7 +75,7 @@ export async function inviteInstaller(
       token = data.token;
     }
 
-    const companyName = company?.name ?? "Instala Pro";
+    const companyName = company?.name ?? "Se Instala";
     const emailStatus = await sendInvitationEmail({
       to: parsed.data,
       token,

@@ -1,6 +1,6 @@
 {
   "Common": {
-    "brand": "Instala Pro",
+    "brand": "Se Instala",
     "email": "E-mail",
     "loading": "Carregando…",
     "done": "Pronto",
@@ -106,10 +106,10 @@
     "login": "Entrar",
     "contactSales": "Falar com vendas",
     "title": "Cada ponto de instalação sob controle.",
-    "description": "Instala Pro é a plataforma para empresas de comunicação visual que gerenciam projetos de grande escala: milhares de pontos, dezenas de instaladores e um único painel.",
+    "description": "Se Instala é a plataforma para empresas de comunicação visual que gerenciam projetos de grande escala: milhares de pontos, dezenas de instaladores e um único painel.",
     "regionalCaption": "AR · BR — gestão de instalações em campo",
     "audienceTitle": "Feito para projetos que não cabem numa planilha",
-    "audienceBody": "Quando uma campanha são 2000 postos de combustível espalhados pelo país inteiro, o Excel não dá conta. O Instala Pro organiza o projeto de ponta a ponta: da importação dos pontos à foto do trabalho concluído.",
+    "audienceBody": "Quando uma campanha são 2000 postos de combustível espalhados pelo país inteiro, o Excel não dá conta. O Se Instala organiza o projeto de ponta a ponta: da importação dos pontos à foto do trabalho concluído.",
     "pillarsTitle": "Três visões, uma só operação",
     "pillarCompanyTitle": "A empresa no comando",
     "pillarCompanyBody": "Importe milhares de pontos por CSV, gere as ordens em lote e acompanhe cada uma por status. Atribua instaladores, publique vagas por região e aprove os trabalhos concluídos.",
@@ -131,8 +131,8 @@
     "featureI18nTitle": "Espanhol e português",
     "featureI18nBody": "Toda a plataforma em es-AR e pt-BR, pronta para equipes dos dois lados da fronteira.",
     "ctaTitle": "Você gerencia instalações em grande escala?",
-    "ctaBody": "Fale com a gente e mostramos o Instala Pro com os seus próprios projetos.",
-    "footerRights": "Instala Pro — gestão de instalações de comunicação visual de grande formato",
+    "ctaBody": "Fale com a gente e mostramos o Se Instala com os seus próprios projetos.",
+    "footerRights": "Se Instala — gestão de instalações de comunicação visual de grande formato",
     "footerRegion": "Argentina · Brasil"
   },
   "AppStates": {
@@ -221,7 +221,7 @@
       "danger": "Crítico"
     },
     "calendarTitle": "Google Calendar",
-    "calendarDescription": "Sincronização em um só sentido: o Instala Pro publica as ordens programadas no calendário do responsável.",
+    "calendarDescription": "Sincronização em um só sentido: o Se Instala publica as ordens programadas no calendário do responsável.",
     "calendarPending": "Conexão pendente de configuração",
     "connected": "Conectado",
     "notConnected": "Sem conexão",
@@ -1280,16 +1280,16 @@
     "emailFailed": "O convite foi criado, mas o e-mail não pôde ser enviado. Compartilhe o link manualmente."
   },
   "InvitationEmail": {
-    "subject": "{company} convidou você para o Instala Pro",
-    "heading": "Você recebeu um convite para o Instala Pro",
-    "body": "{company} quer adicionar você à equipe de instaladores no Instala Pro.",
+    "subject": "{company} convidou você para o Se Instala",
+    "heading": "Você recebeu um convite para o Se Instala",
+    "body": "{company} quer adicionar você à equipe de instaladores no Se Instala.",
     "cta": "Aceitar convite",
     "expires": "Este link expira em 7 dias.",
     "fallback": "Se o botão não funcionar, copie e cole o link abaixo no navegador."
   },
   "ManagerActivationEmail": {
     "subject": "Ative seu acesso à {company}",
-    "heading": "Crie sua senha do Instala Pro",
+    "heading": "Crie sua senha do Se Instala",
     "body": "A conta responsável por {company} já está pronta. Use este link seguro para ativá-la e escolher sua senha.",
     "cta": "Ativar conta",
     "expires": "Abra o quanto antes: o link só pode ser usado uma vez.",

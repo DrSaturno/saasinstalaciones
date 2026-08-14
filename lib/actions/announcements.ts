@@ -130,11 +130,11 @@ async function deliverEmails(
   return sendAnnouncementEmail({
     to: emails,
     announcementId,
-    companyName: company?.name ?? "Instala Pro",
+    companyName: company?.name ?? "Se Instala",
     title: input.title,
     body: input.body,
     copy: {
-      subject: emailT("subject", { company: company?.name ?? "Instala Pro" }),
+      subject: emailT("subject", { company: company?.name ?? "Se Instala" }),
       intro: emailT("intro"),
       footer: emailT("footer"),
     },

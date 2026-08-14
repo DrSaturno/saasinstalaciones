@@ -7,8 +7,8 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     getTranslations("Metadata"),
   ]);
   return {
-    name: "Instala Pro",
-    short_name: "Instala Pro",
+    name: "Se Instala",
+    short_name: "Se Instala",
     description: t("manifestDescription"),
     // El instalador arranca en su centro operativo, igual que al entrar por
     // web: el próximo destino, la semana y los bloques por empresa. Antes

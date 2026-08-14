@@ -21,7 +21,7 @@ export async function GET() {
   }
 
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "Instala Pro";
+  workbook.creator = "Se Instala";
   workbook.created = new Date();
 
   const sheet = workbook.addWorksheet("Locaciones");
