@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Locator, type Page } from "@playwright/test";
 import XLSX from "xlsx";
 import { ACTORS } from "./actors";
 
@@ -18,10 +18,9 @@ import { ACTORS } from "./actors";
 const PROYECTO_SEED = "22222222-2222-2222-2222-222222222222";
 const FILAS = 6;
 
-// Margen amplio a propósito: el análisis reparsea el archivo y consulta la base
-// en el servidor, y en CI la primera invocación de una Server Action paga el
-// arranque en frío. Con 20 s este archivo paso dos corridas y fallo la tercera
-// sin que cambiara nada de la aplicacion; lo que se verifica no cambia.
+// El margen es de 60 s, pero el tiempo NO era la causa: con 20 s fallaba y con
+// 60 s también, alternando entre el primer y el segundo caso. Queda amplio para
+// descartar la lentitud de CI, y el diagnóstico real lo aporta `esperarRevision`.
 
 function planilla(prefijo: string): Buffer {
   const filas = [
@@ -40,6 +39,38 @@ function planilla(prefijo: string): Buffer {
     filas.map((f) => f.map((c) => `"${c}"`).join(",")).join("\r\n"),
     "utf8",
   );
+}
+
+/**
+ * Espera el paso de revisión y, si no llega, explica por qué.
+ *
+ * El fallo crudo era «element(s) not found», que no dice nada: el diálogo puede
+ * no haber llegado ahí porque el análisis devolvió error (muestra un aviso y
+ * limpia todo) o porque ninguna fila resultó importable. Volcar lo que quedó en
+ * pantalla convierte un rojo mudo en un diagnóstico.
+ */
+async function esperarRevision(page: Page, boton: Locator) {
+  try {
+    await expect(boton).toBeVisible({ timeout: 60_000 });
+  } catch (error) {
+    const dialogo = await page
+      .locator('[role="dialog"]')
+      .innerText()
+      .catch(() => "(sin diálogo en pantalla)");
+    const avisos = await page
+      .locator('[data-sonner-toast], [role="status"], [role="alert"]')
+      .allInnerTexts()
+      .catch(() => []);
+    throw new Error(
+      `No apareció el paso de revisión.
+--- diálogo ---
+${dialogo}
+--- avisos ---
+${avisos.join(" | ") || "(ninguno)"}
+
+${String(error)}`,
+    );
+  }
 }
 
 test.describe("gerente", () => {
@@ -67,7 +98,7 @@ test.describe("gerente", () => {
         });
       // Paso de revisión: el conteo tiene que salir del análisis real.
       const confirmar = page.getByRole("button", { name: /^Importar \d+ locaciones$/ });
-      await expect(confirmar).toBeVisible({ timeout: 60_000 });
+      await esperarRevision(page, confirmar);
       const etiqueta = (await confirmar.textContent()) ?? "";
       await confirmar.click();
       // `exact`: el toast dice «6 puntos importados» y el panel sólo «puntos
@@ -160,7 +191,7 @@ test.describe("gerente", () => {
       const boton = page.getByRole("button", {
         name: /^Importar \d+ locaciones$/,
       });
-      await expect(boton).toBeVisible({ timeout: 60_000 });
+      await esperarRevision(page, boton);
       await boton.click();
       const toast = page.getByText(/^\d+ puntos importados$/);
       await expect(toast).toBeVisible({ timeout: 60_000 });

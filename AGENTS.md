@@ -4,7 +4,7 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
-# Instala Pro
+# Se Instala
 
 SaaS B2B multi-tenant para gestionar equipos de instaladores de gráfica de gran formato en proyectos masivos (ej. 2000 estaciones de servicio). Tres áreas: tablero maestro (platform_admin), empresa (company_manager) e instalador (PWA mobile offline-first). El plan completo vive en `../BLUEPRINT.md` — seguir su orden de construcción.
 
