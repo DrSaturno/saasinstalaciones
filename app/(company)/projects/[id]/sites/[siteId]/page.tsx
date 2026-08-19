@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
-import { ExternalLink, Mail, MapPin, Phone } from "lucide-react";
+import { BookOpenText, ExternalLink, Mail, MapPin, Phone } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { googleMapsHref } from "@/lib/domain/sites";
 import { EditSiteDialog } from "@/components/company/edit-site-dialog";
@@ -21,7 +21,7 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
   const [t, format] = await Promise.all([getTranslations("SiteDetail"), getFormatter()]);
   const supabase = await createClient();
   const [{ data: site }, { data: project }, { data: orders }, attachments, gallery] = await Promise.all([
-    supabase.from("sites").select("id, company_id, name, address, city, state, zone, lat, lng, status, external_ref, archived_at, contact_name, contact_phone, contact_email, opening_hours, access_notes, parking_notes, technical_notes, risk_notes, permanent_notes").eq("id", siteId).eq("project_id", projectId).single(),
+    supabase.from("sites").select("id, company_id, location_id, name, address, city, state, zone, lat, lng, status, external_ref, archived_at, contact_name, contact_phone, contact_email, opening_hours, access_notes, parking_notes, technical_notes, risk_notes, permanent_notes").eq("id", siteId).eq("project_id", projectId).single(),
     supabase.from("projects").select("id, name, country, zones").eq("id", projectId).single(),
     supabase.from("work_orders").select("id, order_number, title, status, scheduled_date, amount, currency, created_at").eq("site_id", siteId).order("created_at", { ascending: false }),
     fetchSiteAttachments(supabase, siteId),
@@ -45,6 +45,7 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
           <p className="mt-1 text-sm text-muted-foreground">{site.external_ref ? `${site.external_ref} · ` : ""}{site.zone}</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {site.location_id ? <Button asChild><Link href={`/locations/${site.location_id}`}><BookOpenText aria-hidden="true" />{t("canonicalHistory")}</Link></Button> : null}
           <EditSiteDialog projectId={projectId} siteId={siteId} country={project.country} zones={project.zones} defaults={{ name: site.name, externalRef: site.external_ref ?? "", address: site.address, city: site.city, state: site.state, zone: site.zone, lat: site.lat, lng: site.lng, contactName: site.contact_name, contactPhone: site.contact_phone, contactEmail: site.contact_email, openingHours: site.opening_hours, accessNotes: site.access_notes, parkingNotes: site.parking_notes, technicalNotes: site.technical_notes, riskNotes: site.risk_notes, permanentNotes: site.permanent_notes }} />
           <SiteLifecycleActions projectId={projectId} siteId={siteId} archived={Boolean(site.archived_at)} orderCount={(orders ?? []).length} />
         </div>

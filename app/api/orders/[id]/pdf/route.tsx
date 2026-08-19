@@ -105,7 +105,7 @@ export async function GET(
     indoor: order.indoor,
     requiresFreight: order.requires_freight,
     freightDetails: order.freight_details ?? "",
-    company: company?.name ?? "Instala Pro",
+    company: company?.name ?? "Se Instala",
     project: project?.name ?? "",
     client: project?.client_name ?? "",
     installer: installer?.full_name ?? "",

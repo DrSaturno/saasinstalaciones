@@ -77,7 +77,7 @@ export function AppShellFrame({
             IP
           </div>
           <div className={cn("min-w-0 flex-1", collapsed && "lg:hidden")}>
-            <p className="truncate font-mono text-sm font-semibold">Instala Pro</p>
+            <p className="truncate font-mono text-sm font-semibold">Se Instala</p>
             <p className="truncate text-xs text-muted-foreground">{area}</p>
           </div>
           <Button

@@ -24,10 +24,21 @@ for (const path of ["/home", "/tasks", "/route", "/profile"]) {
 
 test("el service worker queda registrado", async ({ page }) => {
   await page.goto("/home");
-  const registered = await page.evaluate(async () => {
-    if (!("serviceWorker" in navigator)) return false;
-    const registration = await navigator.serviceWorker.getRegistration();
-    return Boolean(registration);
-  });
+
+  // El registro no es inmediato: el componente espera el evento `load` y a que
+  // termine de prepararse el almacenamiento offline. Consultarlo apenas navega
+  // devolvía `undefined` por carrera, no porque el SW estuviera roto.
+  const registered = await page
+    .waitForFunction(
+      async () => {
+        if (!("serviceWorker" in navigator)) return false;
+        return Boolean(await navigator.serviceWorker.getRegistration());
+      },
+      undefined,
+      { timeout: 15_000 },
+    )
+    .then(() => true)
+    .catch(() => false);
+
   expect(registered).toBe(true);
 });

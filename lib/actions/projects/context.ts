@@ -24,5 +24,9 @@ export async function requireOperator() {
   ) {
     throw new Error("Acceso denegado");
   }
-  return { supabase: await createClient(), companyId: user.companyId };
+  return {
+    supabase: await createClient(),
+    companyId: user.companyId,
+    userId: user.id,
+  };
 }

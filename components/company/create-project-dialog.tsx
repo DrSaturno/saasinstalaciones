@@ -41,7 +41,8 @@ export function CreateProjectDialog({
       if (next.ok) {
         setOpen(false);
         toast.success(t("success"));
-        router.refresh();
+        if (next.id) router.push(`/projects/${next.id}?reuse=1`);
+        else router.refresh();
       }
       return next;
     },

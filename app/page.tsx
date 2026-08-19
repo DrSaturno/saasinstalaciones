@@ -44,7 +44,7 @@ export default async function LandingPage() {
       {/* Header */}
       <header className="border-b bg-card">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <span className="font-mono text-sm font-medium">Instala Pro</span>
+          <span className="font-mono text-sm font-medium">Se Instala</span>
           <div className="flex items-center gap-2">
             <LocaleSwitcher locale={locale} />
             <Button asChild size="sm">

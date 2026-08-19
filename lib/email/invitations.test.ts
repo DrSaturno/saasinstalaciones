@@ -75,7 +75,7 @@ describe("invitation email", () => {
 
   it("sends localized, escaped content with an idempotency key", async () => {
     process.env.RESEND_API_KEY = "re_test";
-    process.env.RESEND_FROM_EMAIL = "Instala Pro <invites@example.com>";
+    process.env.RESEND_FROM_EMAIL = "Se Instala <invites@example.com>";
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ id: "email-id" }), { status: 200 }),
     );
@@ -97,7 +97,7 @@ describe("invitation email", () => {
 
   it("reports provider errors without exposing the response", async () => {
     process.env.RESEND_API_KEY = "re_test";
-    process.env.RESEND_FROM_EMAIL = "Instala Pro <invites@example.com>";
+    process.env.RESEND_FROM_EMAIL = "Se Instala <invites@example.com>";
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 422 })));
 
@@ -106,7 +106,7 @@ describe("invitation email", () => {
 
   it("does not put the manager activation token in the idempotency key", async () => {
     process.env.RESEND_API_KEY = "re_test";
-    process.env.RESEND_FROM_EMAIL = "Instala Pro <invites@example.com>";
+    process.env.RESEND_FROM_EMAIL = "Se Instala <invites@example.com>";
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 

@@ -56,7 +56,7 @@ export default async function OrderDetailPage({
     await Promise.all([
       supabase
         .from("sites")
-        .select("name, address, city, state, zone, external_ref")
+        .select("name, address, city, state, zone, external_ref, location_id")
         .eq("id", order.site_id)
         .single(),
       supabase
@@ -183,7 +183,13 @@ export default async function OrderDetailPage({
           <Card>
             <CardContent className="pt-6">
               <h2 className="text-sm font-medium text-muted-foreground">{t("site")}</h2>
-              <p className="mt-2 font-medium">{site?.name}</p>
+              {site?.location_id ? (
+                <Link href={`/locations/${site.location_id}`} className="mt-2 inline-block font-medium transition-colors hover:text-primary">
+                  {site.name}
+                </Link>
+              ) : (
+                <p className="mt-2 font-medium">{site?.name}</p>
+              )}
               <p className="text-sm text-muted-foreground">
                 {[site?.address, site?.city, site?.state].filter(Boolean).join(", ") || t("noAddress")}
               </p>

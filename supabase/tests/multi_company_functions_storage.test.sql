@@ -12,7 +12,11 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select n, msg from (
+-- Se emite SOLO la columna de texto: pg_prove lee TAP de la salida de psql y
+-- una segunda columna la vuelve ilegible («No subtests run»). El `order by n`
+-- se conserva porque el orden de un union all no esta garantizado y TAP se lee
+-- en secuencia. Sigue sirviendo para pegar en Supabase Studio.
+select msg from (
   select 0 as n, msg from plan(21) msg
 
   union all

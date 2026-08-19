@@ -70,7 +70,7 @@ export async function syncCompanyCalendar(supabase: SupabaseClient<Database>, us
       continue;
     }
     const site = siteMap.get(order.site_id); if (!site) continue;
-    const googleEventId = await upsertEvent(client, connection.calendar_id, mapping?.google_event_id ?? null, eventBody(order, projectMap.get(order.project_id) ?? "Instala Pro", site));
+    const googleEventId = await upsertEvent(client, connection.calendar_id, mapping?.google_event_id ?? null, eventBody(order, projectMap.get(order.project_id) ?? "Se Instala", site));
     await supabase.from("calendar_order_events").upsert({ company_id: connection.company_id, connection_id: connection.id, order_id: order.id, google_event_id: googleEventId, last_synced_at: new Date().toISOString() }, { onConflict: "connection_id,order_id" });
     synced++;
   }

@@ -343,7 +343,9 @@ create table public.notification_outbox (
   delivered_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint notification_outbox_attempts_check check (
+  -- No usar `notification_outbox_attempts_check`: Postgres ya le dio ese nombre
+  -- al check inline de la columna `attempts`, y el nombre colisionaría.
+  constraint notification_outbox_attempts_budget_check check (
     attempts <= max_attempts
     or status = 'dead_letter'
   ),
@@ -377,7 +379,9 @@ create table public.notification_deliveries (
   last_error_code text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint notification_deliveries_attempts_check check (
+  -- Mismo motivo que en `notification_outbox`: el check inline de `attempts`
+  -- ya ocupa el nombre autogenerado.
+  constraint notification_deliveries_attempts_budget_check check (
     attempts <= max_attempts
     or status = 'dead_letter'
   ),
@@ -485,7 +489,16 @@ as $$
 declare
   v_activity_type text;
   v_expected_version integer;
+  v_previous_status text;
 begin
+  -- `old` sólo existe en UPDATE. Se guarda acá en vez de resolverlo con un
+  -- CASE dentro de la condición de un IF: el parser de plpgsql corta la
+  -- condición en el primer THEN que encuentra, y el THEN del CASE le desarma
+  -- el bloque.
+  if tg_op = 'UPDATE' then
+    v_previous_status := old.status;
+  end if;
+
   select a.activity_type
   into v_activity_type
   from public.work_activities a
@@ -555,7 +568,7 @@ begin
   end if;
 
   if new.status in ('approved', 'changes_requested')
-     and new.status is distinct from case when tg_op = 'UPDATE' then old.status else null end then
+     and new.status is distinct from v_previous_status then
     if new.reviewed_by is null or new.reviewed_at is null then
       raise exception 'SURVEY_REVIEWER_REQUIRED';
     end if;

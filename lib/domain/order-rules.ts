@@ -16,7 +16,8 @@ export type OrderRuleBlock =
   | "needsAcceptance"
   | "needsScheduledDate"
   | "onlyInstallerStarts"
-  | "onlyInstallerReviews";
+  | "onlyInstallerReviews"
+  | "noSelfApproval";
 
 export type OrderRuleContext = {
   status: OrderStatus;
@@ -70,6 +71,16 @@ export function orderTransitionBlock(
   // aprueba y la empresa es última instancia, pero ninguno de los dos "envía".
   if (to === "en_revision" && actor.id !== order.assignedInstallerId) {
     return "onlyInstallerReviews";
+  }
+
+  // ADR-001: quien ejecuta la actividad no puede aprobar su propia entrega,
+  // aunque también sea coordinador del proyecto (rol dual, R1).
+  if (
+    order.status === "en_revision" &&
+    (to === "finalizada" || to === "en_proceso") &&
+    actor.id === order.assignedInstallerId
+  ) {
+    return "noSelfApproval";
   }
 
   return null;

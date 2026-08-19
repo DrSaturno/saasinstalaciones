@@ -1,6 +1,6 @@
 {
   "Common": {
-    "brand": "Instala Pro",
+    "brand": "Se Instala",
     "email": "Email",
     "loading": "Cargando…",
     "done": "Listo",
@@ -31,6 +31,7 @@
     "team": "Equipo",
     "broadcasts": "Bolsa de zona",
     "finance": "Finanzas",
+    "locationReview": "Revisar locaciones",
     "settings": "Configuración",
     "tasks": "Mis órdenes",
     "jobs": "Bolsa de zona",
@@ -105,10 +106,10 @@
     "login": "Ingresar",
     "contactSales": "Contactar ventas",
     "title": "Cada punto de instalación, bajo control.",
-    "description": "Instala Pro es la plataforma para empresas de gráfica de gran formato que gestionan proyectos masivos: miles de puntos, decenas de instaladores, un solo tablero.",
+    "description": "Se Instala es la plataforma para empresas de gráfica de gran formato que gestionan proyectos masivos: miles de puntos, decenas de instaladores, un solo tablero.",
     "regionalCaption": "AR · BR — gestión de instalaciones en campo",
     "audienceTitle": "Pensado para proyectos que no entran en una planilla",
-    "audienceBody": "Cuando una campaña son 2000 estaciones de servicio repartidas por todo el país, el Excel se rompe. Instala Pro ordena el proyecto de punta a punta: desde la importación de los puntos hasta la foto del trabajo terminado.",
+    "audienceBody": "Cuando una campaña son 2000 estaciones de servicio repartidas por todo el país, el Excel se rompe. Se Instala ordena el proyecto de punta a punta: desde la importación de los puntos hasta la foto del trabajo terminado.",
     "pillarsTitle": "Tres vistas, una sola operación",
     "pillarCompanyTitle": "La empresa, al mando",
     "pillarCompanyBody": "Importá miles de puntos por CSV, generá las órdenes en lote y seguí cada una por estado. Asigná instaladores, publicá búsquedas por zona y aprobá los trabajos terminados.",
@@ -130,8 +131,8 @@
     "featureI18nTitle": "Español y portugués",
     "featureI18nBody": "Toda la plataforma en es-AR y pt-BR, lista para equipos de los dos lados de la frontera.",
     "ctaTitle": "¿Gestionás instalaciones a gran escala?",
-    "ctaBody": "Escribinos y te mostramos Instala Pro con tus propios proyectos.",
-    "footerRights": "Instala Pro — gestión de instalaciones de gráfica de gran formato",
+    "ctaBody": "Escribinos y te mostramos Se Instala con tus propios proyectos.",
+    "footerRights": "Se Instala — gestión de instalaciones de gráfica de gran formato",
     "footerRegion": "Argentina · Brasil"
   },
   "AppStates": {
@@ -220,7 +221,7 @@
       "danger": "Crítico"
     },
     "calendarTitle": "Google Calendar",
-    "calendarDescription": "Sincronización en un solo sentido: Instala Pro publica las órdenes programadas en el calendario del responsable.",
+    "calendarDescription": "Sincronización en un solo sentido: Se Instala publica las órdenes programadas en el calendario del responsable.",
     "calendarPending": "Conexión pendiente de configurar",
     "connected": "Conectado",
     "notConnected": "Sin conectar",
@@ -524,7 +525,8 @@
     "addOne": "Sumar una instalación contratada",
     "quantityUpdated": "Cantidad contratada actualizada",
     "actionsTitle": "Carga y órdenes",
-    "actionsDescription": "Hay {archived} locaciones archivadas. Podés agregar una ficha individual, importar un CSV o generar órdenes."
+    "actionsDescription": "Hay {archived} locaciones archivadas. Podés agregar una ficha individual, importar un CSV o generar órdenes.",
+    "export": "Exportar a Excel"
   },
   "SiteForm": {
     "add": "Agregar instalación",
@@ -576,6 +578,7 @@
   },
   "SiteDetail": {
     "back": "Volver a {project}",
+    "canonicalHistory": "Ver historial completo",
     "archived": "Archivada",
     "location": "Ubicación",
     "noAddress": "Sin dirección cargada",
@@ -599,6 +602,146 @@
     "delete": "Eliminar definitivamente",
     "deleteConfirm": "Esta instalación no tiene historial. ¿Querés eliminarla definitivamente?",
     "deleted": "Instalación eliminada"
+  },
+  "CanonicalLocation": {
+    "backToClient": "Volver a {client}",
+    "backToProjects": "Volver a proyectos",
+    "eyebrow": "Ficha permanente de la locación",
+    "archived": "Archivada",
+    "identity": "Identidad física",
+    "noAddress": "Sin dirección cargada",
+    "openMaps": "Abrir en Maps",
+    "openingHours": "Horarios y ventanas de acceso",
+    "updated": "Ficha actualizada {date}",
+    "source": {
+      "manual": "Alta manual",
+      "backfill": "Historia unificada",
+      "import": "Importada",
+      "opportunity": "Desde oportunidad",
+      "unknown": "Origen no informado"
+    },
+    "metrics": {
+      "projects": "Proyectos",
+      "orders": "Órdenes de trabajo",
+      "evidence": "Evidencias",
+      "incidents": "Incidencias",
+      "open": "abiertas"
+    },
+    "conditions": {
+      "title": "Condiciones permanentes",
+      "description": "Información que acompaña al local aunque cambien el proyecto y la orden.",
+      "empty": "Todavía no se cargaron condiciones permanentes para esta locación.",
+      "access": "Acceso, permisos y llaves",
+      "parking": "Estacionamiento y descarga",
+      "technical": "Información técnica",
+      "risks": "Riesgos y precauciones",
+      "notes": "Notas permanentes"
+    },
+    "association": {
+      "planned": "Planificada",
+      "active": "Activa",
+      "paused": "Pausada",
+      "completed": "Completada",
+      "cancelled": "Cancelada",
+      "archived": "Archivada",
+      "unreconciled": "Pendiente de conciliar"
+    },
+    "history": {
+      "title": "Trayectoria entre proyectos",
+      "description": "La misma locación, ordenada por cada campaña y sus órdenes de trabajo.",
+      "empty": "Esta locación todavía no fue asociada a un proyecto.",
+      "unknownProject": "Proyecto no disponible",
+      "archivedProject": "Proyecto archivado",
+      "noScope": "Sin alcance detallado",
+      "units": "{count, plural, one {# unidad} other {# unidades}}",
+      "noOrders": "Este proyecto no tiene órdenes para la locación.",
+      "unscheduled": "Sin fecha programada",
+      "incidents": "{count, plural, one {# incidencia} other {# incidencias}}"
+    },
+    "evidence": {
+      "title": "Evidencia acumulada",
+      "description": "Adjuntos y fotos de avance de todas las órdenes realizadas en este local.",
+      "empty": "Todavía no hay evidencia asociada a esta locación.",
+      "progressPhoto": "Foto de avance",
+      "orderAttachment": "Adjunto de la orden"
+    },
+    "incidents": {
+      "title": "Incidencias de la locación",
+      "description": "Problemas registrados en cualquier visita, incluso en proyectos anteriores.",
+      "empty": "No hay incidencias registradas en esta locación.",
+      "open": "Abierta"
+    },
+    "requirements": {
+      "title": "Requisitos y permisos",
+      "description": "Vigencias que deben revisarse antes de planificar una visita.",
+      "empty": "No hay requisitos ni permisos registrados.",
+      "requirement": "Requisito",
+      "permit": "Permiso",
+      "expires": "Vence {date}",
+      "status": {
+        "pending": "Pendiente",
+        "valid": "Vigente",
+        "expired": "Vencido",
+        "rejected": "Rechazado",
+        "not_required": "No requerido",
+        "unknown": "Sin estado"
+      }
+    },
+    "documents": {
+      "title": "Documentos permanentes",
+      "description": "Planos, permisos y referencias que pertenecen al local.",
+      "empty": "Todavía no hay documentos permanentes.",
+      "sizeMb": "{size} MB",
+      "category": {
+        "general": "General",
+        "permit": "Permiso",
+        "access": "Acceso",
+        "risk": "Riesgo",
+        "plan": "Plano",
+        "other": "Otro"
+      }
+    },
+    "audit": {
+      "title": "Auditoría de la ficha",
+      "description": "Quién cambió los datos permanentes y cuándo.",
+      "empty": "La ficha todavía no tiene eventos de auditoría.",
+      "event": {
+        "backfilled": "Historia unificada",
+        "created": "Ficha creada",
+        "updated": "Ficha actualizada",
+        "change_proposed": "Cambio propuesto",
+        "unknown": "Cambio registrado"
+      },
+      "actor": {
+        "company_manager": "Gerencia",
+        "coordinator": "Coordinación",
+        "installer": "Instalador",
+        "system": "Sistema",
+        "migration": "Migración",
+        "unknown": "Actor no disponible"
+      },
+      "field": {
+        "externalRef": "Referencia",
+        "name": "Nombre",
+        "address": "Dirección",
+        "city": "Ciudad",
+        "state": "Provincia/estado",
+        "zone": "Zona",
+        "country": "País",
+        "coordinates": "Coordenadas",
+        "contact": "Contacto",
+        "phone": "Teléfono",
+        "email": "Email",
+        "openingHours": "Horarios",
+        "access": "Acceso",
+        "parking": "Estacionamiento",
+        "technical": "Datos técnicos",
+        "risks": "Riesgos",
+        "notes": "Notas",
+        "archivedAt": "Archivado",
+        "unknown": "Otro campo"
+      }
+    }
   },
   "SiteFiles": {
     "title": "Fotos y documentos permanentes",
@@ -877,9 +1020,9 @@
   "ReuseSites": {
     "trigger": "Traer de otro proyecto",
     "title": "Reutilizar locaciones del cliente",
-    "description": "Locaciones que este cliente ya tiene cargadas en proyectos anteriores. Se copian con su ficha completa: contacto, horarios, accesos y notas.",
+    "description": "La ficha ya existe para el cliente. Al agregarla no se copia: su identidad, documentos e historial siguen siendo uno solo.",
     "loading": "Buscando locaciones…",
-    "empty": "Este cliente no tiene locaciones en otros proyectos, o ya están todas en este.",
+    "empty": "Este cliente no tiene locaciones disponibles, o ya están todas asociadas a este proyecto.",
     "search": "Buscar por nombre, dirección o código",
     "found": "{count, plural, one {# locación disponible} other {# locaciones disponibles}}",
     "selectAll": "Seleccionar todas",
@@ -903,7 +1046,26 @@
     "columns": "nombre y direccion (obligatorias), ciudad, provincia, codigo, lat, lng",
     "variants": "Acepta variantes en portugués e inglés (endereco, cidade, city, address…).",
     "importing": "Importando…",
-    "downloadTemplate": "Descargar planilla Excel"
+    "downloadTemplate": "Descargar planilla Excel",
+    "analyzing": "Revisando la planilla…",
+    "reviewTitle": "Revisá antes de importar",
+    "expected": "Locales informados",
+    "found": "Encontrados en la planilla",
+    "willImport": "Se van a importar",
+    "difference": "Diferencia",
+    "differenceWarning": "{count, plural, =1 {Falta # local respecto de lo informado en el proyecto.} other {Faltan # locales respecto de lo informado en el proyecto.}}",
+    "differenceExtra": "{count, plural, =1 {Hay # local más de lo informado en el proyecto.} other {Hay # locales más de lo informado en el proyecto.}}",
+    "matches": "La cantidad coincide con lo informado en el proyecto.",
+    "incomplete": "{count, plural, =1 {# fila incompleta} other {# filas incompletas}}",
+    "outsideZone": "{count, plural, =1 {# fila fuera de zona} other {# filas fuera de zona}}",
+    "duplicated": "{count, plural, =1 {# fila duplicada} other {# filas duplicadas}}",
+    "nothingToImport": "Ninguna fila de la planilla se puede importar.",
+    "confirm": "Importar {count} locaciones",
+    "back": "Elegir otra planilla",
+    "downloadReport": "Descargar reporte fila por fila",
+    "outcomeImported": "Importada",
+    "outcomeReused": "Reutilizada",
+    "outcomeSkipped": "Omitida"
   },
   "CreateOrders": {
     "defaultTitle": "Instalación",
@@ -1118,16 +1280,16 @@
     "emailFailed": "La invitación se creó, pero el email no pudo enviarse. Compartí el link manualmente."
   },
   "InvitationEmail": {
-    "subject": "{company} te invitó a Instala Pro",
-    "heading": "Te invitaron a Instala Pro",
-    "body": "{company} quiere sumarte a su equipo de instaladores en Instala Pro.",
+    "subject": "{company} te invitó a Se Instala",
+    "heading": "Te invitaron a Se Instala",
+    "body": "{company} quiere sumarte a su equipo de instaladores en Se Instala.",
     "cta": "Aceptar invitación",
     "expires": "Este enlace vence en 7 días.",
     "fallback": "Si el botón no funciona, copiá y pegá el siguiente enlace en tu navegador."
   },
   "ManagerActivationEmail": {
     "subject": "Activá tu acceso a {company}",
-    "heading": "Creá tu contraseña de Instala Pro",
+    "heading": "Creá tu contraseña de Se Instala",
     "body": "La cuenta responsable de {company} ya está lista. Usá este enlace seguro para activarla y elegir tu contraseña.",
     "cta": "Activar cuenta",
     "expires": "Abrilo cuanto antes: el enlace es de un solo uso.",
@@ -1249,6 +1411,62 @@
     "sending": "Enviando…",
     "submit": "Enviar postulación",
     "sent": "Postulación enviada"
+  },
+  "LocationReview": {
+    "title": "Revisión de locaciones",
+    "description": "Al unificar las locaciones no se fusionó nada por parecido: cuando la referencia externa no alcanzó para decidir, la fila quedó acá para que la resuelva una persona.",
+    "empty": "No hay nada para revisar",
+    "emptyHint": "Todas las locaciones se pudieron unificar por su referencia externa.",
+    "pendingCount": "{count, plural, =1 {# pendiente} other {# pendientes}}",
+    "closedCount": "{count, plural, =1 {# resuelta} other {# resueltas}}",
+    "scope": "Cliente {client} · Proyecto {project}",
+    "affects": "{count, plural, =1 {# punto} other {# puntos}}",
+    "differing": "{count, plural, =1 {# campo no coincide entre las variantes} other {# campos no coinciden entre las variantes}}",
+    "code": {
+      "conflicting_source_data": "Misma referencia, datos distintos",
+      "missing_client": "El proyecto no tiene cliente",
+      "missing_external_ref": "Sin referencia externa"
+    },
+    "hint": {
+      "conflicting_source_data": "Se vinculó a una sola locación usando los datos de una de las variantes. Si son locales distintos, hay que corregir la referencia en el origen antes de dar esto por cerrado.",
+      "missing_client": "Sin cliente no hay forma de saber a qué locación permanente corresponde. Asigná el cliente al proyecto y volvé a importar.",
+      "missing_external_ref": "No se deduplica por nombre ni dirección: sin una referencia confiable, dos filas parecidas pueden ser dos locales reales."
+    },
+    "field": {
+      "name": "Nombre",
+      "address": "Dirección",
+      "city": "Ciudad",
+      "state": "Provincia",
+      "contact_name": "Contacto",
+      "contact_phone": "Teléfono"
+    },
+    "action": {
+      "resolved": "Marcar como resuelta",
+      "ignored": "Ignorar"
+    },
+    "confirm": {
+      "resolved": "Confirmar resolución",
+      "ignored": "Confirmar que se ignora"
+    },
+    "noteLabel": "Qué se decidió",
+    "notePlaceholder": "Ej.: son dos estaciones distintas; se corrigió la referencia de la de La Plata en el sistema del cliente.",
+    "noteWhy": "Queda registrado con tu nombre y la fecha. Es lo único que le va a explicar la decisión a quien mire esto después.",
+    "saving": "Guardando…",
+    "cancel": "Cancelar",
+    "closed": "Listo, quedó registrada.",
+    "divergence": {
+      "title": "Estado de la unificación",
+      "description": "Cada punto de un proyecto debe poder leerse desde su ficha permanente sin perder datos. Mientras esto no dé cero, las pantallas siguen leyendo de la proyección vieja.",
+      "ratio": "{clean} de {total} alineados",
+      "safe": "Todos los puntos coinciden con su ficha permanente. El corte a la ficha canónica es seguro.",
+      "blocked": "{count, plural, =1 {# punto no coincide todavía} other {# puntos no coinciden todavía}}.",
+      "kind": {
+        "unlinked": "sin ficha permanente asociada",
+        "missingLocation": "apuntan a una ficha que no existe",
+        "missingAssociation": "la ficha existe pero no está asociada al proyecto",
+        "fieldMismatch": "tienen datos distintos a los de su ficha"
+      }
+    }
   },
   "Clients": {
     "title": "Clientes",
@@ -1555,6 +1773,7 @@
     "onlyInstallerStarts": "Sólo el instalador asignado puede iniciar el trabajo.",
     "needsAcceptance": "El instalador tiene que aceptar la orden antes de iniciarla.",
     "onlyInstallerReviews": "Sólo el instalador asignado puede enviar la orden a revisión.",
+    "noSelfApproval": "No podés aprobar ni reabrir tu propia entrega.",
     "invalidData": "Datos inválidos",
     "coordinatePairRequired": "Para usar un radio necesitás cargar latitud y longitud de tu base.",
     "accessDenied": "Acceso denegado",
@@ -1584,6 +1803,9 @@
     "siteHasOpenOrders": "La instalación tiene órdenes abiertas. Cerrá o cancelá esas órdenes antes de archivarla.",
     "siteHasHistory": "La instalación tiene historial y no se puede eliminar. Archivala para conservar los datos.",
     "siteZoneOutsideProject": "La zona «{zone}» no está habilitada en el proyecto.",
+    "siteInvalidCoordinates": "Las coordenadas no son válidas.",
+    "siteDuplicateInFile": "La referencia «{ref}» está repetida en la planilla.",
+    "siteAlreadyImported": "La referencia «{ref}» ya estaba cargada en el proyecto.",
     "orderNotAssigned": "Esta orden no está asignada a vos.",
     "invalidTransition": "No podés hacer ese cambio en este momento.",
     "invalidUpdate": "Datos de avance inválidos",
@@ -1610,7 +1832,10 @@
     "invalidOrderTransition": "No se puede pasar de «{from}» a «{to}».",
     "systemStatusChange": "Estado → {status}",
     "systemStatusChangeNote": "Estado → {status}: {note}",
-    "resetLinkInvalid": "El link de recuperación venció o ya se usó. Pedí uno nuevo."
+    "resetLinkInvalid": "El link de recuperación venció o ya se usó. Pedí uno nuevo.",
+    "locationIssueNoteRequired": "Escribí al menos una línea explicando la decisión.",
+    "locationIssueUpdate": "No se pudo guardar la revisión.",
+    "locationIssueAlreadyClosed": "Alguien ya resolvió esta fila. Recargá para ver cómo quedó."
   },
   "Coordination": {
     "title": "Coordinación",

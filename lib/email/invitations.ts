@@ -121,7 +121,7 @@ function invitationHtml(url: string, copy: InvitationEmailCopy): string {
   <body style="margin:0;background:#fafafa;color:#070709;font-family:Inter,Arial,sans-serif">
     <div style="max-width:560px;margin:0 auto;padding:40px 20px">
       <div style="background:#fff;border:1px solid #eceff1;border-radius:14px;padding:32px">
-        <p style="margin:0 0 24px;color:#2597d0;font-weight:700">Instala Pro</p>
+        <p style="margin:0 0 24px;color:#2597d0;font-weight:700">Se Instala</p>
         <h1 style="margin:0 0 16px;font-size:26px;line-height:1.2">${escapeHtml(copy.heading)}</h1>
         <p style="margin:0 0 24px;color:#60606c;line-height:1.6">${escapeHtml(copy.body)}</p>
         <a href="${safeUrl}" style="display:inline-block;border-radius:10px;background:#2597d0;color:#fff;padding:12px 18px;text-decoration:none;font-weight:700">${escapeHtml(copy.cta)}</a>

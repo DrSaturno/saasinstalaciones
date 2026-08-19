@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchAllSites } from "@/lib/data/sites";
 import { SitesTable } from "@/components/company/sites-table";
 import { ManageInstallationsDialog } from "@/components/company/manage-installations-dialog";
+import { ReuseSitesDialog } from "@/components/company/reuse-sites-dialog";
 import { EditProjectDialog } from "@/components/company/edit-project-dialog";
 import { ArchiveProjectButton } from "@/components/company/archive-project-button";
 import { PROJECT_STATUS } from "@/lib/domain/status";
@@ -15,8 +16,14 @@ import { fetchCoordinators } from "@/lib/data/team";
 import { fetchActiveRoster } from "@/lib/data/orders";
 import { BackLink } from "@/components/shared/back-link";
 
-export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function ProjectDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ reuse?: string }>;
+}) {
+  const [{ id }, query] = await Promise.all([params, searchParams]);
   const [t, statusT, format] = await Promise.all([
     getTranslations("ProjectDetail"),
     getTranslations("Status"),
@@ -53,6 +60,9 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   return (
     <div className="mx-auto w-full max-w-[1480px]">
       <BackLink href="/projects" label={t("back")} />
+      {query.reuse === "1" ? (
+        <ReuseSitesDialog projectId={id} autoOpen hideTrigger />
+      ) : null}
 
       <div className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">

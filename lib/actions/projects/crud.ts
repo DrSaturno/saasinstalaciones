@@ -59,6 +59,7 @@ export async function createProject(
     return { error: t("invalidData") };
   }
 
+  let createdId: string | undefined;
   try {
     const { supabase, companyId } = await requireOperator();
     const [{ data: client }, coordinatorId] = await Promise.all([
@@ -75,34 +76,39 @@ export async function createProject(
       ),
     ]);
     if (!client || coordinatorId === undefined) return { error: t("invalidData") };
-    const { error } = await supabase.from("projects").insert({
-      company_id: companyId,
-      name: parsed.data.name,
-      client_name: client.name,
-      client_id: client.id,
-      coordinator_id: coordinatorId,
-      description: parsed.data.description,
-      status: "active",
-      starts_at: parsed.data.startsAt,
-      ends_at: parsed.data.endsAt,
-      country: parsed.data.country,
-      zones: parsed.data.zones,
-      planned_installations: parsed.data.plannedInstallations,
-      billing_mode: parsed.data.billingMode,
-      contract_amount:
-        parsed.data.billingMode === "project"
-          ? parsed.data.contractAmount
-          : null,
-      currency: parsed.data.country === "BR" ? "BRL" : "ARS",
-    });
-    if (error) return { error: error.message };
+    const { data, error } = await supabase
+      .from("projects")
+      .insert({
+        company_id: companyId,
+        name: parsed.data.name,
+        client_name: client.name,
+        client_id: client.id,
+        coordinator_id: coordinatorId,
+        description: parsed.data.description,
+        status: "active",
+        starts_at: parsed.data.startsAt,
+        ends_at: parsed.data.endsAt,
+        country: parsed.data.country,
+        zones: parsed.data.zones,
+        planned_installations: parsed.data.plannedInstallations,
+        billing_mode: parsed.data.billingMode,
+        contract_amount:
+          parsed.data.billingMode === "project"
+            ? parsed.data.contractAmount
+            : null,
+        currency: parsed.data.country === "BR" ? "BRL" : "ARS",
+      })
+      .select("id")
+      .single();
+    if (error || !data) return { error: error?.message ?? t("operation") };
+    createdId = data.id;
   } catch {
     return { error: t("unexpected") };
   }
 
   revalidatePath("/projects");
   revalidatePath("/dashboard");
-  return { error: null, ok: true };
+  return { error: null, ok: true, id: createdId };
 }
 
 export async function updateProject(
