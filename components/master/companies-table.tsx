@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CreateCompanyDialog } from "./create-company-dialog";
+import { DeleteCompanyDialog } from "./delete-company-dialog";
 
 type Company = {
   id: string;
@@ -136,19 +137,22 @@ export function CompaniesTable() {
                 <TableCell className="text-right font-mono text-sm">{company.projects}</TableCell>
                 <TableCell className="text-right font-mono text-sm">{company.orders}</TableCell>
                 <TableCell className="text-right">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={toggleStatus.isPending}
-                    onClick={() =>
-                      toggleStatus.mutate({
-                        id: company.id,
-                        status: company.status === "active" ? "suspended" : "active",
-                      })
-                    }
-                  >
-                    {company.status === "active" ? t("suspend") : t("reactivate")}
-                  </Button>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={toggleStatus.isPending}
+                      onClick={() =>
+                        toggleStatus.mutate({
+                          id: company.id,
+                          status: company.status === "active" ? "suspended" : "active",
+                        })
+                      }
+                    >
+                      {company.status === "active" ? t("suspend") : t("reactivate")}
+                    </Button>
+                    <DeleteCompanyDialog id={company.id} name={company.name} />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

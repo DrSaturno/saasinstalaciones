@@ -1675,6 +1675,15 @@
     "submit": "Crear empresa",
     "createdToast": "Empresa «{name}» creada"
   },
+  "DeleteCompany": {
+    "trigger": "Eliminar",
+    "title": "Eliminar «{name}»",
+    "description": "Se borran sus proyectos, puntos, órdenes y la cuenta de su gerente. No se puede deshacer.",
+    "confirmLabel": "Escribí «{name}» para confirmar",
+    "confirmButton": "Eliminar empresa",
+    "deleting": "Eliminando…",
+    "deletedToast": "Empresa «{name}» eliminada"
+  },
   "Notifications": {
     "unread": "{count, plural, =0 {Sin notificaciones sin leer} =1 {# notificación sin leer} other {# notificaciones sin leer}}",
     "title": "Notificaciones",
@@ -1822,6 +1831,7 @@
     "createCompany": "No se pudo crear la empresa",
     "createCompanyInvitation": "No se pudo entregar la invitación. La empresa y su cuenta responsable no fueron creadas.",
     "updateCompany": "No se pudo actualizar",
+    "deleteCompany": "No se pudo eliminar la empresa",
     "publishBroadcast": "No se pudo publicar la búsqueda",
     "csvNoRows": "El archivo no tiene filas de datos (¿falta el encabezado?)",
     "csvMissingName": "No se encontró la columna de nombre. Encabezados leídos: {headers}",

@@ -1675,6 +1675,15 @@
     "submit": "Criar empresa",
     "createdToast": "Empresa “{name}” criada"
   },
+  "DeleteCompany": {
+    "trigger": "Excluir",
+    "title": "Excluir “{name}”",
+    "description": "Seus projetos, pontos, ordens e a conta do gerente são apagados. Não é possível desfazer.",
+    "confirmLabel": "Digite “{name}” para confirmar",
+    "confirmButton": "Excluir empresa",
+    "deleting": "Excluindo…",
+    "deletedToast": "Empresa “{name}” excluída"
+  },
   "Notifications": {
     "unread": "{count, plural, =0 {Nenhuma notificação não lida} =1 {# notificação não lida} other {# notificações não lidas}}",
     "title": "Notificações",
@@ -1822,6 +1831,7 @@
     "createCompany": "Não foi possível criar a empresa",
     "createCompanyInvitation": "Não foi possível entregar o convite. A empresa e sua conta responsável não foram criadas.",
     "updateCompany": "Não foi possível atualizar",
+    "deleteCompany": "Não foi possível excluir a empresa",
     "publishBroadcast": "Não foi possível publicar a oportunidade",
     "csvNoRows": "O arquivo não contém linhas de dados (o cabeçalho está faltando?)",
     "csvMissingName": "A coluna de nome não foi encontrada. Cabeçalhos lidos: {headers}",
