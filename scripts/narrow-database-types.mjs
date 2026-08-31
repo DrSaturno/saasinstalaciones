@@ -45,7 +45,9 @@ const NARROWING = {
     priority: "OrderPriority",
     currency: "OrderCurrency",
     source: "OrderSource",
+    payment_status: "PaymentStatus",
   },
+  order_payment_events: { status: "PaymentStatus" },
   order_incidents: {
     category: "IncidentCategory",
     severity: "IncidentSeverity",

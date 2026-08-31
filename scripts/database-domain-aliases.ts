@@ -26,6 +26,11 @@ export type OrderSource = "roster" | "broadcast";
 export type OrderPriority = "baja" | "media" | "alta" | "urgente";
 export type OrderCurrency = "ARS" | "BRL";
 export type BillingMode = "project" | "per_installation";
+/**
+ * Estado de cobro de una orden. Deliberadamente separado de `OrderStatus`:
+ * `finalizada` dice que el trabajo se terminó, no que la plata entró.
+ */
+export type PaymentStatus = "pending" | "paid";
 export type OrderUpdateType =
   | "checkin"
   | "progress"

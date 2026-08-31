@@ -34,6 +34,11 @@ export type OrderSource = "roster" | "broadcast";
 export type OrderPriority = "baja" | "media" | "alta" | "urgente";
 export type OrderCurrency = "ARS" | "BRL";
 export type BillingMode = "project" | "per_installation";
+/**
+ * Estado de cobro de una orden. Deliberadamente separado de `OrderStatus`:
+ * `finalizada` dice que el trabajo se terminó, no que la plata entró.
+ */
+export type PaymentStatus = "pending" | "paid";
 export type OrderUpdateType =
   | "checkin"
   | "progress"
@@ -77,7 +82,32 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.5"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -499,6 +529,13 @@ export type Database = {
             foreignKeyName: "calendar_order_events_order_company_fk"
             columns: ["order_id", "company_id"]
             isOneToOne: false
+            referencedRelation: "installer_earnings"
+            referencedColumns: ["order_id", "company_id"]
+          },
+          {
+            foreignKeyName: "calendar_order_events_order_company_fk"
+            columns: ["order_id", "company_id"]
+            isOneToOne: false
             referencedRelation: "work_orders"
             referencedColumns: ["id", "company_id"]
           },
@@ -792,6 +829,7 @@ export type Database = {
       company_installers: {
         Row: {
           company_id: string
+          default_installer_rate: number | null
           installer_id: string
           invited_at: string
           joined_at: string | null
@@ -800,6 +838,7 @@ export type Database = {
         }
         Insert: {
           company_id: string
+          default_installer_rate?: number | null
           installer_id: string
           invited_at?: string
           joined_at?: string | null
@@ -808,6 +847,7 @@ export type Database = {
         }
         Update: {
           company_id?: string
+          default_installer_rate?: number | null
           installer_id?: string
           invited_at?: string
           joined_at?: string | null
@@ -1997,6 +2037,13 @@ export type Database = {
             foreignKeyName: "order_attachments_order_company_fk"
             columns: ["order_id", "company_id"]
             isOneToOne: false
+            referencedRelation: "installer_earnings"
+            referencedColumns: ["order_id", "company_id"]
+          },
+          {
+            foreignKeyName: "order_attachments_order_company_fk"
+            columns: ["order_id", "company_id"]
+            isOneToOne: false
             referencedRelation: "work_orders"
             referencedColumns: ["id", "company_id"]
           },
@@ -2077,6 +2124,13 @@ export type Database = {
             foreignKeyName: "order_incidents_order_company_fk"
             columns: ["order_id", "company_id"]
             isOneToOne: false
+            referencedRelation: "installer_earnings"
+            referencedColumns: ["order_id", "company_id"]
+          },
+          {
+            foreignKeyName: "order_incidents_order_company_fk"
+            columns: ["order_id", "company_id"]
+            isOneToOne: false
             referencedRelation: "work_orders"
             referencedColumns: ["id", "company_id"]
           },
@@ -2086,6 +2140,65 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_payment_events: {
+        Row: {
+          changed_by: string | null
+          company_id: string
+          created_at: string
+          id: string
+          note: string
+          order_id: string
+          status: PaymentStatus
+        }
+        Insert: {
+          changed_by?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          note?: string
+          order_id: string
+          status: PaymentStatus
+        }
+        Update: {
+          changed_by?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          note?: string
+          order_id?: string
+          status?: PaymentStatus
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_payment_events_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_payment_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_payment_events_order_company_fk"
+            columns: ["order_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "installer_earnings"
+            referencedColumns: ["order_id", "company_id"]
+          },
+          {
+            foreignKeyName: "order_payment_events_order_company_fk"
+            columns: ["order_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id", "company_id"]
           },
         ]
       }
@@ -2166,6 +2279,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "installers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_updates_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "installer_earnings"
+            referencedColumns: ["order_id"]
           },
           {
             foreignKeyName: "order_updates_order_id_fkey"
@@ -2453,6 +2573,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "installers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ratings_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "installer_earnings"
+            referencedColumns: ["order_id"]
           },
           {
             foreignKeyName: "ratings_order_id_fkey"
@@ -3020,6 +3147,13 @@ export type Database = {
             foreignKeyName: "work_activities_order_company_fk"
             columns: ["work_order_id", "company_id"]
             isOneToOne: false
+            referencedRelation: "installer_earnings"
+            referencedColumns: ["order_id", "company_id"]
+          },
+          {
+            foreignKeyName: "work_activities_order_company_fk"
+            columns: ["work_order_id", "company_id"]
+            isOneToOne: false
             referencedRelation: "work_orders"
             referencedColumns: ["id", "company_id"]
           },
@@ -3161,9 +3295,13 @@ export type Database = {
           id: string
           indoor: boolean
           installer_accepted_at: string | null
+          installer_amount: number | null
           logistics_notes: string
           order_number: string
           original_scheduled_date: string | null
+          payment_status: PaymentStatus
+          payment_status_changed_at: string | null
+          payment_status_changed_by: string | null
           priority: OrderPriority
           project_id: string
           requires_freight: boolean
@@ -3191,9 +3329,13 @@ export type Database = {
           id?: string
           indoor?: boolean
           installer_accepted_at?: string | null
+          installer_amount?: number | null
           logistics_notes?: string
           order_number?: string
           original_scheduled_date?: string | null
+          payment_status?: PaymentStatus
+          payment_status_changed_at?: string | null
+          payment_status_changed_by?: string | null
           priority?: OrderPriority
           project_id: string
           requires_freight?: boolean
@@ -3221,9 +3363,13 @@ export type Database = {
           id?: string
           indoor?: boolean
           installer_accepted_at?: string | null
+          installer_amount?: number | null
           logistics_notes?: string
           order_number?: string
           original_scheduled_date?: string | null
+          payment_status?: PaymentStatus
+          payment_status_changed_at?: string | null
+          payment_status_changed_by?: string | null
           priority?: OrderPriority
           project_id?: string
           requires_freight?: boolean
@@ -3260,6 +3406,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "work_orders_payment_status_changed_by_fkey"
+            columns: ["payment_status_changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "work_orders_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -3277,6 +3430,86 @@ export type Database = {
       }
     }
     Views: {
+      installer_earnings: {
+        Row: {
+          amount: number | null
+          assigned_installer_id: string | null
+          company_id: string | null
+          created_at: string | null
+          currency: string | null
+          finalized_at: string | null
+          order_id: string | null
+          payment_status: string | null
+          payment_status_changed_at: string | null
+          project_id: string | null
+          scheduled_date: string | null
+          site_id: string | null
+          status: string | null
+          title: string | null
+        }
+        Insert: {
+          amount?: number | null
+          assigned_installer_id?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          finalized_at?: string | null
+          order_id?: string | null
+          payment_status?: string | null
+          payment_status_changed_at?: string | null
+          project_id?: string | null
+          scheduled_date?: string | null
+          site_id?: string | null
+          status?: string | null
+          title?: string | null
+        }
+        Update: {
+          amount?: number | null
+          assigned_installer_id?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          finalized_at?: string | null
+          order_id?: string | null
+          payment_status?: string | null
+          payment_status_changed_at?: string | null
+          project_id?: string | null
+          scheduled_date?: string | null
+          site_id?: string | null
+          status?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_orders_assigned_installer_id_fkey"
+            columns: ["assigned_installer_id"]
+            isOneToOne: false
+            referencedRelation: "installers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_orders_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_orders_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_orders_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       location_backfill_report: {
         Row: {
           company_id: string | null
@@ -3456,6 +3689,10 @@ export type Database = {
         Args: { p_role: string; p_user_id: string }
         Returns: undefined
       }
+      set_order_payment_status: {
+        Args: { p_note?: string; p_order_id: string; p_status: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
@@ -3584,6 +3821,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
