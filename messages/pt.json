@@ -48,7 +48,8 @@
     "collapseMenu": "Minimizar menu",
     "collapse": "Minimizar",
     "operationalCenter": "Centro operacional",
-    "route": "Minha rota"
+    "route": "Minha rota",
+    "earnings": "Meus ganhos"
   },
   "LocaleSwitcher": {
     "label": "Idioma",
@@ -62,7 +63,8 @@
     "project": "Projeto",
     "noProject": "Sem projeto",
     "installer": "Instalador",
-    "site": "Ponto"
+    "site": "Ponto",
+    "company": "Empresa"
   },
   "Status": {
     "order": {
@@ -1936,5 +1938,28 @@
     "rateSaved": "Tarifa salva",
     "rateCleared": "Tarifa removida",
     "rateInvalid": "Informe um valor válido"
+  },
+  "InstallerFinance": {
+    "eyebrow": "Meus ganhos",
+    "title": "O que eu ganhei",
+    "description": "Seus trabalhos e o que cabe a você, de todas as empresas para as quais trabalha.",
+    "totalEarned": "Ganho",
+    "totalUnpaid": "A receber",
+    "totalPaid": "Recebido",
+    "doneOrders": "{count, plural, =1 {# trabalho concluído} other {# trabalhos concluídos}}",
+    "ordersCount": "{count, plural, =1 {# ordem} other {# ordens}}",
+    "statusPending": "A receber",
+    "statusPaid": "Recebido",
+    "filterCompany": "Empresa",
+    "allCompanies": "Todas",
+    "filterPaymentStatus": "Status do pagamento",
+    "allPayments": "Todos",
+    "filterOrder": "N.º da ordem",
+    "filterOrderPlaceholder": "Ex. INT-701",
+    "filterFrom": "De",
+    "filterTo": "Até",
+    "applyFilters": "Filtrar",
+    "clearFilters": "Limpar",
+    "emptyList": "Ainda não há trabalhos para mostrar."
   }
 }

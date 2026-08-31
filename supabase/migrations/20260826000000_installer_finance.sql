@@ -215,6 +215,9 @@ create view public.installer_earnings
 with (security_invoker = true) as
 select
   w.id                        as order_id,
+  -- El número visible de la orden: es como el instalador la identifica y por
+  -- lo que filtra en su pantalla.
+  w.order_number,
   w.company_id,
   w.project_id,
   w.site_id,

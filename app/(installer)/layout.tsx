@@ -31,6 +31,7 @@ export default async function InstallerLayout({
       : []),
     { href: "/route", label: t("route"), icon: "route" as const },
     { href: "/jobs", label: t("jobs"), icon: "jobs" as const },
+    { href: "/earnings", label: t("earnings"), icon: "finance" as const },
     { href: "/messages", label: t("messages"), icon: "messages" as const },
     { href: "/profile", label: t("profile"), icon: "profile" as const },
   ];

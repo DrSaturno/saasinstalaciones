@@ -20,7 +20,10 @@ const ROLE_HOME: Record<UserRole, string> = {
 const ROLE_AREAS: Record<UserRole, readonly string[]> = {
   platform_admin: ["/master"],
   company_manager: ["/dashboard"],
-  installer: ["/home", "/tasks", "/route", "/jobs", "/profile", "/coordination"],
+  // `/earnings` y no `/finance`: esa ruta ya es del área empresa, y dos áreas
+  // no pueden resolver a la misma. Además dice mejor lo que es para quien la
+  // usa — son sus ingresos, no las finanzas de una empresa.
+  installer: ["/home", "/tasks", "/route", "/jobs", "/earnings", "/profile", "/coordination"],
 };
 
 const ALL_AREAS = Object.values(ROLE_AREAS).flat();

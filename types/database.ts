@@ -3439,6 +3439,7 @@ export type Database = {
           currency: string | null
           finalized_at: string | null
           order_id: string | null
+          order_number: string | null
           payment_status: string | null
           payment_status_changed_at: string | null
           project_id: string | null
@@ -3455,6 +3456,7 @@ export type Database = {
           currency?: string | null
           finalized_at?: string | null
           order_id?: string | null
+          order_number?: string | null
           payment_status?: string | null
           payment_status_changed_at?: string | null
           project_id?: string | null
@@ -3471,6 +3473,7 @@ export type Database = {
           currency?: string | null
           finalized_at?: string | null
           order_id?: string | null
+          order_number?: string | null
           payment_status?: string | null
           payment_status_changed_at?: string | null
           project_id?: string | null
