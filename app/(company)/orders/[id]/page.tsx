@@ -38,7 +38,7 @@ export default async function OrderDetailPage({
   const { data: order } = await supabase
     .from("work_orders")
     .select(
-      "id, order_number, title, description, status, scheduled_date, scheduled_end_date, priority, indoor, requires_freight, freight_details, logistics_notes, amount, currency, assigned_installer_id, created_at, project_id, site_id",
+      "id, order_number, title, description, status, scheduled_date, scheduled_end_date, priority, indoor, requires_freight, freight_details, logistics_notes, amount, installer_amount, currency, assigned_installer_id, created_at, project_id, site_id",
     )
     .eq("id", id)
     .single();
@@ -123,6 +123,7 @@ export default async function OrderDetailPage({
           canEditAmount={
             user?.role === "company_manager" && project?.billing_mode === "per_installation"
           }
+          canManageFinance={user?.role === "company_manager"}
           roster={roster.map(({ id: rosterId, name }) => ({ id: rosterId, name }))}
           defaults={{
             title: order.title,
@@ -135,6 +136,7 @@ export default async function OrderDetailPage({
             freightDetails: order.freight_details ?? "",
             logisticsNotes: order.logistics_notes ?? "",
             amount: order.amount,
+            installerAmount: order.installer_amount,
             installerId: order.assigned_installer_id ?? "",
           }}
         />

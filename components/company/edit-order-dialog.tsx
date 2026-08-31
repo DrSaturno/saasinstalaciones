@@ -37,6 +37,7 @@ export type EditOrderDefaults = {
   freightDetails: string;
   logisticsNotes: string;
   amount: number | null;
+  installerAmount: number | null;
   installerId: string;
 };
 
@@ -46,12 +47,14 @@ export function EditOrderDialog({
   roster,
   currency,
   canEditAmount,
+  canManageFinance,
 }: {
   orderId: string;
   defaults: EditOrderDefaults;
   roster: { id: string; name: string }[];
   currency: OrderCurrency;
   canEditAmount: boolean;
+  canManageFinance: boolean;
 }) {
   const t = useTranslations("EditOrder");
   const common = useTranslations("CreateOrder");
@@ -188,6 +191,31 @@ export function EditOrderDialog({
                   disabled={pending}
                 />
               </div>
+            </div>
+          ) : null}
+
+          {/* El costo del instalador no depende de la modalidad de cobro: aunque
+              al cliente se le facture el proyecto entero, a cada instalador se le
+              paga por orden. Por eso este campo va aparte de canEditAmount. */}
+          {canManageFinance ? (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="edit-installer-amount">{common("installerAmount")}</Label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-3 flex items-center font-mono text-xs text-muted-foreground">
+                  {currency}
+                </span>
+                <Input
+                  id="edit-installer-amount"
+                  name="installerAmount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  defaultValue={defaults.installerAmount ?? ""}
+                  className="pl-14 font-mono"
+                  disabled={pending}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">{common("installerAmountHelp")}</p>
             </div>
           ) : null}
 
