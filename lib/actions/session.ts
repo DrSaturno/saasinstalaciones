@@ -15,13 +15,13 @@ export async function updateLocale(value: unknown): Promise<LocaleActionResult> 
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: "not_authenticated" };
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({ locale: value })
-    .eq("id", user.id);
-  if (error) return { error: "update_failed" };
+  if (user) {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ locale: value })
+      .eq("id", user.id);
+    if (error) return { error: "update_failed" };
+  }
 
   const cookieStore = await cookies();
   cookieStore.set(LOCALE_COOKIE, value, {

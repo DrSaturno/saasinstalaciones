@@ -13,6 +13,13 @@ const messageLoaders = {
   pt: () => import("@/messages/pt.json").then((module) => module.default),
 };
 
+const marketingMessageLoaders = {
+  es: () =>
+    import("@/messages/marketing/es.json").then((module) => module.default),
+  pt: () =>
+    import("@/messages/marketing/pt.json").then((module) => module.default),
+};
+
 export default getRequestConfig(async () => {
   const cookieStore = await cookies();
   const storedLocale = cookieStore.get(LOCALE_COOKIE)?.value;
@@ -20,9 +27,17 @@ export default getRequestConfig(async () => {
     ? storedLocale
     : DEFAULT_PROFILE_LOCALE;
 
+  const [messages, marketingMessages] = await Promise.all([
+    messageLoaders[profileLocale](),
+    marketingMessageLoaders[profileLocale](),
+  ]);
+
   return {
     locale: INTL_LOCALE[profileLocale],
-    messages: await messageLoaders[profileLocale](),
+    messages: {
+      ...messages,
+      Landing: { ...messages.Landing, ...marketingMessages },
+    },
     timeZone: LOCALE_TIME_ZONE[profileLocale],
   };
 });
