@@ -1961,5 +1961,25 @@
     "applyFilters": "Filtrar",
     "clearFilters": "Limpiar",
     "emptyList": "Todavía no hay trabajos para mostrar."
+  },
+  "ProjectPerformance": {
+    "financialTitle": "Resultado del proyecto",
+    "financialDescription": "Lo que entró y lo que costó ejecutarlo.",
+    "revenue": "Ingresos",
+    "installerCost": "Costo instaladores",
+    "profit": "Ganancia",
+    "margin": "{value}% margen",
+    "costMissing": "Falta cargar el costo de los instaladores en las órdenes. Sin ese dato no se puede calcular la ganancia real del proyecto.",
+    "budgetVsReal": "Realizado sobre presupuesto",
+    "committedCost": "Comprometido con instaladores: {value}",
+    "executionTitle": "Ejecución",
+    "executionDescription": "Cómo viene el trabajo en la calle.",
+    "ordersDone": "Terminadas",
+    "ordersOpen": "En curso",
+    "ordersDelayed": "Retrasadas",
+    "installersInvolved": "Instaladores",
+    "openIncidents": "Incidencias abiertas",
+    "ofTotalIncidents": "de {total}",
+    "criticalIncidents": "{count, plural, =1 {# crítica} other {# críticas}}"
   }
 }

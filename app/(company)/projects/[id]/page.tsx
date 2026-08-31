@@ -15,6 +15,8 @@ import { fetchClients } from "@/lib/data/clients";
 import { fetchCoordinators } from "@/lib/data/team";
 import { fetchActiveRoster } from "@/lib/data/orders";
 import { BackLink } from "@/components/shared/back-link";
+import { ProjectPerformancePanel } from "@/components/company/project-performance-panel";
+import { buildProjectPerformance } from "@/lib/domain/project-performance";
 
 export default async function ProjectDetailPage({
   params,
@@ -30,10 +32,20 @@ export default async function ProjectDetailPage({
     getFormatter(),
   ]);
   const supabase = await createClient();
-  const [{ data: project }, sites, { data: orderAmounts }, clients, coordinators, roster] = await Promise.all([
+  const [{ data: project }, sites, { data: orderAmounts }, { data: incidents }, clients, coordinators, roster] = await Promise.all([
     supabase.from("projects").select("id, name, client_name, client_id, coordinator_id, description, status, starts_at, ends_at, country, zones, planned_installations, billing_mode, contract_amount, currency, archived_at").eq("id", id).single(),
     fetchAllSites(supabase, id),
-    supabase.from("work_orders").select("status, amount").eq("project_id", id).neq("status", "cancelada"),
+    // Se amplía la consulta que ya existía en vez de agregar otra: el
+    // rendimiento necesita costo, asignación y fecha de fin de las mismas
+    // órdenes que ya se traían para el importe.
+    supabase
+      .from("work_orders")
+      .select("status, amount, installer_amount, assigned_installer_id, scheduled_end_date, finalized_at")
+      .eq("project_id", id),
+    supabase
+      .from("order_incidents")
+      .select("status, severity, work_orders!inner(project_id)")
+      .eq("work_orders.project_id", id),
     fetchClients(supabase),
     fetchCoordinators(supabase),
     fetchActiveRoster(supabase),
@@ -52,10 +64,29 @@ export default async function ProjectDetailPage({
   const totalOrders = activeSites.reduce((sum, site) => sum + site.order_count, 0);
   const completedOrders = activeSites.reduce((sum, site) => sum + site.completed_count, 0);
   const progress = totalOrders ? Math.round((completedOrders / totalOrders) * 100) : 0;
-  const financialTotal = project.billing_mode === "project"
-    ? Number(project.contract_amount ?? 0)
-    : (orderAmounts ?? []).reduce((sum, order) => sum + Number(order.amount ?? 0), 0);
-  const amount = format.number(financialTotal, { style: "currency", currency: project.currency });
+  const performance = buildProjectPerformance(
+    {
+      billingMode: project.billing_mode,
+      contractAmount: project.contract_amount,
+      currency: project.currency,
+    },
+    (orderAmounts ?? []).map((order) => ({
+      status: order.status,
+      amount: order.amount,
+      installerAmount: order.installer_amount,
+      installerId: order.assigned_installer_id,
+      scheduledEndDate: order.scheduled_end_date,
+      finalizedAt: order.finalized_at,
+    })),
+    (incidents ?? []).map((incident) => ({
+      status: incident.status,
+      severity: incident.severity,
+    })),
+    new Date().toISOString().slice(0, 10),
+  );
+  // El valor del proyecto sale del mismo cálculo que el panel: antes se sumaba
+  // aparte y podían discrepar.
+  const amount = format.number(performance.budget, { style: "currency", currency: project.currency });
 
   return (
     <div className="mx-auto w-full max-w-[1480px]">
@@ -135,6 +166,10 @@ export default async function ProjectDetailPage({
           <div className="flex min-w-0 flex-1 items-center gap-3 sm:max-w-xl"><div className="h-2 flex-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-[var(--success)]" style={{ width: `${progress}%` }} /></div><span className="w-12 text-right font-mono text-lg">{progress}%</span></div>
         </CardContent>
       </Card>
+
+      <div className="mt-4">
+        <ProjectPerformancePanel performance={performance} />
+      </div>
 
       <div className="mt-9">
         <div className="mb-4"><h2 className="text-lg font-semibold">{t("installations")}</h2><p className="text-sm text-muted-foreground">{t("installationsDescription")}</p></div>
