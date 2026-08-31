@@ -19,6 +19,8 @@ type RosterOption = {
   name: string;
   ratingAvg: number;
   ratingCount: number;
+  /** Tarifa sugerida de esta persona en esta empresa; prellena el costo. */
+  defaultRate?: number | null;
 };
 
 type Props = {
@@ -52,6 +54,7 @@ export function OrderFormFields({
   const [siteId, setSiteId] = useState("");
   const [installerId, setInstallerId] = useState("");
   const [amount, setAmount] = useState("");
+  const [installerAmount, setInstallerAmount] = useState("");
   const [requiresFreight, setRequiresFreight] = useState(false);
   const [loadingSites, startLoadingSites] = useTransition();
 
@@ -61,6 +64,18 @@ export function OrderFormFields({
     canManageFinance && project?.billingMode === "per_installation";
   const site = sites.find((item) => item.id === siteId) ?? null;
   const installer = roster.find((item) => item.id === installerId) ?? null;
+
+  /**
+   * Al elegir instalador, se sugiere su tarifa — pero sólo si el costo está
+   * vacío. Si el gerente ya escribió un monto para esta orden, mandó él: la
+   * tarifa es un punto de partida, no una regla.
+   */
+  const chooseInstaller = (value: string) => {
+    setInstallerId(value);
+    if (installerAmount.trim()) return;
+    const rate = roster.find((item) => item.id === value)?.defaultRate;
+    if (rate !== null && rate !== undefined) setInstallerAmount(String(rate));
+  };
 
   const chooseProject = (value: string) => {
     setProjectId(value);
@@ -179,7 +194,7 @@ export function OrderFormFields({
         <OrderFormSection number="03" title={t("sections.operation.title")} description={t("sections.operation.description")}>
           <div className="grid gap-2">
             <Label htmlFor="order-installer">{t("installer")}</Label>
-            <select id="order-installer" name="installerId" value={installerId} onChange={(event) => setInstallerId(event.target.value)} className={selectClass} disabled={disabled}>
+            <select id="order-installer" name="installerId" value={installerId} onChange={(event) => chooseInstaller(event.target.value)} className={selectClass} disabled={disabled}>
               <option value="">{t("unassigned")}</option>
               {roster.map((item) => (
                 <option key={item.id} value={item.id}>
@@ -224,6 +239,20 @@ export function OrderFormFields({
             <p className="mt-1.5 text-xs text-muted-foreground">{t("amountHelp")}</p>
           </div> : <div className="rounded-xl border bg-muted/30 p-4 text-sm text-muted-foreground">{project ? t("projectBillingHelp") : t("chooseProjectForBudget")}</div>}
           {!amountEnabled ? <input type="hidden" name="amount" value="" /> : null}
+
+          {/* El costo del instalador no depende de la modalidad de cobro: al
+              cliente se le puede facturar el proyecto entero y aun así a cada
+              instalador se le paga por orden. */}
+          {canManageFinance ? (
+            <div className="max-w-sm">
+              <Label htmlFor="order-installer-amount">{t("installerAmount")}</Label>
+              <div className="relative mt-2">
+                <span className="absolute inset-y-0 left-3 flex items-center font-mono text-xs text-muted-foreground">{orderCurrency}</span>
+                <Input id="order-installer-amount" name="installerAmount" type="number" min="0" step="0.01" inputMode="decimal" value={installerAmount} onChange={(event) => setInstallerAmount(event.target.value)} placeholder="0,00" className="pl-14 font-mono text-lg" disabled={disabled} />
+              </div>
+              <p className="mt-1.5 text-xs text-muted-foreground">{t("installerAmountHelp")}</p>
+            </div>
+          ) : <input type="hidden" name="installerAmount" value="" />}
           <OrderFilesField files={files} disabled={disabled} onAdd={onAddFiles} onRemove={onRemoveFile} />
         </OrderFormSection>
       </div>

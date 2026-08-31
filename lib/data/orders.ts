@@ -125,7 +125,13 @@ export async function fetchAllOrders(
 export async function fetchActiveRoster(
   supabase: SupabaseClient<Database>,
 ): Promise<
-  { id: string; name: string; ratingAvg: number; ratingCount: number }[]
+  {
+    id: string;
+    name: string;
+    ratingAvg: number;
+    ratingCount: number;
+    defaultRate: number | null;
+  }[]
 > {
   const t = await getTranslations("DataFallbacks");
   const roster = await fetchActiveCompanyRoleMemberships(
@@ -135,23 +141,35 @@ export async function fetchActiveRoster(
   const ids = [...new Set(roster.map((membership) => membership.userId))];
   if (ids.length === 0) return [];
 
-  const [{ data: profiles }, { data: installers }] = await Promise.all([
-    supabase.from("profiles").select("id, full_name").in("id", ids),
-    supabase
-      .from("installers")
-      .select("id, rating_avg, rating_count")
-      .in("id", ids),
-  ]);
+  const [{ data: profiles }, { data: installers }, { data: rates }] =
+    await Promise.all([
+      supabase.from("profiles").select("id, full_name").in("id", ids),
+      supabase
+        .from("installers")
+        .select("id, rating_avg, rating_count")
+        .in("id", ids),
+      // La tarifa vive en la membresía, no en la ficha de oficio: la misma
+      // persona puede cobrar distinto en cada empresa. RLS ya acota a la propia.
+      supabase
+        .from("company_installers")
+        .select("installer_id, default_installer_rate")
+        .in("installer_id", ids),
+    ]);
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
   const installerById = new Map((installers ?? []).map((i) => [i.id, i]));
+  const rateById = new Map(
+    (rates ?? []).map((r) => [r.installer_id, r.default_installer_rate]),
+  );
 
   return ids.map((id) => {
     const installer = installerById.get(id);
+    const rate = rateById.get(id);
     return {
       id,
       name: profileById.get(id)?.full_name ?? t("installer"),
       ratingAvg: Number(installer?.rating_avg ?? 0),
       ratingCount: installer?.rating_count ?? 0,
+      defaultRate: rate === null || rate === undefined ? null : Number(rate),
     };
   });
 }

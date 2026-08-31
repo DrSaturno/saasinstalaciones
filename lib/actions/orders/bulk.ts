@@ -43,6 +43,7 @@ export async function createOrdersForProject(
     freightDetails: formData.get("freightDetails") ?? "",
     logisticsNotes: formData.get("logisticsNotes") ?? "",
     amount: formData.get("amount") ?? "",
+    installerAmount: formData.get("installerAmount") ?? "",
     installerId: formData.get("installerId") ?? "",
   });
   if (!parsed.success) {
@@ -177,6 +178,10 @@ export async function createOrdersForProject(
       user.role === "company_manager" && project.billing_mode === "per_installation"
         ? parsed.data.amount
         : null,
+    // Mismo costo para todo el lote: es el caso normal al generar N órdenes
+    // iguales. Después se puede ajustar orden por orden.
+    installer_amount:
+      user.role === "company_manager" ? parsed.data.installerAmount : null,
     currency: project.currency,
     assigned_installer_id: parsed.data.installerId,
     created_by: user.id,

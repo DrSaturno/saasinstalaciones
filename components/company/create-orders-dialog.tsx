@@ -202,29 +202,55 @@ export function CreateOrdersDialog({
               ) : null}
             </OrderFormSection>
 
-            {amountEnabled ? (
+            {canManageFinance ? (
               <OrderFormSection
                 number="04"
                 title={orderT("sections.budget.title")}
                 description={t("sectionBudgetDescription")}
               >
-                <div className="max-w-sm">
-                  <Label htmlFor="batch-amount">{orderT("amount")}</Label>
-                  <div className="relative mt-2">
-                    <span className="absolute inset-y-0 left-3 flex items-center font-mono text-xs text-muted-foreground">
-                      {currency}
-                    </span>
-                    <Input
-                      id="batch-amount"
-                      name="amount"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      inputMode="decimal"
-                      placeholder="0,00"
-                      className="pl-14 font-mono text-lg"
-                      disabled={pending}
-                    />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {/* El ingreso sólo aplica si al cliente se le cobra por
+                      instalación; el costo del instalador, siempre. */}
+                  {amountEnabled ? (
+                    <div>
+                      <Label htmlFor="batch-amount">{orderT("amount")}</Label>
+                      <div className="relative mt-2">
+                        <span className="absolute inset-y-0 left-3 flex items-center font-mono text-xs text-muted-foreground">
+                          {currency}
+                        </span>
+                        <Input
+                          id="batch-amount"
+                          name="amount"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          inputMode="decimal"
+                          placeholder="0,00"
+                          className="pl-14 font-mono text-lg"
+                          disabled={pending}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+                  <div>
+                    <Label htmlFor="batch-installer-amount">{orderT("installerAmount")}</Label>
+                    <div className="relative mt-2">
+                      <span className="absolute inset-y-0 left-3 flex items-center font-mono text-xs text-muted-foreground">
+                        {currency}
+                      </span>
+                      <Input
+                        id="batch-installer-amount"
+                        name="installerAmount"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        inputMode="decimal"
+                        placeholder="0,00"
+                        className="pl-14 font-mono text-lg"
+                        disabled={pending}
+                      />
+                    </div>
+                    <p className="mt-1.5 text-xs text-muted-foreground">{t("batchInstallerAmountHelp")}</p>
                   </div>
                 </div>
               </OrderFormSection>

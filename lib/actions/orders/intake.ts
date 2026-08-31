@@ -42,6 +42,7 @@ export async function createOrder(
     freightDetails: formData.get("freightDetails") ?? "",
     logisticsNotes: formData.get("logisticsNotes") ?? "",
     amount: formData.get("amount") ?? "",
+    installerAmount: formData.get("installerAmount") ?? "",
     installerId: formData.get("installerId") ?? "",
   });
   if (!parsed.success) {
@@ -106,6 +107,11 @@ export async function createOrder(
           project.billing_mode === "per_installation"
             ? parsed.data.amount
             : null,
+        // El costo del instalador NO depende de la modalidad de cobro: aunque
+        // al cliente se le facture el proyecto entero, a cada instalador se le
+        // paga por orden. Sí queda reservado al gerente, igual que el ingreso.
+        installer_amount:
+          user.role === "company_manager" ? parsed.data.installerAmount : null,
         currency: project.currency,
         assigned_installer_id: parsed.data.installerId,
         created_by: user.id,
@@ -164,6 +170,7 @@ export async function updateOrder(
     freightDetails: formData.get("freightDetails") ?? "",
     logisticsNotes: formData.get("logisticsNotes") ?? "",
     amount: formData.get("amount") ?? "",
+    installerAmount: formData.get("installerAmount") ?? "",
     installerId: formData.get("installerId") ?? "",
   });
   if (!parsed.success) return { error: t("invalidData") };
@@ -216,6 +223,9 @@ export async function updateOrder(
         // instalación; un coordinador no puede tocarlo.
         ...(user.role === "company_manager" && project.billing_mode === "per_installation"
           ? { amount: parsed.data.amount }
+          : {}),
+        ...(user.role === "company_manager"
+          ? { installer_amount: parsed.data.installerAmount }
           : {}),
         assigned_installer_id: parsed.data.installerId,
       })

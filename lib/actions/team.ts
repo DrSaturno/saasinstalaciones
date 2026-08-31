@@ -234,3 +234,42 @@ export async function setRosterStatus(
   }
   return { error: null, ok: true };
 }
+
+/**
+ * Fija la tarifa sugerida de un instalador dentro de esta empresa.
+ *
+ * Es sólo un punto de partida: al crear una orden prellena el costo, pero el
+ * monto que vale es siempre el guardado en la orden. Por eso cambiarla no
+ * modifica ninguna orden ya creada — sería reescribir plata ya acordada.
+ *
+ * `null` borra la sugerencia y deja el campo en blanco al crear órdenes.
+ */
+export async function setInstallerDefaultRate(
+  installerId: string,
+  rate: number | null,
+): Promise<ActionState> {
+  const t = await getTranslations("Errors");
+  const parsed = z
+    .object({
+      installerId: z.string().uuid(),
+      rate: z.number().min(0).max(99_999_999).nullable(),
+    })
+    .safeParse({ installerId, rate });
+  if (!parsed.success) return { error: t("invalidData") };
+
+  try {
+    const { supabase, companyId } = await requireManager();
+    const { error } = await supabase
+      .from("company_installers")
+      .update({ default_installer_rate: parsed.data.rate })
+      .eq("company_id", companyId)
+      .eq("installer_id", parsed.data.installerId);
+    if (error) return { error: error.message };
+
+    revalidatePath(`/team/${parsed.data.installerId}`);
+    revalidatePath("/team");
+  } catch {
+    return { error: t("unexpected") };
+  }
+  return { error: null, ok: true };
+}

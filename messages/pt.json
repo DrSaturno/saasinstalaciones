@@ -462,7 +462,20 @@
       "completed": "Realizado",
       "pending": "Pendente",
       "progress": "Progresso"
-    }
+    },
+    "installerCost": "Custo instaladores",
+    "margin": "Lucro",
+    "noCostLoaded": "não informado",
+    "installer": "Instalador",
+    "order": "Ordem",
+    "actions": "Ações",
+    "finishedOn": "Concluída",
+    "generatedRevenue": "gerou {value}",
+    "pendingPaymentsTitle": "Pendentes de pagamento",
+    "pendingPaymentsDescription": "Trabalho concluído que ainda não foi pago ao instalador. Do mais antigo ao mais recente.",
+    "pendingPaymentsEmpty": "Não há trabalho concluído sem pagar.",
+    "markPaid": "Marcar como paga",
+    "markedPaid": "Ordem {order} marcada como paga"
   },
   "Projects": {
     "title": "Projetos",
@@ -1086,7 +1099,8 @@
     "sectionBudgetDescription": "O valor é por instalação: repete-se em cada ordem do lote.",
     "installerHint": "Se você atribuir a alguém, essa pessoa recebe um único aviso pelo lote inteiro.",
     "batchNotificationTitle": "Novas ordens atribuídas",
-    "batchNotificationBody": "{count, plural, =1 {Você recebeu # nova ordem} other {Você recebeu # novas ordens}}"
+    "batchNotificationBody": "{count, plural, =1 {Você recebeu # nova ordem} other {Você recebeu # novas ordens}}",
+    "batchInstallerAmountHelp": "O mesmo custo se aplica a todas as ordens do lote."
   },
   "CreateOrder": {
     "trigger": "Nova ordem",
@@ -1169,7 +1183,9 @@
     "submit": "Criar ordem de serviço",
     "success": "Ordem {number} criada",
     "partialFiles": "A ordem foi criada. Arquivos enviados: {uploaded}; não enviados: {failed}.",
-    "unknownError": "Não foi possível criar a ordem."
+    "unknownError": "Não foi possível criar a ordem.",
+    "installerAmount": "Custo do instalador",
+    "installerAmountHelp": "O que você paga a quem executa. A tarifa dele é sugerida ao selecioná-lo; você pode alterar."
   },
   "SitesTable": {
     "all": "Todos",
@@ -1912,6 +1928,13 @@
       "active": "Ativo na equipe",
       "invited": "Convite pendente",
       "removed": "Fora da equipe"
-    }
+    },
+    "defaultRate": "Tarifa sugerida",
+    "defaultRateHelp": "Preenche o custo ao criar uma ordem. Alterá-la não modifica ordens já criadas.",
+    "ratePlaceholder": "Sem tarifa",
+    "rateSave": "Salvar",
+    "rateSaved": "Tarifa salva",
+    "rateCleared": "Tarifa removida",
+    "rateInvalid": "Informe um valor válido"
   }
 }

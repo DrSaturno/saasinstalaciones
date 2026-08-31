@@ -462,7 +462,20 @@
       "completed": "Realizado",
       "pending": "Pendiente",
       "progress": "Avance"
-    }
+    },
+    "installerCost": "Costo instaladores",
+    "margin": "Ganancia",
+    "noCostLoaded": "sin cargar",
+    "installer": "Instalador",
+    "order": "Orden",
+    "actions": "Acciones",
+    "finishedOn": "Terminada",
+    "generatedRevenue": "generó {value}",
+    "pendingPaymentsTitle": "Pendientes de pago",
+    "pendingPaymentsDescription": "Trabajo terminado que todavía no se le pagó al instalador. Lo más viejo primero.",
+    "pendingPaymentsEmpty": "No hay trabajo terminado sin pagar.",
+    "markPaid": "Marcar pagada",
+    "markedPaid": "Orden {order} marcada como pagada"
   },
   "Projects": {
     "title": "Proyectos",
@@ -1086,7 +1099,8 @@
     "sectionBudgetDescription": "El importe es por instalación: se repite en cada orden del lote.",
     "installerHint": "Si asignás a alguien, recibe un solo aviso por el lote entero.",
     "batchNotificationTitle": "Nuevas órdenes asignadas",
-    "batchNotificationBody": "{count, plural, =1 {Te asignaron # orden nueva} other {Te asignaron # órdenes nuevas}}"
+    "batchNotificationBody": "{count, plural, =1 {Te asignaron # orden nueva} other {Te asignaron # órdenes nuevas}}",
+    "batchInstallerAmountHelp": "Se aplica el mismo costo a todas las órdenes del lote."
   },
   "CreateOrder": {
     "trigger": "Nueva orden",
@@ -1169,7 +1183,9 @@
     "submit": "Crear orden de trabajo",
     "success": "Orden {number} creada",
     "partialFiles": "La orden se creó. Archivos cargados: {uploaded}; sin cargar: {failed}.",
-    "unknownError": "No se pudo crear la orden."
+    "unknownError": "No se pudo crear la orden.",
+    "installerAmount": "Costo del instalador",
+    "installerAmountHelp": "Lo que le pagás a quien ejecuta. Se sugiere su tarifa al elegirlo; podés cambiarlo."
   },
   "SitesTable": {
     "all": "Todos",
@@ -1912,6 +1928,13 @@
       "active": "Activo en el equipo",
       "invited": "Invitación pendiente",
       "removed": "Fuera del equipo"
-    }
+    },
+    "defaultRate": "Tarifa sugerida",
+    "defaultRateHelp": "Prellena el costo al crear una orden. Cambiarla no modifica órdenes ya creadas.",
+    "ratePlaceholder": "Sin tarifa",
+    "rateSave": "Guardar",
+    "rateSaved": "Tarifa guardada",
+    "rateCleared": "Tarifa quitada",
+    "rateInvalid": "Ingresá un monto válido"
   }
 }

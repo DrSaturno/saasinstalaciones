@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, OrderStatus, RosterStatus } from "@/types/database";
+import type { Database, OrderCurrency, OrderStatus, RosterStatus } from "@/types/database";
 
 export type InstallerProfileOrder = {
   id: string;
@@ -29,6 +29,8 @@ export type InstallerProfile = {
   // `profiles` al crearse la cuenta.
   memberSince: string | null;
   rosterStatus: RosterStatus | null;
+  /** Tarifa sugerida de esta persona EN ESTA empresa. */
+  defaultRate: number | null;
   zones: string[];
   skills: string[];
   available: boolean;
@@ -38,6 +40,8 @@ export type InstallerProfile = {
   orders: InstallerProfileOrder[];
   reviews: InstallerProfileReview[];
   companyName: string;
+  /** Moneda operativa de la empresa, derivada de su país. */
+  currency: OrderCurrency;
 };
 
 /**
@@ -69,7 +73,7 @@ export async function fetchInstallerProfile(
         .maybeSingle(),
       supabase
         .from("company_installers")
-        .select("status, joined_at, company_id")
+        .select("status, joined_at, company_id, default_installer_rate")
         .eq("installer_id", installerId)
         .maybeSingle(),
     ]);
@@ -93,7 +97,7 @@ export async function fetchInstallerProfile(
         .limit(20),
       supabase
         .from("companies")
-        .select("name")
+        .select("name, country")
         .eq("id", roster.company_id)
         .maybeSingle(),
     ]);
@@ -125,6 +129,10 @@ export async function fetchInstallerProfile(
       : null,
     memberSince: roster.joined_at ?? profile.created_at,
     rosterStatus: roster.status,
+    defaultRate:
+      roster.default_installer_rate === null || roster.default_installer_rate === undefined
+        ? null
+        : Number(roster.default_installer_rate),
     zones: installer?.zones ?? [],
     skills: installer?.skills ?? [],
     available: installer?.available ?? true,
@@ -132,6 +140,7 @@ export async function fetchInstallerProfile(
     ratingAvg: installer?.rating_avg ?? 0,
     ratingCount: installer?.rating_count ?? 0,
     companyName: company?.name ?? "",
+    currency: company?.country === "BR" ? "BRL" : "ARS",
     orders: (orders ?? []).map((order) => ({
       id: order.id,
       orderNumber: order.order_number,

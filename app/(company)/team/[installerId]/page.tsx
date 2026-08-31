@@ -10,6 +10,7 @@ import { StarRating } from "@/components/shared/star-rating";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InstallerRateField } from "@/components/company/installer-rate-field";
 import { BackLink } from "@/components/shared/back-link";
 
 export default async function InstallerProfilePage({
@@ -162,6 +163,11 @@ export default async function InstallerProfilePage({
                 )}
               </div>
             </div>
+            <InstallerRateField
+              installerId={profile.id}
+              currency={profile.currency}
+              defaultRate={profile.defaultRate}
+            />
           </CardContent>
         </Card>
 

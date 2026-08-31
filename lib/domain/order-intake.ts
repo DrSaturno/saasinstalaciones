@@ -40,7 +40,13 @@ const orderFields = {
   requiresFreight: z.boolean().default(false),
   freightDetails: z.string().trim().max(1_000).default(""),
   logisticsNotes: z.string().trim().max(2_000).default(""),
+  // `amount` es lo que se le cobra al cliente; `installerAmount`, lo que se le
+  // paga a quien ejecuta. Dos números distintos: sin los dos no hay margen.
   amount: optionalAmount,
+  // Con `default`: los formularios que ocultan el costo (coordinador, o el
+  // diálogo de lote sin permiso financiero) no mandan el campo, y ausente no
+  // puede significar error — significa «sin costo cargado».
+  installerAmount: optionalAmount.default(null),
   installerId: optionalUuid,
 };
 
