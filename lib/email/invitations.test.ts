@@ -83,6 +83,11 @@ describe("invitation email", () => {
   });
 
   it("sends localized, escaped content with an idempotency key", async () => {
+    // Fijado a propósito: `sendInvitationEmail` arma la URL del hero con
+    // `applicationOrigin()`, que lee `APP_URL`. Sin fijarlo acá, este assert
+    // dependía de lo que hubiera en el entorno ambiente — pasaba en local
+    // (sin la variable) y fallaba en CI, que la define como 127.0.0.1:3000.
+    process.env.APP_URL = "http://localhost:3000";
     process.env.RESEND_API_KEY = "re_test";
     process.env.RESEND_FROM_EMAIL = "Se Instala <invites@example.com>";
     const fetchMock = vi.fn().mockResolvedValue(
