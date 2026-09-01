@@ -49,13 +49,20 @@ export function ImportSitesDialog({ projectId }: { projectId: string }) {
   const [file, setFile] = useState<File | null>(null);
   const [preflight, setPreflight] = useState<ImportPreflight | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
-  const [pending, startTransition] = useTransition();
+  // Dos transiciones separadas y no una compartida: analizar e importar son
+  // pasos distintos de la pantalla. Con una sola, el botón de confirmar
+  // mostraba «Importando…» mientras todavía corría el ANÁLISIS —anunciando
+  // algo que no estaba pasando— y quedaba deshabilitado por un estado que no
+  // era el suyo. En CI ese flag se trabó y dejó el botón muerto: la revisión
+  // en pantalla con las filas correctas y nada que se pudiera tocar.
+  const [analyzing, startAnalyze] = useTransition();
+  const [importing, startImport] = useTransition();
   const router = useRouter();
 
   const analyze = (selected: File) => {
     const formData = new FormData();
     formData.set("file", selected);
-    startTransition(async () => {
+    startAnalyze(async () => {
       const res = await analyzeSiteImport(projectId, formData);
       if (res.error) {
         toast.error(res.error);
@@ -72,7 +79,7 @@ export function ImportSitesDialog({ projectId }: { projectId: string }) {
     if (!file) return;
     const formData = new FormData();
     formData.set("file", file);
-    startTransition(async () => {
+    startImport(async () => {
       const res = await importSitesFile(projectId, formData);
       setResult(res);
       if (res.error) {
@@ -204,8 +211,8 @@ export function ImportSitesDialog({ projectId }: { projectId: string }) {
             {preflight.valid === 0 ? (
               <p className="text-sm text-destructive">{t("nothingToImport")}</p>
             ) : (
-              <Button type="button" onClick={confirm} disabled={pending}>
-                {pending
+              <Button type="button" onClick={confirm} disabled={importing}>
+                {importing
                   ? t("importing")
                   : t("confirm", { count: preflight.valid })}
               </Button>
@@ -214,7 +221,7 @@ export function ImportSitesDialog({ projectId }: { projectId: string }) {
               type="button"
               variant="outline"
               onClick={reset}
-              disabled={pending}
+              disabled={importing}
             >
               {t("back")}
             </Button>
@@ -227,7 +234,7 @@ export function ImportSitesDialog({ projectId }: { projectId: string }) {
                 id="csv"
                 type="file"
                 accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
-                disabled={pending}
+                disabled={analyzing}
                 onChange={(e) => {
                   const selected = e.target.files?.[0];
                   if (selected) analyze(selected);
@@ -244,7 +251,7 @@ export function ImportSitesDialog({ projectId }: { projectId: string }) {
                 {t("downloadTemplate")}
               </a>
             </Button>
-            {pending && (
+            {analyzing && (
               <p className="text-sm text-muted-foreground">{t("analyzing")}</p>
             )}
             {result?.error && (

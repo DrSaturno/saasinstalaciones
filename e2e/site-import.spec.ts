@@ -18,9 +18,17 @@ import { ACTORS } from "./actors";
 const PROYECTO_SEED = "22222222-2222-2222-2222-222222222222";
 const FILAS = 6;
 
-// El margen es de 60 s, pero el tiempo NO era la causa: con 20 s fallaba y con
-// 60 s también, alternando entre el primer y el segundo caso. Queda amplio para
-// descartar la lentitud de CI, y el diagnóstico real lo aporta `esperarRevision`.
+// El margen es de 60 s, pero el tiempo nunca fue la causa: con 20 s fallaba y
+// con 60 s también.
+//
+// La causa real, encontrada leyendo la traza de una corrida fallida: el paso de
+// revisión SÍ aparecía y con los conteos correctos, pero el botón decía
+// «Importando…» en vez de «Importar N locaciones», así que el selector por
+// nombre no lo encontraba nunca. `import-sites-dialog.tsx` usaba UNA sola
+// transición para analizar y para importar, y ese flag compartido se quedó
+// trabado en pendiente 58 s después de que la Server Action ya había respondido
+// 200 en 597 ms. Se separaron las dos transiciones: el botón de confirmar ahora
+// sólo depende de la importación, que es lo único que anuncia.
 
 function planilla(prefijo: string): Buffer {
   const filas = [
@@ -48,23 +56,37 @@ function planilla(prefijo: string): Buffer {
  * no haber llegado ahí porque el análisis devolvió error (muestra un aviso y
  * limpia todo) o porque ninguna fila resultó importable. Volcar lo que quedó en
  * pantalla convierte un rojo mudo en un diagnóstico.
+ *
+ * `allInnerTexts` y no `innerText`: el diálogo de importación está ANIDADO
+ * dentro del de administrar instalaciones, así que con los dos abiertos el
+ * selector matchea dos elementos y `innerText` explota por modo estricto. Esa
+ * excepción caía en el catch y el diagnóstico informaba «sin diálogo en
+ * pantalla» justo cuando había dos — mandando la investigación para el lado
+ * contrario. También se vuelca el nombre real de los botones del diálogo:
+ * el fallo que esto destapó era que el botón existía pero decía otra cosa.
  */
 async function esperarRevision(page: Page, boton: Locator) {
   try {
     await expect(boton).toBeVisible({ timeout: 60_000 });
   } catch (error) {
-    const dialogo = await page
+    const dialogos = await page
       .locator('[role="dialog"]')
-      .innerText()
-      .catch(() => "(sin diálogo en pantalla)");
+      .allInnerTexts()
+      .catch(() => []);
+    const botones = await page
+      .locator('[role="dialog"] button')
+      .allInnerTexts()
+      .catch(() => []);
     const avisos = await page
       .locator('[data-sonner-toast], [role="status"], [role="alert"]')
       .allInnerTexts()
       .catch(() => []);
     throw new Error(
       `No apareció el paso de revisión.
---- diálogo ---
-${dialogo}
+--- diálogos abiertos (${dialogos.length}) ---
+${dialogos.join("\n=====\n") || "(ninguno)"}
+--- botones dentro de los diálogos ---
+${botones.map((b) => `[${b.replace(/\s+/g, " ").trim()}]`).join(" ") || "(ninguno)"}
 --- avisos ---
 ${avisos.join(" | ") || "(ninguno)"}
 
