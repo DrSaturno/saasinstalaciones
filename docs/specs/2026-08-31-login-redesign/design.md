@@ -22,7 +22,7 @@ Una ruta punteada conecta el local, el equipo de campo, la aplicación y el veh�
 ## Responsive
 
 - `> 800 px`: visual y formulario en dos columnas con proporción aproximada `57/43`.
-- `<= 800 px`: lienzo visual completo primero; formulario debajo.
+- `<= 800 px`: formulario primero; lienzo visual completo debajo.
 - `<= 420 px`: tipografía, recorte y badge ajustados para 375 px.
 
 ## Arquitectura
