@@ -8,4 +8,4 @@
 - [x] **INVITE-MOBILE-01** — Mantener formulario primero y escena debajo en móvil.
 - [x] **INVITE-QA-01** — Validar TypeScript, lint, pruebas y build.
 - [x] **INVITE-QA-02** — Verificar el resultado responsive en escritorio y móvil.
-- [ ] **INVITE-RELEASE-01** — Verificar el despliegue productivo.
+- [x] **INVITE-RELEASE-01** — Verificar el despliegue productivo.
