@@ -21,6 +21,13 @@ export type OrderFormSite = {
   state: string;
   zone: string;
   externalRef: string | null;
+  /**
+   * Su locación tiene algún permiso `pending`/`expired`/`rejected`. Sólo un
+   * flag: el detalle se pide aparte con `getSiteRequirementsPreview`, recién
+   * al elegir el sitio — no tiene sentido cargarlo para miles de sitios que
+   * el usuario nunca va a mirar.
+   */
+  hasOpenRequirements: boolean;
 };
 
 export type OrderFormSitesResult = {

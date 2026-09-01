@@ -39,6 +39,11 @@ export type OrderPdfData = {
     riskNotes: string;
   };
   history: { label: string; note: string; date: string }[];
+  /**
+   * Sólo lo que hace falta gestionar (pending/expired/rejected) — la ficha
+   * completa de la locación vive en la app, esto es lo que se lleva al lugar.
+   */
+  openRequirements: { type: string; statusLabel: string; expiresLabel: string | null }[];
   /** Etiquetas ya traducidas: el PDF no tiene acceso al contexto de next-intl. */
   labels: Record<string, string>;
 };
@@ -47,6 +52,7 @@ const BRAND = "#2597d0";
 const INK = "#070709";
 const MUTED = "#60606c";
 const LINE = "#e6e7eb";
+const WARN = "#d32f2f";
 
 const styles = StyleSheet.create({
   page: {
@@ -127,6 +133,27 @@ const styles = StyleSheet.create({
   historyDate: { width: 88, fontSize: 8, color: MUTED },
   historyLabel: { width: 92, fontSize: 8.5, fontFamily: "Helvetica-Bold" },
   historyNote: { flex: 1, fontSize: 8.5 },
+
+  permitsSectionTitle: {
+    fontSize: 8,
+    fontFamily: "Helvetica-Bold",
+    color: WARN,
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
+    borderBottomWidth: 1,
+    borderBottomColor: LINE,
+    paddingBottom: 4,
+    marginBottom: 8,
+  },
+  permitRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: LINE,
+    paddingVertical: 5,
+  },
+  permitType: { flex: 1, fontSize: 8.5, fontFamily: "Helvetica-Bold" },
+  permitStatus: { width: 80, fontSize: 8, fontFamily: "Helvetica-Bold", color: WARN },
+  permitExpires: { width: 90, fontSize: 8, color: MUTED, textAlign: "right" },
 
   signatures: { flexDirection: "row", marginTop: 34 },
   signature: { flex: 1, marginRight: 24 },
@@ -251,6 +278,19 @@ export function OrderDocument({ data }: { data: OrderPdfData }) {
             </View>
           </View>
         </View>
+
+        {data.openRequirements.length > 0 ? (
+          <View style={styles.section} wrap={false}>
+            <Text style={styles.permitsSectionTitle}>{l.permits}</Text>
+            {data.openRequirements.map((item, index) => (
+              <View key={index} style={styles.permitRow}>
+                <Text style={styles.permitType}>{item.type}</Text>
+                <Text style={styles.permitStatus}>{item.statusLabel}</Text>
+                <Text style={styles.permitExpires}>{item.expiresLabel ?? "—"}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
 
         {data.description ||
         site.accessNotes ||

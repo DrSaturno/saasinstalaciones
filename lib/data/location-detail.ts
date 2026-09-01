@@ -235,7 +235,7 @@ export async function fetchCanonicalLocationDetail(
     const { data } = await supabase
       .from("work_orders")
       .select(
-        "id, site_id, project_id, order_number, title, status, scheduled_date, finalized_at, created_at",
+        "id, site_id, project_id, order_number, title, status, scheduled_date, finalized_at, created_at, assigned_installer_id",
       )
       .in("site_id", siteIds)
       .order("created_at", { ascending: false });
@@ -268,7 +268,22 @@ export async function fetchCanonicalLocationDetail(
     fetchProfiles(),
   ]);
   const orderIds = orders.map((order) => order.id);
+  const orderInstallerIds = [
+    ...new Set(
+      orders
+        .map((order) => order.assigned_installer_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
 
+  const fetchInstallerProfiles = async () => {
+    if (orderInstallerIds.length === 0) return [];
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", orderInstallerIds);
+    return data ?? [];
+  };
   const fetchIncidents = async () => {
     if (orderIds.length === 0) return [];
     const { data } = await supabase
@@ -301,11 +316,16 @@ export async function fetchCanonicalLocationDetail(
     return data ?? [];
   };
 
-  const [incidents, orderAttachments, orderUpdates] = await Promise.all([
-    fetchIncidents(),
-    fetchOrderAttachments(),
-    fetchOrderUpdates(),
-  ]);
+  const [incidents, orderAttachments, orderUpdates, installerProfiles] =
+    await Promise.all([
+      fetchIncidents(),
+      fetchOrderAttachments(),
+      fetchOrderUpdates(),
+      fetchInstallerProfiles(),
+    ]);
+  const installerName = new Map(
+    installerProfiles.map((profile) => [profile.id, profile.full_name]),
+  );
 
   const projectName = new Map(projects.map((project) => [project.id, project.name]));
   const orderById = new Map(orders.map((order) => [order.id, order]));
@@ -462,6 +482,7 @@ export async function fetchCanonicalLocationDetail(
     sites: siteRows,
     orders,
     incidents,
+    installerNames: installerName,
   });
   const clientRelation = Array.isArray(location.clients)
     ? location.clients[0]
@@ -535,4 +556,75 @@ export async function fetchCanonicalLocationDetail(
           }
         : null,
   };
+}
+
+/**
+ * Sólo los permisos y requisitos de una locación — sin el resto de la ficha
+ * (historial, evidencia, eventos).
+ *
+ * Existe aparte de `fetchCanonicalLocationDetail` a propósito: se usa desde
+ * la página del sitio dentro de un proyecto, que hoy no necesita nada más de
+ * la locación. Pedir la ficha completa ahí traería consultas de sobra en una
+ * pantalla que ya arma su propia carga en paralelo.
+ */
+export async function fetchLocationRequirements(
+  supabase: SupabaseClient<Database>,
+  locationId: string,
+): Promise<LocationRequirementView[]> {
+  const { data: requirements } = await supabase
+    .from("location_requirements")
+    .select(
+      "id, kind, requirement_type, status, valid_from, expires_on, responsible_user_id, notes, document_attachment_id, created_at",
+    )
+    .eq("location_id", locationId)
+    .order("expires_on", { ascending: true, nullsFirst: false });
+  const rows = requirements ?? [];
+  if (rows.length === 0) return [];
+
+  const profileIds = [
+    ...new Set(
+      rows
+        .map((row) => row.responsible_user_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  const documentIds = [
+    ...new Set(
+      rows
+        .map((row) => row.document_attachment_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+
+  const [{ data: profiles }, { data: documents }] = await Promise.all([
+    profileIds.length
+      ? supabase.from("profiles").select("id, full_name").in("id", profileIds)
+      : Promise.resolve({ data: [] as { id: string; full_name: string }[] }),
+    documentIds.length
+      ? supabase
+          .from("location_attachments")
+          .select("id, file_name")
+          .in("id", documentIds)
+      : Promise.resolve({ data: [] as { id: string; file_name: string }[] }),
+  ]);
+  const profileName = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
+  const documentName = new Map((documents ?? []).map((d) => [d.id, d.file_name]));
+
+  return rows.map((requirement) => ({
+    id: requirement.id,
+    kind: requirement.kind,
+    requirement_type: requirement.requirement_type,
+    status: requirement.status,
+    valid_from: requirement.valid_from,
+    expires_on: requirement.expires_on,
+    notes: requirement.notes,
+    document_attachment_id: requirement.document_attachment_id,
+    created_at: requirement.created_at,
+    responsibleName: requirement.responsible_user_id
+      ? (profileName.get(requirement.responsible_user_id) ?? null)
+      : null,
+    documentName: requirement.document_attachment_id
+      ? (documentName.get(requirement.document_attachment_id) ?? null)
+      : null,
+  }));
 }

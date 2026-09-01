@@ -37,6 +37,7 @@ export type LocationOrderSource = {
   scheduled_date: string | null;
   finalized_at: string | null;
   created_at: string;
+  assigned_installer_id: string | null;
 };
 
 export type LocationIncidentSource = {
@@ -47,6 +48,8 @@ export type LocationIncidentSource = {
 export type LocationOrderHistory = LocationOrderSource & {
   incidentCount: number;
   openIncidentCount: number;
+  /** Quién hizo el trabajo — el spec lo pide explícito en el historial. */
+  installerName: string | null;
 };
 
 export type LocationProjectHistory = {
@@ -77,12 +80,15 @@ export function buildLocationProjectHistory({
   sites,
   orders,
   incidents,
+  installerNames = new Map(),
 }: {
   associations: readonly LocationAssociationSource[];
   projects: readonly LocationProjectSource[];
   sites: readonly LocationSiteSource[];
   orders: readonly LocationOrderSource[];
   incidents: readonly LocationIncidentSource[];
+  /** instalador id → nombre. Resolver afuera evita atar esta función pura a Supabase. */
+  installerNames?: ReadonlyMap<string, string>;
 }): LocationProjectHistory[] {
   const associationByProject = new Map(
     associations.map((association) => [association.project_id, association]),
@@ -112,6 +118,9 @@ export function buildLocationProjectHistory({
       ...order,
       incidentCount: incident.total,
       openIncidentCount: incident.open,
+      installerName: order.assigned_installer_id
+        ? (installerNames.get(order.assigned_installer_id) ?? null)
+        : null,
     };
     ordersByProject.set(projectId, [
       ...(ordersByProject.get(projectId) ?? []),

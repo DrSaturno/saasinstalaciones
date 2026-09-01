@@ -9,6 +9,8 @@ import { SiteLifecycleActions } from "@/components/company/site-lifecycle-action
 import { SiteFiles } from "@/components/company/site-files";
 import { fetchSiteAttachments } from "@/lib/data/site-attachments";
 import { fetchSiteGallery } from "@/lib/data/site-gallery";
+import { fetchLocationRequirements } from "@/lib/data/location-detail";
+import { LocationRequirements } from "@/components/company/location-requirements";
 import { SiteGallery } from "@/components/company/site-gallery";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +30,10 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
     fetchSiteGallery(supabase, siteId),
   ]);
   if (!site || !project) notFound();
+
+  const locationRequirements = site.location_id
+    ? await fetchLocationRequirements(supabase, site.location_id)
+    : [];
 
   const activeOrders = (orders ?? []).filter((order) => order.status !== "cancelada");
   const completed = activeOrders.filter((order) => order.status === "finalizada").length;
@@ -67,6 +73,12 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         {[{ title: t("access"), value: site.access_notes }, { title: t("parking"), value: site.parking_notes }, { title: t("technical"), value: site.technical_notes }, { title: t("risks"), value: site.risk_notes }, { title: t("permanentNotes"), value: site.permanent_notes }].filter((item) => item.value).map((item) => <Card key={item.title}><CardHeader><CardTitle>{item.title}</CardTitle></CardHeader><CardContent><p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{item.value}</p></CardContent></Card>)}
       </div>
+
+      {site.location_id ? (
+        <div className="mt-4">
+          <LocationRequirements items={locationRequirements} />
+        </div>
+      ) : null}
 
       <div className="mt-4">
         <SiteGallery siteId={site.id} items={gallery} canDelete />

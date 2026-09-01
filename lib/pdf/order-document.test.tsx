@@ -8,7 +8,7 @@ const LABELS = Object.fromEntries(
     "documentKind", "issued", "assignment", "client", "project", "installer",
     "scheduledDate", "priority", "amount", "site", "siteName", "address",
     "contact", "phone", "openingHours", "logistics", "indoor", "outdoor",
-    "withFreight", "withoutFreight", "instructions", "description", "access",
+    "withFreight", "withoutFreight", "permits", "instructions", "description", "access",
     "parking", "technical", "risks", "freight", "history",
     "installerSignature", "clientSignature",
   ].map((key) => [key, key]),
@@ -49,6 +49,7 @@ function orden(overrides: Partial<OrderPdfData> = {}): OrderPdfData {
       { label: "Sistema", note: "Orden creada", date: "27/07/26" },
       { label: "Relevamiento", note: "Medidas tomadas", date: "28/07/26" },
     ],
+    openRequirements: [],
     labels: LABELS,
     ...overrides,
   };
@@ -98,5 +99,22 @@ describe("OrderDocument", () => {
       <OrderDocument data={orden({ status: "cancelada", statusLabel: "Cancelada" })} />,
     );
     expect(buffer.subarray(0, 5).toString()).toBe("%PDF-");
+  });
+
+  it("arma la sección de permisos cuando hay algo pendiente de gestionar", async () => {
+    // Sin esto, un permiso vencido queda igual de invisible que hoy: el
+    // instalador lo descubre recién al llegar al lugar.
+    const buffer = await renderToBuffer(
+      <OrderDocument
+        data={orden({
+          openRequirements: [
+            { type: "Autorización de ingreso", statusLabel: "Vencido", expiresLabel: "15/1/26" },
+            { type: "Registro de instaladores", statusLabel: "Pendiente", expiresLabel: null },
+          ],
+        })}
+      />,
+    );
+    expect(buffer.subarray(0, 5).toString()).toBe("%PDF-");
+    expect(buffer.length).toBeGreaterThan(1_000);
   });
 });

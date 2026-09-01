@@ -3,8 +3,23 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
+import { fetchLocationRequirements } from "@/lib/data/location-detail";
 import { OrderDocument, type OrderPdfData } from "@/lib/pdf/order-document";
 import type { OrderPriority, OrderStatus, OrderUpdateType } from "@/types/database";
+
+type OpenRequirementStatus = "pending" | "expired" | "rejected";
+
+/** El generador no angosta `location_requirements.status` a un literal. */
+function openRequirementStatusKey(status: string): OpenRequirementStatus | null {
+  switch (status) {
+    case "pending":
+    case "expired":
+    case "rejected":
+      return status;
+    default:
+      return null;
+  }
+}
 
 /**
  * Orden de trabajo en PDF, para los tres tableros.
@@ -33,10 +48,11 @@ export async function GET(
     .maybeSingle();
   if (!order) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
-  const [t, statusT, createOrderT, format] = await Promise.all([
+  const [t, statusT, createOrderT, locationT, format] = await Promise.all([
     getTranslations("OrderPdf"),
     getTranslations("Status"),
     getTranslations("CreateOrder"),
+    getTranslations("CanonicalLocation"),
     getFormatter(),
   ]);
 
@@ -50,7 +66,7 @@ export async function GET(
     supabase
       .from("sites")
       .select(
-        "name, address, city, state, contact_name, contact_phone, opening_hours, access_notes, parking_notes, technical_notes, risk_notes",
+        "name, address, city, state, contact_name, contact_phone, opening_hours, access_notes, parking_notes, technical_notes, risk_notes, location_id",
       )
       .eq("id", order.site_id)
       .maybeSingle(),
@@ -78,6 +94,25 @@ export async function GET(
       .order("created_at", { ascending: true })
       .limit(40),
   ]);
+
+  // Lo que hay que gestionar ANTES de ir, no toda la ficha de la locación —
+  // eso ya está en la app. Este PDF es lo que se lleva al lugar.
+  const requirements = site?.location_id
+    ? await fetchLocationRequirements(supabase, site.location_id)
+    : [];
+  const openRequirements = requirements.flatMap((item) => {
+    const statusKey = openRequirementStatusKey(item.status);
+    if (!statusKey) return [];
+    return [
+      {
+        type: item.requirement_type,
+        statusLabel: locationT(`requirements.status.${statusKey}`),
+        expiresLabel: item.expires_on
+          ? format.dateTime(new Date(`${item.expires_on}T12:00:00`), { dateStyle: "short" })
+          : null,
+      },
+    ];
+  });
 
   const day = (value: string) =>
     format.dateTime(new Date(value), { dateStyle: "short" });
@@ -127,6 +162,7 @@ export async function GET(
       note: update.note ?? "",
       date: day(update.created_at),
     })),
+    openRequirements,
     labels: {
       documentKind: t("documentKind"),
       issued: t("issued"),
@@ -148,6 +184,7 @@ export async function GET(
       outdoor: t("outdoor"),
       withFreight: t("withFreight"),
       withoutFreight: t("withoutFreight"),
+      permits: t("permits"),
       instructions: t("instructions"),
       description: t("description"),
       access: t("access"),

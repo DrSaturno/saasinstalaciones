@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
-import { Archive, CalendarDays, History, TriangleAlert } from "lucide-react";
+import { Archive, CalendarDays, History, TriangleAlert, UserRound } from "lucide-react";
 import type { LocationProjectHistory as ProjectHistory } from "@/lib/domain/location-detail";
 import { PROJECT_STATUS } from "@/lib/domain/status";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -105,10 +105,18 @@ export async function LocationProjectHistory({ projects }: { projects: ProjectHi
                             <span className="font-mono text-xs text-muted-foreground">{order.order_number}</span>
                             <div className="min-w-0">
                               <p className="truncate text-sm font-medium">{order.title}</p>
-                              <p className="mt-0.5 text-xs text-muted-foreground">
-                                {order.scheduled_date
-                                  ? format.dateTime(new Date(`${order.scheduled_date}T12:00:00`), { dateStyle: "medium" })
-                                  : t("history.unscheduled")}
+                              <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                                <span>
+                                  {order.scheduled_date
+                                    ? format.dateTime(new Date(`${order.scheduled_date}T12:00:00`), { dateStyle: "medium" })
+                                    : t("history.unscheduled")}
+                                </span>
+                                {order.installerName ? (
+                                  <span className="inline-flex items-center gap-1">
+                                    <UserRound className="size-3" aria-hidden="true" />
+                                    {order.installerName}
+                                  </span>
+                                ) : null}
                               </p>
                             </div>
                             <div className="flex flex-wrap items-center gap-2 sm:justify-end">

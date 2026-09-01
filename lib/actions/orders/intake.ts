@@ -271,11 +271,13 @@ export async function getOrderFormSites(
     if (!project) return { error: t("projectNotFound"), sites: [] };
     const companyId = operatedCompany(user, project.company_id);
 
-    const sites: OrderFormSite[] = [];
+    const rawSites: (Omit<OrderFormSite, "hasOpenRequirements"> & {
+      locationId: string | null;
+    })[] = [];
     for (let from = 0; ; from += 1_000) {
       const { data, error } = await supabase
         .from("sites")
-        .select("id, name, address, city, state, zone, external_ref")
+        .select("id, name, address, city, state, zone, external_ref, location_id")
         .eq("project_id", projectId)
         .eq("company_id", companyId)
         .is("archived_at", null)
@@ -283,7 +285,7 @@ export async function getOrderFormSites(
         .range(from, from + 999);
       if (error) return { error: error.message, sites: [] };
       const page = data ?? [];
-      sites.push(
+      rawSites.push(
         ...page.map((site) => ({
           id: site.id,
           name: site.name,
@@ -292,10 +294,36 @@ export async function getOrderFormSites(
           state: site.state,
           zone: site.zone,
           externalRef: site.external_ref,
+          locationId: site.location_id,
         })),
       );
       if (page.length < 1_000) break;
     }
+
+    // Un flag por sitio, no el detalle: con miles de sitios por proyecto,
+    // traer los requisitos de todos de una sería carísimo por algo que el
+    // usuario va a mirar sólo del sitio que efectivamente elija.
+    const locationIds = [
+      ...new Set(
+        rawSites
+          .map((site) => site.locationId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const flaggedLocationIds = new Set<string>();
+    if (locationIds.length > 0) {
+      const { data: openRequirements } = await supabase
+        .from("location_requirements")
+        .select("location_id")
+        .in("location_id", locationIds)
+        .in("status", ["pending", "expired", "rejected"]);
+      for (const row of openRequirements ?? []) flaggedLocationIds.add(row.location_id);
+    }
+
+    const sites: OrderFormSite[] = rawSites.map(({ locationId, ...site }) => ({
+      ...site,
+      hasOpenRequirements: locationId ? flaggedLocationIds.has(locationId) : false,
+    }));
     return { error: null, sites };
   } catch {
     return { error: t("unexpected"), sites: [] };

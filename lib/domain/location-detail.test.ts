@@ -48,6 +48,7 @@ describe("buildLocationProjectHistory", () => {
           scheduled_date: "2026-08-20",
           finalized_at: null,
           created_at: "2026-08-01T00:00:00Z",
+          assigned_installer_id: "installer-1",
         },
         {
           id: "order-old",
@@ -59,12 +60,14 @@ describe("buildLocationProjectHistory", () => {
           scheduled_date: "2024-03-10",
           finalized_at: "2024-03-10T18:00:00Z",
           created_at: "2024-03-01T00:00:00Z",
+          assigned_installer_id: null,
         },
       ],
       incidents: [
         { order_id: "order-new", status: "open" },
         { order_id: "order-new", status: "resolved" },
       ],
+      installerNames: new Map([["installer-1", "Juana Pérez"]]),
     });
 
     expect(history.map((entry) => entry.projectId)).toEqual([
@@ -75,7 +78,9 @@ describe("buildLocationProjectHistory", () => {
       id: "order-new",
       incidentCount: 2,
       openIncidentCount: 1,
+      installerName: "Juana Pérez",
     });
+    expect(history[1].orders[0].installerName).toBeNull();
     expect(history[1].orders[0].id).toBe("order-old");
   });
 
@@ -95,6 +100,7 @@ describe("buildLocationProjectHistory", () => {
           scheduled_date: null,
           finalized_at: null,
           created_at: "2026-08-01T00:00:00Z",
+          assigned_installer_id: null,
         },
       ],
       incidents: [],
@@ -131,6 +137,7 @@ describe("buildLocationProjectHistory", () => {
           scheduled_date: "2026-07-01",
           finalized_at: null,
           created_at: "2026-06-01T00:00:00Z",
+          assigned_installer_id: null,
         },
         {
           id: "newer",
@@ -142,6 +149,7 @@ describe("buildLocationProjectHistory", () => {
           scheduled_date: "2026-08-01",
           finalized_at: null,
           created_at: "2026-07-01T00:00:00Z",
+          assigned_installer_id: null,
         },
       ],
       incidents: [],
@@ -152,5 +160,59 @@ describe("buildLocationProjectHistory", () => {
       "newer",
       "older",
     ]);
+  });
+
+  it("resuelve el instalador desde el mapa de nombres, sin romper si falta o no vino asignado", () => {
+    const history = buildLocationProjectHistory({
+      associations: [],
+      projects: [projects[0]],
+      sites: [{ id: "site-new", project_id: "project-new" }],
+      orders: [
+        {
+          id: "con-instalador-conocido",
+          site_id: "site-new",
+          project_id: "project-new",
+          order_number: "OT-1",
+          title: "Instalacion",
+          status: "en_proceso",
+          scheduled_date: "2026-08-10",
+          finalized_at: null,
+          created_at: "2026-08-01T00:00:00Z",
+          assigned_installer_id: "installer-1",
+        },
+        {
+          id: "con-instalador-sin-nombre",
+          site_id: "site-new",
+          project_id: "project-new",
+          order_number: "OT-2",
+          title: "Instalacion",
+          status: "en_proceso",
+          scheduled_date: "2026-08-05",
+          finalized_at: null,
+          created_at: "2026-08-01T00:00:00Z",
+          // Instalador dado de baja o el mapa no llegó a resolverlo: no debe reventar.
+          assigned_installer_id: "installer-desconocido",
+        },
+        {
+          id: "sin-asignar",
+          site_id: "site-new",
+          project_id: "project-new",
+          order_number: "OT-3",
+          title: "Instalacion",
+          status: "pendiente",
+          scheduled_date: "2026-08-01",
+          finalized_at: null,
+          created_at: "2026-08-01T00:00:00Z",
+          assigned_installer_id: null,
+        },
+      ],
+      incidents: [],
+      installerNames: new Map([["installer-1", "Juana Pérez"]]),
+    });
+
+    const byId = new Map(history[0].orders.map((order) => [order.id, order.installerName]));
+    expect(byId.get("con-instalador-conocido")).toBe("Juana Pérez");
+    expect(byId.get("con-instalador-sin-nombre")).toBeNull();
+    expect(byId.get("sin-asignar")).toBeNull();
   });
 });

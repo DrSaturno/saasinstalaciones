@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { TriangleAlert } from "lucide-react";
+import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { getOrderFormSites } from "@/lib/actions/orders/intake";
+import { getSiteRequirementsPreview } from "@/lib/actions/orders/site-requirements";
 import type { OrderFormSite } from "@/lib/actions/orders/types";
 import type { OrderFormProject } from "@/lib/data/order-form";
+import type { LocationRequirementView } from "@/lib/data/location-detail";
 import type { OrderCurrency } from "@/types/database";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +52,8 @@ export function OrderFormFields({
 }: Props) {
   const t = useTranslations("CreateOrder");
   const statusT = useTranslations("Status");
+  const locationT = useTranslations("CanonicalLocation");
+  const format = useFormatter();
   const [projectId, setProjectId] = useState("");
   const [sites, setSites] = useState<OrderFormSite[]>([]);
   const [siteId, setSiteId] = useState("");
@@ -57,6 +62,8 @@ export function OrderFormFields({
   const [installerAmount, setInstallerAmount] = useState("");
   const [requiresFreight, setRequiresFreight] = useState(false);
   const [loadingSites, startLoadingSites] = useTransition();
+  const [openRequirements, setOpenRequirements] = useState<LocationRequirementView[]>([]);
+  const [loadingRequirements, startLoadingRequirements] = useTransition();
 
   const project = projects.find((item) => item.id === projectId) ?? null;
   const orderCurrency = project?.currency ?? currency;
@@ -82,11 +89,29 @@ export function OrderFormFields({
     setSiteId("");
     setSites([]);
     setAmount("");
+    setOpenRequirements([]);
     if (!value) return;
     startLoadingSites(async () => {
       const result = await getOrderFormSites(value);
       if (result.error) toast.error(result.error);
       else setSites(result.sites);
+    });
+  };
+
+  /**
+   * El detalle de permisos se pide recién acá, no junto con la lista de
+   * sitios: con miles de sitios por proyecto, traer el detalle de todos de
+   * una sería carísimo por algo que sólo hace falta para el que se elige.
+   */
+  const chooseSite = (value: string) => {
+    setSiteId(value);
+    setOpenRequirements([]);
+    const chosen = sites.find((item) => item.id === value);
+    if (!chosen?.hasOpenRequirements) return;
+    startLoadingRequirements(async () => {
+      const result = await getSiteRequirementsPreview(value);
+      if (result.error) toast.error(result.error);
+      else setOpenRequirements(result.requirements);
     });
   };
 
@@ -124,7 +149,7 @@ export function OrderFormFields({
                 name="siteId"
                 value={siteId}
                 disabled={disabled || !projectId || loadingSites}
-                onChange={(event) => setSiteId(event.target.value)}
+                onChange={(event) => chooseSite(event.target.value)}
                 className={selectClass}
                 required
               >
@@ -133,6 +158,7 @@ export function OrderFormFields({
                 </option>
                 {sites.map((item) => (
                   <option key={item.id} value={item.id}>
+                    {item.hasOpenRequirements ? "⚠ " : ""}
                     {item.externalRef ? `${item.externalRef} · ` : ""}{item.name}
                   </option>
                 ))}
@@ -145,6 +171,31 @@ export function OrderFormFields({
               <span className="text-muted-foreground">
                 {` · ${[site.address, site.city, site.state].filter(Boolean).join(", ") || t("noAddress")}`}
               </span>
+            </div>
+          ) : null}
+
+          {/* Se muestra ANTES de crear la orden, a propósito: es justo lo que
+              pide el spec — que el permiso pendiente se gestione de antemano,
+              no que el instalador lo descubra al llegar. No bloquea el envío:
+              es un aviso, la decisión de esperar o no sigue siendo humana. */}
+          {site?.hasOpenRequirements && !loadingRequirements && openRequirements.length > 0 ? (
+            <div className="rounded-xl border border-warning/40 bg-cream/30 px-4 py-3">
+              <p className="flex items-center gap-2 text-xs font-medium">
+                <TriangleAlert className="size-3.5 shrink-0 text-warning" aria-hidden="true" />
+                {t("openRequirementsWarning")}
+              </p>
+              <ul className="mt-2 flex flex-col gap-1.5">
+                {openRequirements.map((item) => (
+                  <li key={item.id} className="text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">{item.requirement_type}</span>
+                    {" — "}
+                    {locationT(`requirements.status.${item.status === "pending" || item.status === "expired" || item.status === "rejected" ? item.status : "unknown"}`)}
+                    {item.expires_on
+                      ? ` · ${locationT("requirements.expires", { date: format.dateTime(new Date(`${item.expires_on}T12:00:00`), { dateStyle: "medium" }) })}`
+                      : ""}
+                  </li>
+                ))}
+              </ul>
             </div>
           ) : null}
           <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_190px]">
