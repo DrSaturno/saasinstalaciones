@@ -1,29 +1,68 @@
 import { Suspense } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { getMessages, getTranslations } from "next-intl/server";
 import { LoginForm } from "./login-form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import styles from "./login.module.css";
+import loginMessageShape from "@/messages/login/es.json";
 
-export default function LoginPage() {
-  const t = useTranslations("Login");
+type LoginMessages = typeof loginMessageShape;
+
+export default async function LoginPage() {
+  const [t, messages] = await Promise.all([
+    getTranslations("Login"),
+    getMessages(),
+  ]);
+  const login = messages.Login as typeof messages.Login & LoginMessages;
+
   return (
-    <main className="flex flex-1 items-center justify-center px-6 py-16">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <Link href="/" className="font-mono text-sm text-muted-foreground">
-            Se Instala
-          </Link>
-        </div>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">{t("title")}</CardTitle>
-          </CardHeader>
-          <CardContent>
+    <main className={styles.page}>
+      <div className={styles.shell}>
+        <section className={styles.story} aria-labelledby="login-story-title">
+          <Image
+            className={styles.canvasImage}
+            src="/images/login-operations-canvas.webp"
+            alt={login.visualAlt}
+            fill
+            priority
+            sizes="(max-width: 800px) calc(100vw - 32px), (max-width: 1200px) 54vw, 810px"
+          />
+          <div className={styles.canvasVeil} aria-hidden />
+
+          <div className={styles.storyCopy}>
+            <span className={styles.eyebrow}>{login.eyebrow}</span>
+            <h1 id="login-story-title">{login.heroTitle}</h1>
+            <p>{login.heroBody}</p>
+          </div>
+
+          <div className={styles.securityBadge}>
+            <ShieldCheck aria-hidden />
+            <span>{login.secureAccess}</span>
+          </div>
+        </section>
+
+        <section className={styles.formPanel} aria-labelledby="login-form-title">
+          <div className={styles.formInner}>
+            <div className={styles.formHeading}>
+              <span>{login.formEyebrow}</span>
+              <h2 id="login-form-title">{t("title")}</h2>
+              <p>{login.formDescription}</p>
+            </div>
+
             <Suspense fallback={null}>
-              <LoginForm />
+              <LoginForm
+                showPasswordLabel={login.showPassword}
+                hidePasswordLabel={login.hidePassword}
+              />
             </Suspense>
-          </CardContent>
-        </Card>
+
+            <Link className={styles.backHome} href="/">
+              <ArrowLeft aria-hidden />
+              {login.backHome}
+            </Link>
+          </div>
+        </section>
       </div>
     </main>
   );
