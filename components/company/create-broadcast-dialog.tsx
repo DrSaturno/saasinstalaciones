@@ -9,7 +9,7 @@ import {
   createBroadcast,
   type BroadcastActionState,
 } from "@/lib/actions/broadcasts";
-import type { ProjectOption } from "@/lib/data/broadcasts";
+import type { ClientOption, ProjectOption } from "@/lib/data/broadcasts";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,13 +25,18 @@ import { Textarea } from "@/components/ui/textarea";
 
 const INITIAL: BroadcastActionState = { error: null };
 
+/** Valor del `<select>` de proyecto cuando la convocatoria nace sin uno. */
+const SIN_PROYECTO = "__sin_proyecto__";
+
 export function CreateBroadcastDialog({
   projects,
+  clients,
   zones,
   canManageFinance,
   trigger,
 }: {
   projects: ProjectOption[];
+  clients: ClientOption[];
   zones: string[];
   canManageFinance: boolean;
   /** Permite reusar el diálogo desde los accesos rápidos del inicio. */
@@ -40,7 +45,9 @@ export function CreateBroadcastDialog({
   const t = useTranslations("CreateBroadcast");
   const [open, setOpen] = useState(false);
   const [showPay, setShowPay] = useState(false);
+  const [origin, setOrigin] = useState("");
   const router = useRouter();
+  const withoutProject = origin === SIN_PROYECTO;
   const [state, action, pending] = useActionState(
     async (previous: BroadcastActionState, formData: FormData) => {
       const next = await createBroadcast(previous, formData);
@@ -58,7 +65,9 @@ export function CreateBroadcastDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger ?? (
-          <Button disabled={!projects.length}>
+          // Alcanza con tener clientes: publicar sin proyecto es justamente
+          // para cuando todavía no hay ninguno.
+          <Button disabled={!projects.length && !clients.length}>
             <Plus /> {t("trigger")}
           </Button>
         )}
@@ -75,17 +84,53 @@ export function CreateBroadcastDialog({
             <Label htmlFor="broadcast-project">{t("project")}</Label>
             <select
               id="broadcast-project"
-              name="projectId"
+              // Sin `name`: lo que se manda al servidor lo deciden los hidden
+              // de abajo, porque el centinela "sin proyecto" no es un id.
+              value={origin}
+              onChange={(event) => setOrigin(event.target.value)}
               required
               className="h-9 rounded-lg border bg-background px-3 text-sm"
-              defaultValue=""
             >
               <option value="" disabled>{t("chooseProject")}</option>
+              <option value={SIN_PROYECTO}>{t("withoutProject")}</option>
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>{project.name}</option>
               ))}
             </select>
+            <input
+              type="hidden"
+              name="projectId"
+              value={withoutProject ? "" : origin}
+            />
+            {withoutProject ? (
+              <p className="text-xs text-muted-foreground">{t("withoutProjectHelp")}</p>
+            ) : null}
           </div>
+
+          {/* Sin proyecto no hay de dónde heredar el cliente: se informa acá,
+              y sin él la oportunidad no se podría formalizar después. */}
+          {withoutProject ? (
+            <div className="grid gap-2">
+              <Label htmlFor="broadcast-client">{t("client")}</Label>
+              <select
+                id="broadcast-client"
+                name="clientId"
+                required
+                className="h-9 rounded-lg border bg-background px-3 text-sm"
+                defaultValue=""
+              >
+                <option value="" disabled>{t("chooseClient")}</option>
+                {clients.map((client) => (
+                  <option key={client.id} value={client.id}>{client.name}</option>
+                ))}
+              </select>
+              {clients.length === 0 ? (
+                <p className="text-xs text-warning">{t("noClients")}</p>
+              ) : null}
+            </div>
+          ) : (
+            <input type="hidden" name="clientId" value="" />
+          )}
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-2"><Label htmlFor="broadcast-date">{t("scheduledDate")}</Label><Input id="broadcast-date" name="scheduledDate" type="date" /></div>
             <div className="grid gap-2"><Label htmlFor="broadcast-end-date">{t("scheduledEndDate")}</Label><Input id="broadcast-end-date" name="scheduledEndDate" type="date" /></div>

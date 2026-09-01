@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -38,17 +39,20 @@ export function JobCard({ job }: { job: InstallerJob }) {
   const format = useFormatter();
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
+  const [quote, setQuote] = useState("");
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   const application = job.applicationStatus ? STATUS[job.applicationStatus] : null;
 
   const submit = () => startTransition(async () => {
-    const result = await applyToBroadcast(job.id, message);
+    const result = await applyToBroadcast(job.id, message, quote);
     if (result.error) {
       toast.error(result.error);
       return;
     }
     toast.success(t("sent"));
+    setMessage("");
+    setQuote("");
     setOpen(false);
     router.refresh();
   });
@@ -109,6 +113,28 @@ export function JobCard({ job }: { job: InstallerJob }) {
                 placeholder={t("messagePlaceholder")}
               />
               <span className="text-right font-mono text-xs text-muted-foreground">{message.length}/600</span>
+            </div>
+            {/* Opcional: cuando la empresa ya publicó lo que paga, repetir el
+                número sería fricción. Cotizar es proponer otro. */}
+            <div className="grid gap-2">
+              <Label htmlFor={`job-quote-${job.id}`}>{t("quote")}</Label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-3 flex items-center font-mono text-xs text-muted-foreground">{job.currency}</span>
+                <Input
+                  id={`job-quote-${job.id}`}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={quote}
+                  onChange={(event) => setQuote(event.target.value)}
+                  placeholder="0,00"
+                  className="pl-14 font-mono"
+                />
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {job.payVisible && job.payAmount !== null ? t("quoteHelpWithPay") : t("quoteHelp")}
+              </span>
             </div>
             <Button onClick={submit} disabled={pending}>{pending ? t("sending") : t("submit")}</Button>
           </div>

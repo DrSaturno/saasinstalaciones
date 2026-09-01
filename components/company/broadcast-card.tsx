@@ -11,8 +11,9 @@ import {
   rejectApplication,
   updateBroadcast,
 } from "@/lib/actions/broadcasts";
-import type { ManagerBroadcast } from "@/lib/data/broadcasts";
+import type { CoordinatorOption, ManagerBroadcast } from "@/lib/data/broadcasts";
 import { AcceptApplicationDialog } from "@/components/company/accept-application-dialog";
+import { FormalizeProjectDialog } from "@/components/company/formalize-project-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,7 +41,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-export function BroadcastCard({ broadcast }: { broadcast: ManagerBroadcast }) {
+export function BroadcastCard({ broadcast, coordinators }: { broadcast: ManagerBroadcast; coordinators: CoordinatorOption[] }) {
   const t = useTranslations("BroadcastCard");
   const format = useFormatter();
   const [editOpen, setEditOpen] = useState(false);
@@ -122,7 +123,7 @@ export function BroadcastCard({ broadcast }: { broadcast: ManagerBroadcast }) {
           {applicants.length ? (
             <div className="divide-y rounded-lg border">
               {applicants.map((applicant) => (
-                <ApplicantRow key={applicant.installerId} broadcast={broadcast} applicant={applicant} />
+                <ApplicantRow key={applicant.installerId} broadcast={broadcast} applicant={applicant} coordinators={coordinators} />
               ))}
             </div>
           ) : (
@@ -156,13 +157,16 @@ export function BroadcastCard({ broadcast }: { broadcast: ManagerBroadcast }) {
 function ApplicantRow({
   broadcast,
   applicant,
+  coordinators,
 }: {
   broadcast: ManagerBroadcast;
   applicant: ManagerBroadcast["applicants"][number];
+  coordinators: CoordinatorOption[];
 }) {
   const t = useTranslations("BroadcastCard");
   const common = useTranslations("Common");
   const statusT = useTranslations("Status");
+  const format = useFormatter();
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   const reject = () => startTransition(async () => {
@@ -184,13 +188,36 @@ function ApplicantRow({
             <span className="text-warning">★</span> {applicant.ratingCount ? applicant.ratingAvg.toFixed(1) : common("new")} · {t("reviews", { count: applicant.ratingCount })}
           </p>
         </div>
-        <Badge variant={applicant.status === "accepted" ? "default" : "outline"}>{statusT(`application.${applicant.status}`)}</Badge>
+        <div className="flex shrink-0 items-center gap-2">
+          {/* El monto es lo que permite comparar cotizaciones de un vistazo:
+              va al lado del estado, no perdido dentro del mensaje. */}
+          {applicant.quotedAmount !== null ? (
+            <span className="font-mono text-sm font-semibold">
+              {format.number(applicant.quotedAmount, { style: "currency", currency: broadcast.currency, maximumFractionDigits: 0 })}
+            </span>
+          ) : null}
+          <Badge variant={applicant.status === "accepted" ? "default" : "outline"}>{statusT(`application.${applicant.status}`)}</Badge>
+        </div>
       </div>
       {applicant.message ? <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">“{applicant.message}”</p> : null}
       {applicant.status === "applied" && broadcast.status === "open" ? (
         <div className="mt-3 flex gap-2">
           <AcceptApplicationDialog broadcastId={broadcast.id} installerId={applicant.installerId} installerName={applicant.name} orders={broadcast.availableOrders} />
           <Button size="sm" variant="ghost" disabled={pending} onClick={reject}>{t("discard")}</Button>
+        </div>
+      ) : null}
+      {/* Aceptada y todavía sin proyecto: es el momento de formalizar. Con
+          proyecto ya no aparece — el trabajo se creó por el camino de siempre
+          o esta convocatoria ya se formalizó. */}
+      {applicant.status === "accepted" && !broadcast.projectId ? (
+        <div className="mt-3">
+          <FormalizeProjectDialog
+            broadcastId={broadcast.id}
+            installerId={applicant.installerId}
+            installerName={applicant.name}
+            defaultName={broadcast.title}
+            coordinators={coordinators}
+          />
         </div>
       ) : null}
     </div>

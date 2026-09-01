@@ -50,7 +50,7 @@ export default async function BroadcastsPage({
             {t("description")}
           </p>
         </div>
-        <CreateBroadcastDialog projects={board.projects} zones={board.zones} canManageFinance={user?.role === "company_manager"} />
+        <CreateBroadcastDialog projects={board.projects} clients={board.clients} zones={board.zones} canManageFinance={user?.role === "company_manager"} />
       </div>
 
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border sm:w-fit sm:grid-cols-[160px_160px]">
@@ -78,7 +78,7 @@ export default async function BroadcastsPage({
       {visible.length ? (
         <div className="mt-6 grid items-start gap-5 lg:grid-cols-2">
           {visible.map((broadcast) => (
-            <BroadcastCard key={broadcast.id} broadcast={broadcast} />
+            <BroadcastCard key={broadcast.id} broadcast={broadcast} coordinators={board.coordinators} />
           ))}
         </div>
       ) : (

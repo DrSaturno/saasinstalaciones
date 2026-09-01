@@ -321,6 +321,7 @@ export type Database = {
           created_at: string
           installer_id: string
           message: string | null
+          quoted_amount: number | null
           status: ApplicationStatus
         }
         Insert: {
@@ -328,6 +329,7 @@ export type Database = {
           created_at?: string
           installer_id: string
           message?: string | null
+          quoted_amount?: number | null
           status?: ApplicationStatus
         }
         Update: {
@@ -335,6 +337,7 @@ export type Database = {
           created_at?: string
           installer_id?: string
           message?: string | null
+          quoted_amount?: number | null
           status?: ApplicationStatus
         }
         Relationships: [
@@ -356,6 +359,7 @@ export type Database = {
       }
       broadcasts: {
         Row: {
+          client_id: string | null
           company_id: string
           created_at: string
           currency: OrderCurrency
@@ -376,6 +380,7 @@ export type Database = {
           zone: string
         }
         Insert: {
+          client_id?: string | null
           company_id: string
           created_at?: string
           currency?: OrderCurrency
@@ -396,6 +401,7 @@ export type Database = {
           zone: string
         }
         Update: {
+          client_id?: string | null
           company_id?: string
           created_at?: string
           currency?: OrderCurrency
@@ -416,6 +422,13 @@ export type Database = {
           zone?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "broadcasts_client_company_fk"
+            columns: ["client_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id", "company_id"]
+          },
           {
             foreignKeyName: "broadcasts_company_id_fkey"
             columns: ["company_id"]
@@ -3631,6 +3644,15 @@ export type Database = {
       feature_enabled: {
         Args: { p_company_id?: string; p_flag_key: string }
         Returns: boolean
+      }
+      formalize_project_from_broadcast: {
+        Args: {
+          p_broadcast_id: string
+          p_coordinator_id: string
+          p_installer_id: string
+          p_project_name: string
+        }
+        Returns: string
       }
       grant_company_member_role: {
         Args: { p_role: string; p_user_id: string }

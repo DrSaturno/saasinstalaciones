@@ -87,6 +87,7 @@ export default async function CompanyDashboard() {
         postJob={
           <CreateBroadcastDialog
             projects={board.projects}
+            clients={board.clients}
             zones={board.zones}
             canManageFinance
             trigger={<Button variant="outline">{t("quickActions.postJob")}</Button>}

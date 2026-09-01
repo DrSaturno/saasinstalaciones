@@ -2,6 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getTranslations } from "next-intl/server";
+import { fetchCoordinators } from "@/lib/data/team";
 import type {
   ApplicationStatus,
   BroadcastStatus,
@@ -16,6 +17,8 @@ export type BroadcastApplicant = {
   name: string;
   status: ApplicationStatus;
   message: string | null;
+  /** Lo que pidió por el trabajo. Null = se postuló sin cotizar. */
+  quotedAmount: number | null;
   createdAt: string;
   zones: string[];
   ratingAvg: number;
@@ -51,9 +54,17 @@ export type ManagerBroadcast = {
   currency: OrderCurrency;
 };
 
+export type ClientOption = { id: string; name: string };
+
+export type CoordinatorOption = { id: string; name: string };
+
 export type BroadcastBoard = {
   broadcasts: ManagerBroadcast[];
   projects: ProjectOption[];
+  /** Para publicar una convocatoria sin proyecto: ahí el cliente va aparte. */
+  clients: ClientOption[];
+  /** Formalizar el proyecto exige uno; el alta normal de proyectos, no. */
+  coordinators: CoordinatorOption[];
   zones: string[];
 };
 
@@ -86,17 +97,21 @@ export async function fetchBroadcastBoard(
   supabase: SupabaseClient<Database>,
 ): Promise<BroadcastBoard> {
   const t = await getTranslations("DataFallbacks");
-  const [{ data: broadcasts }, { data: projects }, { data: sites }] =
+  const [{ data: broadcasts }, { data: projects }, { data: clients }, { data: sites }] =
     await Promise.all([
       supabase
         .from("broadcasts")
-        .select("id, project_id, zone, title, description, slots, status, created_at, scheduled_date, scheduled_end_date, requirements, logistics_notes, pay_visible, pay_amount, currency")
+        .select("id, project_id, client_id, zone, title, description, slots, status, created_at, scheduled_date, scheduled_end_date, requirements, logistics_notes, pay_visible, pay_amount, currency")
         .order("created_at", { ascending: false }),
       supabase
         .from("projects")
         .select("id, name")
         .in("status", ["draft", "active", "paused"])
         .order("name"),
+      // Consulta propia y liviana en vez de `fetchClients`, que además trae
+      // proyectos y todas las locaciones para contar: acá sólo hace falta
+      // poblar un selector.
+      supabase.from("clients").select("id, name").order("name"),
       supabase.from("sites").select("zone").neq("zone", ""),
     ]);
 
@@ -113,7 +128,7 @@ export async function fetchBroadcastBoard(
   const applicationQuery = broadcastIds.length
     ? supabase
         .from("broadcast_applications")
-        .select("broadcast_id, installer_id, status, message, created_at")
+        .select("broadcast_id, installer_id, status, message, quoted_amount, created_at")
         .in("broadcast_id", broadcastIds)
         .order("created_at")
     : Promise.resolve({ data: [] });
@@ -149,8 +164,8 @@ export async function fetchBroadcastBoard(
     ? supabase.from("sites").select("id, name").in("id", siteIds)
     : Promise.resolve({ data: [] });
 
-  const [{ data: profiles }, { data: installers }, { data: orderSites }] =
-    await Promise.all([profileQuery, installerQuery, orderSiteQuery]);
+  const [{ data: profiles }, { data: installers }, { data: orderSites }, coordinators] =
+    await Promise.all([profileQuery, installerQuery, orderSiteQuery, fetchCoordinators(supabase)]);
 
   const projectNameById = new Map((projects ?? []).map((p) => [p.id, p.name]));
   const nameById = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
@@ -159,6 +174,8 @@ export async function fetchBroadcastBoard(
 
   return {
     projects: projects ?? [],
+    clients: clients ?? [],
+    coordinators,
     zones: [
       ...new Set(
         (sites ?? [])
@@ -200,6 +217,7 @@ export async function fetchBroadcastBoard(
             name: nameById.get(application.installer_id) ?? t("installer"),
             status: application.status,
             message: application.message,
+            quotedAmount: application.quoted_amount,
             createdAt: application.created_at,
             zones: installer?.zones ?? [],
             ratingAvg: installer?.rating_avg ?? 0,
