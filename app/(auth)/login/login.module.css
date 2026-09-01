@@ -387,7 +387,7 @@
 
   .story {
     min-height: clamp(570px, 150vw, 690px);
-    order: 1;
+    order: 2;
     margin: 0 0 18px;
     padding: 44px 26px;
     border-radius: 0 0 26px 26px;
@@ -426,7 +426,7 @@
   }
 
   .formPanel {
-    order: 2;
+    order: 1;
     padding: 46px 24px 48px;
     border-radius: 0;
   }
