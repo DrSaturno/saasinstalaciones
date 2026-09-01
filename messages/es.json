@@ -183,6 +183,12 @@
     "requestNew": "Pedir un link nuevo"
   },
   "Invitation": {
+    "visualEyebrow": "Invitación de campo",
+    "visualTitle": "Tu próximo equipo ya te está esperando.",
+    "visualBody": "Creá tu acceso, sumate a la operación y empezá a recibir trabajos desde un solo lugar.",
+    "visualAlt": "Instalador junto a su vehículo aceptando una invitación desde el celular, conectado con un local por una ruta de trabajo.",
+    "secureAccess": "Alta segura y acceso directo al equipo que te invitó",
+    "invitationEyebrow": "Bienvenido a Se Instala",
     "invalidTitle": "Invitación no válida",
     "invalidDescription": "El link venció o ya fue usado. Pedile a la empresa que te envíe una invitación nueva.",
     "title": "{company} te invitó a su equipo",

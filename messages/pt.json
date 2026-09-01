@@ -183,6 +183,12 @@
     "requestNew": "Pedir um novo link"
   },
   "Invitation": {
+    "visualEyebrow": "Convite de campo",
+    "visualTitle": "Sua próxima equipe já está esperando por você.",
+    "visualBody": "Crie seu acesso, entre na operação e comece a receber trabalhos em um só lugar.",
+    "visualAlt": "Instalador ao lado do veículo aceitando um convite pelo celular, conectado a uma loja por uma rota de trabalho.",
+    "secureAccess": "Cadastro seguro e acesso direto à equipe que convidou você",
+    "invitationEyebrow": "Bem-vindo ao Se Instala",
     "invalidTitle": "Convite inválido",
     "invalidDescription": "O link expirou ou já foi usado. Peça à empresa que envie um novo convite.",
     "title": "{company} convidou você para a equipe",

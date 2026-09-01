@@ -24,11 +24,18 @@ export function InstallerSignupForm({
   );
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} className="flex flex-col gap-5">
       <input type="hidden" name="token" value={token} />
       <div className="flex flex-col gap-2">
         <Label htmlFor="email">{common("email")}</Label>
-        <Input id="email" type="email" value={email} readOnly disabled />
+        <Input
+          id="email"
+          type="email"
+          value={email}
+          readOnly
+          disabled
+          className="h-12 rounded-xl px-4"
+        />
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="fullName">{t("fullNameLabel")}</Label>
@@ -38,6 +45,7 @@ export function InstallerSignupForm({
           autoComplete="name"
           placeholder={t("fullNamePlaceholder")}
           required
+          className="h-12 rounded-xl px-4"
         />
       </div>
       <div className="flex flex-col gap-2">
@@ -49,6 +57,7 @@ export function InstallerSignupForm({
           autoComplete="new-password"
           minLength={8}
           required
+          className="h-12 rounded-xl px-4"
         />
         <p className="text-xs text-muted-foreground">{t("passwordHint")}</p>
       </div>
@@ -57,7 +66,12 @@ export function InstallerSignupForm({
           {state.error}
         </p>
       )}
-      <Button type="submit" size="lg" disabled={pending} className="mt-2">
+      <Button
+        type="submit"
+        size="lg"
+        disabled={pending}
+        className="mt-2 h-12 rounded-xl text-sm font-semibold"
+      >
         {pending ? t("creating") : t("createAccount")}
       </Button>
     </form>
