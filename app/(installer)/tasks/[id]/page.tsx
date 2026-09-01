@@ -1,29 +1,39 @@
 import { notFound } from "next/navigation";
-import { getFormatter, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
-import { fetchOrderAttachments } from "@/lib/data/order-attachments";
+import { fetchOrderEvidence } from "@/lib/data/order-evidence";
 import { TaskActions } from "@/components/installer/task-actions";
-import { OrderAttachments } from "@/components/shared/order-attachments";
-import { UpdatePhotos } from "@/components/shared/update-photos";
-import { signUpdatePhotos } from "@/lib/data/update-photos";
+import { TaskEvidenceCompose } from "@/components/installer/task-evidence-compose";
+import { OrderEvidencePanel } from "@/components/shared/order-evidence-panel";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { OrderPdfButton } from "@/components/shared/order-pdf-button";
 import { Card, CardContent } from "@/components/ui/card";
-import type { OrderStatus, OrderUpdateType } from "@/types/database";
+import { ORDER_EVIDENCE_KINDS, type EvidenceKind } from "@/lib/domain/order-evidence";
+import type { OrderStatus } from "@/types/database";
+import { getCurrentUser } from "@/lib/auth";
 import { BackLink } from "@/components/shared/back-link";
 
 export default async function TaskDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ q?: string; kind?: string }>;
 }) {
   const { id } = await params;
-  const [t, statusT, createOrderT, format] = await Promise.all([
+  const [{ q, kind: kindParam }, t, createOrderT, user] = await Promise.all([
+    searchParams,
     getTranslations("TaskDetail"),
-    getTranslations("Status"),
     getTranslations("CreateOrder"),
-    getFormatter(),
+    getCurrentUser(),
   ]);
+  const evidenceQuery = q ?? "";
+  const evidenceKind: EvidenceKind | null = ORDER_EVIDENCE_KINDS.includes(
+    kindParam as EvidenceKind,
+  )
+    ? (kindParam as EvidenceKind)
+    : null;
+
   const supabase = await createClient();
 
   const { data: order } = await supabase
@@ -35,21 +45,14 @@ export default async function TaskDetailPage({
     .single();
   if (!order) notFound();
 
-  const [{ data: site }, { data: updates }, attachments] = await Promise.all([
+  const [{ data: site }, evidence] = await Promise.all([
     supabase
       .from("sites")
       .select("name, address, city, state, zone, lat, lng")
       .eq("id", order.site_id)
       .single(),
-    supabase
-      .from("order_updates")
-      .select("id, type, note, photos, created_at")
-      .eq("order_id", id)
-      .order("created_at", { ascending: false }),
-    fetchOrderAttachments(supabase, id),
+    fetchOrderEvidence(supabase, id, { query: evidenceQuery, kind: evidenceKind }),
   ]);
-
-  const photoUrls = await signUpdatePhotos(supabase, updates ?? []);
 
   const mapsUrl = site
     ? site.lat && site.lng
@@ -142,14 +145,6 @@ export default async function TaskDetailPage({
         </CardContent>
       </Card>
 
-      <div className="mt-4">
-        <OrderAttachments
-          attachments={attachments}
-          title={t("attachments")}
-          openLabel={(name) => t("openAttachment", { name })}
-        />
-      </div>
-
       {/* Acciones */}
       <Card className="mt-4">
         <CardContent className="pt-6">
@@ -162,42 +157,20 @@ export default async function TaskDetailPage({
         </CardContent>
       </Card>
 
-      {/* Historial */}
-      {(updates ?? []).length > 0 && (
-        <Card className="mt-4">
-          <CardContent className="pt-6">
-            <h2 className="text-sm font-medium text-muted-foreground">{t("history")}</h2>
-            <ul className="mt-4 flex flex-col gap-4">
-              {(updates ?? []).map((u) => (
-                <li key={u.id} className="flex gap-3">
-                  <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary/60" />
-                  <div className="min-w-0">
-                    <p className="text-sm">
-                      <span className="font-medium">
-                        {statusT(`update.${u.type as OrderUpdateType}`)}
-                      </span>
-                      {u.note ? ` — ${u.note}` : ""}
-                    </p>
-                    <UpdatePhotos
-                      photos={u.photos}
-                      urlByPath={photoUrls}
-                      openLabel={t("openPhoto")}
-                    />
-                    <p className="font-mono text-xs text-muted-foreground">
-                      {format.dateTime(new Date(u.created_at), {
-                        day: "2-digit",
-                        month: "2-digit",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
+      <div className="mt-4">
+        <OrderEvidencePanel
+          basePath={`/tasks/${order.id}`}
+          query={evidenceQuery}
+          kind={evidenceKind}
+          compose={
+            <TaskEvidenceCompose orderId={order.id} companyId={order.company_id} />
+          }
+          items={evidence.items}
+          photoUrlByPath={evidence.photoUrlByPath}
+          authorNameById={evidence.authorNameById}
+          currentUserId={user?.id ?? null}
+        />
+      </div>
     </div>
   );
 }

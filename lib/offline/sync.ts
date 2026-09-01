@@ -74,6 +74,10 @@ export async function flush(): Promise<number> {
               order_id: item.orderId!,
               company_id: item.companyId!,
               installer_id: user.id,
+              // Autor genérico, el que lee el panel de evidencia. `installer_id`
+              // no alcanza: referencia `installers`, así que sólo sirve para
+              // quien es instalador. Se escriben los dos.
+              created_by: user.id,
               type: item.updateType!,
               note: item.note ?? "",
               photos: photoPaths,

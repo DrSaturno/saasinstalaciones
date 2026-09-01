@@ -95,7 +95,8 @@
       "blocker": "Bloqueo",
       "done": "Trabajo terminado",
       "survey": "Relevamiento",
-      "system": "Sistema"
+      "system": "Sistema",
+      "message": "Mensaje"
     },
     "application": {
       "applied": "Pendiente",
@@ -833,6 +834,37 @@
     "messageInstaller": "Mensajes",
     "viewEvidence": "Ver evidencia",
     "reportIncident": "Incidencias"
+  },
+  "OrderEvidence": {
+    "title": "Conversación y evidencia",
+    "description": "Mensajes, fotos, documentos y enlaces de esta orden, todo en un solo lugar.",
+    "searchPlaceholder": "Buscar por palabra clave…",
+    "search": "Buscar",
+    "filterAll": "Todo",
+    "filterMessage": "Mensajes",
+    "filterImage": "Imágenes",
+    "filterDocument": "Documentos",
+    "filterLink": "Enlaces",
+    "empty": "Todavía no hay nada acá.",
+    "emptyFiltered": "Sin resultados para esta búsqueda.",
+    "composePlaceholder": "Escribí un mensaje…",
+    "composeAttach": "Adjuntar",
+    "composePhoto": "Foto",
+    "photosReady": "{count, plural, one {# foto} other {# fotos}}",
+    "composeSend": "Enviar",
+    "composeSending": "Enviando…",
+    "composeSent": "Mensaje enviado",
+    "composeQueued": "Sin señal: se envía solo cuando vuelva la conexión",
+    "removeAttachment": "Quitar {name}",
+    "attachError": "No se pudo subir el adjunto. Probá de nuevo.",
+    "sendError": "No se pudo enviar el mensaje. Probá de nuevo.",
+    "openImage": "Abrir la imagen",
+    "galleryClose": "Cerrar",
+    "galleryPrev": "Imagen anterior",
+    "galleryNext": "Imagen siguiente",
+    "galleryCounter": "{current} de {total}",
+    "unknownAuthor": "Alguien del equipo",
+    "you": "Vos"
   },
   "Team": {
     "title": "Equipo",

@@ -37,7 +37,8 @@ export type OrderUpdateType =
   | "blocker"
   | "done"
   | "survey"
-  | "system";
+  | "system"
+  | "message";
 export type IncidentCategory =
   | "failed_visit"
   | "missing_materials"

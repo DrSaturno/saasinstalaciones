@@ -45,7 +45,8 @@ export type OrderUpdateType =
   | "blocker"
   | "done"
   | "survey"
-  | "system";
+  | "system"
+  | "message";
 export type IncidentCategory =
   | "failed_visit"
   | "missing_materials"
@@ -1999,6 +2000,7 @@ export type Database = {
           id: string
           mime_type: string
           order_id: string
+          search_vector: unknown
           size_bytes: number
           storage_path: string
           uploaded_by: string | null
@@ -2010,6 +2012,7 @@ export type Database = {
           id?: string
           mime_type: string
           order_id: string
+          search_vector?: unknown
           size_bytes: number
           storage_path: string
           uploaded_by?: string | null
@@ -2021,6 +2024,7 @@ export type Database = {
           id?: string
           mime_type?: string
           order_id?: string
+          search_vector?: unknown
           size_bytes?: number
           storage_path?: string
           uploaded_by?: string | null
@@ -2236,33 +2240,42 @@ export type Database = {
           client_created_at: string | null
           company_id: string
           created_at: string
+          created_by: string | null
           id: string
           installer_id: string | null
+          links: string[]
           note: string
           order_id: string
           photos: Json
+          search_vector: unknown
           type: OrderUpdateType
         }
         Insert: {
           client_created_at?: string | null
           company_id: string
           created_at?: string
+          created_by?: string | null
           id: string
           installer_id?: string | null
+          links?: string[]
           note?: string
           order_id: string
           photos?: Json
+          search_vector?: unknown
           type: OrderUpdateType
         }
         Update: {
           client_created_at?: string | null
           company_id?: string
           created_at?: string
+          created_by?: string | null
           id?: string
           installer_id?: string | null
+          links?: string[]
           note?: string
           order_id?: string
           photos?: Json
+          search_vector?: unknown
           type?: OrderUpdateType
         }
         Relationships: [
@@ -2271,6 +2284,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_updates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -3616,6 +3636,7 @@ export type Database = {
         Args: { p_role: string; p_user_id: string }
         Returns: undefined
       }
+      immutable_unaccent: { Args: { "": string }; Returns: string }
       installer_can_read_broadcast: {
         Args: { p_broadcast_id: string }
         Returns: boolean
@@ -3692,10 +3713,25 @@ export type Database = {
         Args: { p_role: string; p_user_id: string }
         Returns: undefined
       }
+      search_order_evidence: {
+        Args: { p_kinds?: string[]; p_order_id: string; p_query?: string }
+        Returns: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          kind: string
+          links: string[]
+          photos: Json
+          storage_path: string
+          subtype: string
+        }[]
+      }
       set_order_payment_status: {
         Args: { p_note?: string; p_order_id: string; p_status: string }
         Returns: undefined
       }
+      tokenizable_words: { Args: { "": string }; Returns: string }
     }
     Enums: {
       [_ in never]: never

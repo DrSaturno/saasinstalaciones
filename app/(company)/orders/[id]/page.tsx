@@ -4,41 +4,50 @@ import { Images, MessageSquareText, TriangleAlert } from "lucide-react";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { fetchActiveRoster } from "@/lib/data/orders";
-import { fetchOrderAttachments } from "@/lib/data/order-attachments";
+import { fetchOrderEvidence } from "@/lib/data/order-evidence";
 import { OrderActions } from "@/components/company/order-actions";
 import { OrderIncidents } from "@/components/company/order-incidents";
-import { OrderAttachments } from "@/components/shared/order-attachments";
-import { UpdatePhotos } from "@/components/shared/update-photos";
-import { signUpdatePhotos } from "@/lib/data/update-photos";
+import { OrderEvidencePanel } from "@/components/shared/order-evidence-panel";
+import { OrderEvidenceCompose } from "@/components/shared/order-evidence-compose";
 import { EditOrderDialog } from "@/components/company/edit-order-dialog";
 import { OrderPdfButton } from "@/components/shared/order-pdf-button";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { StatusStepper } from "@/components/shared/status-stepper";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import type { OrderStatus, OrderUpdateType } from "@/types/database";
-import { getCurrentUser } from "@/lib/auth";
+import { ORDER_EVIDENCE_KINDS, type EvidenceKind } from "@/lib/domain/order-evidence";
+import type { OrderStatus } from "@/types/database";
+import { canOperateCompany, getCurrentUser } from "@/lib/auth";
 import { BackLink } from "@/components/shared/back-link";
 
 export default async function OrderDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ q?: string; kind?: string }>;
 }) {
   const { id } = await params;
-  const [t, statusT, createOrderT, format, user] = await Promise.all([
+  const [{ q, kind: kindParam }, t, createOrderT, format, user] = await Promise.all([
+    searchParams,
     getTranslations("OrderDetail"),
-    getTranslations("Status"),
     getTranslations("CreateOrder"),
     getFormatter(),
     getCurrentUser(),
   ]);
+  const evidenceQuery = q ?? "";
+  const evidenceKind: EvidenceKind | null = ORDER_EVIDENCE_KINDS.includes(
+    kindParam as EvidenceKind,
+  )
+    ? (kindParam as EvidenceKind)
+    : null;
+
   const supabase = await createClient();
 
   const { data: order } = await supabase
     .from("work_orders")
     .select(
-      "id, order_number, title, description, status, scheduled_date, scheduled_end_date, priority, indoor, requires_freight, freight_details, logistics_notes, amount, installer_amount, currency, assigned_installer_id, created_at, project_id, site_id",
+      "id, order_number, title, description, status, scheduled_date, scheduled_end_date, priority, indoor, requires_freight, freight_details, logistics_notes, amount, installer_amount, currency, company_id, assigned_installer_id, created_at, project_id, site_id",
     )
     .eq("id", id)
     .single();
@@ -47,43 +56,34 @@ export default async function OrderDetailPage({
   const [
     { data: site },
     { data: project },
-    { data: updates },
     { data: rating },
     { data: incidents },
     roster,
-    attachments,
-  ] =
-    await Promise.all([
-      supabase
-        .from("sites")
-        .select("name, address, city, state, zone, external_ref, location_id")
-        .eq("id", order.site_id)
-        .single(),
-      supabase
-        .from("projects")
-        .select("name, billing_mode")
-        .eq("id", order.project_id)
-        .single(),
-      supabase
-        .from("order_updates")
-        .select("id, type, note, photos, created_at")
-        .eq("order_id", id)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("ratings")
-        .select("stars, comment")
-        .eq("order_id", id)
-        .maybeSingle(),
-      supabase
-        .from("order_incidents")
-        .select("id, category, severity, description, requires_revisit, status, created_at")
-        .eq("order_id", id)
-        .order("created_at", { ascending: false }),
-      fetchActiveRoster(supabase),
-      fetchOrderAttachments(supabase, id),
-    ]);
-
-  const photoUrls = await signUpdatePhotos(supabase, updates ?? []);
+    evidence,
+  ] = await Promise.all([
+    supabase
+      .from("sites")
+      .select("name, address, city, state, zone, external_ref, location_id")
+      .eq("id", order.site_id)
+      .single(),
+    supabase
+      .from("projects")
+      .select("name, billing_mode")
+      .eq("id", order.project_id)
+      .single(),
+    supabase
+      .from("ratings")
+      .select("stars, comment")
+      .eq("order_id", id)
+      .maybeSingle(),
+    supabase
+      .from("order_incidents")
+      .select("id, category, severity, description, requires_revisit, status, created_at")
+      .eq("order_id", id)
+      .order("created_at", { ascending: false }),
+    fetchActiveRoster(supabase),
+    fetchOrderEvidence(supabase, id, { query: evidenceQuery, kind: evidenceKind }),
+  ]);
 
   const amount =
     order.amount === null
@@ -92,6 +92,8 @@ export default async function OrderDetailPage({
           style: "currency",
           currency: order.currency,
         });
+
+  const canWriteEvidence = user ? canOperateCompany(user, order.company_id) : false;
 
   return (
     <div className="mx-auto w-full max-w-[1480px]">
@@ -160,14 +162,12 @@ export default async function OrderDetailPage({
                 </Link>
               </Button>
             ) : null}
-            {attachments.length > 0 || (updates ?? []).some((u) => u.type !== "system") ? (
-              <Button asChild variant="outline" size="sm">
-                <a href="#evidencia">
-                  <Images className="size-3.5" aria-hidden="true" />
-                  {t("viewEvidence")}
-                </a>
-              </Button>
-            ) : null}
+            <Button asChild variant="outline" size="sm">
+              <a href="#evidencia">
+                <Images className="size-3.5" aria-hidden="true" />
+                {t("viewEvidence")}
+              </a>
+            </Button>
             <Button asChild variant="outline" size="sm">
               <a href="#incidencias">
                 <TriangleAlert className="size-3.5" aria-hidden="true" />
@@ -275,53 +275,23 @@ export default async function OrderDetailPage({
           </Card>
 
           <div id="evidencia" />
-          <OrderAttachments
-            attachments={attachments}
-            title={t("attachments")}
-            openLabel={(name) => t("openAttachment", { name })}
+          <OrderEvidencePanel
+            basePath={`/orders/${order.id}`}
+            query={evidenceQuery}
+            kind={evidenceKind}
+            compose={
+              canWriteEvidence ? (
+                <OrderEvidenceCompose orderId={order.id} companyId={order.company_id} />
+              ) : null
+            }
+            items={evidence.items}
+            photoUrlByPath={evidence.photoUrlByPath}
+            authorNameById={evidence.authorNameById}
+            currentUserId={user?.id ?? null}
           />
 
           <div id="incidencias" />
           <OrderIncidents orderId={order.id} incidents={incidents ?? []} />
-
-          {/* Historial */}
-          <Card>
-            <CardContent className="pt-6">
-              <h2 className="text-sm font-medium text-muted-foreground">{t("history")}</h2>
-              {(updates ?? []).length === 0 ? (
-                <p className="mt-3 text-sm text-muted-foreground">
-                  {t("emptyHistory")}
-                </p>
-              ) : (
-                <ul className="mt-4 flex flex-col gap-4">
-                  {(updates ?? []).map((u) => (
-                    <li key={u.id} className="flex gap-3">
-                      <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary/60" />
-                      <div className="min-w-0">
-                        <p className="text-sm">
-                          {u.note || statusT(`update.${u.type as OrderUpdateType}`)}
-                        </p>
-                        <p className="font-mono text-xs text-muted-foreground">
-                          {format.dateTime(new Date(u.created_at), {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
-                        <UpdatePhotos
-                          photos={u.photos}
-                          urlByPath={photoUrls}
-                          openLabel={t("openPhoto")}
-                        />
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
         </div>
 
         {/* Panel de acciones */}
