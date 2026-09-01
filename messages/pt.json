@@ -1335,7 +1335,8 @@
     "body": "{company} quer adicionar você à equipe de instaladores no Se Instala.",
     "cta": "Aceitar convite",
     "expires": "Este link expira em 7 dias.",
-    "fallback": "Se o botão não funcionar, copie e cole o link abaixo no navegador."
+    "fallback": "Se o botão não funcionar, copie e cole o link abaixo no navegador.",
+    "imageAlt": "Um instalador conclui um trabalho de comunicação visual conectado à sua equipe de campo."
   },
   "ManagerActivationEmail": {
     "subject": "Ative seu acesso à {company}",

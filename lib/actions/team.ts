@@ -87,6 +87,8 @@ export async function inviteInstaller(
         cta: emailT("cta"),
         expires: emailT("expires"),
         fallback: emailT("fallback"),
+        imageAlt: emailT("imageAlt"),
+        language: user.locale,
       },
     });
 

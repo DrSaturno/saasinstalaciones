@@ -4,6 +4,7 @@ vi.mock("server-only", () => ({}));
 
 import {
   invitationUrl,
+  invitationHeroUrl,
   managerActivationUrl,
   sendInvitationEmail,
   sendManagerActivationEmail,
@@ -28,6 +29,8 @@ const INPUT = {
     cta: "Accept",
     expires: "Expires in 7 days.",
     fallback: "Copy the link.",
+    imageAlt: "An installer completes a field job.",
+    language: "es" as const,
   },
 };
 
@@ -63,6 +66,12 @@ describe("invitation email", () => {
     );
   });
 
+  it("builds an absolute URL for the invitation artwork", () => {
+    expect(invitationHeroUrl("https://app.example.com/path")).toBe(
+      "https://app.example.com/images/invitation-email-hero.jpg",
+    );
+  });
+
   it("keeps the manual flow when Resend is not configured", async () => {
     delete process.env.RESEND_API_KEY;
     delete process.env.RESEND_FROM_EMAIL;
@@ -92,6 +101,11 @@ describe("invitation email", () => {
     const body = JSON.parse(String(request.body));
     expect(body.to).toEqual([INPUT.to]);
     expect(body.html).toContain("Acme &lt;Brasil&gt; invited you.");
+    expect(body.html).toContain('<html lang="es">');
+    expect(body.html).toContain(
+      'src="http://localhost:3000/images/invitation-email-hero.jpg"',
+    );
+    expect(body.html).toContain('alt="An installer completes a field job."');
     expect(body.text).toContain(INPUT.invitationUrl);
   });
 
