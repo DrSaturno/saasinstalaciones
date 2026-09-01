@@ -259,12 +259,22 @@
   }
 
   .visualCopy h2 {
-    font-size: clamp(2.7rem, 12vw, 3.5rem);
+    font-size: clamp(2.45rem, 11vw, 3.25rem);
   }
 
   .visualCopy p {
     max-width: 30ch;
     font-size: 0.93rem;
+  }
+
+  .visualVeil {
+    background: linear-gradient(
+      180deg,
+      rgb(238 247 255 / 98%) 0%,
+      rgb(241 249 255 / 96%) 54%,
+      rgb(241 249 255 / 70%) 72%,
+      transparent 88%
+    );
   }
 
   .securityBadge {
