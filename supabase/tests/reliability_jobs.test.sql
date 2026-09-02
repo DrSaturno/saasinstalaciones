@@ -69,11 +69,12 @@ from generate_series(41, 44) as n;
 
 -- Tres avisos con distinta antigüedad en días HÁBILES.
 --
--- Las fechas NO son `(now() at time zone 'America/Argentina/Buenos_Aires')::date - N`: si el test corriera un sábado, "ayer"
--- sería viernes y la antigüedad en días hábiles daría 0, no 1, y el test
--- fallaría por el día de la semana en que corrió. En vez de eso se busca la
--- fecha cuya distancia en días hábiles hasta hoy es exactamente la que se
--- quiere, usando la misma función que después se prueba. Se autoajusta.
+-- Las fechas de los avisos NO se calculan restando N días del calendario: si el
+-- test corriera un sábado, "ayer" sería viernes y la antigüedad en días hábiles
+-- daría 0 en vez de 1, y el test fallaría por el día de la semana en que corrió.
+-- En vez de eso se busca la fecha cuya distancia en días HÁBILES hasta hoy es
+-- exactamente la que se quiere, usando la misma función que después se prueba.
+-- Se autoajusta.
 insert into public.order_reschedules (
   id, company_id, order_id, installer_id, new_date,
   calendar_country, calendar_timezone, notified_at

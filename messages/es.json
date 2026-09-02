@@ -1189,6 +1189,13 @@
     "openRequirementsWarning": "Este punto tiene permisos o requisitos por gestionar antes de la visita:",
     "workTitle": "Título del trabajo o servicio",
     "workTitlePlaceholder": "Ej.: Instalación de gráfica exterior",
+    "activityKind": "Qué incluye este trabajo",
+    "activityKindHelp": "Un relevamiento puede ser el trabajo entero o una etapa previa. Si es una etapa, la ejecución no arranca hasta que el coordinador lo apruebe.",
+    "activityKinds": {
+      "execution": "Sólo la ejecución",
+      "survey": "Sólo el relevamiento",
+      "both": "Relevamiento y después ejecución"
+    },
     "initialStatus": "Estado inicial",
     "startDate": "Fecha de inicio",
     "endDate": "Fecha final",
@@ -2135,5 +2142,49 @@
       "reschedule_declined": "Bajas por reprogramación",
       "reschedule_no_response": "Reprogramaciones sin contestar"
     }
+  },
+  "SurveyReview": {
+    "title": "Relevamiento para revisar",
+    "subtitle": "Versión {version}",
+    "managerFallback": "Estás revisando como empresa porque el proyecto no tiene coordinador asignado. Normalmente esta decisión es del coordinador responsable.",
+    "noNotes": "El relevamiento se envió sin comentarios.",
+    "reason": "Qué falta o qué observás",
+    "reasonPlaceholder": "Ej.: falta la medida del alto y una foto del frente",
+    "reasonHelp": "Si aprobás, es opcional. Si pedís cambios, es lo que el instalador va a leer para saber qué corregir.",
+    "approve": "Aprobar el relevamiento",
+    "requestChanges": "Pedir cambios",
+    "reasonRequired": "Para pedir cambios, escribí qué falta.",
+    "saving": "Guardando…",
+    "approvedToast": "Relevamiento aprobado",
+    "changesToast": "Se le pidieron cambios al instalador"
+  },
+  "SurveyPanel": {
+    "title": "Relevamiento",
+    "empty": "Todavía no enviaste el relevamiento de este punto.",
+    "waiting": "Enviaste la versión {version}. El coordinador la va a revisar.",
+    "approved": "Aprobado. Ya podés seguir con el trabajo.",
+    "changesTitle": "El coordinador te pidió cambios:",
+    "noReason": "No dejó un detalle. Consultalo por el chat de la orden.",
+    "notes": "Qué encontraste en el punto",
+    "notesAgain": "Contá qué corregiste",
+    "notesPlaceholder": "Medidas, accesos, condiciones del lugar, lo que haga falta para planificar",
+    "send": "Enviar relevamiento",
+    "sendAgain": "Enviar de nuevo",
+    "sending": "Enviando…",
+    "sentToast": "Relevamiento enviado",
+    "minimum": "Completá al menos una medida o una descripción: con los casilleros solos el coordinador no puede planificar."
+  },
+  "Prerequisite": {
+    "title": "La ejecución todavía no puede empezar",
+    "explanation": "Este trabajo incluye un relevamiento previo, y la ejecución arranca recién cuando el coordinador lo aprueba. Es lo que evita ir al punto sin saber qué hay que hacer.",
+    "waive": "Arrancar igual, sin esperar la aprobación",
+    "reason": "Por qué se arranca sin el relevamiento aprobado",
+    "reasonPlaceholder": "Ej.: el relevamiento se hizo por teléfono con el encargado y hay fotos en el chat",
+    "reasonHelp": "Mínimo 10 caracteres. Queda asentado: dentro de seis meses alguien va a querer saber por qué se salteó este control.",
+    "confirmWaive": "Confirmar y habilitar la ejecución",
+    "cancel": "Cancelar",
+    "saving": "Guardando…",
+    "waivedToast": "Ejecución habilitada. Quedó registrado el motivo",
+    "waivedTitle": "Se arrancó sin el relevamiento aprobado"
   }
 }

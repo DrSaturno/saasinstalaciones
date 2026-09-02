@@ -8,6 +8,13 @@ import { fetchOrderEvidence } from "@/lib/data/order-evidence";
 import { OrderActions } from "@/components/company/order-actions";
 import { OrderIncidents } from "@/components/company/order-incidents";
 import { CancellationReview } from "@/components/company/cancellation-review";
+import { SurveyReview } from "@/components/company/survey-review";
+import {
+  fetchPrerequisiteState,
+  fetchSurveyDecisionAuthority,
+  fetchSurveyState,
+} from "@/lib/data/surveys";
+import { PrerequisiteNotice } from "@/components/shared/prerequisite-notice";
 import { fetchPendingCancellation } from "@/lib/data/cancellations";
 import type { CancellationReason } from "@/lib/domain/cancellation-reasons";
 
@@ -116,6 +123,23 @@ export default async function OrderDetailPage({
       ? await fetchPendingCancellation(supabase, id)
       : null;
 
+  // El relevamiento, si esta orden tiene uno. La autoridad para decidir se
+  // pregunta al servidor (DEC-15) en vez de deducirla acá: si la pantalla y la
+  // función discreparan, el usuario vería un botón que siempre falla.
+  const survey = await fetchSurveyState(supabase, id);
+  const surveyAuthority =
+    survey?.status === "submitted"
+      ? await fetchSurveyDecisionAuthority(supabase, survey.activityId)
+      : null;
+
+  // El prerrequisito de la ejecución, para poder explicar el bloqueo antes de
+  // que alguien choque con él. Quién puede dispensarlo lo dice el servidor.
+  const prerequisite = await fetchPrerequisiteState(supabase, id);
+  const canWaive = prerequisite
+    ? (await fetchSurveyDecisionAuthority(supabase, prerequisite.surveyActivityId)) !==
+      null
+    : false;
+
   return (
     <div className="mx-auto w-full max-w-[1480px]">
       <BackLink href="/orders" label={t("back")} />
@@ -165,6 +189,24 @@ export default async function OrderDetailPage({
         />
         </div>
       </div>
+
+      {prerequisite && (prerequisite.blocked || prerequisite.waivedAt) ? (
+        <div className="mt-6">
+          <PrerequisiteNotice state={prerequisite} canWaive={canWaive} />
+        </div>
+      ) : null}
+
+      {survey && survey.submissionId && surveyAuthority ? (
+        <div className="mt-6">
+          <SurveyReview
+            submissionId={survey.submissionId}
+            version={survey.version}
+            notes={survey.notes}
+            submittedAt={survey.submittedAt}
+            authority={surveyAuthority}
+          />
+        </div>
+      ) : null}
 
       {pendingCancellation ? (
         <div className="mt-6">

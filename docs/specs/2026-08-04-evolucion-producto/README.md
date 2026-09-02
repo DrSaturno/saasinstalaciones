@@ -121,6 +121,7 @@ Se propone este baseline para poder avanzar; cada punto debe quedar confirmado e
 | DEC-12 | Cliente final | Sigue sin cuenta, rutas ni acceso a archivos; un portal futuro será otro proyecto |
 | DEC-13 | Fecha legacy sin hora | Migrar como “precisión desconocida”; no inventar horarios durante el backfill |
 | DEC-14 | Verificación de email | Definir si la activación exige confirmación; hoy ciertos flujos marcan email confirmado |
+| DEC-15 | Quién aprueba el relevamiento | **Cerrada el 02-09-2026.** Aprueba el coordinador responsable del proyecto. El gerente sólo cuando el proyecto no tiene coordinador asignado — `projects.coordinator_id` es nullable a propósito y si no, un relevamiento quedaría imposible de aprobar. Cada uso del fallback queda registrado |
 
 ## Non-goals de este lote
 

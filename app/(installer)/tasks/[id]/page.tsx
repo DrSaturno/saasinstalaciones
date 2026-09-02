@@ -13,6 +13,9 @@ import { RescheduleResponse } from "@/components/installer/reschedule-response";
 import { hasOpenCancellationRequest } from "@/lib/data/cancellations";
 import { businessDaysUntil } from "@/lib/domain/business-days";
 import { RequestCancellationDialog } from "@/components/installer/request-cancellation-dialog";
+import { SurveyPanel } from "@/components/installer/survey-panel";
+import { fetchPrerequisiteState, fetchSurveyState } from "@/lib/data/surveys";
+import { PrerequisiteNotice } from "@/components/shared/prerequisite-notice";
 import { TaskActions } from "@/components/installer/task-actions";
 import { TaskEvidenceCompose } from "@/components/installer/task-evidence-compose";
 import { OrderEvidencePanel } from "@/components/shared/order-evidence-panel";
@@ -148,6 +151,9 @@ export default async function TaskDetailPage({
     };
   }
 
+  const survey = await fetchSurveyState(supabase, id);
+  const prerequisite = await fetchPrerequisiteState(supabase, id);
+
   const mapsUrl = site
     ? site.lat && site.lng
       ? `https://www.google.com/maps/search/?api=1&query=${site.lat},${site.lng}`
@@ -179,6 +185,16 @@ export default async function TaskDetailPage({
           ) : null}
         </div>
       </div>
+
+      {prerequisite && (prerequisite.blocked || prerequisite.waivedAt) ? (
+        <div className="mt-4">
+          {/* El instalador ve POR QUÉ no puede arrancar, pero no puede
+              dispensarlo: eso es del coordinador (DEC-15). */}
+          <PrerequisiteNotice state={prerequisite} canWaive={false} />
+        </div>
+      ) : null}
+
+      {survey ? <SurveyPanel survey={survey} /> : null}
 
       {pending && reschedulePrompt ? (
         <RescheduleResponse

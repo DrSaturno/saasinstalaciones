@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ORDER_ACTIVITY_KINDS } from "@/lib/domain/activity-kind";
 
 export const ORDER_PRIORITIES = ["baja", "media", "alta", "urgente"] as const;
 export const ORDER_INITIAL_STATUSES = [
@@ -32,6 +33,10 @@ const optionalAmount = z
 /** Campos que se cargan igual al crear y al editar una orden. */
 const orderFields = {
   title: z.string().trim().min(2).max(200),
+  // Qué contiene la orden: sólo relevamiento, sólo ejecución, o las dos.
+  // `execution` por default para que los formularios que todavía no mandan el
+  // campo sigan comportándose exactamente como antes.
+  activityKind: z.enum(ORDER_ACTIVITY_KINDS).default("execution"),
   description: z.string().trim().max(4_000).default(""),
   scheduledDate: optionalDate,
   scheduledEndDate: optionalDate,
