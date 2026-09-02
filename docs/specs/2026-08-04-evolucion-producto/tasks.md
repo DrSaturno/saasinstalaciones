@@ -550,6 +550,8 @@ Objetivo: separar relevamiento/ejecución y hacer que toda asignación respete h
 Requisitos: REQ-07.1..07.6, REQ-11.1..11.8, REQ-13.5, REQ-13.7.  
 Dependencias: R1, R2. Tamaño: XL.
 
+Detalle de ejecución por fases de la parte de relevamiento: [relevamiento y ejecución](../2026-09-02-relevamiento-y-ejecucion/README.md). La agenda y disponibilidad (ADR-004) siguen sin planificar.
+
 ### Especificación
 
 - [ ] **R3-SPEC-01** — Aprobar ADR-003: contenedor OT, actividades, lifecycle, surveys y reglas de aprobación.
