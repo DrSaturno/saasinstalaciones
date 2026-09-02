@@ -198,6 +198,22 @@ export function OrderFormFields({
               </ul>
             </div>
           ) : null}
+          <div className="grid gap-2">
+            <Label htmlFor="order-activity-kind">{t("activityKind")}</Label>
+            <select
+              id="order-activity-kind"
+              name="activityKind"
+              defaultValue="execution"
+              className={selectClass}
+              disabled={disabled}
+            >
+              <option value="execution">{t("activityKinds.execution")}</option>
+              <option value="survey">{t("activityKinds.survey")}</option>
+              <option value="both">{t("activityKinds.both")}</option>
+            </select>
+            <p className="text-xs text-muted-foreground">{t("activityKindHelp")}</p>
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_190px]">
             <div className="grid gap-2">
               <Label htmlFor="order-title">{t("workTitle")}</Label>

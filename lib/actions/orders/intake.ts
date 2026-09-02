@@ -11,6 +11,7 @@ import {
 } from "@/lib/domain/order-intake";
 import { hasActiveCompanyRole } from "@/lib/data/company-membership-roles";
 import { requestPushDelivery } from "@/lib/push/events";
+import { activitiesFor } from "@/lib/domain/activity-kind";
 import type { TablesInsert } from "@/types/database";
 import { operatedCompany, requireOperator } from "./context";
 import type {
@@ -32,6 +33,7 @@ export async function createOrder(
   const parsed = orderIntakeSchema.safeParse({
     siteId: formData.get("siteId"),
     title: formData.get("title"),
+    activityKind: formData.get("activityKind") ?? "execution",
     description: formData.get("description") ?? "",
     status: formData.get("status") ?? "pendiente",
     scheduledDate: formData.get("scheduledDate") ?? "",
@@ -120,6 +122,22 @@ export async function createOrder(
       .select("id, order_number")
       .single();
     if (error || !order) return { error: error?.message ?? t("unexpected") };
+
+    // Las actividades de la orden. Se crean acá y no por trigger porque el
+    // tipo es una decisión de quien la carga, no algo derivable de la fila.
+    //
+    // Si esto fallara, la orden ya existe y quedaría sin actividades — que es
+    // exactamente el estado en que están las 30 órdenes viejas, y del que se
+    // sale volviendo a llamar al comando. Por eso no se aborta el alta: una
+    // orden creada es mejor que un error después de haberla escrito.
+    const { includeSurvey, includeExecution } = activitiesFor(
+      parsed.data.activityKind,
+    );
+    await supabase.rpc("create_order_activities", {
+      p_order_id: order.id,
+      p_include_survey: includeSurvey,
+      p_include_execution: includeExecution,
+    });
 
     if (parsed.data.installerId) {
       await requestPushDelivery(
