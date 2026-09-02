@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { OrderFilesField } from "@/components/company/order-files-field";
+import { WorkConditionsField } from "@/components/company/work-conditions-field";
 import { OrderFormSection } from "@/components/company/order-form-section";
 import { OrderFormSummary } from "@/components/company/order-form-summary";
 
@@ -256,6 +257,7 @@ export function OrderFormFields({
             </span>
             <input name="indoor" type="checkbox" disabled={disabled} className="size-4 accent-primary" />
           </label>
+          <WorkConditionsField disabled={disabled} />
         </OrderFormSection>
 
         <OrderFormSection number="03" title={t("sections.operation.title")} description={t("sections.operation.description")}>

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ORDER_ACTIVITY_KINDS } from "@/lib/domain/activity-kind";
+import { parseExplicitConditions } from "@/lib/domain/work-conditions";
 
 export const ORDER_PRIORITIES = ["baja", "media", "alta", "urgente"] as const;
 export const ORDER_INITIAL_STATUSES = [
@@ -43,6 +44,13 @@ const orderFields = {
   priority: z.enum(ORDER_PRIORITIES).default("media"),
   indoor: z.boolean().default(false),
   requiresFreight: z.boolean().default(false),
+  // Condiciones objetivas del trabajo (DEC-16). Se filtran contra el catálogo
+  // en vez de validarse con un enum para que una casilla desconocida no
+  // rechace el alta entera: lo que no está en el catálogo simplemente no entra.
+  conditions: z
+    .array(z.unknown())
+    .default([])
+    .transform((values) => parseExplicitConditions(values)),
   freightDetails: z.string().trim().max(1_000).default(""),
   logisticsNotes: z.string().trim().max(2_000).default(""),
   // `amount` es lo que se le cobra al cliente; `installerAmount`, lo que se le

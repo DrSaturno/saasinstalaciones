@@ -6,9 +6,25 @@ El orden importa: no se puede emitir un evento sobre la dificultad de un trabajo
 
 ## Fase 0 — La taxonomía, que es el dato que falta
 
-- [ ] **REP-DB-01** — Tabla de condiciones por orden y catálogo versionado de condiciones con su peso. Incluye RLS por `company_id` y el test pgTAP correspondiente. `indoor` y `requires_freight` se mapean a condiciones desde el vamos, sin duplicar el dato. → `R8-REP-02`
-- [ ] **REP-UI-01** — Declarar condiciones al crear y al editar una orden. Tienen que poder declararse **antes** de asignar, porque el reconocimiento es por haber aceptado sabiendo. → `R8-REP-02`
-- [ ] **REP-DOM-01** — Módulo de dominio con la taxonomía, el cálculo de dificultad y el umbral de "complejo", con tests. → `R8-REP-02`
+- [x] **REP-DB-01** — Tabla `work_order_conditions` con RLS por `company_id` y test pgTAP (13 aserciones). `indoor` y `requires_freight` NO se copian: se derivan al leer, y el CHECK impide declararlas a mano. → `R8-REP-02`
+- [x] **REP-UI-01** — Declarar condiciones al crear y al editar una orden, con un campo compartido por las dos pantallas. → `R8-REP-02`
+- [x] **REP-DOM-01** — `lib/domain/work-conditions.ts` con la taxonomía y la composición de condiciones declaradas + derivadas, con tests. → `R8-REP-02`
+
+**Desviación deliberada respecto de lo planificado.** La tarea original decía
+"catálogo versionado de condiciones con su peso". El catálogo con pesos **no**
+se construyó todavía, y no es un olvido: los pesos son parte de la fórmula, la
+fórmula tiene su propia versión, y esa versión llega en la Fase 2. Construir
+hoy el mecanismo de versionado no tendría nada que versionar, y obligaría a
+elegir pesos antes de poder calibrarlos contra datos reales (`REP-CALC-05`).
+La Fase 0 registra hechos; la Fase 2 les pone precio.
+
+**Hallazgo del camino.** En este proyecto `authenticated` recibe todos los
+privilegios sobre cada tabla nueva por default, así que los `grant` de las
+migraciones son decorativos y quien restringe es la RLS. Como las políticas de
+esta tabla son `for all`, hacía falta un `revoke update` explícito: sin él, un
+gerente podía cambiar `condition` conservando el `created_at` original, y la
+Fase 1 usa justamente esa fecha para saber si la condición estaba declarada
+**antes** de que la persona aceptara. Queda cubierto por una aserción del test.
 
 ## Fase 1 — El libro de eventos
 

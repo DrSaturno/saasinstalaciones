@@ -2181,5 +2181,16 @@
     "saving": "Salvando…",
     "waivedToast": "Execução liberada. O motivo ficou registrado",
     "waivedTitle": "Começou sem o levantamento aprovado"
+  },
+  "WorkConditions": {
+    "legend": "Condições do trabalho",
+    "help": "Marque as que se aplicam. São as que tornam um trabalho mais exigente e ficam registradas no histórico de quem o executa.",
+    "options": {
+      "altura": "Trabalho em altura (andaime, elevador ou cinto)",
+      "electrico": "Requer intervenção elétrica",
+      "nocturno": "Fora do horário comercial",
+      "gran_formato": "Peça que uma pessoa sozinha não manuseia",
+      "acceso_restringido": "Acesso restrito (autorizações, shopping, área de segurança)"
+    }
   }
 }

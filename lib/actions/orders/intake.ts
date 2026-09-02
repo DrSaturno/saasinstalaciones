@@ -13,6 +13,7 @@ import { hasActiveCompanyRole } from "@/lib/data/company-membership-roles";
 import { requestPushDelivery } from "@/lib/push/events";
 import { activitiesFor } from "@/lib/domain/activity-kind";
 import type { TablesInsert } from "@/types/database";
+import { syncOrderConditions } from "./conditions";
 import { operatedCompany, requireOperator } from "./context";
 import type {
   ActionState,
@@ -41,6 +42,7 @@ export async function createOrder(
     priority: formData.get("priority") ?? "media",
     indoor: formData.get("indoor") === "on",
     requiresFreight: formData.get("requiresFreight") === "on",
+    conditions: formData.getAll("conditions"),
     freightDetails: formData.get("freightDetails") ?? "",
     logisticsNotes: formData.get("logisticsNotes") ?? "",
     amount: formData.get("amount") ?? "",
@@ -139,6 +141,14 @@ export async function createOrder(
       p_include_execution: includeExecution,
     });
 
+    await syncOrderConditions(
+      supabase,
+      order.id,
+      companyId,
+      user.id,
+      parsed.data.conditions,
+    );
+
     if (parsed.data.installerId) {
       await requestPushDelivery(
         supabase,
@@ -185,6 +195,7 @@ export async function updateOrder(
     priority: formData.get("priority") ?? "media",
     indoor: formData.get("indoor") === "on",
     requiresFreight: formData.get("requiresFreight") === "on",
+    conditions: formData.getAll("conditions"),
     freightDetails: formData.get("freightDetails") ?? "",
     logisticsNotes: formData.get("logisticsNotes") ?? "",
     amount: formData.get("amount") ?? "",
@@ -250,6 +261,14 @@ export async function updateOrder(
       .eq("id", orderId)
       .eq("company_id", companyId);
     if (error) return { error: error.message };
+
+    await syncOrderConditions(
+      supabase,
+      orderId,
+      companyId,
+      user.id,
+      parsed.data.conditions,
+    );
 
     // Si cambió el instalador, avisarle como en una asignación nueva.
     if (

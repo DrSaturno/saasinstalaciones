@@ -20,6 +20,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { WorkConditionsField } from "@/components/company/work-conditions-field";
+import type { ExplicitWorkCondition } from "@/lib/domain/work-conditions";
 import type { OrderCurrency } from "@/types/database";
 
 const initial: ActionState = { error: null };
@@ -39,6 +41,7 @@ export type EditOrderDefaults = {
   amount: number | null;
   installerAmount: number | null;
   installerId: string;
+  conditions: ExplicitWorkCondition[];
 };
 
 export function EditOrderDialog({
@@ -229,6 +232,11 @@ export function EditOrderDialog({
             />
             {common("indoor")}
           </label>
+
+          <WorkConditionsField
+            defaultSelected={defaults.conditions}
+            disabled={pending}
+          />
 
           <label className="flex items-center gap-2 text-sm">
             <input
