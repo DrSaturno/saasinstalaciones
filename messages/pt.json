@@ -1189,6 +1189,13 @@
     "openRequirementsWarning": "Este ponto tem permissões ou requisitos a resolver antes da visita:",
     "workTitle": "Título do trabalho ou serviço",
     "workTitlePlaceholder": "Ex.: Instalação de comunicação visual externa",
+    "activityKind": "O que inclui este trabalho",
+    "activityKindHelp": "Um levantamento pode ser o trabalho inteiro ou uma etapa prévia. Se for uma etapa, a execução não começa até que o coordenador o aprove.",
+    "activityKinds": {
+      "execution": "Somente a execução",
+      "survey": "Somente o levantamento",
+      "both": "Levantamento e depois execução"
+    },
     "initialStatus": "Status inicial",
     "startDate": "Data de início",
     "endDate": "Data final",
@@ -2135,5 +2142,49 @@
       "reschedule_declined": "Saídas por reagendamento",
       "reschedule_no_response": "Reagendamentos sem resposta"
     }
+  },
+  "SurveyReview": {
+    "title": "Levantamento para revisar",
+    "subtitle": "Versão {version}",
+    "managerFallback": "Você está revisando como empresa porque o projeto não tem coordenador designado. Normalmente esta decisão é do coordenador responsável.",
+    "noNotes": "O levantamento foi enviado sem comentários.",
+    "reason": "O que falta ou o que você observa",
+    "reasonPlaceholder": "Ex.: falta a medida da altura e uma foto da frente",
+    "reasonHelp": "Se aprovar, é opcional. Se pedir ajustes, é o que o instalador vai ler para saber o que corrigir.",
+    "approve": "Aprovar o levantamento",
+    "requestChanges": "Pedir ajustes",
+    "reasonRequired": "Para pedir ajustes, escreva o que falta.",
+    "saving": "Salvando…",
+    "approvedToast": "Levantamento aprovado",
+    "changesToast": "Ajustes solicitados ao instalador"
+  },
+  "SurveyPanel": {
+    "title": "Levantamento",
+    "empty": "Você ainda não enviou o levantamento deste ponto.",
+    "waiting": "Você enviou a versão {version}. O coordenador vai revisar.",
+    "approved": "Aprovado. Você já pode seguir com o trabalho.",
+    "changesTitle": "O coordenador pediu ajustes:",
+    "noReason": "Não deixou detalhes. Pergunte pelo chat da ordem.",
+    "notes": "O que você encontrou no ponto",
+    "notesAgain": "Conte o que corrigiu",
+    "notesPlaceholder": "Medidas, acessos, condições do local, o que for preciso para planejar",
+    "send": "Enviar levantamento",
+    "sendAgain": "Enviar novamente",
+    "sending": "Enviando…",
+    "sentToast": "Levantamento enviado",
+    "minimum": "Preencha ao menos uma medida ou uma descrição: só com as caixas marcadas o coordenador não consegue planejar."
+  },
+  "Prerequisite": {
+    "title": "A execução ainda não pode começar",
+    "explanation": "Este trabalho inclui um levantamento prévio, e a execução começa somente quando o coordenador o aprova. É o que evita ir ao ponto sem saber o que precisa ser feito.",
+    "waive": "Começar mesmo assim, sem esperar a aprovação",
+    "reason": "Por que se começa sem o levantamento aprovado",
+    "reasonPlaceholder": "Ex.: o levantamento foi feito por telefone com o responsável e há fotos no chat",
+    "reasonHelp": "Mínimo de 10 caracteres. Fica registrado: daqui a seis meses alguém vai querer saber por que este controle foi pulado.",
+    "confirmWaive": "Confirmar e liberar a execução",
+    "cancel": "Cancelar",
+    "saving": "Salvando…",
+    "waivedToast": "Execução liberada. O motivo ficou registrado",
+    "waivedTitle": "Começou sem o levantamento aprovado"
   }
 }

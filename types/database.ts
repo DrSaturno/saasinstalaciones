@@ -3234,6 +3234,7 @@ export type Database = {
           reason: string
           reviewer_id: string
           submission_id: string
+          used_manager_fallback: boolean
         }
         Insert: {
           company_id: string
@@ -3245,6 +3246,7 @@ export type Database = {
           reason?: string
           reviewer_id: string
           submission_id: string
+          used_manager_fallback?: boolean
         }
         Update: {
           company_id?: string
@@ -3256,6 +3258,7 @@ export type Database = {
           reason?: string
           reviewer_id?: string
           submission_id?: string
+          used_manager_fallback?: boolean
         }
         Relationships: [
           {
@@ -3389,6 +3392,54 @@ export type Database = {
             columns: ["source_order_update_id"]
             isOneToOne: true
             referencedRelation: "order_updates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_templates: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          definition: Json
+          id: string
+          is_active: boolean
+          name: string
+          version: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          definition?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          version: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          definition?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3889,6 +3940,10 @@ export type Database = {
           email: string
         }[]
       }
+      assign_activity: {
+        Args: { p_activity_id: string; p_installer_id: string }
+        Returns: string
+      }
       auth_can_operate_work_activity: {
         Args: { p_activity_id: string }
         Returns: boolean
@@ -3938,6 +3993,14 @@ export type Database = {
         Args: { p_company_id: string }
         Returns: boolean
       }
+      create_order_activities: {
+        Args: {
+          p_include_execution?: boolean
+          p_include_survey?: boolean
+          p_order_id: string
+        }
+        Returns: Json
+      }
       decide_survey_submission: {
         Args: {
           p_decision: string
@@ -3967,6 +4030,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      emit_reschedule_reminders: { Args: never; Returns: number }
       emit_reschedule_timeouts: { Args: never; Returns: number }
       feature_enabled: {
         Args: { p_company_id?: string; p_flag_key: string }
@@ -4096,6 +4160,7 @@ export type Database = {
         Args: { p_role: string; p_user_id: string }
         Returns: undefined
       }
+      run_reliability_jobs: { Args: never; Returns: Json }
       search_order_evidence: {
         Args: { p_kinds?: string[]; p_order_id: string; p_query?: string }
         Returns: {
@@ -4114,7 +4179,26 @@ export type Database = {
         Args: { p_note?: string; p_order_id: string; p_status: string }
         Returns: undefined
       }
+      submit_survey_submission: {
+        Args: {
+          p_activity_id: string
+          p_checklist?: Json
+          p_evidence?: Json
+          p_form_data?: Json
+          p_measurements?: Json
+          p_notes?: string
+        }
+        Returns: string
+      }
+      survey_decision_authority: {
+        Args: { p_activity_id: string }
+        Returns: string
+      }
       tokenizable_words: { Args: { "": string }; Returns: string }
+      waive_activity_prerequisite: {
+        Args: { p_activity_id: string; p_reason: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
@@ -4133,12 +4217,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4162,11 +4246,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4187,11 +4271,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4212,11 +4296,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4229,11 +4313,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
