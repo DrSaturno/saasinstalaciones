@@ -464,7 +464,7 @@ Dependencia: R1. Tamaño: XL.
   >    `supabase/seed.sql` y en staging.
 - [x] **R2-IMP-04** — Exportación XLSX seleccionada/completa con contrato de round-trip. `GET /api/projects/[id]/sites/export` baja las locaciones activas del proyecto, paginado de a 1000 para que un proyecto grande no exporte sólo la primera página. **El contrato de round-trip está probado, no declarado**: `lib/domain/site-export.ts` toma las columnas de `SITE_TEMPLATE_HEADERS` (misma fuente que la plantilla y el lector), y el test alimenta lo exportado de vuelta a `analyzeSiteRows` verificando que las 3 filas vuelven íntegras, con coordenadas y referencias. Cubre también que reimportar al mismo proyecto no duplica: las filas con código se reconocen como ya cargadas. 10 tests unitarios + 2 E2E (uno verifica el .xlsx real que sale del servidor, otro que un instalador recibe 404 en vez de la planilla de otra empresa). Verificado en vivo contra staging: 20 filas, encabezado exacto, nombre de archivo sin acentos.
   - **Alcance:** exporta por proyecto, que es donde ocurre la importación. La variante «completa» (todas las locaciones de la empresa) no se hizo: sin la ficha canónica en la UI (R2-UI-01) no está claro desde dónde se pediría.
-- [ ] **R2-IMP-05** — Spike separado para PDF/Word/Excel variable; no incorporar al MVP determinista sin especificación nueva.
+- [ ] **R2-IMP-05** — Spike separado para PDF/Word/Excel variable; no incorporar al MVP determinista sin especificación nueva. Detalle y pendientes de UX: [importación de locaciones](../2026-09-02-importacion-locaciones/README.md).
 
 ### UI
 
