@@ -13,15 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  grantMemberRole,
-  revokeMemberRole,
-  setRosterStatus,
-} from "@/lib/actions/team";
+import { setRosterStatus } from "@/lib/actions/team";
 import type { RosterMember } from "@/lib/data/team";
-import type { MembershipRole } from "@/types/database";
-
-type RoleOperation = "grant" | "revoke";
 
 export function RosterTable({
   members,
@@ -53,39 +46,6 @@ export function RosterTable({
     });
   };
 
-  const changeRole = (
-    member: RosterMember,
-    role: MembershipRole,
-    operation: RoleOperation,
-  ) => {
-    const roleName = t(
-      role === "installer" ? "installerRoleName" : "coordinatorRoleName",
-    );
-    const confirmation = t(
-      operation === "grant" ? "grantRoleConfirm" : "revokeRoleConfirm",
-      { name: member.name, role: roleName },
-    );
-    if (!window.confirm(confirmation)) return;
-
-    startTransition(async () => {
-      const result =
-        operation === "grant"
-          ? await grantMemberRole(member.installerId, role)
-          : await revokeMemberRole(member.installerId, role);
-      if (result.error) {
-        toast.error(result.error);
-        return;
-      }
-      toast.success(
-        t(operation === "grant" ? "roleGranted" : "roleRevoked", {
-          name: member.name,
-          role: roleName,
-        }),
-      );
-      router.refresh();
-    });
-  };
-
   const active = members.filter((member) => member.status !== "removed");
   const removed = members.filter((member) => member.status === "removed");
 
@@ -104,7 +64,6 @@ export function RosterTable({
       canManageRoles={canManageRoles}
       pending={pending}
       onStatusChange={changeStatus}
-      onRoleChange={changeRole}
     />
   );
 

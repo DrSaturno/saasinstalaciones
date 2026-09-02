@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { MessageSquare, Phone, MapPin, CalendarDays } from "lucide-react";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth";
 import { fetchInstallerProfile } from "@/lib/data/installer-profile";
 import { ORDER_STATUS } from "@/lib/domain/status";
 import { StarRating } from "@/components/shared/star-rating";
@@ -11,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InstallerRateField } from "@/components/company/installer-rate-field";
+import { MemberRolesField } from "@/components/company/member-roles-field";
 import { BackLink } from "@/components/shared/back-link";
 
 export default async function InstallerProfilePage({
@@ -20,11 +22,12 @@ export default async function InstallerProfilePage({
 }) {
   const { installerId } = await params;
   const supabase = await createClient();
-  const [t, statusT, format, profile] = await Promise.all([
+  const [t, statusT, format, profile, user] = await Promise.all([
     getTranslations("InstallerProfile"),
     getTranslations("Status"),
     getFormatter(),
     fetchInstallerProfile(supabase, installerId),
+    getCurrentUser(),
   ]);
 
   if (!profile) notFound();
@@ -161,6 +164,17 @@ export default async function InstallerProfilePage({
                 ) : (
                   <span className="text-sm text-muted-foreground">—</span>
                 )}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">{t("roles")}</p>
+              <div className="mt-2">
+                <MemberRolesField
+                  installerId={profile.id}
+                  name={profile.name}
+                  roles={profile.roles}
+                  canManage={user?.role === "company_manager"}
+                />
               </div>
             </div>
             <InstallerRateField

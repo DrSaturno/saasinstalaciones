@@ -1,20 +1,23 @@
 import Link from "next/link";
 import { CalendarOff, UserRoundCheck } from "lucide-react";
 import { getFormatter, getTranslations } from "next-intl/server";
-import type {
-  CoordinatorOption,
-  UnavailableInstaller,
-} from "@/lib/data/team";
+import type { UnavailableInstaller } from "@/lib/data/team";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UnavailabilityReview } from "@/components/company/unavailability-review";
-import { DemoteCoordinatorButton } from "@/components/company/demote-coordinator-button";
+import { MemberRolesField } from "@/components/company/member-roles-field";
+import type { MembershipRole } from "@/types/database";
+
+/** A diferencia de `CoordinatorOption` (usada en selects simples de coordinador
+ *  en broadcasts/proyectos), acá hace falta `roles`: este widget deja tocar
+ *  la membresía, no sólo elegir a alguien. */
+type CoordinatorWithRoles = { id: string; name: string; roles: MembershipRole[] };
 
 export async function TeamAvailability({
   coordinators,
   unavailable,
   canReview = false,
 }: {
-  coordinators: CoordinatorOption[];
+  coordinators: CoordinatorWithRoles[];
   unavailable: UnavailableInstaller[];
   canReview?: boolean;
 }) {
@@ -41,12 +44,12 @@ export async function TeamAvailability({
               className="flex items-center justify-between gap-2 rounded-xl border px-4 py-3 text-sm"
             >
               <span>{person.name}</span>
-              {canReview ? (
-                <DemoteCoordinatorButton
-                  coordinatorId={person.id}
-                  name={person.name}
-                />
-              ) : null}
+              <MemberRolesField
+                installerId={person.id}
+                name={person.name}
+                roles={person.roles}
+                canManage={canReview}
+              />
             </div>
           )) : <p className="text-sm text-muted-foreground">{t("noCoordinators")}</p>}
         </CardContent>

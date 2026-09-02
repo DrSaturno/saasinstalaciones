@@ -7,9 +7,9 @@ import {
 } from "@/lib/domain/order-rules";
 import { ORDER_TRANSITIONS } from "@/lib/domain/transitions";
 
-const INSTALADOR = { id: "inst-1", role: "installer" as const };
-const COORDINADOR = { id: "coord-1", role: "coordinator" as const };
-const GERENTE = { id: "ger-1", role: "company_manager" as const };
+const INSTALADOR = { id: "inst-1" };
+const COORDINADOR = { id: "coord-1" };
+const GERENTE = { id: "ger-1" };
 
 function orden(overrides: Partial<OrderRuleContext> = {}): OrderRuleContext {
   return {
@@ -161,9 +161,10 @@ describe("regla: a revisión sólo la manda el instalador asignado", () => {
 });
 
 describe("regla: nadie aprueba ni reabre su propia entrega (ADR-001)", () => {
-  // El mismo id que assignedInstallerId, pero actuando con capacidad de
-  // coordinador: es el caso de rol dual que R1 habilita.
-  const INSTALADOR_COORDINADOR = { id: "inst-1", role: "coordinator" as const };
+  // El mismo id que assignedInstallerId: el caso de rol dual que R1 habilita,
+  // alguien que además de instalador asignado también coordina el proyecto.
+  // El bloqueo depende solo de esa identidad — Actor no lleva rol declarado.
+  const INSTALADOR_COORDINADOR = { id: "inst-1" };
   const enRevision = orden({ status: "en_revision" });
 
   it("bloquea al instalador asignado que también coordina", () => {

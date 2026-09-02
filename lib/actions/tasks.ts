@@ -66,7 +66,7 @@ async function installerTransition(
       scheduledDate: order.scheduled_date,
     },
     toStatus,
-    { id: user.id, role: user.role },
+    { id: user.id },
   );
   if (block === "invalidTransition") {
     return { error: t("invalidTransition"), retryable: false };

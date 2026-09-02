@@ -84,7 +84,7 @@ export function CoordinationBoard({
         hasSurvey: order.hasSurvey,
         scheduledDate: order.scheduledDate,
       },
-      { id: viewerId, role: "coordinator" },
+      { id: viewerId },
       ORDER_TRANSITIONS[order.status],
     );
   const groups = groupOrders(visible, showCompanyGroups);

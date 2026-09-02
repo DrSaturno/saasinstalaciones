@@ -1,6 +1,12 @@
 import { getTranslations } from "next-intl/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, OrderCurrency, OrderStatus, RosterStatus } from "@/types/database";
+import type {
+  Database,
+  MembershipRole,
+  OrderCurrency,
+  OrderStatus,
+  RosterStatus,
+} from "@/types/database";
 
 export type InstallerProfileOrder = {
   id: string;
@@ -29,6 +35,8 @@ export type InstallerProfile = {
   // `profiles` al crearse la cuenta.
   memberSince: string | null;
   rosterStatus: RosterStatus | null;
+  /** Capacidades independientes en esta empresa: puede tener ambas. */
+  roles: MembershipRole[];
   /** Tarifa sugerida de esta persona EN ESTA empresa. */
   defaultRate: number | null;
   zones: string[];
@@ -81,7 +89,7 @@ export async function fetchInstallerProfile(
   // Sin fila de roster visible, la persona no pertenece a esta empresa.
   if (!profile || !roster) return null;
 
-  const [{ data: orders }, { data: reviews }, { data: company }] =
+  const [{ data: orders }, { data: reviews }, { data: company }, { data: roleRows }] =
     await Promise.all([
       supabase
         .from("work_orders")
@@ -100,6 +108,11 @@ export async function fetchInstallerProfile(
         .select("name, country")
         .eq("id", roster.company_id)
         .maybeSingle(),
+      supabase
+        .from("company_membership_roles")
+        .select("role")
+        .eq("company_id", roster.company_id)
+        .eq("user_id", installerId),
     ]);
 
   // Nombres de proyecto y números de orden en consultas aparte: el tipado
@@ -129,6 +142,7 @@ export async function fetchInstallerProfile(
       : null,
     memberSince: roster.joined_at ?? profile.created_at,
     rosterStatus: roster.status,
+    roles: [...new Set((roleRows ?? []).map((r) => r.role))],
     defaultRate:
       roster.default_installer_rate === null || roster.default_installer_rate === undefined
         ? null
