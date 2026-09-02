@@ -1106,6 +1106,84 @@ export type Database = {
           },
         ]
       }
+      installer_reliability_events: {
+        Row: {
+          company_id: string
+          id: string
+          installer_id: string
+          kind: string
+          occurred_at: string
+          order_id: string | null
+          revert_reason: string
+          reverted_at: string | null
+          reverted_by: string | null
+          source_id: string | null
+          source_table: string | null
+        }
+        Insert: {
+          company_id: string
+          id?: string
+          installer_id: string
+          kind: string
+          occurred_at?: string
+          order_id?: string | null
+          revert_reason?: string
+          reverted_at?: string | null
+          reverted_by?: string | null
+          source_id?: string | null
+          source_table?: string | null
+        }
+        Update: {
+          company_id?: string
+          id?: string
+          installer_id?: string
+          kind?: string
+          occurred_at?: string
+          order_id?: string | null
+          revert_reason?: string
+          reverted_at?: string | null
+          reverted_by?: string | null
+          source_id?: string | null
+          source_table?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installer_reliability_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installer_reliability_events_installer_id_fkey"
+            columns: ["installer_id"]
+            isOneToOne: false
+            referencedRelation: "installers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installer_reliability_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "installer_earnings"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "installer_reliability_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installer_reliability_events_reverted_by_fkey"
+            columns: ["reverted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       installer_unavailability: {
         Row: {
           company_id: string
@@ -1775,6 +1853,41 @@ export type Database = {
           },
         ]
       }
+      non_working_days: {
+        Row: {
+          company_id: string | null
+          country: string
+          created_at: string
+          day: string
+          id: string
+          name: string
+        }
+        Insert: {
+          company_id?: string | null
+          country: string
+          created_at?: string
+          day: string
+          id?: string
+          name?: string
+        }
+        Update: {
+          company_id?: string | null
+          country?: string
+          created_at?: string
+          day?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "non_working_days_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_deliveries: {
         Row: {
           attempts: number
@@ -2073,6 +2186,96 @@ export type Database = {
           },
         ]
       }
+      order_cancellation_requests: {
+        Row: {
+          calendar_country: string
+          company_id: string
+          id: string
+          installer_id: string
+          justified: boolean | null
+          order_id: string
+          reason_code: string
+          reason_note: string
+          requested_at: string
+          review_note: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          scheduled_date_at_request: string | null
+          status: string
+          within_notice: boolean
+        }
+        Insert: {
+          calendar_country: string
+          company_id: string
+          id?: string
+          installer_id: string
+          justified?: boolean | null
+          order_id: string
+          reason_code: string
+          reason_note?: string
+          requested_at?: string
+          review_note?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          scheduled_date_at_request?: string | null
+          status?: string
+          within_notice: boolean
+        }
+        Update: {
+          calendar_country?: string
+          company_id?: string
+          id?: string
+          installer_id?: string
+          justified?: boolean | null
+          order_id?: string
+          reason_code?: string
+          reason_note?: string
+          requested_at?: string
+          review_note?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          scheduled_date_at_request?: string | null
+          status?: string
+          within_notice?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_cancellation_requests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_cancellation_requests_installer_id_fkey"
+            columns: ["installer_id"]
+            isOneToOne: false
+            referencedRelation: "installers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_cancellation_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "installer_earnings"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "order_cancellation_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_cancellation_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_incidents: {
         Row: {
           category: IncidentCategory
@@ -2216,6 +2419,108 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "work_orders"
             referencedColumns: ["id", "company_id"]
+          },
+        ]
+      }
+      order_reschedules: {
+        Row: {
+          calendar_country: string
+          calendar_timezone: string
+          company_id: string
+          created_at: string
+          id: string
+          installer_id: string | null
+          new_date: string
+          new_end_date: string | null
+          notified_at: string | null
+          order_id: string
+          previous_date: string | null
+          previous_end_date: string | null
+          reason: string
+          reminder_sent_at: string | null
+          rescheduled_by: string | null
+          responded_at: string | null
+          response: string | null
+          response_window_days: number
+          superseded_at: string | null
+        }
+        Insert: {
+          calendar_country: string
+          calendar_timezone?: string
+          company_id: string
+          created_at?: string
+          id?: string
+          installer_id?: string | null
+          new_date: string
+          new_end_date?: string | null
+          notified_at?: string | null
+          order_id: string
+          previous_date?: string | null
+          previous_end_date?: string | null
+          reason?: string
+          reminder_sent_at?: string | null
+          rescheduled_by?: string | null
+          responded_at?: string | null
+          response?: string | null
+          response_window_days?: number
+          superseded_at?: string | null
+        }
+        Update: {
+          calendar_country?: string
+          calendar_timezone?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          installer_id?: string | null
+          new_date?: string
+          new_end_date?: string | null
+          notified_at?: string | null
+          order_id?: string
+          previous_date?: string | null
+          previous_end_date?: string | null
+          reason?: string
+          reminder_sent_at?: string | null
+          rescheduled_by?: string | null
+          responded_at?: string | null
+          response?: string | null
+          response_window_days?: number
+          superseded_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_reschedules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_reschedules_installer_id_fkey"
+            columns: ["installer_id"]
+            isOneToOne: false
+            referencedRelation: "installers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_reschedules_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "installer_earnings"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "order_reschedules_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_reschedules_rescheduled_by_fkey"
+            columns: ["rescheduled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -3616,6 +3921,15 @@ export type Database = {
         Args: { p_broadcast_id: string }
         Returns: boolean
       }
+      business_days_between: {
+        Args: {
+          p_company_id?: string
+          p_country: string
+          p_from: string
+          p_to: string
+        }
+        Returns: number
+      }
       can_operate_project: { Args: { p_project_id: string }; Returns: boolean }
       can_read_location: { Args: { p_location_id: string }; Returns: boolean }
       close_broadcast: { Args: { p_broadcast_id: string }; Returns: undefined }
@@ -3641,6 +3955,19 @@ export type Database = {
         Args: { p_lat1: number; p_lat2: number; p_lng1: number; p_lng2: number }
         Returns: number
       }
+      emit_reliability_event: {
+        Args: {
+          p_company_id: string
+          p_installer_id: string
+          p_kind: string
+          p_occurred_at?: string
+          p_order_id: string
+          p_source_id: string
+          p_source_table: string
+        }
+        Returns: undefined
+      }
+      emit_reschedule_timeouts: { Args: never; Returns: number }
       feature_enabled: {
         Args: { p_company_id?: string; p_flag_key: string }
         Returns: boolean
@@ -3729,6 +4056,40 @@ export type Database = {
       }
       replace_installer_weekly_availability: {
         Args: { p_company_id: string; p_entries: Json }
+        Returns: undefined
+      }
+      request_order_cancellation: {
+        Args: {
+          p_order_id: string
+          p_reason_code: string
+          p_reason_note?: string
+        }
+        Returns: string
+      }
+      reschedule_order_with_notice: {
+        Args: {
+          p_order_id: string
+          p_reason?: string
+          p_scheduled_date: string
+          p_scheduled_end_date?: string
+        }
+        Returns: string
+      }
+      respond_to_reschedule: {
+        Args: { p_reschedule_id: string; p_response: string }
+        Returns: undefined
+      }
+      revert_reliability_event: {
+        Args: { p_event_id: string; p_reason: string }
+        Returns: undefined
+      }
+      review_order_cancellation: {
+        Args: {
+          p_decision: string
+          p_justified: boolean
+          p_note?: string
+          p_request_id: string
+        }
         Returns: undefined
       }
       revoke_company_member_role: {
