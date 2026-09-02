@@ -63,44 +63,60 @@ const rescheduleSchema = z.object({
   orderId: z.string().uuid(),
   scheduledDate: z.iso.date(),
   scheduledEndDate: z.union([z.iso.date(), z.literal("")]),
+  reason: z.string().trim().max(600).default(""),
 }).refine(
   (value) => !value.scheduledEndDate || value.scheduledEndDate >= value.scheduledDate,
   { path: ["scheduledEndDate"] },
 );
 
+/**
+ * Reprogramar es un acto con consecuencias para el instalador: le puede pisar
+ * otro trabajo ya aceptado. Por eso no basta con escribir la fecha nueva — hay
+ * que avisarle, y dejar constancia de cuándo, porque de ese momento (y no del
+ * cambio de fecha) arranca su plazo de dos días hábiles para contestar.
+ *
+ * Las cuatro escrituras que eso implica viven en `reschedule_order_with_notice`
+ * para que entren juntas o no entre ninguna: un plazo corriendo por un aviso
+ * que nunca se persistió es exactamente lo que el requisito prohíbe.
+ */
 export async function rescheduleOrder(input: {
   orderId: string;
   scheduledDate: string;
   scheduledEndDate: string;
+  reason?: string;
 }): Promise<ActionState> {
   const t = await getTranslations("Errors");
   const parsed = rescheduleSchema.safeParse(input);
   if (!parsed.success) return { error: t("invalidData") };
   try {
-    const { supabase, user } = await requireOperator();
-    const { data: existing } = await supabase
+    const { supabase } = await requireOperator();
+    const { data: order } = await supabase
       .from("work_orders")
-      .select("id, company_id")
-      .eq("id", parsed.data.orderId)
-      .single();
-    if (!existing) return { error: t("orderNotFound") };
-    const companyId = operatedCompany(user, existing.company_id);
-
-    const { data: order, error } = await supabase
-      .from("work_orders")
-      .update({
-        scheduled_date: parsed.data.scheduledDate,
-        scheduled_end_date: parsed.data.scheduledEndDate || null,
-      })
-      .eq("id", parsed.data.orderId)
-      .eq("company_id", companyId)
       .select("project_id")
+      .eq("id", parsed.data.orderId)
       .single();
-    if (error || !order) return { error: error?.message ?? t("orderNotFound") };
+
+    // El permiso lo vuelve a validar la función en el servidor: es
+    // `security definer`, así que no puede confiar en que la RLS la filtre.
+    const { error } = await supabase.rpc("reschedule_order_with_notice", {
+      p_order_id: parsed.data.orderId,
+      p_scheduled_date: parsed.data.scheduledDate,
+      // Sin fecha final se omite el argumento y la función usa su default
+      // null, que además limpia la que hubiera. El generador de tipos no
+      // modela parámetros nulables, así que mandar `null` explícito no
+      // compila.
+      ...(parsed.data.scheduledEndDate
+        ? { p_scheduled_end_date: parsed.data.scheduledEndDate }
+        : {}),
+      p_reason: parsed.data.reason ?? "",
+    });
+    if (error) return { error: error.message };
+
     revalidatePath("/dashboard");
     revalidatePath("/orders");
     revalidatePath(`/orders/${parsed.data.orderId}`);
-    revalidatePath(`/projects/${order.project_id}`);
+    revalidatePath("/tasks");
+    if (order?.project_id) revalidatePath(`/projects/${order.project_id}`);
     return { error: null, ok: true };
   } catch {
     return { error: t("unexpected") };

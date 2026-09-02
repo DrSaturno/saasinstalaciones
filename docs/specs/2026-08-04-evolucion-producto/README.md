@@ -113,7 +113,7 @@ Se propone este baseline para poder avanzar; cada punto debe quedar confirmado e
 | DEC-04 | Acceso financiero del coordinador | Sin acceso por defecto; permiso explícito futuro si el negocio lo exige |
 | DEC-05 | Devengamiento del honorario | Al aprobar la ejecución, no al marcarla enviada ni al pagarla |
 | DEC-06 | Pagos e impuestos del MVP | Pagos parciales y ajustes/reversas; impuestos/retenciones como dato explícito, no motor fiscal |
-| DEC-07 | Ventana de dos días hábiles | Reprogramación: desde notificación persistida. Baja común: la minuta no define el ancla; baseline, pedirla con al menos 2 días hábiles antes del inicio |
+| DEC-07 | Ventana de dos días hábiles | **Cerrada el 01-09-2026.** Reprogramación: desde notificación persistida. Baja común: pedirla con al menos 2 días hábiles antes del inicio programado — se adopta el baseline, confirmado por el pedido de Nicolás |
 | DEC-08 | Penalizaciones | Modo sombra, explicación y revisión humana antes de afectar score visible |
 | DEC-09 | Conflictos de agenda | Solapamiento y ausencia bloquean; traslado insuficiente bloquea con override auditado de manager |
 | DEC-10 | Evidencia mínima | Configurable por tipo de actividad; valor inicial propuesto: 3 fotos en ejecución |

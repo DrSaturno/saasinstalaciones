@@ -7,6 +7,18 @@ import { fetchActiveRoster } from "@/lib/data/orders";
 import { fetchOrderEvidence } from "@/lib/data/order-evidence";
 import { OrderActions } from "@/components/company/order-actions";
 import { OrderIncidents } from "@/components/company/order-incidents";
+import { CancellationReview } from "@/components/company/cancellation-review";
+import { fetchPendingCancellation } from "@/lib/data/cancellations";
+import type { CancellationReason } from "@/lib/domain/cancellation-reasons";
+
+/** next-intl exige claves literales, así que el mapeo va explícito. */
+const REASON_KEY: Record<CancellationReason, `reasons.${CancellationReason}`> = {
+  personal_emergency: "reasons.personal_emergency",
+  health: "reasons.health",
+  work_conditions: "reasons.work_conditions",
+  schedule_conflict: "reasons.schedule_conflict",
+  other: "reasons.other",
+};
 import { OrderEvidencePanel } from "@/components/shared/order-evidence-panel";
 import { OrderEvidenceCompose } from "@/components/shared/order-evidence-compose";
 import { EditOrderDialog } from "@/components/company/edit-order-dialog";
@@ -28,13 +40,15 @@ export default async function OrderDetailPage({
   searchParams: Promise<{ q?: string; kind?: string }>;
 }) {
   const { id } = await params;
-  const [{ q, kind: kindParam }, t, createOrderT, format, user] = await Promise.all([
-    searchParams,
-    getTranslations("OrderDetail"),
-    getTranslations("CreateOrder"),
-    getFormatter(),
-    getCurrentUser(),
-  ]);
+  const [{ q, kind: kindParam }, t, createOrderT, cancelT, format, user] =
+    await Promise.all([
+      searchParams,
+      getTranslations("OrderDetail"),
+      getTranslations("CreateOrder"),
+      getTranslations("RequestCancellation"),
+      getFormatter(),
+      getCurrentUser(),
+    ]);
   const evidenceQuery = q ?? "";
   const evidenceKind: EvidenceKind | null = ORDER_EVIDENCE_KINDS.includes(
     kindParam as EvidenceKind,
@@ -95,6 +109,13 @@ export default async function OrderDetailPage({
 
   const canWriteEvidence = user ? canOperateCompany(user, order.company_id) : false;
 
+  // Sólo el gerente resuelve un pedido de baja. El coordinador lo ve en la
+  // bandeja de notificaciones, pero la decisión no es suya.
+  const pendingCancellation =
+    user?.role === "company_manager"
+      ? await fetchPendingCancellation(supabase, id)
+      : null;
+
   return (
     <div className="mx-auto w-full max-w-[1480px]">
       <BackLink href="/orders" label={t("back")} />
@@ -144,6 +165,19 @@ export default async function OrderDetailPage({
         />
         </div>
       </div>
+
+      {pendingCancellation ? (
+        <div className="mt-6">
+          <CancellationReview
+            requestId={pendingCancellation.id}
+            installerName={pendingCancellation.installerName}
+            reasonLabel={cancelT(REASON_KEY[pendingCancellation.reasonCode])}
+            reasonNote={pendingCancellation.reasonNote}
+            requestedAt={pendingCancellation.requestedAt}
+            scheduledDateAtRequest={pendingCancellation.scheduledDateAtRequest}
+          />
+        </div>
+      ) : null}
 
       <Card className="mt-6">
         <CardContent className="py-5">

@@ -7,6 +7,12 @@ import { fetchInstallerAvailability } from "@/lib/data/availability";
 import { StarRating } from "@/components/shared/star-rating";
 import { AvailabilitySettings } from "@/components/installer/availability-settings";
 import { CoverageSettings } from "@/components/installer/coverage-settings";
+import { ReliabilityPanel } from "@/components/installer/reliability-panel";
+import {
+  fetchOrderNumbers,
+  fetchReliabilityEvents,
+} from "@/lib/data/reliability";
+import { WINDOW_DAYS } from "@/lib/domain/reliability";
 import { Badge } from "@/components/ui/badge";
 import { AvatarUpload } from "@/components/installer/avatar-upload";
 import {
@@ -27,11 +33,23 @@ export default async function InstallerProfilePage() {
   if (!isInstallerArea(user)) redirect(ROLE_HOME[user.role]);
 
   const supabase = await createClient();
-  const [reputation, availability, { data: profile }] = await Promise.all([
-    fetchInstallerReputation(supabase, user.id),
-    fetchInstallerAvailability(supabase, user.id),
-    supabase.from("profiles").select("avatar_path").eq("id", user.id).single(),
-  ]);
+  const [reputation, availability, { data: profile }, reliabilityEvents] =
+    await Promise.all([
+      fetchInstallerReputation(supabase, user.id),
+      fetchInstallerAvailability(supabase, user.id),
+      supabase.from("profiles").select("avatar_path").eq("id", user.id).single(),
+      fetchReliabilityEvents(supabase, user.id, WINDOW_DAYS),
+    ]);
+
+  // `asOf` se fija acá y se pasa entero: la fórmula no lee el reloj por dentro,
+  // así el mismo render siempre da el mismo número.
+  const asOf = new Date().toISOString();
+  const reliabilityOrders = await fetchOrderNumbers(
+    supabase,
+    reliabilityEvents
+      .map((event) => event.orderId)
+      .filter((id): id is string => Boolean(id)),
+  );
 
   const avatarUrl = profile?.avatar_path
     ? supabase.storage.from("avatars").getPublicUrl(profile.avatar_path).data.publicUrl
@@ -138,6 +156,14 @@ export default async function InstallerProfilePage() {
           </CardContent>
         </Card>
       ) : null}
+
+      <div className="mt-8">
+        <ReliabilityPanel
+          events={reliabilityEvents}
+          orderNumbers={reliabilityOrders}
+          asOf={asOf}
+        />
+      </div>
 
       <div className="mt-8">
         <CoverageSettings
