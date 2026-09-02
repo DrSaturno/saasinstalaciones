@@ -673,9 +673,11 @@ Objetivo: compromisos reprogramables con plazo probado, revisión humana y comun
 Requisitos: REQ-06.1..06.9, REQ-13.1, REQ-13.2, REQ-13.5, REQ-13.7.  
 Dependencias: R3, R5. Tamaño: XL.
 
+Detalle de ejecución por fases: [confiabilidad y reprogramaciones](../2026-09-01-confiabilidad-y-reprogramaciones/README.md). La fase 0 ya cerró DEC-07, el calendario, las tablas de flujo y su RLS.
+
 ### Especificación
 
-- [ ] **R6-SPEC-01** — Aprobar ADR-009: inicio del plazo, calendario/feriados, silencio, motivos, evidencia, autoridad, recuperación y apelación.
+- [x] **R6-SPEC-01** — Aprobar ADR-009: inicio del plazo, calendario/feriados, silencio, motivos, evidencia, autoridad, recuperación y apelación.
 - [ ] **R6-SPEC-02** — Definir privacidad/retención de motivos y condición para salir de shadow mode.
 
 ### Datos y servidor
