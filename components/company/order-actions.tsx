@@ -43,6 +43,7 @@ export function OrderActions({
   const [pending, startTransition] = useTransition();
   const [startDate, setStartDate] = useState(scheduledDate ?? "");
   const [endDate, setEndDate] = useState(scheduledEndDate ?? "");
+  const [reason, setReason] = useState("");
   // El gerente nunca "envía a revisión": eso lo hace el instalador asignado.
   // Él aprueba desde revisión, y puede reabrir o cancelar.
   const targets = (ORDER_TRANSITIONS[status] ?? []).filter(
@@ -75,10 +76,11 @@ export function OrderActions({
   const doReschedule = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     startTransition(async () => {
-      const res = await rescheduleOrder({ orderId, scheduledDate: startDate, scheduledEndDate: endDate });
+      const res = await rescheduleOrder({ orderId, scheduledDate: startDate, scheduledEndDate: endDate, reason });
       if (res.error) toast.error(res.error);
       else {
         toast.success(t("rescheduledToast"));
+        setReason("");
         router.refresh();
       }
     });
@@ -118,6 +120,8 @@ export function OrderActions({
         <div className="mt-2 grid gap-2">
           <label className="grid gap-1 text-xs text-muted-foreground">{t("startDate")}<input type="date" required value={startDate} onChange={(event) => setStartDate(event.target.value)} className="h-9 rounded-lg border border-input bg-transparent px-2 text-sm" /></label>
           <label className="grid gap-1 text-xs text-muted-foreground">{t("endDate")}<input type="date" min={startDate} value={endDate} onChange={(event) => setEndDate(event.target.value)} className="h-9 rounded-lg border border-input bg-transparent px-2 text-sm" /></label>
+          <label className="grid gap-1 text-xs text-muted-foreground">{t("rescheduleReason")}<input type="text" maxLength={600} value={reason} placeholder={t("rescheduleReasonPlaceholder")} onChange={(event) => setReason(event.target.value)} className="h-9 rounded-lg border border-input bg-transparent px-2 text-sm" /></label>
+          <p className="rounded-lg border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">{t("rescheduleNotice")}</p>
           <Button type="submit" size="sm" variant="outline" disabled={pending || !startDate}>{t("saveSchedule")}</Button>
         </div>
       </form>
