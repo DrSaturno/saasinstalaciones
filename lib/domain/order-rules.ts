@@ -1,4 +1,4 @@
-import type { MembershipRole, OrderStatus, UserRole } from "@/types/database";
+import type { OrderStatus } from "@/types/database";
 import { canTransition } from "@/lib/domain/transitions";
 
 /**
@@ -27,9 +27,14 @@ export type OrderRuleContext = {
   scheduledDate: string | null;
 };
 
+/**
+ * La autorización de fondo es por identidad (RLS + `operatedCompany`), no por
+ * rol: por eso el actor sólo lleva `id`. Un campo `role` acá invitaría a
+ * decidir una transición por rol declarado en vez de por quién es la
+ * persona, justo lo que ADR-001 prohíbe con los roles duales (R1).
+ */
 export type Actor = {
   id: string;
-  role: UserRole | MembershipRole;
 };
 
 /**

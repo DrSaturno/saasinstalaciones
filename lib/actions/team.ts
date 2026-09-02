@@ -191,18 +191,6 @@ export async function cancelInvitation(invitationId: string): Promise<ActionStat
   return { error: null, ok: true };
 }
 
-/** Wrapper de compatibilidad: agrega coordinación sin quitar instalación. */
-export async function promoteToCoordinator(installerId: string): Promise<ActionState> {
-  return grantMemberRole(installerId, "coordinator");
-}
-
-/** Wrapper legacy: garantiza instalación y luego intenta quitar coordinación. */
-export async function demoteToInstaller(coordinatorId: string): Promise<ActionState> {
-  const granted = await grantMemberRole(coordinatorId, "installer");
-  if (granted.error) return granted;
-  return revokeMemberRole(coordinatorId, "coordinator");
-}
-
 /** Cambia el estado de un miembro del roster (quitar / reactivar). */
 export async function setRosterStatus(
   installerId: string,

@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getTranslations } from "next-intl/server";
 import {
-  fetchCoordinators,
   fetchPendingInvitations,
   fetchRoster,
   fetchUnavailableInstallers,
@@ -16,12 +15,18 @@ export default async function TeamPage() {
   const t = await getTranslations("Team");
   const supabase = await createClient();
   const user = await getCurrentUser();
-  const [roster, invitations, coordinators, unavailable] = await Promise.all([
+  const [roster, invitations, unavailable] = await Promise.all([
     fetchRoster(supabase),
     fetchPendingInvitations(supabase),
-    fetchCoordinators(supabase),
     fetchUnavailableInstallers(supabase),
   ]);
+
+  // El roster ya trae `roles` por persona: derivar los coordinadores de ahí
+  // evita una segunda consulta y una segunda fuente de verdad en esta misma
+  // pantalla.
+  const coordinators = roster
+    .filter((member) => member.status !== "removed" && member.roles.includes("coordinator"))
+    .map((member) => ({ id: member.installerId, name: member.name, roles: member.roles }));
 
   return (
     <div className="mx-auto w-full max-w-[1480px]">

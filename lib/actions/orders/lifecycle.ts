@@ -53,13 +53,7 @@ export async function transitionOrder(
         scheduledDate: order.scheduled_date,
       },
       toStatus,
-      {
-        id: user.id,
-        role:
-          user.role === "company_manager"
-            ? "company_manager"
-            : "coordinator",
-      },
+      { id: user.id },
     );
     if (block === "invalidTransition") {
       return {

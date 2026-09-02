@@ -50,7 +50,7 @@ export function CoordinationOrderActions({
     hasSurvey,
     scheduledDate,
   };
-  const actor = { id: viewerId, role: "coordinator" as const };
+  const actor = { id: viewerId };
   const options = allowedTransitions(context, actor, ORDER_TRANSITIONS[status]);
 
   const move = (to: OrderStatus) => {
