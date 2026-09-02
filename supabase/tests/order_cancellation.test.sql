@@ -16,6 +16,15 @@
 -- Pedir la baja NO cancela la orden: el trabajo sigue haciendo falta, cambia
 -- quién lo hace.
 
+-- NOTA SOBRE LAS FECHAS: se usa el día en hora de Buenos Aires y NO
+-- `current_date`, que es UTC.
+--
+-- Las funciones del módulo calculan "hoy" con `now() at time zone <tz>`, así
+-- que un fixture armado sobre `current_date` coincide sólo mientras el test
+-- corra de día en Argentina. Entre las 00:00 y las 03:00 UTC las dos fechas
+-- difieren en un día, y una orden pensada como "fuera de plazo" queda dentro.
+-- CI lo destapó corriendo a la 01:04 UTC.
+
 begin;
 
 create extension if not exists pgtap with schema extensions;
@@ -64,17 +73,17 @@ insert into public.work_orders (
    'a2000000-0000-0000-0000-000000000021', 'a2000000-0000-0000-0000-000000000031',
    'EF3-0001', 'En plazo',
    'a2000000-0000-0000-0000-000000000012', now(),
-   (current_date + 40), 'planificada'),
+   ((now() at time zone 'America/Argentina/Buenos_Aires')::date + 40), 'planificada'),
   ('a2000000-0000-0000-0000-000000000042', 'a2000000-0000-0000-0000-000000000001',
    'a2000000-0000-0000-0000-000000000021', 'a2000000-0000-0000-0000-000000000031',
    'EF3-0002', 'Fuera de plazo',
    'a2000000-0000-0000-0000-000000000012', now(),
-   (current_date + 1), 'planificada'),
+   ((now() at time zone 'America/Argentina/Buenos_Aires')::date + 1), 'planificada'),
   ('a2000000-0000-0000-0000-000000000043', 'a2000000-0000-0000-0000-000000000001',
    'a2000000-0000-0000-0000-000000000021', 'a2000000-0000-0000-0000-000000000031',
    'EF3-0003', 'Para rechazar',
    'a2000000-0000-0000-0000-000000000012', now(),
-   (current_date + 1), 'planificada');
+   ((now() at time zone 'America/Argentina/Buenos_Aires')::date + 1), 'planificada');
 
 -- ---------------------------------------------------------------------------
 -- El cálculo de días hábiles, que es la autoridad

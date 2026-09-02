@@ -13,6 +13,15 @@
 -- para lo que el requisito quiere — evitar que a alguien se le pase el plazo
 -- sin darse cuenta.
 
+-- NOTA SOBRE LAS FECHAS: se usa el día en hora de Buenos Aires y NO
+-- `current_date`, que es UTC.
+--
+-- Las funciones del módulo calculan "hoy" con `now() at time zone <tz>`, así
+-- que un fixture armado sobre `current_date` coincide sólo mientras el test
+-- corra de día en Argentina. Entre las 00:00 y las 03:00 UTC las dos fechas
+-- difieren en un día, y una orden pensada como "fuera de plazo" queda dentro.
+-- CI lo destapó corriendo a la 01:04 UTC.
+
 begin;
 
 create extension if not exists pgtap with schema extensions;
@@ -55,12 +64,12 @@ select
   'c5000000-0000-0000-0000-000000000021',
   'c5000000-0000-0000-0000-000000000031',
   'EF5-' || n, 'Orden ' || n,
-  'c5000000-0000-0000-0000-000000000012', (current_date + 60), 'planificada'
+  'c5000000-0000-0000-0000-000000000012', ((now() at time zone 'America/Argentina/Buenos_Aires')::date + 60), 'planificada'
 from generate_series(41, 44) as n;
 
 -- Tres avisos con distinta antigüedad en días HÁBILES.
 --
--- Las fechas NO son `current_date - N`: si el test corriera un sábado, "ayer"
+-- Las fechas NO son `(now() at time zone 'America/Argentina/Buenos_Aires')::date - N`: si el test corriera un sábado, "ayer"
 -- sería viernes y la antigüedad en días hábiles daría 0, no 1, y el test
 -- fallaría por el día de la semana en que corrió. En vez de eso se busca la
 -- fecha cuya distancia en días hábiles hasta hoy es exactamente la que se
@@ -72,21 +81,21 @@ insert into public.order_reschedules (
   -- 0 días hábiles: recién avisado.
   ('c5000000-0000-0000-0000-00000000005a', 'c5000000-0000-0000-0000-000000000001',
    'c5000000-0000-0000-0000-000000000041', 'c5000000-0000-0000-0000-000000000012',
-   (current_date + 60), 'AR', 'America/Argentina/Buenos_Aires',
-   (current_date::timestamptz + interval '12 hours')),
+   ((now() at time zone 'America/Argentina/Buenos_Aires')::date + 60), 'AR', 'America/Argentina/Buenos_Aires',
+   ((now() at time zone 'America/Argentina/Buenos_Aires')::date::timestamptz + interval '12 hours')),
   -- 1 día hábil: penúltimo día del plazo.
   ('c5000000-0000-0000-0000-00000000005b', 'c5000000-0000-0000-0000-000000000001',
    'c5000000-0000-0000-0000-000000000042', 'c5000000-0000-0000-0000-000000000012',
-   (current_date + 60), 'AR', 'America/Argentina/Buenos_Aires',
-   ((select max(d)::date from generate_series(current_date - 20, current_date, interval '1 day') d
-     where public.business_days_between(d::date, current_date, 'AR', null) = 1)::timestamptz
+   ((now() at time zone 'America/Argentina/Buenos_Aires')::date + 60), 'AR', 'America/Argentina/Buenos_Aires',
+   ((select max(d)::date from generate_series((now() at time zone 'America/Argentina/Buenos_Aires')::date - 20, (now() at time zone 'America/Argentina/Buenos_Aires')::date, interval '1 day') d
+     where public.business_days_between(d::date, (now() at time zone 'America/Argentina/Buenos_Aires')::date, 'AR', null) = 1)::timestamptz
     + interval '12 hours')),
   -- 5 días hábiles: el plazo ya venció.
   ('c5000000-0000-0000-0000-00000000005d', 'c5000000-0000-0000-0000-000000000001',
    'c5000000-0000-0000-0000-000000000044', 'c5000000-0000-0000-0000-000000000012',
-   (current_date + 60), 'AR', 'America/Argentina/Buenos_Aires',
-   ((select max(d)::date from generate_series(current_date - 20, current_date, interval '1 day') d
-     where public.business_days_between(d::date, current_date, 'AR', null) = 5)::timestamptz
+   ((now() at time zone 'America/Argentina/Buenos_Aires')::date + 60), 'AR', 'America/Argentina/Buenos_Aires',
+   ((select max(d)::date from generate_series((now() at time zone 'America/Argentina/Buenos_Aires')::date - 20, (now() at time zone 'America/Argentina/Buenos_Aires')::date, interval '1 day') d
+     where public.business_days_between(d::date, (now() at time zone 'America/Argentina/Buenos_Aires')::date, 'AR', null) = 5)::timestamptz
     + interval '12 hours'));
 
 -- ---------------------------------------------------------------------------

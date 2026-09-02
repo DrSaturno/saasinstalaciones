@@ -14,6 +14,15 @@
 --      revisar no serviría para nada.
 --   4. **Nada se borra: se revierte, con motivo y con autor.**
 
+-- NOTA SOBRE LAS FECHAS: se usa el día en hora de Buenos Aires y NO
+-- `current_date`, que es UTC.
+--
+-- Las funciones del módulo calculan "hoy" con `now() at time zone <tz>`, así
+-- que un fixture armado sobre `current_date` coincide sólo mientras el test
+-- corra de día en Argentina. Entre las 00:00 y las 03:00 UTC las dos fechas
+-- difieren en un día, y una orden pensada como "fuera de plazo" queda dentro.
+-- CI lo destapó corriendo a la 01:04 UTC.
+
 begin;
 
 create extension if not exists pgtap with schema extensions;
@@ -62,11 +71,11 @@ insert into public.work_orders (
   ('c4000000-0000-0000-0000-00000000004a', 'c4000000-0000-0000-0000-000000000001',
    'c4000000-0000-0000-0000-000000000021', 'c4000000-0000-0000-0000-000000000031',
    'EF4-A', 'Aceptar y completar',
-   'c4000000-0000-0000-0000-000000000012', (current_date + 30), 'planificada'),
+   'c4000000-0000-0000-0000-000000000012', ((now() at time zone 'America/Argentina/Buenos_Aires')::date + 30), 'planificada'),
   ('c4000000-0000-0000-0000-00000000004b', 'c4000000-0000-0000-0000-000000000001',
    'c4000000-0000-0000-0000-000000000021', 'c4000000-0000-0000-0000-000000000031',
    'EF4-B', 'Baja fuera de plazo',
-   'c4000000-0000-0000-0000-000000000012', (current_date + 1), 'planificada');
+   'c4000000-0000-0000-0000-000000000012', ((now() at time zone 'America/Argentina/Buenos_Aires')::date + 1), 'planificada');
 
 -- ---------------------------------------------------------------------------
 -- Los hechos salen del ciclo de vida de la orden
