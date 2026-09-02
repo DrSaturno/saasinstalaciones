@@ -5,11 +5,11 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { CircleOff } from "lucide-react";
 import { toast } from "sonner";
+import { requestOrderCancellation } from "@/lib/actions/orders/cancellation";
 import {
   CANCELLATION_REASONS,
-  requestOrderCancellation,
   type CancellationReason,
-} from "@/lib/actions/orders/cancellation";
+} from "@/lib/domain/cancellation-reasons";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

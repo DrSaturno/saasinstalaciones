@@ -9,7 +9,7 @@ import { OrderActions } from "@/components/company/order-actions";
 import { OrderIncidents } from "@/components/company/order-incidents";
 import { CancellationReview } from "@/components/company/cancellation-review";
 import { fetchPendingCancellation } from "@/lib/data/cancellations";
-import type { CancellationReason } from "@/lib/actions/orders/cancellation";
+import type { CancellationReason } from "@/lib/domain/cancellation-reasons";
 
 /** next-intl exige claves literales, así que el mapeo va explícito. */
 const REASON_KEY: Record<CancellationReason, `reasons.${CancellationReason}`> = {

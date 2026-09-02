@@ -5,17 +5,11 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import {
+  CANCELLATION_REASONS,
+  type CancellationReason,
+} from "@/lib/domain/cancellation-reasons";
 import type { ActionState } from "./types";
-
-export const CANCELLATION_REASONS = [
-  "personal_emergency",
-  "health",
-  "work_conditions",
-  "schedule_conflict",
-  "other",
-] as const;
-
-export type CancellationReason = (typeof CANCELLATION_REASONS)[number];
 
 const requestSchema = z.object({
   orderId: z.string().uuid(),

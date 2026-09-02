@@ -3,7 +3,7 @@ import type { Database } from "@/types/database";
 import {
   CANCELLATION_REASONS,
   type CancellationReason,
-} from "@/lib/actions/orders/cancellation";
+} from "@/lib/domain/cancellation-reasons";
 
 /**
  * El CHECK de la tabla ya limita los valores, pero el generador de tipos emite

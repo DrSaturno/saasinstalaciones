@@ -2112,7 +2112,7 @@
   "Reliability": {
     "title": "Tu nivel de confiabilidad",
     "basedOn": "Sobre {count, plural, one {# hecho registrado} other {# hechos registrados}} en los últimos {days} días.",
-    "notEnough": "Todavía no hay historial suficiente para calcular tu nivel. Llevás {count, plural, =0 {ningún hecho registrado} one {# hecho registrado} other {# hechos registrados}}.",
+    "notEnough": "Todavía no hay historial suficiente para calcular tu nivel. {count, plural, =0 {Cuando empieces a trabajar lo vas a ver acá.} one {Llevás # hecho registrado.} other {Llevás # hechos registrados.}}",
     "shadowNote": "Por ahora este número es informativo: no afecta tu acceso al trabajo ni la cantidad de oportunidades que ves. Si eso llegara a cambiar, te lo vamos a avisar antes.",
     "penaltiesTitle": "Qué te está restando hoy",
     "relatedOrder": "Trabajo:",
