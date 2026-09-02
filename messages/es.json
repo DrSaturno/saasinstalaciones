@@ -548,6 +548,7 @@
     "quantityUpdated": "Cantidad contratada actualizada",
     "actionsTitle": "Carga y órdenes",
     "actionsDescription": "Hay {archived} locaciones archivadas. Podés agregar una ficha individual, importar un CSV o generar órdenes.",
+    "template": "Descargar plantilla",
     "export": "Exportar a Excel"
   },
   "SiteForm": {
@@ -1114,7 +1115,6 @@
     "columns": "nombre y direccion (obligatorias), ciudad, provincia, codigo, lat, lng",
     "variants": "Acepta variantes en portugués e inglés (endereco, cidade, city, address…).",
     "importing": "Importando…",
-    "downloadTemplate": "Descargar planilla Excel",
     "analyzing": "Revisando la planilla…",
     "reviewTitle": "Revisá antes de importar",
     "expected": "Locales informados",

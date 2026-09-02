@@ -43,6 +43,17 @@ describe("mapSiteHeaders", () => {
     expect(map).toMatchObject({ name: 0, address: 1, city: 2 });
   });
 
+  it("reconoce 'Punto de venta' y 'Ubicación' con espacio y acento tal como llegan en la planilla", () => {
+    expect(mapSiteHeaders(["Punto de venta", "direccion"])).toMatchObject({
+      name: 0,
+      address: 1,
+    });
+    expect(mapSiteHeaders(["Ubicación", "direccion"])).toMatchObject({
+      name: 0,
+      address: 1,
+    });
+  });
+
   it("devuelve null si no hay columna de nombre", () => {
     expect(mapSiteHeaders(["direccion", "ciudad"])).toBeNull();
   });

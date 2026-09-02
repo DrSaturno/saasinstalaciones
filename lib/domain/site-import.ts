@@ -15,7 +15,19 @@ import { normalizeLocationExternalRef } from "@/lib/domain/canonical-locations";
  */
 
 const COLUMN_ALIASES: Record<string, string[]> = {
-  name: ["nombre", "name", "punto", "sitio", "local", "estacion", "sucursal"],
+  name: [
+    "nombre",
+    "name",
+    "punto",
+    "sitio",
+    "local",
+    "estacion",
+    "sucursal",
+    // Sin espacio ni acento a propósito: normalizeHeader los saca a los dos,
+    // así que el alias tiene que quedar ya colapsado para poder matchear.
+    "puntodeventa",
+    "ubicacion",
+  ],
   address: ["direccion", "address", "domicilio", "endereco", "calle"],
   city: ["ciudad", "city", "localidad", "cidade"],
   state: ["provincia", "state", "estado", "departamento"],

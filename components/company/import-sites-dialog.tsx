@@ -246,11 +246,6 @@ export function ImportSitesDialog({ projectId }: { projectId: string }) {
               <p className="mt-1 font-mono">{t("columns")}</p>
               <p className="mt-2">{t("variants")}</p>
             </div>
-            <Button type="button" variant="outline" asChild>
-              <a href="/api/site-template" download>
-                {t("downloadTemplate")}
-              </a>
-            </Button>
             {analyzing && (
               <p className="text-sm text-muted-foreground">{t("analyzing")}</p>
             )}

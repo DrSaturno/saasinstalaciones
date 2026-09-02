@@ -87,6 +87,15 @@ export function ManageInstallationsDialog({
           <p className="mb-4 text-xs text-muted-foreground">{t("actionsDescription", { archived: archivedCount })}</p>
           <div className="flex flex-wrap gap-2">
             <CreateSiteDialog projectId={projectId} country={country} zones={zones} />
+            {/* Antes vivía adentro del diálogo de importar, donde para
+                descubrirla había que abrir la importación primero: el orden
+                inverso al que pide el flujo (descargar → completar →
+                importar). Ahora está al mismo nivel que Importar y Exportar. */}
+            <Button type="button" variant="outline" asChild>
+              <a href="/api/site-template" download>
+                {t("template")}
+              </a>
+            </Button>
             <ImportSitesDialog projectId={projectId} />
             {/* Exportar cierra el ida y vuelta con importar: bajás la planilla,
                 la corregís en Excel y la volvés a subir sin duplicar nada. Se

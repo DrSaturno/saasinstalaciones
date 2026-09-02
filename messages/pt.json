@@ -548,6 +548,7 @@
     "quantityUpdated": "Quantidade contratada atualizada",
     "actionsTitle": "Cadastro e ordens",
     "actionsDescription": "Há {archived} locais arquivados. Você pode adicionar uma ficha, importar CSV ou gerar ordens.",
+    "template": "Baixar modelo",
     "export": "Exportar para Excel"
   },
   "SiteForm": {
@@ -1114,7 +1115,6 @@
     "columns": "nombre e direccion (obrigatórias), ciudad, provincia, codigo, lat, lng",
     "variants": "Aceita variações em português, espanhol e inglês (direccion, ciudad, city, address…).",
     "importing": "Importando…",
-    "downloadTemplate": "Baixar planilha Excel",
     "analyzing": "Conferindo a planilha…",
     "reviewTitle": "Confira antes de importar",
     "expected": "Locais informados",
