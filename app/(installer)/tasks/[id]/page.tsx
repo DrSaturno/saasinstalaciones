@@ -2,6 +2,17 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { fetchOrderEvidence } from "@/lib/data/order-evidence";
+import { fetchBusinessCalendar } from "@/lib/data/business-calendar";
+import {
+  fetchInstallerSchedule,
+  fetchPendingReschedule,
+} from "@/lib/data/reschedules";
+import { findScheduleConflicts } from "@/lib/domain/schedule-conflicts";
+import { rescheduleState } from "@/lib/domain/reschedule";
+import { RescheduleResponse } from "@/components/installer/reschedule-response";
+import { hasOpenCancellationRequest } from "@/lib/data/cancellations";
+import { businessDaysUntil } from "@/lib/domain/business-days";
+import { RequestCancellationDialog } from "@/components/installer/request-cancellation-dialog";
 import { TaskActions } from "@/components/installer/task-actions";
 import { TaskEvidenceCompose } from "@/components/installer/task-evidence-compose";
 import { OrderEvidencePanel } from "@/components/shared/order-evidence-panel";
@@ -54,6 +65,89 @@ export default async function TaskDetailPage({
     fetchOrderEvidence(supabase, id, { query: evidenceQuery, kind: evidenceKind }),
   ]);
 
+  // Reprogramación pendiente de este instalador, si la hay. Se resuelve el
+  // vencimiento en el servidor: el calendario de feriados vive acá, y mandarlo
+  // entero al cliente para recalcularlo sería trabajo de más y una segunda
+  // fuente de verdad.
+  const pending = user ? await fetchPendingReschedule(supabase, id, user.id) : null;
+  let reschedulePrompt: {
+    deadline: string;
+    businessDaysLeft: number;
+    expired: boolean;
+    conflicts: Awaited<ReturnType<typeof fetchInstallerSchedule>>;
+  } | null = null;
+
+  if (pending && user) {
+    const [calendar, schedule] = await Promise.all([
+      fetchBusinessCalendar(supabase, pending.calendarCountry, order.company_id),
+      fetchInstallerSchedule(supabase, user.id),
+    ]);
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: pending.calendarTimezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+    const state = rescheduleState(
+      {
+        notifiedAt: pending.notifiedAt,
+        response: null,
+        respondedAt: null,
+        supersededAt: null,
+        responseWindowDays: pending.responseWindowDays,
+      },
+      today,
+      pending.calendarTimezone,
+      calendar,
+    );
+    if (state.kind === "awaiting" || state.kind === "expired") {
+      reschedulePrompt = {
+        deadline: state.deadline,
+        businessDaysLeft: state.kind === "awaiting" ? state.businessDaysLeft : 0,
+        expired: state.kind === "expired",
+        conflicts: findScheduleConflicts(
+          schedule,
+          { start: pending.newDate, end: pending.newEndDate },
+          id,
+        ),
+      };
+    }
+  }
+
+  // Vista previa del plazo de baja. La autoridad es `business_days_between` en
+  // el servidor, que es quien decide si el pedido se autoaprueba; esto sólo
+  // sirve para decirle de antemano en qué está por meterse.
+  let cancelPrompt: { withinNotice: boolean; businessDaysLeft: number } | null = null;
+  if (
+    user &&
+    order.status !== "cancelada" &&
+    order.status !== "finalizada" &&
+    !(await hasOpenCancellationRequest(supabase, id, user.id))
+  ) {
+    const { data: company } = await supabase
+      .from("companies")
+      .select("country")
+      .eq("id", order.company_id)
+      .maybeSingle();
+    const country = company?.country === "BR" ? "BR" : "AR";
+    const calendar = await fetchBusinessCalendar(supabase, country, order.company_id);
+    const timeZone =
+      country === "BR" ? "America/Sao_Paulo" : "America/Argentina/Buenos_Aires";
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+    const left = order.scheduled_date
+      ? businessDaysUntil(today, order.scheduled_date, calendar)
+      : Number.MAX_SAFE_INTEGER;
+    cancelPrompt = {
+      withinNotice: left >= 2,
+      businessDaysLeft: Math.max(left === Number.MAX_SAFE_INTEGER ? 0 : left, 0),
+    };
+  }
+
   const mapsUrl = site
     ? site.lat && site.lng
       ? `https://www.google.com/maps/search/?api=1&query=${site.lat},${site.lng}`
@@ -74,8 +168,30 @@ export default async function TaskDetailPage({
       </div>
       <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-bold">{order.title}</h1>
-        <OrderPdfButton orderId={order.id} />
+        <div className="flex flex-wrap items-center gap-2">
+          <OrderPdfButton orderId={order.id} />
+          {cancelPrompt ? (
+            <RequestCancellationDialog
+              orderId={order.id}
+              withinNotice={cancelPrompt.withinNotice}
+              businessDaysLeft={cancelPrompt.businessDaysLeft}
+            />
+          ) : null}
+        </div>
       </div>
+
+      {pending && reschedulePrompt ? (
+        <RescheduleResponse
+          rescheduleId={pending.id}
+          newDate={pending.newDate}
+          newEndDate={pending.newEndDate}
+          deadline={reschedulePrompt.deadline}
+          businessDaysLeft={reschedulePrompt.businessDaysLeft}
+          expired={reschedulePrompt.expired}
+          reason={pending.reason}
+          conflicts={reschedulePrompt.conflicts}
+        />
+      ) : null}
 
       {/* Punto */}
       <Card className="mt-6">
