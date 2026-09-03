@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { AnnouncementComposer } from "@/components/company/announcement-composer";
 import { DashboardApplicationsPeek } from "@/components/company/dashboard-applications-peek";
+import { DashboardFinancePulse } from "@/components/company/dashboard-finance-pulse";
 import { DashboardInsights } from "@/components/company/dashboard-insights";
 import { DashboardJobsPeek } from "@/components/company/dashboard-jobs-peek";
 import { DashboardOrdersPeek } from "@/components/company/dashboard-orders-peek";
@@ -12,6 +13,7 @@ import { DashboardPulse } from "@/components/company/dashboard-pulse";
 import { DashboardProjects } from "@/components/company/dashboard-projects";
 import { DashboardQuality } from "@/components/company/dashboard-quality";
 import { DashboardQuickActions } from "@/components/company/dashboard-quick-actions";
+import { DashboardSection } from "@/components/company/dashboard-section";
 import { DashboardTodayOrders } from "@/components/company/dashboard-today-orders";
 import { Button } from "@/components/ui/button";
 import { fetchPublishedAnnouncements } from "@/lib/data/announcements";
@@ -39,9 +41,10 @@ export default async function CompanyDashboard() {
     supabase.from("companies").select("country").limit(1).maybeSingle(),
     supabase.from("calendar_connections").select("google_email").limit(1).maybeSingle(),
   ]);
+  const country = (company?.country ?? "AR") as Country;
   const [overview, clients, coordinators, roster, orders, projects, currency, board, announcements] =
     await Promise.all([
-      fetchDashboardOverview(supabase, (company?.country ?? "AR") as Country),
+      fetchDashboardOverview(supabase, country),
       fetchClients(supabase),
       fetchCoordinators(supabase),
       fetchActiveRoster(supabase),
@@ -61,7 +64,6 @@ export default async function CompanyDashboard() {
         <p className="mt-1 text-sm text-muted-foreground">{t("description")}</p>
       </header>
 
-      <DashboardMetrics metrics={overview.metrics} />
       <DashboardQuickActions
         newProject={
           <CreateProjectDialog
@@ -101,22 +103,33 @@ export default async function CompanyDashboard() {
         projects={projects.map(({ id, name }) => ({ id, name }))}
         history={announcements}
       />
-      <DashboardPulse alerts={overview.alerts} forecasts={forecasts} roster={roster} />
-      <DashboardOperations forecasts={forecasts} calendarEmail={calendar?.google_email ?? null} calendarConfigured={googleCalendarConfigured()} />
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(300px,0.85fr)]">
-        <DashboardAgenda agenda={overview.agenda} />
-        <DashboardTodayOrders orders={overview.todayOrders} />
-      </section>
+      <DashboardSection title={t("sections.generalTitle")} description={t("sections.generalDescription")}>
+        <DashboardMetrics metrics={overview.metrics} />
+        <DashboardQuality quality={overview.quality} incidents={overview.incidents} />
+        <DashboardFinancePulse finances={overview.finances} />
+      </DashboardSection>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)]">
-        <DashboardProjects projects={overview.projects} />
-        <DashboardCapacity capacity={overview.capacity} coordination={overview.coordination} sla={overview.sla} />
-      </section>
+      <DashboardSection title={t("sections.performanceTitle")} description={t("sections.performanceDescription")}>
+        <section className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)]">
+          <DashboardProjects projects={overview.projects} />
+          <DashboardCapacity capacity={overview.capacity} coordination={overview.coordination} sla={overview.sla} />
+        </section>
+        <DashboardInsights regions={overview.regions} installers={overview.installers} country={country} />
+      </DashboardSection>
 
-      <DashboardInsights regions={overview.regions} installers={overview.installers} />
-      <DashboardQuality quality={overview.quality} incidents={overview.incidents} />
-      <DashboardMap sites={overview.mapSites} availableInstallers={overview.capacity.availableToday} />
+      <DashboardSection title={t("sections.regionalTitle")} description={t("sections.regionalDescription")}>
+        <section className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(300px,0.85fr)]">
+          <DashboardAgenda agenda={overview.agenda} />
+          <DashboardTodayOrders orders={overview.todayOrders} />
+        </section>
+        <DashboardMap sites={overview.mapSites} availableInstallers={overview.capacity.availableToday} />
+      </DashboardSection>
+
+      <DashboardSection title={t("sections.alertsTitle")} description={t("sections.alertsDescription")}>
+        <DashboardPulse alerts={overview.alerts} forecasts={forecasts} weatherZones={overview.weatherZones} roster={roster} />
+        <DashboardOperations forecasts={forecasts} calendarEmail={calendar?.google_email ?? null} calendarConfigured={googleCalendarConfigured()} />
+      </DashboardSection>
     </main>
   );
 }

@@ -50,3 +50,20 @@ export function firstResolutionSummary(
     repeats: finalized.length - firstTime,
   };
 }
+
+/**
+ * % de órdenes finalizadas que registraron al menos un incidente.
+ *
+ * Cuenta por orden, no por evento — mismo criterio que `firstResolutionSummary`,
+ * para que las dos tasas sean comparables en la misma tarjeta. Una orden con
+ * tres incidentes no pesa tres veces: la pregunta es "¿cuántos trabajos
+ * tuvieron problemas?", no "¿cuántos problemas hubo?".
+ */
+export function incidentRate(
+  finalizedOrderIds: string[],
+  incidentOrderIds: Set<string>,
+) {
+  if (finalizedOrderIds.length === 0) return 0;
+  const withIncident = finalizedOrderIds.filter((id) => incidentOrderIds.has(id)).length;
+  return percentage(withIncident, finalizedOrderIds.length);
+}
