@@ -49,6 +49,19 @@ export type IncidentCategory =
   | "rejected_work"
   | "incomplete_work"
   | "other";
+/**
+ * Condiciones objetivas que se declaran sobre una orden (DEC-16).
+ *
+ * Sólo las que se guardan. `exterior` y `flete` no están acá a propósito: ya
+ * viven en `work_orders.indoor` y `requires_freight`, y se derivan al leer en
+ * `lib/domain/work-conditions.ts`.
+ */
+export type ExplicitWorkCondition =
+  | "altura"
+  | "electrico"
+  | "nocturno"
+  | "gran_formato"
+  | "acceso_restringido";
 export type IncidentSeverity = "low" | "medium" | "high" | "critical";
 export type IncidentStatus = "open" | "resolved";
 export type InvitationStatus = "pending" | "accepted" | "expired";

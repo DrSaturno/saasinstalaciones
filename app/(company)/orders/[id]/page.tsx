@@ -79,6 +79,7 @@ export default async function OrderDetailPage({
     { data: project },
     { data: rating },
     { data: incidents },
+    { data: conditionRows },
     roster,
     evidence,
   ] = await Promise.all([
@@ -102,6 +103,10 @@ export default async function OrderDetailPage({
       .select("id, category, severity, description, requires_revisit, status, created_at")
       .eq("order_id", id)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("work_order_conditions")
+      .select("condition")
+      .eq("order_id", id),
     fetchActiveRoster(supabase),
     fetchOrderEvidence(supabase, id, { query: evidenceQuery, kind: evidenceKind }),
   ]);
@@ -185,6 +190,7 @@ export default async function OrderDetailPage({
             amount: order.amount,
             installerAmount: order.installer_amount,
             installerId: order.assigned_installer_id ?? "",
+            conditions: (conditionRows ?? []).map((row) => row.condition),
           }}
         />
         </div>

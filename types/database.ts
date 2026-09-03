@@ -57,6 +57,19 @@ export type IncidentCategory =
   | "rejected_work"
   | "incomplete_work"
   | "other";
+/**
+ * Condiciones objetivas que se declaran sobre una orden (DEC-16).
+ *
+ * Sólo las que se guardan. `exterior` y `flete` no están acá a propósito: ya
+ * viven en `work_orders.indoor` y `requires_freight`, y se derivan al leer en
+ * `lib/domain/work-conditions.ts`.
+ */
+export type ExplicitWorkCondition =
+  | "altura"
+  | "electrico"
+  | "nocturno"
+  | "gran_formato"
+  | "acceso_restringido";
 export type IncidentSeverity = "low" | "medium" | "high" | "critical";
 export type IncidentStatus = "open" | "resolved";
 export type InvitationStatus = "pending" | "accepted" | "expired";
@@ -84,31 +97,6 @@ export type Database = {
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
-  }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
   }
   public: {
     Tables: {
@@ -1102,6 +1090,87 @@ export type Database = {
             columns: ["installer_id"]
             isOneToOne: false
             referencedRelation: "installers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      installer_performance_events: {
+        Row: {
+          company_id: string
+          context: Json
+          id: string
+          installer_id: string
+          kind: string
+          occurred_at: string
+          order_id: string | null
+          revert_reason: string
+          reverted_at: string | null
+          reverted_by: string | null
+          source_id: string | null
+          source_table: string | null
+        }
+        Insert: {
+          company_id: string
+          context?: Json
+          id?: string
+          installer_id: string
+          kind: string
+          occurred_at?: string
+          order_id?: string | null
+          revert_reason?: string
+          reverted_at?: string | null
+          reverted_by?: string | null
+          source_id?: string | null
+          source_table?: string | null
+        }
+        Update: {
+          company_id?: string
+          context?: Json
+          id?: string
+          installer_id?: string
+          kind?: string
+          occurred_at?: string
+          order_id?: string | null
+          revert_reason?: string
+          reverted_at?: string | null
+          reverted_by?: string | null
+          source_id?: string | null
+          source_table?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installer_performance_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installer_performance_events_installer_id_fkey"
+            columns: ["installer_id"]
+            isOneToOne: false
+            referencedRelation: "installers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installer_performance_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "installer_earnings"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "installer_performance_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installer_performance_events_reverted_by_fkey"
+            columns: ["reverted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2928,6 +2997,30 @@ export type Database = {
           },
         ]
       }
+      reputation_rule_versions: {
+        Row: {
+          active: boolean
+          created_at: string
+          note: string
+          version: string
+          weights: Json
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          note?: string
+          version: string
+          weights: Json
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          note?: string
+          version?: string
+          weights?: Json
+        }
+        Relationships: []
+      }
       site_attachments: {
         Row: {
           company_id: string
@@ -3669,6 +3762,59 @@ export type Database = {
           },
         ]
       }
+      work_order_conditions: {
+        Row: {
+          company_id: string
+          condition: ExplicitWorkCondition
+          created_at: string
+          created_by: string | null
+          order_id: string
+        }
+        Insert: {
+          company_id: string
+          condition: ExplicitWorkCondition
+          created_at?: string
+          created_by?: string | null
+          order_id: string
+        }
+        Update: {
+          company_id?: string
+          condition?: ExplicitWorkCondition
+          created_at?: string
+          created_by?: string | null
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_order_conditions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_conditions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_conditions_order_company_fk"
+            columns: ["order_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "installer_earnings"
+            referencedColumns: ["order_id", "company_id"]
+          },
+          {
+            foreignKeyName: "work_order_conditions_order_company_fk"
+            columns: ["order_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id", "company_id"]
+          },
+        ]
+      }
       work_orders: {
         Row: {
           amount: number | null
@@ -4018,6 +4164,19 @@ export type Database = {
         Args: { p_lat1: number; p_lat2: number; p_lng1: number; p_lng2: number }
         Returns: number
       }
+      emit_performance_event: {
+        Args: {
+          p_company_id: string
+          p_context: Json
+          p_installer_id: string
+          p_kind: string
+          p_occurred_at?: string
+          p_order_id: string
+          p_source_id: string
+          p_source_table: string
+        }
+        Returns: undefined
+      }
       emit_reliability_event: {
         Args: {
           p_company_id: string
@@ -4054,6 +4213,7 @@ export type Database = {
         Args: { p_broadcast_id: string }
         Returns: boolean
       }
+      installer_streak: { Args: { p_installer_id: string }; Returns: number }
       invitation_preview: {
         Args: { p_token: string }
         Returns: {
@@ -4072,6 +4232,7 @@ export type Database = {
         Args: { p_value: string }
         Returns: string
       }
+      order_condition_snapshot: { Args: { p_order_id: string }; Returns: Json }
       persist_in_app_notification: {
         Args: {
           p_aggregate_id: string
@@ -4122,6 +4283,10 @@ export type Database = {
         Args: { p_company_id: string; p_entries: Json }
         Returns: undefined
       }
+      reputation_summary: {
+        Args: { p_as_of: string; p_installer_id: string }
+        Returns: Json
+      }
       request_order_cancellation: {
         Args: {
           p_order_id: string
@@ -4141,6 +4306,10 @@ export type Database = {
       }
       respond_to_reschedule: {
         Args: { p_reschedule_id: string; p_response: string }
+        Returns: undefined
+      }
+      revert_performance_event: {
+        Args: { p_event_id: string; p_reason: string }
         Returns: undefined
       }
       revert_reliability_event: {
@@ -4327,9 +4496,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },
