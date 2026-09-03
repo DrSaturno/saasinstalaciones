@@ -160,8 +160,9 @@ select is(
      from jsonb_object_keys(
        public.reputation_summary('f3000000-0000-0000-0000-000000000012', now())
      ) as k),
+  -- Ordenadas: 'completed' va antes que 'complex_completed' porque 't' < 'x'.
   array[
-    'as_of','badges','complex_completed','completed','faults',
+    'as_of','badges','completed','complex_completed','faults',
     'has_enough_history','incidents_resolved','rule_version','sample_size',
     'score','short_notice_accepted','streak'
   ],

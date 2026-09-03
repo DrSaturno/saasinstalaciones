@@ -205,6 +205,11 @@ select is(
 create temporary table t_evento as
   select id from public.installer_performance_events where kind = 'job_completed';
 
+-- La tabla temporal nace del rol de la sesión de test; sin este grant, las
+-- consultas de más abajo —que corren ya como `authenticated`— fallan con
+-- «permission denied» y los `throws_ok` pasarían por el error equivocado.
+grant select on t_evento to authenticated;
+
 set local role authenticated;
 set local request.jwt.claims to
   '{"sub":"f2000000-0000-0000-0000-000000000012","role":"authenticated"}';
