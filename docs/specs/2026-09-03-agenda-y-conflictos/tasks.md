@@ -81,10 +81,52 @@ hora de margen da factible; y un vecino sin coordenadas devuelve
 
 ## Fase 3 — El gate
 
-- [ ] **AG-GATE-01** — RPC transaccional con lock por instalador, idempotente por `operation_id` sobre `assignment_command_receipts`, que devuelve veredicto y **código opaco** (AC-21-D). → `R3-AG-02`
-- [ ] **AG-GATE-02** — Migrar **todas** las vías al gate: alta, edición, asignación directa, lote, bolsa y reasignación. Una sola vía que lo esquive vuelve decorativo el control entero. → `R3-AG-03`
-- [ ] **AG-GATE-03** — Override de traslado con motivo, auditado en `assignment_override_audit`, y **sólo** para traslado: el solapamiento y la ausencia no se fuerzan (AG-R4, AG-R5). → `R3-AG-04`
-- [ ] **AG-GATE-04** — Marcar la asignación como forzada y hacer que una baja atribuible a ese conflicto nazca `cancel_justified`, sin penalizar al instalador (AG-R7, AC-21-H). **Es la mitad del objetivo del pedido**, y la parte que más fácil se olvida.
+- [x] **AG-GATE-01** — RPC transaccional con lock por instalador, idempotente por `operation_id` sobre `assignment_command_receipts`, que devuelve veredicto y **código opaco** (AC-21-D). → `R3-AG-02`
+- [x] **AG-GATE-02** — Migrar **todas** las vías al gate: alta, edición, asignación directa, lote, bolsa y reasignación. Una sola vía que lo esquive vuelve decorativo el control entero. → `R3-AG-03`
+- [x] **AG-GATE-03** — Override de traslado con motivo, auditado en `assignment_override_audit`, y **sólo** para traslado: el solapamiento y la ausencia no se fuerzan (AG-R4, AG-R5). → `R3-AG-04`
+- [x] **AG-GATE-04** — Marcar la asignación como forzada y hacer que una baja atribuible a ese conflicto nazca `cancel_justified`, sin penalizar al instalador (AG-R7, AC-21-H). **Es la mitad del objetivo del pedido**, y la parte que más fácil se olvida.
+
+**`assign_installer_gate` es la única puerta.** Un trigger sobre
+`work_orders.assigned_installer_id` rechaza cualquier `update` directo con
+`ASSIGNMENT_MUST_USE_GATE` — verificado con `throws_ok`. El orden de los
+controles traduce DEC-09/DEC-19: elegibilidad y estado de la orden primero,
+ausencia y solapamiento después sin excepción posible, traslado al final como
+único que admite override con motivo (≥10 caracteres). El lock es
+`pg_advisory_xact_lock` por instalador (AC-11-A), no por orden.
+
+**Bug real encontrado verificando, no en el gate en sí: `set_activity_schedule`
+(Fase 0) nunca volvía a mirar el horario después de escribirlo.** Asignar a
+alguien ANTES de cargar el horario (cuando todavía no hay nada que chequear) y
+recién después reprogramar esquivaba `assign_installer_gate` por completo: la
+foto que `work_assignments` guarda del horario en el momento de asignar nunca
+se actualizaba, así que ningún chequeo sobre otra orden la veía — un
+solapamiento real podía pasar sin que nada lo detectara. Se cerró en el mismo
+archivo de la Fase 3: `set_activity_schedule` ahora corre el mismo gate
+(ausencia/solapamiento duro, traslado con override) cuando la actividad tiene
+una asignación activa, y sincroniza `work_assignments` con el horario nuevo.
+Reprogramar a un horario que choca se rechaza igual que asignar a uno que
+choca; el llamador se entera por el mismo código opaco.
+
+**Verificado contra demo, la secuencia completa del archivo de tests:** update
+directo rechazado; asignación limpia y su reintento idempotente sin duplicar
+fila; `NOT_ELIGIBLE` fuera del roster; `ACTIVITY_CLOSED` en orden finalizada;
+`OUTSIDE_AVAILABILITY` con ausencia aprobada, sin importar la empresa;
+`SCHEDULE_CONFLICT` sin override posible; `TRAVEL_CONFLICT` bloqueado sin
+motivo y con uno de seis letras, forzado con uno real; fila auditada en
+`assignment_override_audit`; y la baja del instalador sobre esa asignación
+forzada nace `justified = true` aunque el gerente la revise marcando lo
+contrario. 16/16 aserciones.
+
+**Gap real, no cerrado a propósito: `request_order_cancellation` decide el
+plazo leyendo `work_orders.scheduled_date` (legacy), y `set_activity_schedule`
+nunca sincronizó ese campo.** Una orden agendada sólo por el flujo nuevo
+(`work_activities`) tiene `scheduled_date` en null, y sin fecha el chequeo de
+plazo por defecto asume "dentro de plazo" — una baja puede auto-aprobarse sin
+revisión cuando en los hechos está fuera de término. Documentado, no
+resuelto: sincronizar `scheduled_date` desde `set_activity_schedule`, o migrar
+`request_order_cancellation` a leer el horario de la actividad, queda como
+trabajo pendiente explícito antes de dar la Fase 3 por completamente cerrada
+en producción.
 
 ## Fase 4 — El módulo de Agenda
 

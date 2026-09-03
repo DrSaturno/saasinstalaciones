@@ -1155,7 +1155,8 @@
     "installerHint": "Si asignás a alguien, recibe un solo aviso por el lote entero.",
     "batchNotificationTitle": "Nuevas órdenes asignadas",
     "batchNotificationBody": "{count, plural, =1 {Te asignaron # orden nueva} other {Te asignaron # órdenes nuevas}}",
-    "batchInstallerAmountHelp": "Se aplica el mismo costo a todas las órdenes del lote."
+    "batchInstallerAmountHelp": "Se aplica el mismo costo a todas las órdenes del lote.",
+    "createdWithAssignmentWarnings": "{created, plural, =1 {# orden creada} other {# órdenes creadas}}, pero {warnings, plural, =1 {# no se pudo asignar al instalador pedido} other {# no se pudieron asignar al instalador pedido}} — agenda ocupada, ausencia o algún otro compromiso."
   },
   "CreateOrder": {
     "trigger": "Nueva orden",
@@ -1938,7 +1939,11 @@
     "resetLinkInvalid": "El link de recuperación venció o ya se usó. Pedí uno nuevo.",
     "locationIssueNoteRequired": "Escribí al menos una línea explicando la decisión.",
     "locationIssueUpdate": "No se pudo guardar la revisión.",
-    "locationIssueAlreadyClosed": "Alguien ya resolvió esta fila. Recargá para ver cómo quedó."
+    "locationIssueAlreadyClosed": "Alguien ya resolvió esta fila. Recargá para ver cómo quedó.",
+    "assignmentScheduleConflict": "Ese instalador ya tiene un compromiso en ese horario. No se puede asignar.",
+    "assignmentOutsideAvailability": "Ese instalador tiene un período de ausencia aprobado en esa fecha.",
+    "assignmentTravelConflict": "El tiempo entre este trabajo y el siguiente compromiso del instalador es insuficiente.",
+    "assignmentActivityClosed": "Esta orden ya está cerrada; no se le puede asignar un instalador."
   },
   "Coordination": {
     "title": "Coordinación",

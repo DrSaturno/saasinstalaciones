@@ -13,6 +13,10 @@ import { hasActiveCompanyRole } from "@/lib/data/company-membership-roles";
 import { requestPushDelivery } from "@/lib/push/events";
 import { activitiesFor } from "@/lib/domain/activity-kind";
 import type { TablesInsert } from "@/types/database";
+import {
+  assignInstallerThroughGate,
+  assignmentGateErrorMessage,
+} from "./assignment-gate";
 import { syncOrderConditions } from "./conditions";
 import { syncActivitySchedule } from "./schedule";
 import { operatedCompany, requireOperator } from "./context";
@@ -121,7 +125,9 @@ export async function createOrder(
         installer_amount:
           user.role === "company_manager" ? parsed.data.installerAmount : null,
         currency: project.currency,
-        assigned_installer_id: parsed.data.installerId,
+        // El instalador NO se asigna acá: el trigger de la base lo exige por
+        // el gate (AG-R3), y todavía no existe la actividad contra la que
+        // evaluar agenda. Se asigna más abajo, con la orden ya armada.
         created_by: user.id,
         // order_number lo asigna el trigger work_orders_assign_number.
       })
@@ -160,13 +166,27 @@ export async function createOrder(
       durationMinutes: parsed.data.estimatedDurationMinutes,
     });
 
+    // El instalador, ahora sí: la actividad y su horario ya existen, así que
+    // el gate tiene contra qué evaluar agenda. Si bloquea, la orden queda
+    // creada sin asignar — igual que si las condiciones o el horario
+    // hubieran fallado — y se avisa por qué en vez de fingir que se asignó.
+    let assignmentWarning: string | undefined;
     if (parsed.data.installerId) {
-      await requestPushDelivery(
-        supabase,
-        "order_assigned",
-        order.id,
-        parsed.data.installerId,
-      );
+      const gateResult = await assignInstallerThroughGate(supabase, {
+        orderId: order.id,
+        installerId: parsed.data.installerId,
+        operationId: crypto.randomUUID(),
+      });
+      if (gateResult.available) {
+        await requestPushDelivery(
+          supabase,
+          "order_assigned",
+          order.id,
+          parsed.data.installerId,
+        );
+      } else {
+        assignmentWarning = await assignmentGateErrorMessage(gateResult.code);
+      }
     }
 
     revalidatePath("/orders");
@@ -177,6 +197,7 @@ export async function createOrder(
       orderId: order.id,
       companyId,
       orderNumber: order.order_number,
+      assignmentWarning,
     };
   } catch {
     return { error: t("unexpected") };
@@ -250,6 +271,13 @@ export async function updateOrder(
     }
     if (!project) return { error: t("projectNotFound") };
 
+    // Desasignar (mandar "") es siempre seguro y no pasa por el gate: quitar
+    // a alguien de una orden nunca puede crear un conflicto de agenda. Asignar
+    // a alguien nuevo sí, así que ese caso queda afuera de este `.update()` —
+    // el trigger de la base lo rechazaría igual si se intentara acá.
+    const installerChanged = parsed.data.installerId !== (order.assigned_installer_id ?? null);
+    const clearingInstaller = installerChanged && parsed.data.installerId === null;
+
     const { error } = await supabase
       .from("work_orders")
       .update({
@@ -270,7 +298,7 @@ export async function updateOrder(
         ...(user.role === "company_manager"
           ? { installer_amount: parsed.data.installerAmount }
           : {}),
-        assigned_installer_id: parsed.data.installerId,
+        ...(clearingInstaller ? { assigned_installer_id: null } : {}),
       })
       .eq("id", orderId)
       .eq("company_id", companyId);
@@ -284,19 +312,35 @@ export async function updateOrder(
       parsed.data.conditions,
     );
 
-    await syncActivitySchedule(supabase, orderId, {
+    // Si la orden ya tiene instalador asignado, el horario nuevo pasa por el
+    // mismo gate que asignar (ausencia, solapamiento, traslado): reprogramar
+    // no puede esquivar el control que asignar sí respeta. Si bloquea, el
+    // horario se queda como estaba y el resto de la edición ya se guardó.
+    let assignmentWarning: string | undefined;
+    const scheduleGateResult = await syncActivitySchedule(supabase, orderId, {
       date: parsed.data.scheduledDate,
       startTime: parsed.data.scheduledStartTime,
       endTime: parsed.data.scheduledEndTime,
       durationMinutes: parsed.data.estimatedDurationMinutes,
     });
+    if (scheduleGateResult) {
+      assignmentWarning = await assignmentGateErrorMessage(scheduleGateResult.code);
+    }
 
-    // Si cambió el instalador, avisarle como en una asignación nueva.
-    if (
-      parsed.data.installerId &&
-      parsed.data.installerId !== order.assigned_installer_id
-    ) {
-      await requestPushDelivery(supabase, "order_assigned", orderId, parsed.data.installerId);
+    // Asignar a alguien nuevo, por el gate. El resto de la edición ya se
+    // guardó — si esto se bloquea, se avisa por qué en vez de perder los
+    // demás cambios.
+    if (installerChanged && parsed.data.installerId) {
+      const gateResult = await assignInstallerThroughGate(supabase, {
+        orderId,
+        installerId: parsed.data.installerId,
+        operationId: crypto.randomUUID(),
+      });
+      if (gateResult.available) {
+        await requestPushDelivery(supabase, "order_assigned", orderId, parsed.data.installerId);
+      } else {
+        assignmentWarning = await assignmentGateErrorMessage(gateResult.code);
+      }
     }
 
     revalidatePath("/orders");
@@ -304,7 +348,7 @@ export async function updateOrder(
     revalidatePath(`/projects/${order.project_id}`);
     revalidatePath("/dashboard");
     revalidatePath("/clients");
-    return { error: null, ok: true };
+    return { error: null, ok: true, assignmentWarning };
   } catch {
     return { error: t("unexpected") };
   }

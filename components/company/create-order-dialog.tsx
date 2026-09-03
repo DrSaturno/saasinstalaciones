@@ -124,7 +124,12 @@ export function CreateOrderDialog({ projects, roster, currency, trigger, canMana
         files.length > 0
           ? await uploadFiles(result.companyId, result.orderId)
           : { uploaded: 0, failed: 0 };
-      if (fileResult.failed > 0) {
+
+      // La orden se creó igual: esto avisa que el instalador pedido no quedó
+      // asignado, no que la creación haya fallado.
+      if (result.assignmentWarning) {
+        toast.warning(result.assignmentWarning);
+      } else if (fileResult.failed > 0) {
         toast.warning(
           t("partialFiles", {
             uploaded: fileResult.uploaded,

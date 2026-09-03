@@ -3027,6 +3027,30 @@ export type Database = {
         }
         Relationships: []
       }
+      schedule_rule_versions: {
+        Row: {
+          active: boolean
+          created_at: string
+          note: string
+          params: Json
+          version: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          note?: string
+          params: Json
+          version: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          note?: string
+          params?: Json
+          version?: string
+        }
+        Relationships: []
+      }
       site_attachments: {
         Row: {
           company_id: string
@@ -4096,6 +4120,15 @@ export type Database = {
         Args: { p_activity_id: string; p_installer_id: string }
         Returns: string
       }
+      assign_installer_gate: {
+        Args: {
+          p_installer_id: string
+          p_operation_id: string
+          p_order_id: string
+          p_override_reason?: string
+        }
+        Returns: Json
+      }
       auth_can_operate_work_activity: {
         Args: { p_activity_id: string }
         Returns: boolean
@@ -4197,6 +4230,15 @@ export type Database = {
       }
       emit_reschedule_reminders: { Args: never; Returns: number }
       emit_reschedule_timeouts: { Args: never; Returns: number }
+      estimated_travel_minutes: {
+        Args: {
+          p_lat_a: number
+          p_lat_b: number
+          p_lng_a: number
+          p_lng_b: number
+        }
+        Returns: number
+      }
       feature_enabled: {
         Args: { p_company_id?: string; p_flag_key: string }
         Returns: boolean
@@ -4214,12 +4256,43 @@ export type Database = {
         Args: { p_role: string; p_user_id: string }
         Returns: undefined
       }
+      haversine_km: {
+        Args: {
+          p_lat_a: number
+          p_lat_b: number
+          p_lng_a: number
+          p_lng_b: number
+        }
+        Returns: number
+      }
       immutable_unaccent: { Args: { "": string }; Returns: string }
+      installer_absence_blocks: {
+        Args: { p_installer_id: string; p_range: unknown }
+        Returns: boolean
+      }
       installer_can_read_broadcast: {
         Args: { p_broadcast_id: string }
         Returns: boolean
       }
+      installer_overlapping_assignments: {
+        Args: {
+          p_exclude_activity_id?: string
+          p_installer_id: string
+          p_range: unknown
+        }
+        Returns: number
+      }
       installer_streak: { Args: { p_installer_id: string }; Returns: number }
+      installer_travel_feasibility: {
+        Args: {
+          p_exclude_activity_id?: string
+          p_installer_id: string
+          p_lat: number
+          p_lng: number
+          p_range: unknown
+        }
+        Returns: Json
+      }
       invitation_preview: {
         Args: { p_token: string }
         Returns: {
@@ -4375,6 +4448,7 @@ export type Database = {
           p_date?: string
           p_duration_minutes?: number
           p_end_time?: string
+          p_override_reason?: string
           p_start_time?: string
           p_timezone?: string
         }

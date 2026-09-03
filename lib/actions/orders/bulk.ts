@@ -5,7 +5,10 @@ import { getTranslations } from "next-intl/server";
 import { orderBatchSchema } from "@/lib/domain/order-intake";
 import { hasActiveCompanyRole } from "@/lib/data/company-membership-roles";
 import { createCorrelationId, logEvent } from "@/lib/observability";
+import { activitiesFor } from "@/lib/domain/activity-kind";
 import type { TablesInsert } from "@/types/database";
+import { assignInstallerThroughGate } from "./assignment-gate";
+import { syncActivitySchedule } from "./schedule";
 import { operatedCompany, requireOperator } from "./context";
 import type { BulkResult } from "./types";
 
@@ -183,14 +186,23 @@ export async function createOrdersForProject(
     installer_amount:
       user.role === "company_manager" ? parsed.data.installerAmount : null,
     currency: project.currency,
-    assigned_installer_id: parsed.data.installerId,
+    // El instalador NO va en el insert: el trigger de la base lo exige por
+    // el gate (AG-R3), y hace falta que la actividad de cada orden exista
+    // primero para poder evaluarle agenda. Se asigna orden por orden, más
+    // abajo, después de crear su actividad.
     created_by: user.id,
   }));
 
+  const { includeSurvey, includeExecution } = activitiesFor(parsed.data.activityKind);
+
   let created = 0;
+  let assignmentWarnings = 0;
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
     const batch = rows.slice(i, i + BATCH_SIZE);
-    const { error } = await supabase.from("work_orders").insert(batch);
+    const { data: insertedOrders, error } = await supabase
+      .from("work_orders")
+      .insert(batch)
+      .select("id");
     if (error) {
       // Un lote que corta a la mitad deja el proyecto con órdenes parciales:
       // hay que poder saber cuántas entraron sin recontar a mano.
@@ -209,7 +221,37 @@ export async function createOrdersForProject(
       };
     }
     created += batch.length;
+
+    // Actividades, horario y —recién con las dos cosas ya existiendo—
+    // asignación, orden por orden. Secuencial y no en paralelo a propósito:
+    // el lock del gate es por instalador, así que N asignaciones simultáneas
+    // a la misma persona sólo agregarían contención sin ganar nada; una
+    // orden que falla acá queda creada sin esos pasos, recuperable editándola
+    // — mismo criterio que el alta individual.
+    for (const order of insertedOrders ?? []) {
+      await supabase.rpc("create_order_activities", {
+        p_order_id: order.id,
+        p_include_survey: includeSurvey,
+        p_include_execution: includeExecution,
+      });
+      await syncActivitySchedule(supabase, order.id, {
+        date: parsed.data.scheduledDate,
+        startTime: parsed.data.scheduledStartTime,
+        endTime: parsed.data.scheduledEndTime,
+        durationMinutes: parsed.data.estimatedDurationMinutes,
+      });
+      if (parsed.data.installerId) {
+        const gateResult = await assignInstallerThroughGate(supabase, {
+          orderId: order.id,
+          installerId: parsed.data.installerId,
+          operationId: crypto.randomUUID(),
+        });
+        if (!gateResult.available) assignmentWarnings += 1;
+      }
+    }
   }
+
+  const assigned = created - assignmentWarnings;
 
   logEvent("info", "orders.bulk_create.completed", {
     correlation_id: correlationId,
@@ -217,16 +259,20 @@ export async function createOrdersForProject(
     project_id: projectId,
     created,
     skipped,
+    assignment_warnings: assignmentWarnings,
   });
 
   // Un solo aviso por lote: treinta notificaciones seguidas por el mismo
-  // trabajo son una alarma inútil, no información.
-  if (parsed.data.installerId && created > 0) {
+  // trabajo son una alarma inútil, no información. Se cuenta sobre lo que
+  // efectivamente se asignó, no sobre lo creado: si el gate bloqueó algunas,
+  // avisarle a la persona por todas las creadas sería contarle un compromiso
+  // que no tiene.
+  if (parsed.data.installerId && assigned > 0) {
     await supabase.from("notifications").insert({
       user_id: parsed.data.installerId,
       type: "order_assigned",
       title: createOrdersT("batchNotificationTitle"),
-      body: createOrdersT("batchNotificationBody", { count: created }),
+      body: createOrdersT("batchNotificationBody", { count: assigned }),
       data: { url: "/tasks", project_id: projectId },
     });
   }
@@ -234,5 +280,10 @@ export async function createOrdersForProject(
   revalidatePath("/orders");
   revalidatePath(`/projects/${projectId}`);
   revalidatePath("/tasks");
-  return { error: null, created, skipped };
+  return {
+    error: null,
+    created,
+    skipped,
+    assignmentWarnings: assignmentWarnings > 0 ? assignmentWarnings : undefined,
+  };
 }

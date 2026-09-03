@@ -76,6 +76,16 @@ export function CreateOrdersDialog({
       setRequiresFreight(false);
       if (res.created === 0) {
         toast.info(res.skipped > 0 ? t("allExist") : t("noSites"));
+      } else if (res.assignmentWarnings) {
+        // Las órdenes se crearon igual; esto avisa que el gate no pudo
+        // asignar al instalador pedido en algunas — agenda, ausencia u otro
+        // compromiso ya cargado.
+        toast.warning(
+          t("createdWithAssignmentWarnings", {
+            created: res.created,
+            warnings: res.assignmentWarnings,
+          }),
+        );
       } else {
         toast.success(t("created", { created: res.created, skipped: res.skipped }));
       }
