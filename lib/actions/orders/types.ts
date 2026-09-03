@@ -5,7 +5,17 @@
  * `ActionState` y `OrderFormSite`, y este archivo no arrastra nada de servidor.
  */
 
-export type ActionState = { error: string | null; ok?: boolean };
+export type ActionState = {
+  error: string | null;
+  ok?: boolean;
+  /**
+   * El resto de la operación se completó, pero asignar el instalador
+   * pedido no: el gate lo bloqueó (agenda, ausencia, elegibilidad) y no se
+   * fuerza sin un motivo explícito. Mismo criterio que otros pasos
+   * posteriores a la escritura principal — no se aborta la orden por esto.
+   */
+  assignmentWarning?: string;
+};
 
 export type CreateOrderResult = ActionState & {
   orderId?: string;
@@ -39,4 +49,6 @@ export type BulkResult = {
   error: string | null;
   created: number;
   skipped: number;
+  /** Cuántas de las `created` no consiguieron asignarse: el gate las bloqueó. */
+  assignmentWarnings?: number;
 };

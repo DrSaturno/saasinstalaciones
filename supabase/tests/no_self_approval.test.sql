@@ -83,6 +83,11 @@ insert into public.sites (id, project_id, company_id, name) values (
   'Sitio autoaprobación'
 );
 -- Insert directo en 'en_revision': el trigger sólo mira UPDATE, no INSERT.
+-- `reset role` no limpia `request.jwt.claims` (sigue seteado desde la
+-- llamada anterior), así que `auth.uid()` seguiría resolviendo y el gate de
+-- asignación de la Fase 3 rechazaría este insert directo. Se abre la
+-- compuerta para esta única escritura de fixture, no para lo que se prueba.
+select set_config('app.assignment_gate', 'on', true);
 insert into public.work_orders (
   id, order_number, site_id, project_id, company_id, title,
   assigned_installer_id, status
@@ -96,6 +101,7 @@ insert into public.work_orders (
   'e5000000-0000-0000-0000-000000000011',
   'en_revision'
 );
+select set_config('app.assignment_gate', 'off', true);
 
 set local role authenticated;
 set local request.jwt.claims to

@@ -5,6 +5,10 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { hasActiveCompanyRole } from "@/lib/data/company-membership-roles";
 import { requestPushDelivery } from "@/lib/push/events";
+import {
+  assignInstallerThroughGate,
+  assignmentGateErrorMessage,
+} from "./assignment-gate";
 import { operatedCompany, requireOperator } from "./context";
 import type { ActionState } from "./types";
 
@@ -12,6 +16,22 @@ import type { ActionState } from "./types";
 // Asignar instalador (del roster de la empresa) y mover la fecha comprometida
 // ---------------------------------------------------------------------------
 
+/**
+ * Asignar o desasignar directamente, desde el tablero o la ficha de la orden.
+ *
+ * Desasignar (`installerId: null`) no pasa por el gate: quitar a alguien
+ * nunca crea un conflicto de agenda, y el trigger de la base lo permite sin
+ * la compuerta abierta. Asignar sí — es la vía más directa que hay, así que
+ * un rechazo del gate se devuelve como el error de la acción, no como una
+ * advertencia aparte: acá no hay nada más que estuviera guardándose.
+ *
+ * **Sin override en esta pantalla.** Si el gate bloquea por traslado
+ * (`overrideAllowed`), esta acción no ofrece forzarlo con un motivo — eso
+ * pide una UI de confirmación que estos tres accesos rápidos no tienen
+ * todavía. El bloqueo por solapamiento, ausencia o elegibilidad no admite
+ * override de todos modos (AG-R4), así que es sólo el caso de traslado el
+ * que queda sin una salida acá.
+ */
 export async function assignInstaller(
   orderId: string,
   installerId: string | null,
@@ -27,29 +47,40 @@ export async function assignInstaller(
     if (!order) return { error: t("orderNotFound") };
     const companyId = operatedCompany(user, order.company_id);
 
-    // Si se asigna alguien, debe estar activo y conservar instalación.
-    if (installerId) {
-      const installerIsActive = await hasActiveCompanyRole(
-        supabase,
-        companyId,
-        installerId,
-        "installer",
-      );
-      if (!installerIsActive) {
-        return { error: t("installerNotActive") };
-      }
+    if (!installerId) {
+      const { error } = await supabase
+        .from("work_orders")
+        .update({ assigned_installer_id: null })
+        .eq("id", orderId)
+        .eq("company_id", companyId);
+      if (error) return { error: error.message };
+      revalidatePath("/orders");
+      revalidatePath(`/orders/${orderId}`);
+      return { error: null, ok: true };
     }
 
-    const { error } = await supabase
-      .from("work_orders")
-      .update({ assigned_installer_id: installerId })
-      .eq("id", orderId)
-      .eq("company_id", companyId);
-    if (error) return { error: error.message };
-
-    if (installerId) {
-      await requestPushDelivery(supabase, "order_assigned", orderId, installerId);
+    // Chequeo rápido antes de llamar al gate: mejor mensaje puntual que el
+    // código genérico `NOT_ELIGIBLE` para el caso más común de rechazo.
+    const installerIsActive = await hasActiveCompanyRole(
+      supabase,
+      companyId,
+      installerId,
+      "installer",
+    );
+    if (!installerIsActive) {
+      return { error: t("installerNotActive") };
     }
+
+    const gateResult = await assignInstallerThroughGate(supabase, {
+      orderId,
+      installerId,
+      operationId: crypto.randomUUID(),
+    });
+    if (!gateResult.available) {
+      return { error: await assignmentGateErrorMessage(gateResult.code) };
+    }
+
+    await requestPushDelivery(supabase, "order_assigned", orderId, installerId);
 
     revalidatePath("/orders");
     revalidatePath(`/orders/${orderId}`);

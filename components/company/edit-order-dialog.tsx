@@ -74,7 +74,13 @@ export function EditOrderDialog({
       const next = await action(previous, formData);
       if (next.ok) {
         setOpen(false);
-        toast.success(t("saved"));
+        // El resto de la edición se guardó igual; esto avisa que el
+        // instalador pedido no quedó asignado, no que la edición haya fallado.
+        if (next.assignmentWarning) {
+          toast.warning(next.assignmentWarning);
+        } else {
+          toast.success(t("saved"));
+        }
         router.refresh();
       }
       return next;
