@@ -39,7 +39,6 @@ declare
   v_application_status text;
   v_project_id uuid;
   v_site_id uuid;
-  v_order_id uuid;
   v_name text := btrim(coalesce(p_project_name, ''));
 begin
   if public.auth_role() is distinct from 'company_manager' then
@@ -144,35 +143,17 @@ begin
 
   -- `order_number` lo pone el trigger; `installer_amount` es lo acordado con
   -- esta persona: lo que cotizó, y si no cotizó, lo que la empresa publicó.
-  -- Sin instalador todavía: `assign_installer_gate` es la única puerta para
-  -- ese campo (AG-R3) — asignar directo acá, aunque la cotización ya esté
-  -- aceptada, sería la misma vía suelta que el resto de la Fase 3 cerró.
   insert into public.work_orders (
     site_id, project_id, company_id, title, description, status,
-    scheduled_date, scheduled_end_date, source,
+    scheduled_date, scheduled_end_date, assigned_installer_id, source,
     currency, installer_amount
   )
   values (
     v_site_id, v_project_id, v_broadcast.company_id, v_broadcast.title,
     v_broadcast.logistics_notes, 'pendiente',
-    v_broadcast.scheduled_date, v_broadcast.scheduled_end_date, 'broadcast',
+    v_broadcast.scheduled_date, v_broadcast.scheduled_end_date,
+    p_installer_id, 'broadcast',
     v_broadcast.currency, coalesce(v_quoted, v_broadcast.pay_amount)
-  )
-  returning id into v_order_id;
-
-  perform public.create_order_activities(v_order_id, false, true);
-  if v_broadcast.scheduled_date is not null then
-    perform public.set_activity_schedule(
-      (select id from public.work_activities where work_order_id = v_order_id),
-      v_broadcast.scheduled_date
-    );
-  end if;
-
-  -- No corta la formalización si el gate bloquea (agenda cambió entre la
-  -- cotización y hoy): el proyecto y la orden quedan creados igual, sin
-  -- asignar, mismo criterio que el resto del alta de órdenes.
-  perform public.assign_installer_gate(
-    v_order_id, p_installer_id, gen_random_uuid()
   );
 
   -- Cierra la trazabilidad: desde el proyecto se puede volver a la
