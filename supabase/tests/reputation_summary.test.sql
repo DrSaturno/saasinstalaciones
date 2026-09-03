@@ -220,17 +220,12 @@ insert into public.installer_performance_events
   ('f3000000-0000-0000-0000-000000000012','f3000000-0000-0000-0000-000000000002','job_completed',
    '{"conditions":["exterior"]}'::jsonb, now() - interval '14 days');
 
-set local role authenticated;
+-- Las claves se fijan antes de cambiar de rol: `auth.uid()` sale de ellas, no
+-- del rol de Postgres. Esta comprobación corre todavía sin cambiar de rol
+-- porque `reputation_contributions` es interna y está revocada — que no se
+-- pueda llamar desde `authenticated` es justamente lo que se quiere.
 set local request.jwt.claims to
   '{"sub":"f3000000-0000-0000-0000-000000000012","role":"authenticated"}';
-
-select is(
-  (select count(*)::integer
-     from jsonb_array_elements(
-       public.reputation_detail('f3000000-0000-0000-0000-000000000012', now()))),
-  11,
-  'la persona ve todos sus hechos, también los de otras empresas'
-);
 
 -- La propiedad que hace confiable al desglose: el total ES la suma de la
 -- lista. Si alguien volviera a escribir la aritmética por separado, el número
@@ -245,6 +240,16 @@ select ok(
            'f3000000-0000-0000-0000-000000000012', now()) c)
   ) < 0.05,
   'el desglose suma exactamente lo que alimenta al puntaje'
+);
+
+set local role authenticated;
+
+select is(
+  (select count(*)::integer
+     from jsonb_array_elements(
+       public.reputation_detail('f3000000-0000-0000-0000-000000000012', now()))),
+  11,
+  'la persona ve todos sus hechos, también los de otras empresas'
 );
 
 set local request.jwt.claims to
