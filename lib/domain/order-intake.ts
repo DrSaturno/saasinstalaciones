@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ORDER_ACTIVITY_KINDS } from "@/lib/domain/activity-kind";
 import { parseExplicitConditions } from "@/lib/domain/work-conditions";
+import { isValidTime } from "@/lib/domain/schedule-precision";
 
 export const ORDER_PRIORITIES = ["baja", "media", "alta", "urgente"] as const;
 export const ORDER_INITIAL_STATUSES = [
@@ -19,6 +20,10 @@ export const databaseIdSchema = z.string().regex(POSTGRES_UUID);
 const optionalDate = z
   .union([z.literal(""), z.iso.date()])
   .transform((value) => value || null);
+
+const optionalTime = z
+  .union([z.literal(""), z.string().refine(isValidTime)])
+  .transform((value) => (value === "" ? null : value));
 
 const optionalUuid = z
   .union([z.literal(""), databaseIdSchema])
@@ -41,6 +46,19 @@ const orderFields = {
   description: z.string().trim().max(4_000).default(""),
   scheduledDate: optionalDate,
   scheduledEndDate: optionalDate,
+  // Hora de inicio y fin del trabajo. Opcionales: una orden puede agendarse
+  // sólo por día, y de eso depende qué se puede afirmar después sobre
+  // conflictos de agenda (AG-R10). Vacío significa «no se sabe», nunca cero.
+  // Con `default`: los formularios que todavía no mandan el campo —el diálogo
+  // de lote, por ejemplo— siguen valiendo, y ausente significa «sin hora», que
+  // es un estado legítimo, no un error.
+  scheduledStartTime: optionalTime.default(null),
+  scheduledEndTime: optionalTime.default(null),
+  // Sirve para derivar el fin cuando sólo se carga el inicio.
+  estimatedDurationMinutes: z
+    .union([z.literal(""), z.coerce.number().int().min(1).max(24 * 60)])
+    .transform((value) => (value === "" ? null : value))
+    .default(null),
   priority: z.enum(ORDER_PRIORITIES).default("media"),
   indoor: z.boolean().default(false),
   requiresFreight: z.boolean().default(false),

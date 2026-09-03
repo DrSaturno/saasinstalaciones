@@ -70,6 +70,12 @@ export type ExplicitWorkCondition =
   | "nocturno"
   | "gran_formato"
   | "acceso_restringido";
+/**
+ * Qué tan precisa es la agenda de una actividad. `unknown` es la respuesta
+ * honesta para lo viejo: nunca se le inventa una franja a una orden que no la
+ * tenía, ni para bloquearla ni para penalizarla (AC-11-C).
+ */
+export type SchedulePrecision = "unknown" | "day" | "exact";
 export type IncidentSeverity = "low" | "medium" | "high" | "critical";
 export type IncidentStatus = "open" | "resolved";
 export type InvitationStatus = "pending" | "accepted" | "expired";
@@ -3553,7 +3559,7 @@ export type Database = {
           prerequisite_activity_id: string | null
           prerequisite_waived_at: string | null
           prerequisite_waived_reason: string | null
-          schedule_precision: string
+          schedule_precision: SchedulePrecision
           scheduled_end_at: string | null
           scheduled_start_at: string | null
           template_version: number
@@ -3577,7 +3583,7 @@ export type Database = {
           prerequisite_activity_id?: string | null
           prerequisite_waived_at?: string | null
           prerequisite_waived_reason?: string | null
-          schedule_precision?: string
+          schedule_precision?: SchedulePrecision
           scheduled_end_at?: string | null
           scheduled_start_at?: string | null
           template_version?: number
@@ -3601,7 +3607,7 @@ export type Database = {
           prerequisite_activity_id?: string | null
           prerequisite_waived_at?: string | null
           prerequisite_waived_reason?: string | null
-          schedule_precision?: string
+          schedule_precision?: SchedulePrecision
           scheduled_end_at?: string | null
           scheduled_start_at?: string | null
           template_version?: number
@@ -3662,7 +3668,7 @@ export type Database = {
           legacy_scheduled_date: string | null
           legacy_scheduled_end_date: string | null
           replaces_assignment_id: string | null
-          schedule_precision: string
+          schedule_precision: SchedulePrecision
           schedule_range: unknown
           scheduled_end_at: string | null
           scheduled_start_at: string | null
@@ -3687,7 +3693,7 @@ export type Database = {
           legacy_scheduled_date?: string | null
           legacy_scheduled_end_date?: string | null
           replaces_assignment_id?: string | null
-          schedule_precision?: string
+          schedule_precision?: SchedulePrecision
           schedule_range?: unknown
           scheduled_end_at?: string | null
           scheduled_start_at?: string | null
@@ -3712,7 +3718,7 @@ export type Database = {
           legacy_scheduled_date?: string | null
           legacy_scheduled_end_date?: string | null
           replaces_assignment_id?: string | null
-          schedule_precision?: string
+          schedule_precision?: SchedulePrecision
           schedule_range?: unknown
           scheduled_end_at?: string | null
           scheduled_start_at?: string | null
@@ -4362,6 +4368,17 @@ export type Database = {
           storage_path: string
           subtype: string
         }[]
+      }
+      set_activity_schedule: {
+        Args: {
+          p_activity_id: string
+          p_date?: string
+          p_duration_minutes?: number
+          p_end_time?: string
+          p_start_time?: string
+          p_timezone?: string
+        }
+        Returns: Json
       }
       set_order_payment_status: {
         Args: { p_note?: string; p_order_id: string; p_status: string }

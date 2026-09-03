@@ -42,6 +42,9 @@ export type EditOrderDefaults = {
   installerAmount: number | null;
   installerId: string;
   conditions: ExplicitWorkCondition[];
+  startTime: string;
+  endTime: string;
+  durationMinutes: number | null;
 };
 
 export function EditOrderDialog({
@@ -232,6 +235,22 @@ export function EditOrderDialog({
             />
             {common("indoor")}
           </label>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-start-time">{common("startTime")}</Label>
+              <Input id="edit-start-time" name="scheduledStartTime" type="time" defaultValue={defaults.startTime} disabled={pending} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-end-time">{common("endTime2")}</Label>
+              <Input id="edit-end-time" name="scheduledEndTime" type="time" defaultValue={defaults.endTime} disabled={pending} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-duration">{common("duration")}</Label>
+              <Input id="edit-duration" name="estimatedDurationMinutes" type="number" min={1} max={1440} defaultValue={defaults.durationMinutes ?? ""} disabled={pending} />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">{common("scheduleHelp")}</p>
 
           <WorkConditionsField
             defaultSelected={defaults.conditions}

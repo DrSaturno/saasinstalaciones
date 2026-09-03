@@ -1248,7 +1248,12 @@
     "partialFiles": "A ordem foi criada. Arquivos enviados: {uploaded}; não enviados: {failed}.",
     "unknownError": "Não foi possível criar a ordem.",
     "installerAmount": "Custo do instalador",
-    "installerAmountHelp": "O que você paga a quem executa. A tarifa dele é sugerida ao selecioná-lo; você pode alterar."
+    "installerAmountHelp": "O que você paga a quem executa. A tarifa dele é sugerida ao selecioná-lo; você pode alterar.",
+    "startTime": "Hora de início",
+    "endTime2": "Hora de término",
+    "duration": "Duração estimada (min)",
+    "durationPlaceholder": "Ex. 240",
+    "scheduleHelp": "Informar o horário permite que a plataforma detecte choques de agenda e deslocamentos impossíveis antes de atribuir. Sem hora, a ordem fica agendada por dia e esses controles não podem ser aplicados."
   },
   "SitesTable": {
     "all": "Todos",

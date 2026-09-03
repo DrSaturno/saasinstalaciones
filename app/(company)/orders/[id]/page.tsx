@@ -5,6 +5,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { fetchActiveRoster } from "@/lib/data/orders";
 import { fetchOrderEvidence } from "@/lib/data/order-evidence";
+import { fetchOrderSchedule } from "@/lib/data/order-schedule";
 import { OrderActions } from "@/components/company/order-actions";
 import { OrderIncidents } from "@/components/company/order-incidents";
 import { CancellationReview } from "@/components/company/cancellation-review";
@@ -82,6 +83,7 @@ export default async function OrderDetailPage({
     { data: conditionRows },
     roster,
     evidence,
+    schedule,
   ] = await Promise.all([
     supabase
       .from("sites")
@@ -109,6 +111,7 @@ export default async function OrderDetailPage({
       .eq("order_id", id),
     fetchActiveRoster(supabase),
     fetchOrderEvidence(supabase, id, { query: evidenceQuery, kind: evidenceKind }),
+    fetchOrderSchedule(supabase, id),
   ]);
 
   const amount =
@@ -191,6 +194,9 @@ export default async function OrderDetailPage({
             installerAmount: order.installer_amount,
             installerId: order.assigned_installer_id ?? "",
             conditions: (conditionRows ?? []).map((row) => row.condition),
+            startTime: schedule?.startTime ?? "",
+            endTime: schedule?.endTime ?? "",
+            durationMinutes: schedule?.durationMinutes ?? null,
           }}
         />
         </div>

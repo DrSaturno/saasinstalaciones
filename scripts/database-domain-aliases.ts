@@ -62,6 +62,12 @@ export type ExplicitWorkCondition =
   | "nocturno"
   | "gran_formato"
   | "acceso_restringido";
+/**
+ * Qué tan precisa es la agenda de una actividad. `unknown` es la respuesta
+ * honesta para lo viejo: nunca se le inventa una franja a una orden que no la
+ * tenía, ni para bloquearla ni para penalizarla (AC-11-C).
+ */
+export type SchedulePrecision = "unknown" | "day" | "exact";
 export type IncidentSeverity = "low" | "medium" | "high" | "critical";
 export type IncidentStatus = "open" | "resolved";
 export type InvitationStatus = "pending" | "accepted" | "expired";

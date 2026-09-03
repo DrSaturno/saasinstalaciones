@@ -242,6 +242,18 @@ export function OrderFormFields({
               <Input id="scheduled-end-date" name="scheduledEndDate" type="date" disabled={disabled} />
             </div>
             <div className="grid gap-2">
+              <Label htmlFor="start-time">{t("startTime")}</Label>
+              <Input id="start-time" name="scheduledStartTime" type="time" disabled={disabled} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="end-time">{t("endTime2")}</Label>
+              <Input id="end-time" name="scheduledEndTime" type="time" disabled={disabled} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="duration">{t("duration")}</Label>
+              <Input id="duration" name="estimatedDurationMinutes" type="number" min={1} max={1440} placeholder={t("durationPlaceholder")} disabled={disabled} />
+            </div>
+            <div className="grid gap-2">
               <Label htmlFor="order-priority">{t("priority")}</Label>
               <select id="order-priority" name="priority" defaultValue="media" className={selectClass} disabled={disabled}>
                 {(["baja", "media", "alta", "urgente"] as const).map((priority) => (
@@ -250,6 +262,7 @@ export function OrderFormFields({
               </select>
             </div>
           </div>
+          <p className="text-xs text-muted-foreground">{t("scheduleHelp")}</p>
           <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border bg-muted/20 px-4 py-3">
             <span>
               <span className="block text-sm font-medium">{t("indoor")}</span>

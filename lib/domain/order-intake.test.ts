@@ -87,3 +87,57 @@ describe("adjuntos de la ficha", () => {
     ).toBe(false);
   });
 });
+
+describe("horarios de la orden", () => {
+  const base = {
+    siteId: "11111111-1111-4111-8111-111111111111",
+    title: "Cartel de frente",
+    scheduledDate: "2026-09-10",
+    scheduledEndDate: "",
+    amount: "",
+    installerAmount: "",
+    installerId: "",
+  };
+
+  it("acepta inicio y fin", () => {
+    const parsed = orderIntakeSchema.parse({
+      ...base,
+      scheduledStartTime: "14:00",
+      scheduledEndTime: "18:00",
+    });
+    expect(parsed.scheduledStartTime).toBe("14:00");
+    expect(parsed.scheduledEndTime).toBe("18:00");
+  });
+
+  it("sin horario, los campos quedan en null y no en cadena vacía", () => {
+    // `null` es «no se cargó». Una cadena vacía viajando hasta la base sería
+    // una hora inventada esperando a fallar.
+    const parsed = orderIntakeSchema.parse(base);
+    expect(parsed.scheduledStartTime).toBeNull();
+    expect(parsed.scheduledEndTime).toBeNull();
+    expect(parsed.estimatedDurationMinutes).toBeNull();
+  });
+
+  it("rechaza una hora que no existe en el reloj", () => {
+    expect(() =>
+      orderIntakeSchema.parse({ ...base, scheduledStartTime: "25:00" }),
+    ).toThrow();
+  });
+
+  it("acepta la duración estimada como entero de minutos", () => {
+    const parsed = orderIntakeSchema.parse({
+      ...base,
+      scheduledStartTime: "09:00",
+      estimatedDurationMinutes: "240",
+    });
+    expect(parsed.estimatedDurationMinutes).toBe(240);
+  });
+
+  it("rechaza una duración de cero o negativa", () => {
+    for (const value of ["0", "-30"]) {
+      expect(() =>
+        orderIntakeSchema.parse({ ...base, estimatedDurationMinutes: value }),
+      ).toThrow();
+    }
+  });
+});

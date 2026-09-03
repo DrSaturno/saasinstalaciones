@@ -6,9 +6,29 @@ El orden no es negociable: sin horarios cargados no hay conflicto que detectar, 
 
 ## Fase 0 — Los horarios, que es lo que falta para que algo sea detectable
 
-- [ ] **AG-TIME-01** — Capturar hora de inicio y fin al crear y editar una orden, con `schedule_precision` derivado de lo que efectivamente se cargó. Las órdenes existentes quedan en `unknown` y **no se les inventa franja** (AC-21-G). → `R3-AG-01`, REQ-11.1
-- [ ] **AG-TIME-02** — Duración estimada por actividad, que es lo que permite proponer un fin cuando sólo se carga el inicio. → REQ-11.1
-- [ ] **AG-TIME-03** — Módulo de dominio de precisión: qué se puede afirmar con `exact`, `day` y `unknown`, con tests. La regla a fijar es AG-R10: **no verificable no es lo mismo que sin conflicto.**
+- [x] **AG-TIME-01** — Hora de inicio y fin al crear y editar una orden, con la precisión derivada de lo que efectivamente se cargó. Las órdenes existentes quedan en `unknown`. → `R3-AG-01`, REQ-11.1
+- [x] **AG-TIME-02** — Duración estimada; el fin se deriva de ella cuando sólo se carga el inicio. → REQ-11.1
+- [x] **AG-TIME-03** — `lib/domain/schedule-precision.ts` con la regla AG-R10 y 13 tests.
+
+**La puerta se construyó ahora, aunque todavía no chequee nada.** El trigger de
+la base ya exigía pasar por `app.assignment_gate` para mover un horario, y esa
+compuerta existe porque ahí van los controles de la Fase 3. Si esta fase la
+hubiera abierto desde una Server Action, cada pantalla que agenda sería un
+llamador suelto que después habría que salir a cazar — y bastaría olvidarse de
+uno para que el control entero quede decorativo. `set_activity_schedule` es esa
+puerta: hoy compone el horario y escribe; los controles se agregan adentro sin
+tocar ninguna pantalla.
+
+**Los instantes se arman en SQL, no en TypeScript.** Combinar fecha, hora y huso
+da un momento en el tiempo, y `timestamp at time zone` conoce los husos de
+verdad. El módulo de dominio trabaja con las piezas sueltas (`YYYY-MM-DD`,
+`HH:MM`) y no toca calendarios.
+
+**Verificado contra demo**, con bloques que revierten: 14:00-18:00 en Buenos
+Aires se guarda como 17:00-21:00 UTC; un trabajo de 22:00 a 01:00 cierra al día
+siguiente; 09:00 más 240 minutos da las 13:00; sólo fecha da `day` con los
+timestamps en null; sin fecha da `unknown`; y la compuerta queda cerrada
+después de escribir.
 
 ## Fase 1 — Disponibilidad
 
