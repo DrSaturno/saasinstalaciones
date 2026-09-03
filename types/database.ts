@@ -2997,6 +2997,30 @@ export type Database = {
           },
         ]
       }
+      reputation_rule_versions: {
+        Row: {
+          active: boolean
+          created_at: string
+          note: string
+          version: string
+          weights: Json
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          note?: string
+          version: string
+          weights: Json
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          note?: string
+          version?: string
+          weights?: Json
+        }
+        Relationships: []
+      }
       site_attachments: {
         Row: {
           company_id: string
@@ -4189,6 +4213,7 @@ export type Database = {
         Args: { p_broadcast_id: string }
         Returns: boolean
       }
+      installer_streak: { Args: { p_installer_id: string }; Returns: number }
       invitation_preview: {
         Args: { p_token: string }
         Returns: {
@@ -4257,6 +4282,10 @@ export type Database = {
       replace_installer_weekly_availability: {
         Args: { p_company_id: string; p_entries: Json }
         Returns: undefined
+      }
+      reputation_summary: {
+        Args: { p_as_of: string; p_installer_id: string }
+        Returns: Json
       }
       request_order_cancellation: {
         Args: {

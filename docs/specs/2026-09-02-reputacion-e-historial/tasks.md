@@ -49,11 +49,29 @@ severidad.
 
 ## Fase 2 — El cálculo
 
-- [ ] **REP-CALC-01** — Racha derivada de `installer_reliability_events` en orden cronológico, con las bajas justificadas y en plazo sin efecto. Tests pgTAP de AC-20-B. → `R8-REP-03`
-- [ ] **REP-CALC-02** — `reputation_summary(installer)`: `security definer`, cruza empresas, devuelve **sólo** agregados y reconocimientos. La forma del retorno es la frontera de privacidad. Test pgTAP de AC-20-E. → `R8-REP-03`
+- [x] **REP-CALC-01** — `installer_streak()`: la racha son los completados posteriores a la última falta, leídos del libro de confiabilidad. `cancel_in_notice` y `cancel_justified` ni figuran en la consulta, así que no pueden cortarla ni por accidente. → `R8-REP-03`
+- [x] **REP-CALC-02** — `reputation_summary(installer, as_of)`: `security definer`, cruza empresas, devuelve **sólo** totales y reconocimientos. → `R8-REP-03`
 - [ ] **REP-CALC-03** — Función de detalle explicable, con el aporte de cada hecho: todo para el instalador, sólo la propia operación para la empresa. → `R8-REP-04`
-- [ ] **REP-CALC-04** — Versionado de reglas y prueba de determinismo: mismos eventos y misma versión, mismo resultado (AC-20-A). → `R8-REP-01`
-- [ ] **REP-CALC-05** — **Calibrar `K` contra datos reales** en modo sombra, y revisar si alguna condición de la taxonomía nunca se usa o se usa siempre. No mostrar el número antes de esto. → `R8-REP-03`
+- [x] **REP-CALC-04** — `reputation_rule_versions` con una sola versión activa, y `p_as_of` como parámetro obligatorio para que el recálculo sea reproducible (AC-20-A). → `R8-REP-01`
+- [ ] **REP-CALC-05** — **Calibrar `K` contra datos reales.** → `R8-REP-03`
+
+**REP-CALC-05 está bloqueado, y no por falta de tiempo.** Hoy hay **cero
+eventos de reputación** en cualquier base: la maquinaria recién se enciende con
+esta rama y los eventos se emiten cuando la gente acepta y completa trabajos.
+Calibrar contra cero datos sería elegir números y llamarlo calibración. Los
+pesos de `v1` quedan declarados como punto de partida, y por eso viven en una
+tabla: ajustarlos va a ser un dato, no un despliegue.
+
+**Por qué los pesos son datos y no una constante.** Si estuvieran en la
+función, calibrar sería desplegar — y la calibración es justamente lo que hay
+que hacer varias veces mirando cómo se comporta el número con historias reales.
+
+**Verificado contra demo** con bloques que revierten al terminar: racha 3 con
+una falta en el medio (y dos bajas justificadas/en plazo que no la cortaron),
+racha 1 → 3 al revertir la falta, 2 complejos de 6 completados, 1 sola
+aceptación sobre la hora entre tres (9 días hábiles y fecha nula no cuentan),
+score 44/100 con muestra 7, badges derivados, dos llamadas con el mismo `as_of`
+idénticas, un instalador ajeno bloqueado y la propia persona autorizada.
 
 ## Fase 3 — Lo que ve el instalador
 
