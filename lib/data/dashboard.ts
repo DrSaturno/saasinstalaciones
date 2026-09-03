@@ -6,6 +6,7 @@ import { buildFinancialOverview } from "@/lib/domain/finance";
 import { activeMembershipRoles } from "@/lib/domain/membership-roles";
 import {
   firstResolutionSummary,
+  incidentRate,
   type DashboardProjectHealth,
   percentage,
   plannedProjectProgress,
@@ -80,13 +81,13 @@ export type DashboardOverview = {
   todayOrders: { id: string; number: string; title: string; projectName: string; siteName: string; zone: string; status: OrderStatus }[];
   regions: { name: string; sites: number; completedSites: number; progress: number }[];
   installers: { id: string; name: string; available: boolean; reason: string | null; openOrders: number; rating: number; completed: number; onTimeRate: number; firstResolutionRate: number; rescheduled: number; incidents: number; averageDays: number }[];
-  weatherZones: { name: string; lat: number | null; lng: number | null }[];
+  weatherZones: { name: string; lat: number | null; lng: number | null; ordersNext48h: number }[];
   agenda: { date: string; total: number; assigned: number; completed: number; capacity: number; load: number }[];
   capacity: { availableToday: number; total: number; unavailable: number; weeklyAssignments: number; overloadedDays: number; freeSlots: number };
   /** Coordinación: no es capacidad de ejecución, se mide aparte. */
   coordination: { total: number; withProjects: number; projects: number };
   sla: { onTimeRate: number; averageAssignmentHours: number; averageCompletionDays: number; rescheduled: number; cancelled: number; averageDelayDays: number; completionChange: number | null };
-  quality: { firstResolutionRate: number; finalized: number; repeatVisits: number };
+  quality: { firstResolutionRate: number; finalized: number; repeatVisits: number; incidentRate: number };
   incidents: { id: string; orderId: string; number: string; title: string; siteName: string; category: IncidentCategory; severity: IncidentSeverity; description: string; requiresRevisit: boolean; status: IncidentStatus; createdAt: string }[];
   mapSites: { orderId: string; number: string; siteName: string; address: string; zone: string; status: OrderStatus; lat: number | null; lng: number | null; scheduledDate: string | null }[];
   finances: { currency: OrderCurrency; contracted: number; completed: number; pending: number; projectedMonth: number; growth: number | null }[];
@@ -282,6 +283,22 @@ export async function fetchDashboardOverview(supabase: SupabaseClient<Database>,
   }
   const weatherSource = todayOrders.length ? todayOrders.map((order) => siteById.get(order.site_id)).filter(Boolean) as Site[] : activeSites;
   const firstResolution = firstResolutionSummary(finalized.map((order) => ({ id: order.id, visitCount: order.visit_count })), revisitOrders);
+  const incidentOrderIds = new Set(incidents.map((item) => item.order_id));
+
+  // Cuántas órdenes caen dentro de la ventana de 48h del pronóstico, por
+  // zona — sin query nueva, `liveOrders`/`siteById` ya están en memoria.
+  // Es lo que convierte "80% de lluvia en Córdoba" en una alerta que dice
+  // cuántos trabajos programados hay en riesgo, no sólo un dato crudo.
+  const weatherWindow = [today, addDays(today, 1), addDays(today, 2)];
+  const ordersNext48hByZone = new Map<string, number>();
+  for (const order of liveOrders) {
+    if (!order.scheduled_date) continue;
+    const end = order.scheduled_end_date ?? order.scheduled_date;
+    if (!weatherWindow.some((date) => date >= order.scheduled_date! && date <= end)) continue;
+    const zone = siteById.get(order.site_id)?.zone;
+    if (!zone) continue;
+    ordersNext48hByZone.set(zone, (ordersNext48hByZone.get(zone) ?? 0) + 1);
+  }
 
   return {
     metrics: { activeProjects: projects.filter((item) => item.status === "active").length, pendingOrders: liveOrders.length - finalized.length, jobsToday: todayOrders.length, completedToday, dailyRate: percentage(completedToday, todayOrders.length), overallRate: percentage(finalized.length, liveOrders.length) },
@@ -290,7 +307,7 @@ export async function fetchDashboardOverview(supabase: SupabaseClient<Database>,
     todayOrders: todayOrders.map((order) => ({ id: order.id, number: order.order_number, title: order.title, projectName: projectById.get(order.project_id)?.name ?? "—", siteName: siteById.get(order.site_id)?.name ?? "—", zone: siteById.get(order.site_id)?.zone ?? "", status: order.status })),
     regions: [...regions.entries()].map(([name, value]) => ({ name, ...value, progress: percentage(value.completedSites, value.sites) })).sort((a, b) => b.sites - a.sites),
     installers: installerRowsView,
-    weatherZones: [...new Map(weatherSource.filter((site) => site.zone).map((site) => [site.zone, { name: site.zone, lat: site.lat, lng: site.lng }])).values()].slice(0, 4),
+    weatherZones: [...new Map(weatherSource.filter((site) => site.zone).map((site) => [site.zone, { name: site.zone, lat: site.lat, lng: site.lng, ordersNext48h: ordersNext48hByZone.get(site.zone) ?? 0 }])).values()].slice(0, 4),
     agenda,
     capacity: { availableToday: installerRowsView.filter((item) => item.available).length, total: installerIds.length, unavailable: unavailable.length, weeklyAssignments: agenda.slice(0, 7).reduce((sum, day) => sum + day.assigned, 0), overloadedDays: agenda.filter((day) => day.load > 100).length, freeSlots: agenda.slice(0, 7).reduce((sum, day) => sum + Math.max(0, day.capacity - day.total), 0) },
     coordination: {
@@ -299,7 +316,7 @@ export async function fetchDashboardOverview(supabase: SupabaseClient<Database>,
       projects: projects.filter((project) => project.coordinator_id !== null).length,
     },
     sla: { onTimeRate: percentage(onTime, finalized.length), averageAssignmentHours: Math.round(average(completedAssignmentHours) * 10) / 10, averageCompletionDays: Math.round(average(completedDays) * 10) / 10, rescheduled: relevantOrders.filter((order) => order.reschedule_count > 0).length, cancelled: relevantOrders.filter((order) => order.status === "cancelada").length, averageDelayDays: Math.round(average(delayedDays) * 10) / 10, completionChange },
-    quality: { firstResolutionRate: firstResolution.rate, finalized: finalized.length, repeatVisits: firstResolution.repeats },
+    quality: { firstResolutionRate: firstResolution.rate, finalized: finalized.length, repeatVisits: firstResolution.repeats, incidentRate: incidentRate(finalized.map((order) => order.id), incidentOrderIds) },
     incidents: incidents.map((item) => { const order = orderById.get(item.order_id); const site = order ? siteById.get(order.site_id) : null; return { id: item.id, orderId: item.order_id, number: order?.order_number ?? "—", title: order?.title ?? "—", siteName: site?.name ?? "—", category: item.category, severity: item.severity, description: item.description, requiresRevisit: item.requires_revisit, status: item.status, createdAt: item.created_at }; }).sort((a, b) => Number(a.status === "resolved") - Number(b.status === "resolved") || b.createdAt.localeCompare(a.createdAt)),
     mapSites: liveOrders.filter((order) => order.scheduled_date && order.scheduled_date <= weekDates[6] && (order.scheduled_end_date ?? order.scheduled_date) >= today).map((order) => { const site = siteById.get(order.site_id); return { orderId: order.id, number: order.order_number, siteName: site?.name ?? "—", address: [site?.address, site?.city].filter(Boolean).join(", "), zone: site?.zone ?? "", status: order.status, lat: site?.lat ?? null, lng: site?.lng ?? null, scheduledDate: order.scheduled_date }; }),
     finances,

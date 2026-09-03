@@ -2,16 +2,25 @@ import { MapPinned, Timer, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { DashboardOverview } from "@/lib/data/dashboard";
+import type { Country } from "@/types/database";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export function DashboardInsights({ regions, installers }: Pick<DashboardOverview, "regions" | "installers">) {
+export function DashboardInsights({
+  regions,
+  installers,
+  country,
+}: Pick<DashboardOverview, "regions" | "installers"> & { country: Country }) {
   const t = useTranslations("Dashboard");
+  // `sites.zone` guarda la provincia real en Argentina (espejo de
+  // `sites.state`, ver 20260725000001_geography.sql) y la sigla del estado
+  // en Brasil — el título refleja cuál es cada caso.
+  const regionsTitle = country === "BR" ? t("regionsTitleBR") : t("regionsTitleAR");
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Card>
-        <CardHeader className="border-b"><div className="flex items-center gap-2"><MapPinned className="size-4 text-primary" aria-hidden="true" /><CardTitle>{t("regionsTitle")}</CardTitle></div></CardHeader>
+        <CardHeader className="border-b"><div className="flex items-center gap-2"><MapPinned className="size-4 text-primary" aria-hidden="true" /><CardTitle>{regionsTitle}</CardTitle></div></CardHeader>
         <CardContent className="max-h-[520px] overflow-y-auto px-0">
           {regions.length === 0 ? <p className="px-4 py-8 text-center text-sm text-muted-foreground">{t("emptyRegions")}</p> : regions.map((region) => (
             <div key={region.name} className="border-b px-4 py-3 last:border-b-0">

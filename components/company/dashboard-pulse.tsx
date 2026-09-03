@@ -17,13 +17,16 @@ const ACTIONABLE_ALERTS = new Set<DashboardAlertKind>([
 export function DashboardPulse({
   alerts,
   forecasts,
+  weatherZones,
   roster,
 }: {
   alerts: DashboardOverview["alerts"];
   forecasts: ZoneForecast[];
+  weatherZones: DashboardOverview["weatherZones"];
   roster: { id: string; name: string }[];
 }) {
   const t = useTranslations("Dashboard");
+  const ordersNext48hByZone = new Map(weatherZones.map((zone) => [zone.name, zone.ordersNext48h]));
   const weatherAlerts = forecasts.filter((item) => item.severity !== "ok");
   const total = alerts.length + weatherAlerts.length;
 
@@ -81,16 +84,24 @@ export function DashboardPulse({
               })}
             </div>
             <div className="divide-y">
-              {weatherAlerts.map((forecast) => (
-                <div key={forecast.name} className="flex items-center gap-3 px-4 py-3">
-                  <CloudRainWind className="size-4 shrink-0 text-warning" aria-hidden="true" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">{t("weatherRisk", { zone: forecast.name })}</p>
-                    <p className="font-mono text-[11px] text-muted-foreground">{t("weatherRiskDetail", { rain: forecast.rain, wind: Math.round(forecast.wind) })}</p>
+              {weatherAlerts.map((forecast) => {
+                const orders = ordersNext48hByZone.get(forecast.name) ?? 0;
+                return (
+                  <div key={forecast.name} className="flex items-start gap-3 px-4 py-3">
+                    <CloudRainWind className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden="true" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">{t("weatherAlertTitle")}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {t("weatherAlertBody", { event: t(`weatherEvent.${forecast.event}`), zone: forecast.name })}
+                      </p>
+                      <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+                        {orders > 0 ? t("weatherAlertOrders", { count: orders }) : t("weatherAlertNoOrders")}
+                      </p>
+                    </div>
+                    <Badge variant={forecast.severity === "danger" ? "destructive" : "outline"}>{t(`weatherSeverity.${forecast.severity}`)}</Badge>
                   </div>
-                  <Badge variant={forecast.severity === "danger" ? "destructive" : "outline"}>{t(`weatherSeverity.${forecast.severity}`)}</Badge>
-                </div>
-              ))}
+                );
+              })}
               {weatherAlerts.length === 0 ? <p className="px-4 py-5 text-sm text-muted-foreground">{t("weatherNoRisk")}</p> : null}
             </div>
           </div>

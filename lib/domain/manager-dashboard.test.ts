@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   firstResolutionSummary,
+  incidentRate,
   plannedProjectProgress,
   projectHealth,
   weeklyRequirement,
@@ -24,5 +25,17 @@ describe("manager dashboard", () => {
 
   it("excluye revisitas de la resolución en primera visita", () => {
     expect(firstResolutionSummary([{ id: "a", visitCount: 1 }, { id: "b", visitCount: 2 }, { id: "c", visitCount: 1 }], new Set(["c"]))).toEqual({ rate: 33, repeats: 2 });
+  });
+
+  it("cuenta la tasa de incidencias por orden, no por evento", () => {
+    // "b" tiene dos incidentes y no debe pesar el doble.
+    expect(incidentRate(
+      ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
+      new Set(["b", "c", "e"]),
+    )).toBe(30);
+  });
+
+  it("no divide por cero sin órdenes finalizadas", () => {
+    expect(incidentRate([], new Set(["b"]))).toBe(0);
   });
 });
