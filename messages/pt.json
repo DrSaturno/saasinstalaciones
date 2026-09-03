@@ -49,7 +49,8 @@
     "collapse": "Minimizar",
     "operationalCenter": "Centro operacional",
     "route": "Minha rota",
-    "earnings": "Meus ganhos"
+    "earnings": "Meus ganhos",
+    "agenda": "Agenda"
   },
   "LocaleSwitcher": {
     "label": "Idioma",
@@ -2265,5 +2266,54 @@
       "5": "Sexta",
       "6": "Sábado"
     }
+  },
+  "Agenda": {
+    "title": "Agenda",
+    "description": "Os trabalhos programados da sua operação, com instalador, data, horário e status.",
+    "search": "Buscar por N°, título, local ou projeto…",
+    "all": "Todas",
+    "allZones": "Todas as províncias",
+    "allProjects": "Todos os projetos",
+    "allInstallers": "Todos os instaladores",
+    "unassigned": "Sem atribuição",
+    "allTypes": "Todos os tipos",
+    "typeSurvey": "Levantamento",
+    "typeExecution": "Execução",
+    "dateFrom": "De",
+    "dateTo": "Até",
+    "resultCount": "{filtered} de {total}",
+    "date": "Data",
+    "order": "Ordem",
+    "project": "Projeto",
+    "installer": "Instalador",
+    "type": "Tipo",
+    "status": "Status",
+    "noTime": "Sem horário",
+    "empty": "Ainda não há trabalhos agendados.",
+    "noMatch": "Nenhum trabalho corresponde ao filtro."
+  },
+  "InstallerAgenda": {
+    "title": "Agenda",
+    "description": "Seus compromissos programados em todas as empresas onde você trabalha.",
+    "search": "Buscar por N°, título, local ou projeto…",
+    "all": "Todas",
+    "allZones": "Todas as províncias",
+    "allProjects": "Todos os projetos",
+    "allCompanies": "Todas as empresas",
+    "allTypes": "Todos os tipos",
+    "typeSurvey": "Levantamento",
+    "typeExecution": "Execução",
+    "dateFrom": "De",
+    "dateTo": "Até",
+    "resultCount": "{filtered} de {total}",
+    "date": "Data",
+    "order": "Ordem",
+    "project": "Projeto",
+    "company": "Empresa",
+    "type": "Tipo",
+    "status": "Status",
+    "noTime": "Sem horário",
+    "empty": "Você ainda não tem trabalhos agendados.",
+    "noMatch": "Nenhum trabalho corresponde ao filtro."
   }
 }

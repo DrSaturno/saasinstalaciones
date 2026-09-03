@@ -4328,6 +4328,13 @@ export type Database = {
         }
         Returns: string
       }
+      project_names_for_installer: {
+        Args: { p_installer_id: string }
+        Returns: {
+          id: string
+          name: string
+        }[]
+      }
       promote_installer_to_coordinator: {
         Args: { p_installer_id: string }
         Returns: undefined

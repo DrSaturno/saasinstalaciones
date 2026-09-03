@@ -130,9 +130,43 @@ en producción.
 
 ## Fase 4 — El módulo de Agenda
 
-- [ ] **AG-UI-01** — `/agenda` de empresa: trabajos, instalador, fecha, horario y estado. → `R3-AG-05`
-- [ ] **AG-UI-02** — `/agenda` del instalador con sus compromisos de todas las empresas. Es el único que ve su agenda completa. → `R3-AG-05`
-- [ ] **AG-UI-03** — Filtros por provincia, instalador, proyecto, orden, estado, fecha y tipo de actividad, **iguales en todo el rango**, desde un mes antes hacia adelante (AG-R8, AC-21-I). → `R3-AG-05`
+- [x] **AG-UI-01** — `/agenda` de empresa: trabajos, instalador, fecha, horario y estado. → `R3-AG-05`
+- [x] **AG-UI-02** — `/agenda` del instalador (ruta `/schedule`, ver nota abajo) con sus compromisos de todas las empresas. Es el único que ve su agenda completa. → `R3-AG-05`
+- [x] **AG-UI-03** — Filtros por provincia, instalador (empresa vista) / empresa (instalador vista), proyecto, orden, estado, fecha y tipo de actividad, **iguales en todo el rango**, desde un mes antes hacia adelante (AG-R8, AC-21-I). → `R3-AG-05`
+
+**Fuente: `work_activities`, no `work_orders.scheduled_date`.** La agenda lee
+el horario de la actividad (precisión `exact`/`day`), la misma fuente que el
+gate — una actividad `unknown` no aparece (no se le inventa una franja sólo
+para listarla, AC-11-C/AG-R1). El rango por defecto es "desde hace un mes"
+(AG-R8) precargado en el filtro de fecha; el resto de los filtros vive en el
+mismo `useMemo` que ese rango, así que cambiarlo nunca resetea a los demás —
+es lo que hace que AC-21-I se cumpla sin lógica extra.
+
+**La ruta del instalador es `/schedule`, no `/agenda`.** Next.js resuelve la
+URL pública ignorando los grupos de rutas entre paréntesis — `(company)` y
+`(installer)` no son un prefijo — así que `/agenda` en los dos grupos a la vez
+es un build error real ("two parallel pages that resolve to the same path"),
+no una advertencia. Encontrado recién al levantar el server contra Demo, no
+por `type-check`/`lint`/`vitest`, que no ejecutan rutas.
+
+**Bug real, no de diseño: un instalador simple no podía leer el nombre del
+proyecto de su propia orden.** `projects` sólo tenía policies de lectura para
+el gerente y el coordinador; el embed `projects(name)` volvía `null` para
+cualquier otro instalador, aunque ya podía leer la orden, el punto y la
+actividad de ese mismo trabajo — la columna "Proyecto" de su agenda quedaba
+vacía. Cerrado con una policy nueva, acotada a la propia asignación
+(`20260906000004_projects_installer_assigned_read.sql`), mismo principio que
+`work_activities_authorized_read`: quien tiene una asignación puede leer lo
+directamente relacionado a ella.
+
+**Verificado de punta a punta contra Demo, con navegador real (no sólo
+SQL):** se creó un usuario de prueba en Demo, se levantó el dev server local
+apuntando a Demo (sin tocar `.env.local`, que apunta a Producción — ver
+`instalapro-entorno-local`), y se navegaron ambas pantallas logueado como
+gerente e instalador. Encontró el conflicto de ruta y el gap de RLS de
+arriba, ninguno de los dos visible por `type-check`/`lint`/tests. Los datos
+de prueba se borraron después; el usuario y la empresa de verificación no
+quedaron en Demo.
 
 ## Verificación
 
