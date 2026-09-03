@@ -89,6 +89,24 @@ function asConditions(value: Json | undefined): string[] {
   return value.filter((item): item is string => typeof item === "string");
 }
 
+function parseSummary(value: Json | undefined): ReputationSummary | null {
+  const row = asRecord(value);
+  if (!row) return null;
+  return {
+    ruleVersion: asText(row.rule_version),
+    score: asNumber(row.score),
+    hasEnoughHistory: row.has_enough_history === true,
+    sampleSize: asCount(row.sample_size),
+    streak: asCount(row.streak),
+    completed: asCount(row.completed),
+    complexCompleted: asCount(row.complex_completed),
+    shortNoticeAccepted: asCount(row.short_notice_accepted),
+    incidentsResolved: asCount(row.incidents_resolved),
+    faults: asCount(row.faults),
+    badges: asBadges(row.badges),
+  };
+}
+
 function asKind(value: Json | undefined): ReputationContributionKind | null {
   return REPUTATION_CONTRIBUTION_KINDS.find((kind) => kind === value) ?? null;
 }
@@ -109,23 +127,43 @@ export async function fetchReputationSummary(
   });
   if (error) return null;
 
-  const row = asRecord(data);
-  if (!row) return null;
-
-  return {
-    ruleVersion: asText(row.rule_version),
-    score: asNumber(row.score),
-    hasEnoughHistory: row.has_enough_history === true,
-    sampleSize: asCount(row.sample_size),
-    streak: asCount(row.streak),
-    completed: asCount(row.completed),
-    complexCompleted: asCount(row.complex_completed),
-    shortNoticeAccepted: asCount(row.short_notice_accepted),
-    incidentsResolved: asCount(row.incidents_resolved),
-    faults: asCount(row.faults),
-    badges: asBadges(row.badges),
-  };
+  return parseSummary(data);
 }
+
+/**
+ * Los mismos totales para varias personas de una vez.
+ *
+ * Existe por la pantalla de oportunidades, que muestra la reputación al lado
+ * de cada postulante: de a una serían decenas de idas y vueltas para dibujar
+ * una lista. La función SQL llama a `reputation_summary` por cada id, así que
+ * el número de la lista es exactamente el de la ficha y el permiso se evalúa
+ * igual para cada persona.
+ */
+export async function fetchReputationSummaries(
+  supabase: SupabaseClient<Database>,
+  installerIds: readonly string[],
+  asOf: string,
+): Promise<Map<string, ReputationSummary>> {
+  const unique = [...new Set(installerIds)];
+  if (unique.length === 0) return new Map();
+
+  const { data, error } = await supabase.rpc("reputation_summaries", {
+    p_installer_ids: unique,
+    p_as_of: asOf,
+  });
+  if (error) return new Map();
+
+  const byId = asRecord(data);
+  if (!byId) return new Map();
+
+  const result = new Map<string, ReputationSummary>();
+  for (const id of unique) {
+    const parsed = parseSummary(byId[id]);
+    if (parsed) result.set(id, parsed);
+  }
+  return result;
+}
+
 
 /**
  * El aporte de cada hecho. La persona ve todo lo suyo; una empresa, sólo lo

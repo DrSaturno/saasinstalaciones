@@ -4298,6 +4298,10 @@ export type Database = {
         Args: { p_as_of: string; p_installer_id: string }
         Returns: Json
       }
+      reputation_summaries: {
+        Args: { p_as_of: string; p_installer_ids: string[] }
+        Returns: Json
+      }
       reputation_summary: {
         Args: { p_as_of: string; p_installer_id: string }
         Returns: Json

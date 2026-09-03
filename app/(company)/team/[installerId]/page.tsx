@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InstallerRateField } from "@/components/company/installer-rate-field";
 import { MemberRolesField } from "@/components/company/member-roles-field";
+import { InstallerReputationCard } from "@/components/company/installer-reputation-card";
+import { fetchReputationSummary } from "@/lib/data/reputation";
 import { BackLink } from "@/components/shared/back-link";
 
 export default async function InstallerProfilePage({
@@ -22,12 +24,16 @@ export default async function InstallerProfilePage({
 }) {
   const { installerId } = await params;
   const supabase = await createClient();
-  const [t, statusT, format, profile, user] = await Promise.all([
+  // `asOf` se fija acá y se pasa entero: la función de reputación no lee el
+  // reloj por dentro, así que el mismo render siempre da el mismo número.
+  const asOf = new Date().toISOString();
+  const [t, statusT, format, profile, user, reputation] = await Promise.all([
     getTranslations("InstallerProfile"),
     getTranslations("Status"),
     getFormatter(),
     fetchInstallerProfile(supabase, installerId),
     getCurrentUser(),
+    fetchReputationSummary(supabase, installerId, asOf),
   ]);
 
   if (!profile) notFound();
@@ -134,6 +140,12 @@ export default async function InstallerProfilePage({
         <Metric label={t("metricDone")} value={doneOrders} />
         <Metric label={t("metricReviews")} value={profile.reviews.length} />
       </div>
+
+      {reputation ? (
+        <div className="mt-4">
+          <InstallerReputationCard summary={reputation} />
+        </div>
+      ) : null}
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         {/* Zonas y especialidades */}

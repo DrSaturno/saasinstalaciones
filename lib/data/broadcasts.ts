@@ -3,6 +3,10 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getTranslations } from "next-intl/server";
 import { fetchCoordinators } from "@/lib/data/team";
+import {
+  fetchReputationSummaries,
+  type ReputationSummary,
+} from "@/lib/data/reputation";
 import type {
   ApplicationStatus,
   BroadcastStatus,
@@ -23,6 +27,11 @@ export type BroadcastApplicant = {
   zones: string[];
   ratingAvg: number;
   ratingCount: number;
+  /**
+   * Totales de toda su trayectoria en la plataforma, no sólo en esta empresa.
+   * `null` cuando todavía no hay nada que mostrar.
+   */
+  reputation: ReputationSummary | null;
 };
 
 export type BroadcastOrderOption = {
@@ -164,8 +173,23 @@ export async function fetchBroadcastBoard(
     ? supabase.from("sites").select("id, name").in("id", siteIds)
     : Promise.resolve({ data: [] });
 
-  const [{ data: profiles }, { data: installers }, { data: orderSites }, coordinators] =
-    await Promise.all([profileQuery, installerQuery, orderSiteQuery, fetchCoordinators(supabase)]);
+  // Un `asOf` para toda la pantalla: si cada tarjeta leyera el reloj por su
+  // cuenta, dos postulantes podrían quedar cortados a horas distintas.
+  const asOf = new Date().toISOString();
+
+  const [
+    { data: profiles },
+    { data: installers },
+    { data: orderSites },
+    coordinators,
+    reputationById,
+  ] = await Promise.all([
+    profileQuery,
+    installerQuery,
+    orderSiteQuery,
+    fetchCoordinators(supabase),
+    fetchReputationSummaries(supabase, installerIds, asOf),
+  ]);
 
   const projectNameById = new Map((projects ?? []).map((p) => [p.id, p.name]));
   const nameById = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
@@ -222,6 +246,7 @@ export async function fetchBroadcastBoard(
             zones: installer?.zones ?? [],
             ratingAvg: installer?.rating_avg ?? 0,
             ratingCount: installer?.rating_count ?? 0,
+            reputation: reputationById.get(application.installer_id) ?? null,
           };
         }),
         availableOrders: (orders ?? [])

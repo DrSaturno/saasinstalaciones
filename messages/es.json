@@ -2222,6 +2222,11 @@
       "alta_dificultad": "Trabajos de alta dificultad",
       "racha": "Racha de cumplimiento",
       "compromiso_sostenido": "Compromiso sostenido"
-    }
+    },
+    "notEnoughForCompany": "Todavía sin historia suficiente para un puntaje",
+    "compliance": "Cumplimiento",
+    "companyNote": "Son totales de toda su trayectoria en la plataforma; no se muestra para qué empresas fueron esos trabajos. El cumplimiento es la proporción que terminó sin darse de baja, y no es el índice de confiabilidad.",
+    "applicantNone": "Sin reputación todavía",
+    "applicantLine": "Reputación {score}/100 · 🔥 {streak} · {completed} completados · {complex} complejos"
   }
 }
