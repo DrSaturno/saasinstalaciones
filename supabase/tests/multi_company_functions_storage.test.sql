@@ -462,6 +462,13 @@ set local role authenticated;
 set local request.jwt.claims to
   '{"sub":"f1000000-0000-0000-0000-000000000013","role":"authenticated"}';
 
+-- `assign_installer_gate` (Fase 3 de agenda) exige que la actividad exista
+-- antes de poder asignar; esta orden se insertó como fixture directo, sin
+-- pasar por `create_order_activities`.
+select public.create_order_activities(
+  'f1000000-0000-0000-0000-000000000052', false, true
+);
+
 select public.accept_broadcast_application(
   'f1000000-0000-0000-0000-000000000091',
   'f1000000-0000-0000-0000-000000000014',
