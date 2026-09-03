@@ -57,9 +57,27 @@ con `GLOBAL_AVAILABILITY_OWNER_MISMATCH`.
 
 ## Fase 2 — El cálculo de conflicto
 
-- [ ] **AG-CONF-01** — Detección de solapamiento sobre `schedule_range`, con el índice GiST que ya existe. → `R3-AG-02`
-- [ ] **AG-CONF-02** — **Restricción de exclusión** sobre `work_assignments`. Hoy **no existe** —verificado en producción, el backlog dice lo contrario— así que la base acepta dos asignaciones superpuestas. El gate es la puerta; esto es el cerrojo por si alguna vía lo esquiva. → `R3-AG-02`
-- [ ] **AG-CONF-03** — Estimación de traslado con coordenadas, velocidad y margen **versionados** (DEC-18), con tests. Sin coordenadas devuelve "no verificable", no una estimación mala. → `R3-AG-04`
+- [x] **AG-CONF-01** — `installer_overlapping_assignments` y `installer_absence_blocks`, internas y cruzando empresas. → `R3-AG-02`
+- [x] **AG-CONF-02** — **Restricción de exclusión** sobre `work_assignments`, con `btree_gist`. Verificado: una asignación superpuesta ahora falla con `23P01`. → `R3-AG-02`
+- [x] **AG-CONF-03** — `estimated_travel_minutes` sobre `haversine_km`, con velocidad, factor de rodeo y margen en `schedule_rule_versions`. → `R3-AG-04`
+
+**El cerrojo cubre exactamente lo inapelable, y eso no es casualidad.** La
+restricción impide el solapamiento, que `DEC-09` trata como bloqueo duro. El
+traslado insuficiente —que sí admite override, porque es una estimación
+nuestra— se calcula y no se restringe. La regla del pedido quedó traducida a la
+forma de la base.
+
+**La estimación es deliberadamente conservadora.** Velocidad efectiva baja
+(28 km/h) más un factor de rodeo de 1,35 sobre la línea recta: errar hacia el
+conflicto cuesta un override con motivo, y no detectarlo cuesta una
+cancelación. Está sin calibrar contra recorridos reales, y en viajes largos
+sobreestima bastante — por eso el override existe.
+
+**Verificado contra demo:** una asignación superpuesta falla con `23P01`; un
+trabajo que termina 18:00 en un punto y otro que empieza 18:10 a 1,5 km da *no
+factible* (necesita 25 minutos, hay 10) — el caso literal del pedido; con una
+hora de margen da factible; y un vecino sin coordenadas devuelve
+`NO_COORDINATES`, no «está bien».
 
 ## Fase 3 — El gate
 
