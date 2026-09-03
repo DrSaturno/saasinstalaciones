@@ -14,6 +14,7 @@ import { requestPushDelivery } from "@/lib/push/events";
 import { activitiesFor } from "@/lib/domain/activity-kind";
 import type { TablesInsert } from "@/types/database";
 import { syncOrderConditions } from "./conditions";
+import { syncActivitySchedule } from "./schedule";
 import { operatedCompany, requireOperator } from "./context";
 import type {
   ActionState,
@@ -43,6 +44,9 @@ export async function createOrder(
     indoor: formData.get("indoor") === "on",
     requiresFreight: formData.get("requiresFreight") === "on",
     conditions: formData.getAll("conditions"),
+    scheduledStartTime: formData.get("scheduledStartTime") ?? "",
+    scheduledEndTime: formData.get("scheduledEndTime") ?? "",
+    estimatedDurationMinutes: formData.get("estimatedDurationMinutes") ?? "",
     freightDetails: formData.get("freightDetails") ?? "",
     logisticsNotes: formData.get("logisticsNotes") ?? "",
     amount: formData.get("amount") ?? "",
@@ -149,6 +153,13 @@ export async function createOrder(
       parsed.data.conditions,
     );
 
+    await syncActivitySchedule(supabase, order.id, {
+      date: parsed.data.scheduledDate,
+      startTime: parsed.data.scheduledStartTime,
+      endTime: parsed.data.scheduledEndTime,
+      durationMinutes: parsed.data.estimatedDurationMinutes,
+    });
+
     if (parsed.data.installerId) {
       await requestPushDelivery(
         supabase,
@@ -196,6 +207,9 @@ export async function updateOrder(
     indoor: formData.get("indoor") === "on",
     requiresFreight: formData.get("requiresFreight") === "on",
     conditions: formData.getAll("conditions"),
+    scheduledStartTime: formData.get("scheduledStartTime") ?? "",
+    scheduledEndTime: formData.get("scheduledEndTime") ?? "",
+    estimatedDurationMinutes: formData.get("estimatedDurationMinutes") ?? "",
     freightDetails: formData.get("freightDetails") ?? "",
     logisticsNotes: formData.get("logisticsNotes") ?? "",
     amount: formData.get("amount") ?? "",
@@ -269,6 +283,13 @@ export async function updateOrder(
       user.id,
       parsed.data.conditions,
     );
+
+    await syncActivitySchedule(supabase, orderId, {
+      date: parsed.data.scheduledDate,
+      startTime: parsed.data.scheduledStartTime,
+      endTime: parsed.data.scheduledEndTime,
+      durationMinutes: parsed.data.estimatedDurationMinutes,
+    });
 
     // Si cambió el instalador, avisarle como en una asignación nueva.
     if (

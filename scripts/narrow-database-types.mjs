@@ -49,6 +49,8 @@ const NARROWING = {
   },
   order_payment_events: { status: "PaymentStatus" },
   work_order_conditions: { condition: "ExplicitWorkCondition" },
+  work_activities: { schedule_precision: "SchedulePrecision" },
+  work_assignments: { schedule_precision: "SchedulePrecision" },
   order_incidents: {
     category: "IncidentCategory",
     severity: "IncidentSeverity",
