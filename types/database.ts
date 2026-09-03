@@ -4283,6 +4283,21 @@ export type Database = {
         Args: { p_company_id: string; p_entries: Json }
         Returns: undefined
       }
+      reputation_contributions: {
+        Args: { p_as_of: string; p_installer_id: string }
+        Returns: {
+          company_id: string
+          detail: Json
+          effect: number
+          event_id: string
+          kind: string
+          occurred_at: string
+        }[]
+      }
+      reputation_detail: {
+        Args: { p_as_of: string; p_installer_id: string }
+        Returns: Json
+      }
       reputation_summary: {
         Args: { p_as_of: string; p_installer_id: string }
         Returns: Json

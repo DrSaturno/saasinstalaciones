@@ -51,7 +51,7 @@ severidad.
 
 - [x] **REP-CALC-01** — `installer_streak()`: la racha son los completados posteriores a la última falta, leídos del libro de confiabilidad. `cancel_in_notice` y `cancel_justified` ni figuran en la consulta, así que no pueden cortarla ni por accidente. → `R8-REP-03`
 - [x] **REP-CALC-02** — `reputation_summary(installer, as_of)`: `security definer`, cruza empresas, devuelve **sólo** totales y reconocimientos. → `R8-REP-03`
-- [ ] **REP-CALC-03** — Función de detalle explicable, con el aporte de cada hecho: todo para el instalador, sólo la propia operación para la empresa. → `R8-REP-04`
+- [x] **REP-CALC-03** — `reputation_detail()`. Y con él llegó un refactor que valía la pena: la aritmética quedó en **una** función (`reputation_contributions`), y tanto el resumen como el detalle son lecturas de ella. Escribir la cuenta dos veces habría hecho que el desglose y el número se separaran con el primer ajuste de pesos — y un desglose que no da el número es la forma más rápida de que nadie le crea al sistema. Verificado: el refactor no movió ningún resultado (mismo escenario, mismo 44/100).
 - [x] **REP-CALC-04** — `reputation_rule_versions` con una sola versión activa, y `p_as_of` como parámetro obligatorio para que el recálculo sea reproducible (AC-20-A). → `R8-REP-01`
 - [ ] **REP-CALC-05** — **Calibrar `K` contra datos reales.** → `R8-REP-03`
 
@@ -75,8 +75,17 @@ idénticas, un instalador ajeno bloqueado y la propia persona autorizada.
 
 ## Fase 3 — Lo que ve el instalador
 
-- [ ] **REP-UI-02** — Perfil propio: reputación, racha, reconocimientos y el desglose de por qué. Va al lado del panel de confiabilidad que ya existe, y la pantalla tiene que dejar claro que son dos cosas distintas. → `R8-REP-04`
-- [ ] **REP-UI-03** — Historial caracterizado: "Trabajo complejo — Completado", "Incorporación de último momento — Completado". → `R8-REP-04`, AC-20-C, AC-20-D
+- [x] **REP-UI-02** — `components/installer/reputation-panel.tsx` en el perfil, arriba del panel de confiabilidad, con una línea que explica por qué son dos números distintos: sin eso, dos valores entre 0 y 100 uno al lado del otro se leen como si midieran lo mismo y uno estuviera mal. → `R8-REP-04`
+- [x] **REP-UI-03** — El desglose ES el historial caracterizado: "Trabajo complejo — Completado", "Incorporación de último momento", con fecha, condiciones y anticipación. → `R8-REP-04`, AC-20-C, AC-20-D
+
+**Se muestran también los hechos que aportaron cero**, siguiendo el criterio que
+ya usa confiabilidad: la persona tiene que poder comprobar que aceptar un
+trabajo con margen no le restó nada, y eso sólo se comprueba viéndolo.
+
+**Verificado contra demo:** la persona ve sus 5 hechos, la empresa A ve sólo
+sus 3 y la B sólo sus 2 — pero el resumen de la B igual cuenta los 5. Ése es
+DEC-17 funcionando: el total cruza empresas para que la reputación sirva, y el
+detalle nunca lo hace.
 
 ## Fase 4 — Lo que ve la empresa
 
