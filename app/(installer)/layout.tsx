@@ -26,6 +26,7 @@ export default async function InstallerLayout({
   const nav = [
     { href: "/home", label: t("home"), icon: "dashboard" as const },
     { href: "/tasks", label: t("tasks"), icon: "tasks" as const },
+    { href: "/schedule", label: t("agenda"), icon: "agenda" as const },
     ...(isCoordinatorSomewhere(user)
       ? [{ href: "/coordination", label: t("coordination"), icon: "orders" as const }]
       : []),

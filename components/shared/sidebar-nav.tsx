@@ -6,6 +6,7 @@ import {
   BarChart3,
   BriefcaseBusiness,
   Building2,
+  CalendarDays,
   ClipboardList,
   Gauge,
   Megaphone,
@@ -37,6 +38,7 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   messages: MessageSquareText,
   settings: Settings,
   route: Route,
+  agenda: CalendarDays,
 };
 
 export function SidebarNav({

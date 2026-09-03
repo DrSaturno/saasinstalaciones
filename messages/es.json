@@ -49,7 +49,8 @@
     "collapse": "Minimizar",
     "operationalCenter": "Centro operativo",
     "route": "Mi ruta",
-    "earnings": "Mis ingresos"
+    "earnings": "Mis ingresos",
+    "agenda": "Agenda"
   },
   "LocaleSwitcher": {
     "label": "Idioma",
@@ -2265,5 +2266,54 @@
       "5": "Viernes",
       "6": "Sábado"
     }
+  },
+  "Agenda": {
+    "title": "Agenda",
+    "description": "Los trabajos programados de tu operación, con instalador, fecha, horario y estado.",
+    "search": "Buscar por N°, título, punto o proyecto…",
+    "all": "Todas",
+    "allZones": "Todas las provincias",
+    "allProjects": "Todos los proyectos",
+    "allInstallers": "Todos los instaladores",
+    "unassigned": "Sin asignar",
+    "allTypes": "Todos los tipos",
+    "typeSurvey": "Relevamiento",
+    "typeExecution": "Ejecución",
+    "dateFrom": "Desde",
+    "dateTo": "Hasta",
+    "resultCount": "{filtered} de {total}",
+    "date": "Fecha",
+    "order": "Orden",
+    "project": "Proyecto",
+    "installer": "Instalador",
+    "type": "Tipo",
+    "status": "Estado",
+    "noTime": "Sin hora",
+    "empty": "Todavía no hay trabajos agendados.",
+    "noMatch": "Ningún trabajo coincide con el filtro."
+  },
+  "InstallerAgenda": {
+    "title": "Agenda",
+    "description": "Tus compromisos programados en todas las empresas donde trabajás.",
+    "search": "Buscar por N°, título, punto o proyecto…",
+    "all": "Todas",
+    "allZones": "Todas las provincias",
+    "allProjects": "Todos los proyectos",
+    "allCompanies": "Todas las empresas",
+    "allTypes": "Todos los tipos",
+    "typeSurvey": "Relevamiento",
+    "typeExecution": "Ejecución",
+    "dateFrom": "Desde",
+    "dateTo": "Hasta",
+    "resultCount": "{filtered} de {total}",
+    "date": "Fecha",
+    "order": "Orden",
+    "project": "Proyecto",
+    "company": "Empresa",
+    "type": "Tipo",
+    "status": "Estado",
+    "noTime": "Sin hora",
+    "empty": "Todavía no tenés trabajos agendados.",
+    "noMatch": "Ningún trabajo coincide con el filtro."
   }
 }

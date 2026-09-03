@@ -33,6 +33,7 @@ export default async function CompanyLayout({
     { href: "/dashboard", label: t("home"), icon: "dashboard" as const },
     { href: "/projects", label: t("projects"), icon: "projects" as const },
     { href: "/orders", label: t("orders"), icon: "orders" as const },
+    { href: "/agenda", label: t("agenda"), icon: "agenda" as const },
     { href: "/clients", label: t("clients"), icon: "clients" as const },
     { href: "/team", label: t("team"), icon: "team" as const },
     { href: "/broadcasts", label: t("broadcasts"), icon: "broadcasts" as const },
