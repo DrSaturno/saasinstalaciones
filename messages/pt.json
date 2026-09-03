@@ -2192,5 +2192,36 @@
       "gran_formato": "Peça que uma pessoa sozinha não manuseia",
       "acceso_restringido": "Acesso restrito (autorizações, shopping, área de segurança)"
     }
+  },
+  "Reputation": {
+    "title": "Reputação",
+    "description": "Sua trajetória: que trabalhos você assumiu, com quanta antecedência e com que constância cumpriu.",
+    "version": "Versão de regras {version}",
+    "notEnough": "{count, plural, =0 {Ainda não há histórico suficiente para afirmar um número. Ele se constrói a cada trabalho concluído.} one {Um trabalho registrado. Ainda não há histórico suficiente para afirmar um número.} other {# trabalhos registrados. Ainda não há histórico suficiente para afirmar um número.}}",
+    "streak": "{count, plural, =0 {Sem sequência ativa} one {Sequência atual: # trabalho cumprido} other {Sequência atual: # trabalhos cumpridos}}",
+    "streakHelp": "É interrompida por uma baixa fora do prazo. Avisar a tempo ou com um motivo aceito não a afeta.",
+    "completed": "Concluídos",
+    "complex": "Complexos",
+    "shortNotice": "Em cima da hora",
+    "incidents": "Incidências resolvidas",
+    "breakdown": "De onde sai o número",
+    "breakdownHelp": "Cada fato com o que aportou. O mais antigo pesa menos, mas não desaparece. A soma desta lista é o seu total.",
+    "empty": "Ainda não há fatos registrados.",
+    "leadTime": "{days, plural, one {# dia útil de antecedência} other {# dias úteis de antecedência}}",
+    "vsReliability": "Reputação não é o mesmo que confiabilidade. Esta começa em zero e sobe com a sua trajetória; a de baixo começa em 100 e cai com as faltas. Nenhuma das duas condiciona hoje o acesso ao trabalho.",
+    "events": {
+      "complexCompleted": "Trabalho complexo — Concluído",
+      "completed": "Trabalho concluído",
+      "shortNotice": "Entrada de última hora",
+      "accepted": "Trabalho aceito",
+      "incident": "Incidência resolvida",
+      "fault": "Baixa ou descumprimento"
+    },
+    "badges": {
+      "disponibilidad_inmediata": "Disponibilidade imediata",
+      "alta_dificultad": "Trabalhos de alta dificuldade",
+      "racha": "Sequência de cumprimento",
+      "compromiso_sostenido": "Compromisso sustentado"
+    }
   }
 }

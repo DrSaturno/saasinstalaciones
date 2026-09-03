@@ -15,7 +15,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(13);
+select plan(17);
 
 insert into public.companies (id, name, country, order_prefix) values
   ('f3000000-0000-0000-0000-000000000001', 'Empresa Calculo', 'AR', 'ECA'),
@@ -202,6 +202,76 @@ select throws_ok(
   'P0001',
   null,
   'un instalador cualquiera no anda mirando la reputación de otro'
+);
+
+-- ---------------------------------------------------------------------------
+-- El desglose: una sola cuenta para el total y para la explicación
+-- ---------------------------------------------------------------------------
+
+-- Dos trabajos para OTRA empresa. Van acá y no antes a propósito: sumados más
+-- arriba habrían cambiado los conteos que ya se afirmaron. Se sale del rol
+-- porque la tabla no tiene política de insert — se escribe por función.
+reset role;
+
+insert into public.installer_performance_events
+  (installer_id, company_id, kind, context, occurred_at) values
+  ('f3000000-0000-0000-0000-000000000012','f3000000-0000-0000-0000-000000000002','job_completed',
+   '{"conditions":["exterior"]}'::jsonb, now() - interval '15 days'),
+  ('f3000000-0000-0000-0000-000000000012','f3000000-0000-0000-0000-000000000002','job_completed',
+   '{"conditions":["exterior"]}'::jsonb, now() - interval '14 days');
+
+-- Las claves se fijan antes de cambiar de rol: `auth.uid()` sale de ellas, no
+-- del rol de Postgres. Esta comprobación corre todavía sin cambiar de rol
+-- porque `reputation_contributions` es interna y está revocada — que no se
+-- pueda llamar desde `authenticated` es justamente lo que se quiere.
+set local request.jwt.claims to
+  '{"sub":"f3000000-0000-0000-0000-000000000012","role":"authenticated"}';
+
+-- La propiedad que hace confiable al desglose: el total ES la suma de la
+-- lista. Si alguien volviera a escribir la aritmética por separado, el número
+-- mostrado y su explicación empezarían a diferir y este test lo detendría.
+select ok(
+  abs(
+    (select sum((x ->> 'effect')::numeric)
+       from jsonb_array_elements(
+         public.reputation_detail('f3000000-0000-0000-0000-000000000012', now())) x)
+    - (select sum(c.effect)
+         from public.reputation_contributions(
+           'f3000000-0000-0000-0000-000000000012', now()) c)
+  ) < 0.05,
+  'el desglose suma exactamente lo que alimenta al puntaje'
+);
+
+set local role authenticated;
+
+select is(
+  (select count(*)::integer
+     from jsonb_array_elements(
+       public.reputation_detail('f3000000-0000-0000-0000-000000000012', now()))),
+  11,
+  'la persona ve todos sus hechos, también los de otras empresas'
+);
+
+set local request.jwt.claims to
+  '{"sub":"f3000000-0000-0000-0000-000000000011","role":"authenticated"}';
+
+select is(
+  (select count(*)::integer
+     from jsonb_array_elements(
+       public.reputation_detail('f3000000-0000-0000-0000-000000000012', now()))),
+  9,
+  'la empresa ve sólo los hechos de SU operación, no los de la competencia'
+);
+
+set local request.jwt.claims to
+  '{"sub":"f3000000-0000-0000-0000-000000000013","role":"authenticated"}';
+
+select throws_ok(
+  $q$select public.reputation_detail(
+      'f3000000-0000-0000-0000-000000000012', now())$q$,
+  'P0001',
+  null,
+  'y un instalador cualquiera no ve el detalle de otro'
 );
 
 reset role;

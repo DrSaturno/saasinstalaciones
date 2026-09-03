@@ -2192,5 +2192,36 @@
       "gran_formato": "Pieza que no maneja una sola persona",
       "acceso_restringido": "Acceso restringido (permisos, centro comercial, zona de seguridad)"
     }
+  },
+  "Reputation": {
+    "title": "Reputación",
+    "description": "Tu trayectoria: qué trabajos asumiste, con cuánta anticipación y con qué constancia cumpliste.",
+    "version": "Versión de reglas {version}",
+    "notEnough": "{count, plural, =0 {Todavía no hay historia suficiente para afirmar un número. Se construye con cada trabajo que completes.} one {Un trabajo registrado. Todavía no hay historia suficiente para afirmar un número.} other {# trabajos registrados. Todavía no hay historia suficiente para afirmar un número.}}",
+    "streak": "{count, plural, =0 {Sin racha activa} one {Racha actual: # trabajo cumplido} other {Racha actual: # trabajos cumplidos}}",
+    "streakHelp": "Se corta con una baja fuera de plazo. Avisar a tiempo o con un motivo aceptado no la afecta.",
+    "completed": "Completados",
+    "complex": "Complejos",
+    "shortNotice": "Sobre la hora",
+    "incidents": "Incidencias resueltas",
+    "breakdown": "De dónde sale el número",
+    "breakdownHelp": "Cada hecho con lo que aportó. Lo más viejo pesa menos, pero no desaparece. La suma de esta lista es tu total.",
+    "empty": "Todavía no hay hechos registrados.",
+    "leadTime": "{days, plural, one {# día hábil de anticipación} other {# días hábiles de anticipación}}",
+    "vsReliability": "La reputación no es lo mismo que la confiabilidad. Ésta arranca en cero y sube con tu trayectoria; la de más abajo arranca en 100 y baja con las faltas. Ninguna de las dos condiciona hoy el acceso al trabajo.",
+    "events": {
+      "complexCompleted": "Trabajo complejo — Completado",
+      "completed": "Trabajo completado",
+      "shortNotice": "Incorporación de último momento",
+      "accepted": "Trabajo aceptado",
+      "incident": "Incidencia resuelta",
+      "fault": "Baja o incumplimiento"
+    },
+    "badges": {
+      "disponibilidad_inmediata": "Disponibilidad inmediata",
+      "alta_dificultad": "Trabajos de alta dificultad",
+      "racha": "Racha de cumplimiento",
+      "compromiso_sostenido": "Compromiso sostenido"
+    }
   }
 }

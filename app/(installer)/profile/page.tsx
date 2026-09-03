@@ -8,6 +8,11 @@ import { StarRating } from "@/components/shared/star-rating";
 import { AvailabilitySettings } from "@/components/installer/availability-settings";
 import { CoverageSettings } from "@/components/installer/coverage-settings";
 import { ReliabilityPanel } from "@/components/installer/reliability-panel";
+import { ReputationPanel } from "@/components/installer/reputation-panel";
+import {
+  fetchReputationDetail,
+  fetchReputationSummary,
+} from "@/lib/data/reputation";
 import {
   fetchOrderNumbers,
   fetchReliabilityEvents,
@@ -44,12 +49,19 @@ export default async function InstallerProfilePage() {
   // `asOf` se fija acá y se pasa entero: la fórmula no lee el reloj por dentro,
   // así el mismo render siempre da el mismo número.
   const asOf = new Date().toISOString();
-  const reliabilityOrders = await fetchOrderNumbers(
-    supabase,
-    reliabilityEvents
-      .map((event) => event.orderId)
-      .filter((id): id is string => Boolean(id)),
-  );
+  const [reliabilityOrders, reputationSummary, reputationDetail] =
+    await Promise.all([
+      fetchOrderNumbers(
+        supabase,
+        reliabilityEvents
+          .map((event) => event.orderId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+      // Mismo `asOf` que confiabilidad: los dos números de esta pantalla se
+      // miran juntos, así que tienen que estar cortados a la misma hora.
+      fetchReputationSummary(supabase, user.id, asOf),
+      fetchReputationDetail(supabase, user.id, asOf),
+    ]);
 
   const avatarUrl = profile?.avatar_path
     ? supabase.storage.from("avatars").getPublicUrl(profile.avatar_path).data.publicUrl
@@ -155,6 +167,15 @@ export default async function InstallerProfilePage() {
             ) : null}
           </CardContent>
         </Card>
+      ) : null}
+
+      {reputationSummary ? (
+        <div className="mt-8">
+          <ReputationPanel
+            summary={reputationSummary}
+            contributions={reputationDetail}
+          />
+        </div>
       ) : null}
 
       <div className="mt-8">
