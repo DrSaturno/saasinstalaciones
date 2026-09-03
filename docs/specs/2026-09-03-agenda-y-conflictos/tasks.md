@@ -32,8 +32,28 @@ después de escribir.
 
 ## Fase 1 — Disponibilidad
 
-- [ ] **AG-AVL-01** — Conectar `installer_global_weekly_availability` e `installer_global_unavailability`, que existen y nadie usa: pantalla del instalador para declarar cuándo no trabaja, valga para qué empresa valga. → REQ-11.8
-- [ ] **AG-AVL-02** — Precedencia entre la disponibilidad global de la persona y las preferencias por empresa (AG-R9). → REQ-11.8
+- [x] **AG-AVL-01** — `GlobalAvailabilityCard` en el perfil del instalador, sobre las dos tablas globales que existían sin usarse. Las ausencias propias **no piden aprobación**: es su tiempo. → REQ-11.8
+- [x] **AG-AVL-02** — `lib/domain/availability-precedence.ts`: lo efectivo es la **intersección**, con 12 tests. → REQ-11.8
+
+**Por qué intersección y no precedencia a secas.** Si una empresa pudiera
+ampliar la ventana que la persona ofrece, la disponibilidad personal no serviría
+de nada: bastaría con que una empresa declarara horario corrido para que alguien
+quedara disponible un domingo que dijo que no trabajaba. Con intersección, una
+empresa puede pedir menos horas, nunca más. Y **no declarar nada no es declarar
+que no**: quien todavía no cargó su disponibilidad queda sin restricción propia,
+no bloqueado en todas partes.
+
+**Bug encontrado al conectar la fundación muerta.** `installer_global_unavailability`
+estaba **rota desde el 12-08-2026**: el trigger compartido evaluaba
+`new.timezone` —columna que esa tabla no tiene— porque PL/pgSQL no cortocircuita
+la condición, así que *todo* insert fallaba. Nadie lo notó porque ninguna
+pantalla usaba la tabla. Arreglado en `20260906000001` anidando el `if`, con la
+validación de huso todavía viva y un test que lo fija.
+
+**Verificado contra demo:** la persona ve su semanal y sus ausencias; el
+**gerente de su propia empresa ve cero** en las dos tablas; otro instalador del
+mismo equipo también ve cero; y cargar una ausencia en nombre de otro se frena
+con `GLOBAL_AVAILABILITY_OWNER_MISMATCH`.
 
 ## Fase 2 — El cálculo de conflicto
 

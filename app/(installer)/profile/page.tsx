@@ -4,6 +4,7 @@ import { getCurrentUser, ROLE_HOME, isInstallerArea } from "@/lib/auth";
 import { fetchInstallerReputation } from "@/lib/data/ratings";
 import { createClient } from "@/lib/supabase/server";
 import { fetchInstallerAvailability } from "@/lib/data/availability";
+import { fetchGlobalAvailability } from "@/lib/data/global-availability";
 import { StarRating } from "@/components/shared/star-rating";
 import { AvailabilitySettings } from "@/components/installer/availability-settings";
 import { CoverageSettings } from "@/components/installer/coverage-settings";
@@ -38,10 +39,11 @@ export default async function InstallerProfilePage() {
   if (!isInstallerArea(user)) redirect(ROLE_HOME[user.role]);
 
   const supabase = await createClient();
-  const [reputation, availability, { data: profile }, reliabilityEvents] =
+  const [reputation, availability, globalAvailability, { data: profile }, reliabilityEvents] =
     await Promise.all([
       fetchInstallerReputation(supabase, user.id),
       fetchInstallerAvailability(supabase, user.id),
+      fetchGlobalAvailability(supabase, user.id),
       supabase.from("profiles").select("avatar_path").eq("id", user.id).single(),
       fetchReliabilityEvents(supabase, user.id, WINDOW_DAYS),
     ]);
@@ -200,6 +202,7 @@ export default async function InstallerProfilePage() {
       <AvailabilitySettings
         companies={availability}
         initialEnabled={reputation.available}
+        global={globalAvailability}
       />
 
       <section className="mt-8">

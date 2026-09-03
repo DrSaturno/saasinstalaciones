@@ -2233,5 +2233,32 @@
     "companyNote": "Son totales de toda su trayectoria en la plataforma; no se muestra para qué empresas fueron esos trabajos. El cumplimiento es la proporción que terminó sin darse de baja, y no es el índice de confiabilidad.",
     "applicantNone": "Sin reputación todavía",
     "applicantLine": "Reputación {score}/100 · 🔥 {streak} · {completed} completados · {complex} complejos"
+  },
+  "GlobalAvailability": {
+    "title": "Mi disponibilidad",
+    "description": "Vale para todas las empresas. Ninguna de ellas ve esta información: la plataforma la usa para saber si podés tomar un trabajo, sin contarle a nadie qué tenés agendado.",
+    "weeklyTitle": "Días y horarios en que trabajás",
+    "weeklyHelp": "Un día sin horario significa que no trabajás ese día. Cada empresa puede pedirte menos horas dentro de esto, nunca más.",
+    "saveWeekly": "Guardar horarios",
+    "weeklySaved": "Horarios guardados",
+    "from": "Desde",
+    "to": "Hasta",
+    "absencesTitle": "Períodos en que no vas a estar",
+    "absencesHelp": "No necesitan aprobación de nadie: es tu tiempo. La plataforma deja de ofrecerte trabajos en esas fechas.",
+    "reason": "Motivo",
+    "addAbsence": "Agregar período",
+    "absenceSaved": "Período agregado",
+    "removeAbsence": "Quitar",
+    "absenceRemoved": "Período quitado",
+    "noAbsences": "No tenés períodos cargados.",
+    "weekdays": {
+      "0": "Domingo",
+      "1": "Lunes",
+      "2": "Martes",
+      "3": "Miércoles",
+      "4": "Jueves",
+      "5": "Viernes",
+      "6": "Sábado"
+    }
   }
 }
