@@ -108,6 +108,7 @@ export type Database = {
     Tables: {
       announcements: {
         Row: {
+          audience: Json
           audience_ref: string
           audience_type: AnnouncementAudience
           body: string
@@ -120,6 +121,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          audience?: Json
           audience_ref?: string
           audience_type?: AnnouncementAudience
           body: string
@@ -132,6 +134,7 @@ export type Database = {
           title: string
         }
         Update: {
+          audience?: Json
           audience_ref?: string
           audience_type?: AnnouncementAudience
           body?: string
@@ -2142,12 +2145,14 @@ export type Database = {
       }
       notifications: {
         Row: {
+          archived_at: string | null
           body: string
           correlation_id: string | null
           created_at: string
           data: Json
           dedupe_key: string | null
           delivered_at: string | null
+          dismissed_at: string | null
           id: string
           push_sent_at: string | null
           read_at: string | null
@@ -2156,12 +2161,14 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          archived_at?: string | null
           body?: string
           correlation_id?: string | null
           created_at?: string
           data?: Json
           dedupe_key?: string | null
           delivered_at?: string | null
+          dismissed_at?: string | null
           id?: string
           push_sent_at?: string | null
           read_at?: string | null
@@ -2170,12 +2177,14 @@ export type Database = {
           user_id: string
         }
         Update: {
+          archived_at?: string | null
           body?: string
           correlation_id?: string | null
           created_at?: string
           data?: Json
           dedupe_key?: string | null
           delivered_at?: string | null
+          dismissed_at?: string | null
           id?: string
           push_sent_at?: string | null
           read_at?: string | null
@@ -4110,6 +4119,16 @@ export type Database = {
         Returns: undefined
       }
       accept_invitation: { Args: { p_token: string }; Returns: undefined }
+      announcement_audience: {
+        Args: { p_audience: Json; p_company: string }
+        Returns: {
+          installer_id: string
+        }[]
+      }
+      announcement_audience_count: {
+        Args: { p_audience: Json }
+        Returns: number
+      }
       announcement_recipient_emails: {
         Args: { p_announcement_id: string }
         Returns: {
@@ -4341,8 +4360,7 @@ export type Database = {
       }
       publish_announcement: {
         Args: {
-          p_audience_ref?: string
-          p_audience_type?: string
+          p_audience?: Json
           p_body: string
           p_severity?: string
           p_title: string

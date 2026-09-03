@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { Bell, BellRing, CheckCheck } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -110,6 +111,10 @@ export function NotificationMenu({
             </DropdownMenuItem>
           )) : <p className="px-3 py-10 text-center text-sm text-muted-foreground">{t("empty")}</p>}
         </div>
+        <DropdownMenuSeparator className="m-0" />
+        <DropdownMenuItem asChild className="justify-center px-2.5 py-2 text-sm font-medium text-primary">
+          <Link href="/notifications">{t("viewAll")}</Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator className="m-0" />
         <PushPermissionControl vapidPublicKey={vapidPublicKey} />
       </DropdownMenuContent>

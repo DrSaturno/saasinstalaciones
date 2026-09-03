@@ -6,20 +6,39 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { sendAnnouncementEmail } from "@/lib/email/announcements";
+import { requestPushDelivery } from "@/lib/push/events";
 import { createClient } from "@/lib/supabase/server";
 import { INTL_LOCALE } from "@/i18n/config";
 
-const schema = z
-  .object({
-    title: z.string().trim().min(2).max(120),
-    body: z.string().trim().min(2).max(2000),
-    severity: z.enum(["info", "warning", "critical"]),
-    audienceType: z.enum(["all", "zone", "project"]),
-    audienceRef: z.string().trim().max(120),
-  })
-  .refine((value) => value.audienceType === "all" || value.audienceRef.length > 0, {
-    path: ["audienceRef"],
-  });
+/**
+ * El público ya no es un tipo + una referencia, sino criterios que se
+ * combinan (AND). "Buenos Aires + disponibles" es un público válido; con el
+ * modelo anterior había que elegir uno de los dos.
+ */
+const audienceSchema = z.object({
+  zones: z.array(z.string().trim().min(1).max(120)).max(30).default([]),
+  projectIds: z.array(z.string().uuid()).max(30).default([]),
+  availableOnly: z.boolean().default(false),
+});
+
+export type AnnouncementAudience = z.infer<typeof audienceSchema>;
+
+const schema = z.object({
+  title: z.string().trim().min(2).max(120),
+  body: z.string().trim().min(2).max(2000),
+  severity: z.enum(["info", "warning", "critical"]),
+  audience: audienceSchema,
+});
+
+function readAudience(formData: FormData): unknown {
+  return {
+    zones: formData.getAll("zones").filter((value): value is string => typeof value === "string"),
+    projectIds: formData
+      .getAll("projectIds")
+      .filter((value): value is string => typeof value === "string"),
+    availableOnly: formData.get("availableOnly") === "on",
+  };
+}
 
 export type AnnouncementState = {
   error: string | null;
@@ -55,8 +74,7 @@ export async function publishAnnouncement(
     title: formData.get("title"),
     body: formData.get("body"),
     severity: formData.get("severity") ?? "info",
-    audienceType: formData.get("audienceType") ?? "all",
-    audienceRef: formData.get("audienceRef") ?? "",
+    audience: readAudience(formData),
   });
   if (!parsed.success) return { error: t("invalidData") };
 
@@ -76,8 +94,7 @@ export async function publishAnnouncement(
       p_title: parsed.data.title,
       p_body: parsed.data.body,
       p_severity: parsed.data.severity,
-      p_audience_type: parsed.data.audienceType,
-      p_audience_ref: parsed.data.audienceRef,
+      p_audience: parsed.data.audience,
     });
     if (error) return { error: error.message };
 
@@ -88,10 +105,19 @@ export async function publishAnnouncement(
       const announcementId = result.announcement_id;
       after(async () => {
         try {
-          await deliverEmails(supabase, user, announcementId, parsed.data);
-        } catch {
-          // El anuncio ya está publicado y en la bandeja de todos: que el email
+          // Push y email, los dos best-effort y después de responder: el
+          // aviso ya está en la bandeja de todos, y que un canal externo
           // falle no puede tumbar la publicación.
+          //
+          // El push faltaba: la UI ya prometía que el aviso llega "al
+          // celular" y no era cierto. Para un corte de calle o una alerta
+          // climática, que suene el teléfono es justamente el punto.
+          await Promise.allSettled([
+            requestPushDelivery(supabase, "announcement", announcementId),
+            deliverEmails(supabase, user, announcementId, parsed.data),
+          ]);
+        } catch {
+          // Ídem: la publicación ya ocurrió.
         }
       });
     }
@@ -102,6 +128,30 @@ export async function publishAnnouncement(
   } catch {
     return { error: t("unexpected") };
   }
+}
+
+/**
+ * Cuántas personas recibirían el aviso con estos criterios.
+ *
+ * Sale de la MISMA función SQL que arma el público al publicar
+ * (`announcement_audience`), no de una consulta parecida: un preview que se
+ * calcula distinto que el envío es una promesa que se rompe sola en cuanto
+ * alguien toca uno de los dos lados (REQ-13.4).
+ */
+export async function previewAnnouncementAudience(
+  audience: unknown,
+): Promise<{ count: number | null }> {
+  const parsed = audienceSchema.safeParse(audience);
+  if (!parsed.success) return { count: null };
+
+  const user = await getCurrentUser();
+  if (!user || user.role !== "company_manager") return { count: null };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("announcement_audience_count", {
+    p_audience: parsed.data,
+  });
+  return { count: error ? null : (data ?? 0) };
 }
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;

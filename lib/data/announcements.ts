@@ -44,3 +44,38 @@ export async function fetchPublishedAnnouncements(
     createdAt: row.created_at,
   }));
 }
+
+/**
+ * Las provincias a las que la empresa puede comunicarse.
+ *
+ * Sale de las zonas declaradas por su **roster activo**, no de dónde hay
+ * obra. El selector del compositor se llenaba con `sites.zone` mientras el
+ * fan-out matchea contra `installers.zones`: una provincia con gente pero
+ * sin sitios activos no aparecía, y elegir una sin instaladores publicaba a
+ * cero personas sin decir nada. Son dos preguntas distintas y esta es la que
+ * corresponde acá: *¿a quién puedo avisarle?*
+ */
+export async function fetchRosterZones(
+  supabase: SupabaseClient<Database>,
+): Promise<string[]> {
+  const { data: roster } = await supabase
+    .from("company_installers")
+    .select("installer_id")
+    .eq("status", "active");
+
+  const ids = [...new Set((roster ?? []).map((row) => row.installer_id))];
+  if (ids.length === 0) return [];
+
+  const { data: installers } = await supabase
+    .from("installers")
+    .select("zones")
+    .in("id", ids);
+
+  const zones = new Set<string>();
+  for (const row of installers ?? []) {
+    for (const zone of row.zones ?? []) {
+      if (zone.trim()) zones.add(zone.trim());
+    }
+  }
+  return [...zones].sort((a, b) => a.localeCompare(b));
+}
