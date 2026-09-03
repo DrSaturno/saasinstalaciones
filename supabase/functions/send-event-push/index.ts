@@ -15,6 +15,7 @@ const EVENTS = [
   "application_rejected",
   "order_assigned",
   "update_received",
+  "announcement",
 ] as const;
 type EventName = (typeof EVENTS)[number];
 
@@ -178,6 +179,9 @@ function notificationFilter(input: Input): { type: string; data: Record<string, 
   if (input.event === "application_accepted") return { type: "application_accepted", data: { broadcast_id: input.resourceId } };
   if (input.event === "application_rejected") return { type: "application_rejected", data: { broadcast_id: input.resourceId } };
   if (input.event === "order_assigned") return { type: "order_assigned", data: { order_id: input.resourceId } };
+  // Un comunicado urgente sólo sirve si suena el teléfono: sin esta rama, el
+  // aviso quedaba esperando a que la persona abriera la app.
+  if (input.event === "announcement") return { type: "announcement", data: { announcement_id: input.resourceId } };
   return { type: "update_received", data: { update_id: input.resourceId } };
 }
 

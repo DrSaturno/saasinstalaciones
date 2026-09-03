@@ -7,7 +7,8 @@ export type PushEvent =
   | "application_accepted"
   | "application_rejected"
   | "order_assigned"
-  | "update_received";
+  | "update_received"
+  | "announcement";
 
 /**
  * Despacha el push como mejora progresiva. La notificación in-app ya fue

@@ -16,7 +16,7 @@ import { DashboardQuickActions } from "@/components/company/dashboard-quick-acti
 import { DashboardSection } from "@/components/company/dashboard-section";
 import { DashboardTodayOrders } from "@/components/company/dashboard-today-orders";
 import { Button } from "@/components/ui/button";
-import { fetchPublishedAnnouncements } from "@/lib/data/announcements";
+import { fetchPublishedAnnouncements, fetchRosterZones } from "@/lib/data/announcements";
 import { fetchDashboardOverview } from "@/lib/data/dashboard";
 import { createClient } from "@/lib/supabase/server";
 import { fetchZoneForecasts } from "@/lib/weather/forecast";
@@ -42,7 +42,7 @@ export default async function CompanyDashboard() {
     supabase.from("calendar_connections").select("google_email").limit(1).maybeSingle(),
   ]);
   const country = (company?.country ?? "AR") as Country;
-  const [overview, clients, coordinators, roster, orders, projects, currency, board, announcements] =
+  const [overview, clients, coordinators, roster, orders, projects, currency, board, announcements, rosterZones] =
     await Promise.all([
       fetchDashboardOverview(supabase, country),
       fetchClients(supabase),
@@ -53,6 +53,7 @@ export default async function CompanyDashboard() {
       fetchCompanyCurrency(supabase),
       fetchBroadcastBoard(supabase),
       fetchPublishedAnnouncements(supabase),
+      fetchRosterZones(supabase),
     ]);
   const forecasts = await fetchZoneForecasts(overview.weatherZones);
 
@@ -98,8 +99,11 @@ export default async function CompanyDashboard() {
         myJobs={<DashboardJobsPeek broadcasts={board.broadcasts.filter((broadcast) => broadcast.status === "open")} />}
         applications={<DashboardApplicationsPeek broadcasts={board.broadcasts} />}
       />
+      {/* Las zonas salen del roster, no de dónde hay obra: el fan-out matchea
+          contra `installers.zones`, así que ofrecer provincias sin gente era
+          ofrecer publicar a cero personas. */}
       <AnnouncementComposer
-        zones={overview.regions.map((region) => region.name)}
+        zones={rosterZones}
         projects={projects.map(({ id, name }) => ({ id, name }))}
         history={announcements}
       />
