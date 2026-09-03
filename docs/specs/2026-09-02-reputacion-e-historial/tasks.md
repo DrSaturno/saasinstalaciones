@@ -28,10 +28,24 @@ Fase 1 usa justamente esa fecha para saber si la condición estaba declarada
 
 ## Fase 1 — El libro de eventos
 
-- [ ] **REP-DB-02** — `installer_performance_events` con `context jsonb` (la foto de las características al momento del hecho), reversa auditable y RLS espejo de la de confiabilidad. → `R8-REP-02`
-- [ ] **REP-SRV-01** — Emisión desde el ciclo de vida: aceptación (con la anticipación en días hábiles ya resuelta) y finalización (con la dificultad congelada). Mismo patrón de trigger que `track_reliability_from_order`. → `R8-REP-02`
-- [ ] **REP-SRV-02** — Emisión del evento de incidencia resuelta, leyendo `order_incidents`. → `R8-REP-02`
-- [ ] **REP-SRV-03** — Reversa de evento con motivo, sin borrar el hecho. → `R8-REP-01`, AC-20-G
+- [x] **REP-DB-02** — `installer_performance_events` con `context jsonb`, reversa auditable y RLS de sólo lectura. → `R8-REP-02`
+- [x] **REP-SRV-01** — Emisión desde el ciclo de vida: aceptación (con la anticipación en días hábiles) y finalización (con las condiciones congeladas), por trigger, igual que `track_reliability_from_order`. → `R8-REP-02`
+- [x] **REP-SRV-02** — Emisión del evento de incidencia resuelta, por trigger sobre `order_incidents`. → `R8-REP-02`
+- [x] **REP-SRV-03** — `revert_performance_event`: deja el motivo y no borra el hecho. → `R8-REP-01`, AC-20-G
+
+**La escritura la cierra la RLS, no los grants.** Siguiendo lo que apareció en
+la Fase 0, esta tabla tiene **sólo políticas de SELECT**: con RLS activa y sin
+política permisiva, insert/update/delete quedan denegados aunque el proyecto le
+otorgue el privilegio a `authenticated` por default. Todo lo que escribe pasa
+por funciones `security definer`. Es el mismo esquema que ya usa
+`installer_reliability_events`, y por eso ahí tampoco hacía falta un revoke.
+
+**Verificado contra la base de demo** (no sólo escrito), con bloques que
+revierten al terminar: la foto junta lo declarado con lo derivado
+(`["altura","exterior","flete"]`), la anticipación da 7 días hábiles para 10
+corridos, sin fecha comprometida queda en `null`, volver a disparar el trigger
+no duplica, una incidencia abierta no emite nada y al resolverse conserva su
+severidad.
 
 ## Fase 2 — El cálculo
 

@@ -1094,6 +1094,87 @@ export type Database = {
           },
         ]
       }
+      installer_performance_events: {
+        Row: {
+          company_id: string
+          context: Json
+          id: string
+          installer_id: string
+          kind: string
+          occurred_at: string
+          order_id: string | null
+          revert_reason: string
+          reverted_at: string | null
+          reverted_by: string | null
+          source_id: string | null
+          source_table: string | null
+        }
+        Insert: {
+          company_id: string
+          context?: Json
+          id?: string
+          installer_id: string
+          kind: string
+          occurred_at?: string
+          order_id?: string | null
+          revert_reason?: string
+          reverted_at?: string | null
+          reverted_by?: string | null
+          source_id?: string | null
+          source_table?: string | null
+        }
+        Update: {
+          company_id?: string
+          context?: Json
+          id?: string
+          installer_id?: string
+          kind?: string
+          occurred_at?: string
+          order_id?: string | null
+          revert_reason?: string
+          reverted_at?: string | null
+          reverted_by?: string | null
+          source_id?: string | null
+          source_table?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installer_performance_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installer_performance_events_installer_id_fkey"
+            columns: ["installer_id"]
+            isOneToOne: false
+            referencedRelation: "installers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installer_performance_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "installer_earnings"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "installer_performance_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installer_performance_events_reverted_by_fkey"
+            columns: ["reverted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       installer_reliability_events: {
         Row: {
           company_id: string
@@ -4059,6 +4140,19 @@ export type Database = {
         Args: { p_lat1: number; p_lat2: number; p_lng1: number; p_lng2: number }
         Returns: number
       }
+      emit_performance_event: {
+        Args: {
+          p_company_id: string
+          p_context: Json
+          p_installer_id: string
+          p_kind: string
+          p_occurred_at?: string
+          p_order_id: string
+          p_source_id: string
+          p_source_table: string
+        }
+        Returns: undefined
+      }
       emit_reliability_event: {
         Args: {
           p_company_id: string
@@ -4113,6 +4207,7 @@ export type Database = {
         Args: { p_value: string }
         Returns: string
       }
+      order_condition_snapshot: { Args: { p_order_id: string }; Returns: Json }
       persist_in_app_notification: {
         Args: {
           p_aggregate_id: string
@@ -4182,6 +4277,10 @@ export type Database = {
       }
       respond_to_reschedule: {
         Args: { p_reschedule_id: string; p_response: string }
+        Returns: undefined
+      }
+      revert_performance_event: {
+        Args: { p_event_id: string; p_reason: string }
         Returns: undefined
       }
       revert_reliability_event: {
