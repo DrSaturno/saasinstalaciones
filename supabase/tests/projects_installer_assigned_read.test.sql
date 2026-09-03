@@ -1,7 +1,15 @@
 -- Gap de la Fase 4 de agenda: `projects` sólo tenía policies de lectura para
 -- el gerente y el coordinador. Un instalador simple, asignado a una orden de
--- ese proyecto, no podía leer la fila — su propia agenda mostraba el proyecto
+-- ese proyecto, no podía leer el nombre — su propia agenda lo mostraba
 -- vacío aunque ya podía ver la orden, el punto y la actividad.
+--
+-- Se resuelve con una función, no una policy sobre toda la fila: el endpoint
+-- de exportación de locaciones confía en RLS de `projects` como único
+-- control de acceso (`app/api/projects/[id]/sites/export`), así que una
+-- policy amplia habría dejado exportar el proyecto entero a cualquiera con
+-- una sola orden asignada ahí. La función sólo devuelve `id`/`name`, sólo de
+-- las propias asignaciones, y sólo para el propio `auth.uid()` — el
+-- parámetro no alcanza para pedir los nombres de otro instalador.
 
 begin;
 
@@ -47,30 +55,30 @@ set local request.jwt.claims to
   '{"sub":"e8000000-0000-0000-0000-000000000012","role":"authenticated"}';
 
 select is(
-  (select count(*)::integer from public.projects
-    where id = 'e8000000-0000-0000-0000-000000000021'),
+  (select count(*)::integer from public.project_names_for_installer(
+    'e8000000-0000-0000-0000-000000000012')),
   1,
-  'el instalador asignado a la orden lee el proyecto de esa orden'
+  'el instalador asignado a la orden lee el nombre de ese proyecto'
 );
 
 set local request.jwt.claims to
   '{"sub":"e8000000-0000-0000-0000-000000000013","role":"authenticated"}';
 
 select is(
-  (select count(*)::integer from public.projects
-    where id = 'e8000000-0000-0000-0000-000000000021'),
+  (select count(*)::integer from public.project_names_for_installer(
+    'e8000000-0000-0000-0000-000000000013')),
   0,
-  'un instalador ajeno, sin asignación en ese proyecto, no lo ve'
+  'un instalador ajeno, sin asignación en ese proyecto, no ve nada'
 );
 
-set local request.jwt.claims to
-  '{"sub":"e8000000-0000-0000-0000-000000000011","role":"authenticated"}';
-
+-- El parámetro no alcanza: pedir los nombres de OTRO instalador (el que sí
+-- está asignado) devuelve vacío, porque la función exige
+-- `p_installer_id = auth.uid()`.
 select is(
-  (select count(*)::integer from public.projects
-    where id = 'e8000000-0000-0000-0000-000000000021'),
-  1,
-  'el gerente de la empresa lo sigue viendo por su propia policy'
+  (select count(*)::integer from public.project_names_for_installer(
+    'e8000000-0000-0000-0000-000000000012')),
+  0,
+  'pedir el nombre a nombre de otro instalador no funciona: sólo el propio auth.uid()'
 );
 
 select * from finish();

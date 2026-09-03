@@ -98,6 +98,7 @@ function flatten(
   orders: RawOrder[],
   installerNames: Map<string, string>,
   companyNames: Map<string, string>,
+  projectNames?: Map<string, string>,
 ): AgendaRow[] {
   const rows: AgendaRow[] = [];
   for (const order of orders) {
@@ -119,7 +120,7 @@ function flatten(
         siteCity: order.sites?.city ?? "",
         siteZone: order.sites?.zone ?? "",
         projectId: order.project_id,
-        projectName: order.projects?.name ?? "—",
+        projectName: order.projects?.name ?? projectNames?.get(order.project_id) ?? "—",
         installerId: order.assigned_installer_id,
         installerName: order.assigned_installer_id
           ? (installerNames.get(order.assigned_installer_id) ?? null)
@@ -212,5 +213,16 @@ export async function fetchInstallerAgenda(
     for (const company of companies ?? []) companyNames.set(company.id, company.name);
   }
 
-  return flatten(raw, new Map(), companyNames);
+  // `projects` no tiene ninguna policy de lectura para un instalador simple
+  // —sólo gerente y coordinador— así que el embed `projects(name)` vuelve
+  // null acá. Esta RPC resuelve sólo el nombre, sólo para las propias
+  // asignaciones: ver el comentario en la migración sobre por qué no es una
+  // policy amplia sobre la tabla.
+  const projectNames = new Map<string, string>();
+  const { data: projects } = await supabase.rpc("project_names_for_installer", {
+    p_installer_id: installerId,
+  });
+  for (const project of projects ?? []) projectNames.set(project.id, project.name);
+
+  return flatten(raw, new Map(), companyNames, projectNames);
 }
