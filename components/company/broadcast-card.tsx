@@ -166,6 +166,7 @@ function ApplicantRow({
   const t = useTranslations("BroadcastCard");
   const common = useTranslations("Common");
   const statusT = useTranslations("Status");
+  const reputationT = useTranslations("Reputation");
   const format = useFormatter();
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -186,6 +187,20 @@ function ApplicantRow({
           <Link href={`/team/${applicant.installerId}`} className="truncate text-sm font-medium hover:text-primary">{applicant.name}</Link>
           <p className="mt-0.5 text-xs text-muted-foreground">
             <span className="text-warning">★</span> {applicant.ratingCount ? applicant.ratingAvg.toFixed(1) : common("new")} · {t("reviews", { count: applicant.ratingCount })}
+          </p>
+          {/* La reputación acá es lo que hace que sirva para conseguir
+              trabajo: son totales de toda su trayectoria, no sólo de esta
+              empresa, y no dicen para quién fue cada trabajo. Informan; la
+              lista no se ordena por este número (ver R8-GATE). */}
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {applicant.reputation && applicant.reputation.score !== null
+              ? reputationT("applicantLine", {
+                  score: applicant.reputation.score,
+                  streak: applicant.reputation.streak,
+                  completed: applicant.reputation.completed,
+                  complex: applicant.reputation.complexCompleted,
+                })
+              : reputationT("applicantNone")}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">

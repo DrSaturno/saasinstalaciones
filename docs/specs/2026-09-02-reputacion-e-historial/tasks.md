@@ -89,8 +89,26 @@ detalle nunca lo hace.
 
 ## Fase 4 — Lo que ve la empresa
 
-- [ ] **REP-UI-04** — Bloque de reputación en la ficha del instalador, separado del de confiabilidad, con los indicadores del pedido: reputación, racha, completados, complejos, aceptados con poca anticipación y cumplimiento. → `R8-REP-04`
-- [ ] **REP-UI-05** — Los mismos agregados junto a cada postulante de una oportunidad, que es el momento en que la reputación efectivamente sirve para conseguir trabajo. **Informar, no ordenar** (ver frontera). → `R8-REP-04`
+- [x] **REP-UI-04** — `components/company/installer-reputation-card.tsx` en la ficha del instalador, con los seis indicadores del pedido. → `R8-REP-04`
+- [x] **REP-UI-05** — Los mismos agregados junto a cada postulante de una oportunidad. La lista **no** se ordena por ese número: informar y decidir son cosas distintas, y ordenar es `R8-GATE`. → `R8-REP-04`
+
+**El "Cumplimiento: 98%" del pedido no es el índice de confiabilidad.** Mostrar
+el índice real a una empresa exigiría recalcularlo cruzando empresas, o sea una
+segunda implementación de una fórmula que ya existe en
+`lib/domain/reliability.ts` — justo el problema que la Fase 3 evitó con el
+desglose. Lo que se muestra es una razón simple sobre los totales que la
+función ya devuelve (completados sobre completados más faltas), y la pantalla
+lo aclara en vez de dejar que se confunda con el otro número.
+
+**Una función por lote para la lista de postulantes.** De a uno serían decenas
+de idas y vueltas para dibujar una lista. `reputation_summaries` llama a
+`reputation_summary` una vez por id, así que no hay una segunda cuenta y el
+permiso se evalúa igual para cada persona: no es una puerta de atrás para leer
+en lote lo que no se podría leer de a uno.
+
+**Verificado contra demo:** con dos personas, una con historia (70/100, 6
+complejos) y otra sin nada (`score: null`), la función devuelve las dos claves
+y el arreglo vacío devuelve `{}`.
 
 ## Verificación
 
