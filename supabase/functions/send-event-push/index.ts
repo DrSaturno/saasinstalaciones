@@ -109,9 +109,21 @@ Deno.serve(async (request) => {
       const { data } = await admin.from("work_orders").select("id, assigned_installer_id").eq("id", eventInput.resourceId).eq("company_id", caller.company_id).maybeSingle();
       return Boolean(data && (!eventInput.subjectId || data.assigned_installer_id === eventInput.subjectId));
     }
-    if (eventInput.event === "update_received") {
+    if (eventInput.event === "update_received" || eventInput.event === "blocker_reported") {
+      // Un avance o un bloqueo los origina el instalador asignado a la orden.
+      // resourceId es el order_update; `installer_id` lo ata a quien lo cargó.
+      // Sin esta rama, `blocker_reported` caía al `return false` y el push del
+      // bloqueo nunca se entregaba (SEC-14, bug introducido en el punto 24).
       if (caller.role !== "installer") return false;
       const { data } = await admin.from("order_updates").select("id").eq("id", eventInput.resourceId).eq("installer_id", caller.id).maybeSingle();
+      return Boolean(data);
+    }
+    if (eventInput.event === "announcement") {
+      // Un comunicado lo publica el gerente de la empresa. resourceId es el
+      // anuncio; se verifica que pertenezca a la empresa del que llama. Sin
+      // esta rama, el push de anuncios nunca se entregaba (SEC-14, punto 23).
+      if (caller.role !== "company_manager" || !caller.company_id) return false;
+      const { data } = await admin.from("announcements").select("id").eq("id", eventInput.resourceId).eq("company_id", caller.company_id).maybeSingle();
       return Boolean(data);
     }
     return false;
