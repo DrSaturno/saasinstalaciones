@@ -11,19 +11,22 @@ import { logEvent } from "@/lib/observability";
  * contador en memoria no sirve: el estado tiene que estar afuera. Se usa Redis
  * de Upstash (REST, sin conexión persistente, pensado para serverless).
  *
- * **Degrada a no-op si faltan las credenciales.** Sin
- * `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` —dev local, CI, o antes
- * de aprovisionar el servicio— `enforceRateLimit` deja pasar todo y avisa una
- * vez. Así el código se puede mergear y desplegar sin romper nada, y el límite
- * se activa solo cuando esas variables existen en producción.
+ * **Degrada a no-op si faltan las credenciales.** Sin URL+token de Redis —dev
+ * local, CI, o antes de aprovisionar el servicio— `enforceRateLimit` deja pasar
+ * todo y avisa una vez. Así el código se puede mergear y desplegar sin romper
+ * nada, y el límite se activa solo cuando esas variables existen en producción.
+ *
+ * Acepta dos convenciones de nombres: `UPSTASH_REDIS_REST_URL`/`_TOKEN` (Upstash
+ * directo, dev local) y `KV_REST_API_URL`/`KV_REST_API_TOKEN` (los que inyecta
+ * la integración de Upstash en Vercel). Se prefiere la primera si están las dos.
  */
 
 let redis: Redis | null = null;
 let warned = false;
 
 function client(): Redis | null {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
   if (!url || !token) {
     if (!warned) {
       // Una sola vez por proceso: en dev/CI es lo esperado, no un error.
