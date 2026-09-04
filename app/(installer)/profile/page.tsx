@@ -1,3 +1,4 @@
+import { ShieldCheck } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { getCurrentUser, ROLE_HOME, isInstallerArea } from "@/lib/auth";
@@ -21,6 +22,8 @@ import {
 import { WINDOW_DAYS } from "@/lib/domain/reliability";
 import { Badge } from "@/components/ui/badge";
 import { AvatarUpload } from "@/components/installer/avatar-upload";
+import { TwoFactorSettings } from "@/components/security/two-factor-settings";
+import { fetchTwoFactorStatus } from "@/lib/data/two-factor";
 import {
   Card,
   CardContent,
@@ -30,8 +33,9 @@ import {
 } from "@/components/ui/card";
 
 export default async function InstallerProfilePage() {
-  const [t, format] = await Promise.all([
+  const [t, twoFactorT, format] = await Promise.all([
     getTranslations("Profile"),
+    getTranslations("TwoFactor"),
     getFormatter(),
   ]);
   const user = await getCurrentUser();
@@ -39,6 +43,7 @@ export default async function InstallerProfilePage() {
   if (!isInstallerArea(user)) redirect(ROLE_HOME[user.role]);
 
   const supabase = await createClient();
+  const twoFactor = await fetchTwoFactorStatus(supabase);
   const [reputation, availability, globalAvailability, { data: profile }, reliabilityEvents] =
     await Promise.all([
       fetchInstallerReputation(supabase, user.id),
@@ -198,6 +203,19 @@ export default async function InstallerProfilePage() {
           serviceRadiusKm={reputation.serviceRadiusKm}
         />
       </div>
+
+      {/* Verificación en dos pasos (SEC-13): opcional para el instalador. */}
+      <Card className="mt-8">
+        <CardHeader className="border-b">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="size-4 text-primary" aria-hidden="true" />
+            <CardTitle>{twoFactorT("settingsTitle")}</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <TwoFactorSettings enrolled={twoFactor.enrolled} required={false} />
+        </CardContent>
+      </Card>
 
       <AvailabilitySettings
         companies={availability}

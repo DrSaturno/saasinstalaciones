@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { getCurrentUser, ROLE_HOME } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { fetchTwoFactorStatus, twoFactorGate } from "@/lib/data/two-factor";
 import { countPendingLocationIssues } from "@/lib/data/location-issues";
 import { countUnlinkedSites } from "@/lib/data/canonical-divergence";
 import { AppShell } from "@/components/shared/app-shell";
@@ -24,6 +25,14 @@ export default async function CompanyLayout({
   // haya filas sin decidir. Un ítem fijo para un artefacto de migración sería
   // ruido permanente en el menú.
   const supabase = await createClient();
+
+  // MFA obligatoria para el gerente (SEC-13): sin AAL2 no entra a su área. El
+  // gate manda a enrolar (si no tiene factor) o a verificar (si lo tiene pero
+  // no subió de nivel). `/two-factor` está fuera de este layout, así que no
+  // hay loop.
+  const twoFactor = twoFactorGate(await fetchTwoFactorStatus(supabase), user.role);
+  if (twoFactor) redirect(twoFactor);
+
   const [pendingLocationIssues, unlinkedSites] = await Promise.all([
     countPendingLocationIssues(supabase),
     countUnlinkedSites(supabase),

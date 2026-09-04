@@ -2426,5 +2426,36 @@
       "request_changes": "Se pidieron correcciones: {reason}",
       "reopen": "Trabajo reabierto: {reason}"
     }
+  },
+  "TwoFactor": {
+    "notAuthenticated": "Iniciá sesión de nuevo.",
+    "enrollFailed": "No se pudo iniciar la verificación en dos pasos. Probá de nuevo.",
+    "badCode": "Código incorrecto. Fijate en tu app de autenticación e intentá de nuevo.",
+    "tooManyCodes": "Demasiados intentos. Esperá unos minutos.",
+    "noFactor": "No tenés la verificación en dos pasos activada.",
+    "disableFailed": "No se pudo desactivar. Probá de nuevo.",
+    "preparing": "Preparando el código…",
+    "step1": "1. Abrí tu app de autenticación (Google Authenticator, Authy, 1Password…) y escaneá el QR.",
+    "step2": "2. Escribí el código de 6 dígitos que aparece para confirmar.",
+    "qrAlt": "Código QR para la app de autenticación",
+    "manualEntry": "¿No podés escanear? Cargá esta clave a mano:",
+    "codeLabel": "Código de 6 dígitos",
+    "verifying": "Verificando…",
+    "activate": "Activar",
+    "cancel": "Cancelar",
+    "enrolledOk": "Verificación en dos pasos activada",
+    "verifyPrompt": "Escribí el código de 6 dígitos de tu app de autenticación.",
+    "continue": "Continuar",
+    "setupTitle": "Activá la verificación en dos pasos",
+    "setupRequiredHint": "Tu cuenta maneja datos sensibles, así que este paso es obligatorio para entrar.",
+    "setupOptionalHint": "Sumá una capa extra de seguridad a tu cuenta. Es opcional.",
+    "verifyTitle": "Verificación en dos pasos",
+    "settingsTitle": "Verificación en dos pasos",
+    "settingsOn": "Activada. Te pedimos un código al iniciar sesión.",
+    "settingsOffRequired": "Obligatoria para tu rol. Actívala para poder entrar.",
+    "settingsOffOptional": "Desactivada. Podés activarla para proteger más tu cuenta.",
+    "enable": "Activar",
+    "disable": "Desactivar",
+    "disabled": "Verificación en dos pasos desactivada"
   }
 }

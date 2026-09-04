@@ -2426,5 +2426,36 @@
       "request_changes": "Foram pedidas correções: {reason}",
       "reopen": "Trabalho reaberto: {reason}"
     }
+  },
+  "TwoFactor": {
+    "notAuthenticated": "Faça login novamente.",
+    "enrollFailed": "Não foi possível iniciar a verificação em duas etapas. Tente de novo.",
+    "badCode": "Código incorreto. Confira no seu app autenticador e tente de novo.",
+    "tooManyCodes": "Muitas tentativas. Aguarde alguns minutos.",
+    "noFactor": "Você não tem a verificação em duas etapas ativada.",
+    "disableFailed": "Não foi possível desativar. Tente de novo.",
+    "preparing": "Preparando o código…",
+    "step1": "1. Abra seu app autenticador (Google Authenticator, Authy, 1Password…) e escaneie o QR.",
+    "step2": "2. Digite o código de 6 dígitos que aparece para confirmar.",
+    "qrAlt": "Código QR para o app autenticador",
+    "manualEntry": "Não consegue escanear? Insira esta chave manualmente:",
+    "codeLabel": "Código de 6 dígitos",
+    "verifying": "Verificando…",
+    "activate": "Ativar",
+    "cancel": "Cancelar",
+    "enrolledOk": "Verificação em duas etapas ativada",
+    "verifyPrompt": "Digite o código de 6 dígitos do seu app autenticador.",
+    "continue": "Continuar",
+    "setupTitle": "Ative a verificação em duas etapas",
+    "setupRequiredHint": "Sua conta lida com dados sensíveis, então este passo é obrigatório para entrar.",
+    "setupOptionalHint": "Adicione uma camada extra de segurança à sua conta. É opcional.",
+    "verifyTitle": "Verificação em duas etapas",
+    "settingsTitle": "Verificação em duas etapas",
+    "settingsOn": "Ativada. Pedimos um código ao entrar.",
+    "settingsOffRequired": "Obrigatória para o seu perfil. Ative para poder entrar.",
+    "settingsOffOptional": "Desativada. Você pode ativá-la para proteger mais a sua conta.",
+    "enable": "Ativar",
+    "disable": "Desativar",
+    "disabled": "Verificação em duas etapas desativada"
   }
 }
