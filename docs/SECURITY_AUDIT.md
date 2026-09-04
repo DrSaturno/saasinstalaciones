@@ -27,6 +27,27 @@
 > aislado). Resto (P2/P3): pendientes.
 >
 > **Con esto los cuatro P1 (SEC-01..05) están cerrados.**
+>
+> **Bloque B (P2/P3) — en curso:**
+> - **SEC-06 (parcial):** `shadcn` movido a `devDependencies` (era CLI, no se
+>   importa en runtime). El árbol de **producción** baja de 17 a **6** vulns
+>   high; las 6 restantes son DoS de build en transitivas de `next`/`exceljs`
+>   (browserslist, nanoid, brace-expansion), sin exploit en esta app (requieren
+>   config/args controlados por el atacante) — **se aceptan como residual** en
+>   vez de forzar overrides que saltan de versión mayor (nanoid 3→6 rompía
+>   next). Se limpian cuando se actualice el framework.
+> - **SEC-14 CORREGIDO** (código): la Edge Function `send-event-push` ya
+>   autoriza `announcement` y `blocker_reported` (mismo patrón que
+>   `update_received`/`order_assigned`). **Requiere redeploy de la función**
+>   para tomar efecto en producción — no viaja con las migraciones.
+> - **SEC-10 REEVALUADO — no es un hueco de seguridad.** Verificado
+>   empíricamente: la policy `evidence_read`/`evidence_company_delete` usa
+>   `storage.foldername(name)` dentro de un subquery `sites s`, donde `name`
+>   resuelve a `sites.name` (no `objects.name`). Sobre un nombre de sitio real,
+>   `foldername(...)` da `[]` y `[2]` es NULL → `s.id = NULL` **nunca** concede.
+>   **Falla cerrado:** no hay fuga; es un bug de funcionalidad (los
+>   coordinadores no leen evidencia a nivel sitio por esa rama). Fuera del
+>   alcance de seguridad; se deja anotado para un fix de corrección aparte.
 
 > Las pruebas dinámicas se ejecutaron **exclusivamente contra Demo**
 > (`krxewmfauohixmmzsvkp`) y contra la base por SQL. En producción sólo se
