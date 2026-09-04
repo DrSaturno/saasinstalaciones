@@ -48,6 +48,14 @@
 >   al aprovisionar el servicio. Falla abierto ante error de Redis (un problema
 >   del limitador no puede dejar a la gente afuera de su cuenta). Test del
 >   no-op incluido.
+> - **SEC-07 CORREGIDO** (código): la CSP pasó de `Report-Only` (que no
+>   bloqueaba ni reportaba) a **enforcing**. Se conserva `unsafe-inline`
+>   (Next/Radix), se saca `unsafe-eval` en producción, y se endurece el resto.
+>   Verificado: el header sale enforcing y bien formado (preview de Vercel), y
+>   login/dashboard/settings **hidratan sin ninguna violación de CSP** (dev
+>   local contra Demo). El salto a nonce+strict-dynamic (para quitar
+>   `unsafe-inline`) queda pendiente: fuerza render dinámico y toca el caché del
+>   PWA.
 > - **SEC-11:** es un toggle del dashboard de Supabase Auth (Prevent leaked
 >   passwords / HIBP) — no se puede tocar por MCP; queda del lado del usuario.
 > - **SEC-12 VERIFICADO — bajo riesgo, sin acción.** Las 14 funciones que marca
