@@ -10,6 +10,12 @@ export default defineConfig({
     exclude: ["node_modules", ".next", "e2e"],
   },
   resolve: {
-    alias: { "@": path.resolve(__dirname) },
+    alias: {
+      "@": path.resolve(__dirname),
+      // `server-only` lanza si se importa fuera del build RSC; en la suite
+      // unitaria se reemplaza por un stub vacío. El build de producción sigue
+      // aplicando la frontera server/client de verdad.
+      "server-only": path.resolve(__dirname, "test/stubs/empty.ts"),
+    },
   },
 });

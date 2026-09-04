@@ -2025,7 +2025,8 @@
     "assignmentOutsideAvailability": "Ese instalador tiene un período de ausencia aprobado en esa fecha.",
     "assignmentTravelConflict": "El tiempo entre este trabajo y el siguiente compromiso del instalador es insuficiente.",
     "assignmentActivityClosed": "Esta orden ya está cerrada; no se le puede asignar un instalador.",
-    "invalidMinPhotos": "El mínimo de fotos tiene que estar entre 0 y 20."
+    "invalidMinPhotos": "El mínimo de fotos tiene que estar entre 0 y 20.",
+    "tooManyAttempts": "Demasiados intentos. Esperá unos minutos y volvé a probar."
   },
   "Coordination": {
     "title": "Coordinación",

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { SITE_COLUMNS } from "@/lib/domain/site-template";
 import {
   buildSiteExportRows,
@@ -28,6 +29,17 @@ export async function GET(
 ) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+
+  // Límite por usuario (SEC-08): exportar pagina miles de locaciones. Sin
+  // freno, es un motor de extracción masiva. 20 exportaciones por hora cubre
+  // el uso real y ahoga el scraping automatizado.
+  const gate = await enforceRateLimit("sites_export", user.id, 20, 3600);
+  if (!gate.allowed) {
+    return NextResponse.json(
+      { error: "rate_limited" },
+      { status: 429, headers: { "Retry-After": String(gate.retryAfterSeconds) } },
+    );
+  }
 
   const { id } = await params;
   const supabase = await createClient();

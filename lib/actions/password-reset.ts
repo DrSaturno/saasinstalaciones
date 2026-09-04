@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { applicationOrigin } from "@/lib/app-origin";
 import { createClient } from "@/lib/supabase/server";
+import { clientIp, enforceRateLimit } from "@/lib/security/rate-limit";
 
 const requestSchema = z.object({ email: z.string().email() });
 
@@ -25,6 +26,14 @@ export async function requestPasswordReset(
   const parsed = requestSchema.safeParse({ email: formData.get("email") });
   // El formato inválido sí se avisa: no revela nada y evita el envío mudo.
   if (!parsed.success) return { error: t("invalidEmail") };
+
+  // Límite por IP (SEC-08): sin esto, este formulario público es un motor de
+  // envío de emails a cualquier casilla. El límite se aplica ANTES de pedirle
+  // el email a Supabase, así no se puede abusar del reenvío. Se mantiene la
+  // respuesta uniforme: al llegar al límite se dice "listo" igual, para no
+  // volverlo un oráculo de rate limit.
+  const gate = await enforceRateLimit("password_reset", await clientIp(), 5, 900);
+  if (!gate.allowed) return { error: null, sent: true };
 
   try {
     const supabase = await createClient();
