@@ -29,7 +29,8 @@ for (const [name, actor] of Object.entries(ACTORS) as [ActorName, (typeof ACTORS
       const secret = ((await secretBox.textContent()) ?? "").trim();
       expect(secret.length).toBeGreaterThan(0);
       await page.locator("#totp-code").fill(generateTotp(secret));
-      await page.getByRole("button", { name: /activar/i }).click();
+      // "Activar" (es) / "Ativar" (pt): managerB corre en portugués.
+      await page.getByRole("button", { name: /activar|ativar/i }).click();
     }
 
     // El proxy resuelve el rol y manda a su área: llegar ahí es la señal de
