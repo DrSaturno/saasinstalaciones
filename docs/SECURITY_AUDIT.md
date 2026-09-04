@@ -10,7 +10,14 @@
 > `rpc_execute_hardening` 12/12). La misma migración cierra un BOLA adicional
 > hallado durante el fix: `reputation_contributions` filtraba el detalle por
 > evento con `company_id` a cualquier usuario, salteando el filtro por empresa
-> de `reputation_detail` (DEC-17). Resto de hallazgos: pendientes.
+> de `reputation_detail` (DEC-17).
+>
+> **SEC-04 CORREGIDO** — `xlsx` fijado a la build oficial de SheetJS
+> `0.20.3` (`https://cdn.sheetjs.com/...`), que corrige el prototype pollution
+> y el ReDoS. Se conserva SheetJS (no exceljs) a propósito: su tolerancia con
+> dialectos de `.xlsx` es la que el importador necesita. Misma API, sin cambio
+> de código; `pnpm audit --audit-level=high` ya no lista `xlsx`. Resto:
+> pendientes.
 
 > Las pruebas dinámicas se ejecutaron **exclusivamente contra Demo**
 > (`krxewmfauohixmmzsvkp`) y contra la base por SQL. En producción sólo se
