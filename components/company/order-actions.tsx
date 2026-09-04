@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { assignInstaller, rescheduleOrder } from "@/lib/actions/orders/assignment";
 import { transitionOrder } from "@/lib/actions/orders/lifecycle";
-import { ORDER_TRANSITIONS, isTerminal } from "@/lib/domain/transitions";
+import { ORDER_TRANSITIONS } from "@/lib/domain/transitions";
 import { ORDER_STATUS } from "@/lib/domain/status";
 import { Button } from "@/components/ui/button";
 import { RatingDialog } from "@/components/company/rating-dialog";
@@ -46,8 +46,20 @@ export function OrderActions({
   const [reason, setReason] = useState("");
   // El gerente nunca "envía a revisión": eso lo hace el instalador asignado.
   // Él aprueba desde revisión, y puede reabrir o cancelar.
+  //
+  // Traslado y llegada quedan fuera por el mismo motivo: son hechos que sólo
+  // sabe quien se está moviendo, y el trigger los rechaza para cualquier otro
+  // (FLD-R1.2). Ofrecerlos acá sería ofrecer un botón condenado a fallar.
+  //
+  // La reapertura de una orden ya finalizada también sale de esta lista: pide
+  // motivo obligatorio (FLD-R6.4) y va por su propio diálogo, no por el botón
+  // genérico de cambio de estado.
   const targets = (ORDER_TRANSITIONS[status] ?? []).filter(
-    (to) => to !== "en_revision",
+    (to) =>
+      to !== "en_revision" &&
+      to !== "en_camino" &&
+      to !== "en_sitio" &&
+      !(status === "finalizada" && to === "en_proceso"),
   );
 
   const doTransition = (to: OrderStatus) => {
@@ -129,7 +141,10 @@ export function OrderActions({
       {/* Transiciones */}
       <div>
         <h3 className="text-sm font-medium text-muted-foreground">{t("changeStatus")}</h3>
-        {isTerminal(status) ? (
+        {/* Se pregunta por los destinos que quedan, no por `isTerminal`: una
+            orden finalizada ya no es terminal (se puede reabrir) pero su
+            reapertura va por otro camino, así que acá no queda ninguno. */}
+        {targets.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">
             {t("terminal", {
               status: statusT(ORDER_STATUS[status].key).toLocaleLowerCase(),

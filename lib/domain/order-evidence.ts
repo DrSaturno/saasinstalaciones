@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { OrderUpdateType } from "@/types/database";
+import type { OrderStatus, OrderUpdateType } from "@/types/database";
 
 export const ORDER_EVIDENCE_KINDS = ["message", "image", "document", "link"] as const;
 export type EvidenceKind = (typeof ORDER_EVIDENCE_KINDS)[number];
@@ -18,7 +18,18 @@ export type EvidenceItem = {
   photos: string[];
   links: string[];
   authorId: string | null;
+  /** Cuándo llegó la fila a la base (`received_at` de REQ-14.7). */
   createdAt: string;
+  /**
+   * Cuándo pasó de verdad (`occurred_at`). Para lo escrito desde el escritorio
+   * coincide con `createdAt`; para lo que viene del campo lo pone el reloj del
+   * teléfono, así que un evento sincronizado tres horas más tarde conserva su
+   * hora real.
+   */
+  occurredAt: string;
+  /** Estado anterior y nuevo. Null en los eventos que no mueven el estado. */
+  fromStatus: OrderStatus | null;
+  toStatus: OrderStatus | null;
   storagePath: string | null;
 };
 

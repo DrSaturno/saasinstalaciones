@@ -33,7 +33,7 @@ export default async function ProjectDetailPage({
   ]);
   const supabase = await createClient();
   const [{ data: project }, sites, { data: orderAmounts }, { data: incidents }, clients, coordinators, roster] = await Promise.all([
-    supabase.from("projects").select("id, name, client_name, client_id, coordinator_id, description, status, starts_at, ends_at, country, zones, planned_installations, billing_mode, contract_amount, currency, archived_at").eq("id", id).single(),
+    supabase.from("projects").select("id, name, client_name, client_id, coordinator_id, description, status, starts_at, ends_at, country, zones, planned_installations, billing_mode, contract_amount, currency, min_completion_photos, archived_at").eq("id", id).single(),
     fetchAllSites(supabase, id),
     // Se amplía la consulta que ya existía en vez de agregar otra: el
     // rendimiento necesita costo, asignación y fecha de fin de las mismas
@@ -132,6 +132,7 @@ export default async function ProjectDetailPage({
             startsAt: project.starts_at ?? "", endsAt: project.ends_at ?? "", country: project.country,
             zones: project.zones, plannedInstallations: project.planned_installations,
             billingMode: project.billing_mode, contractAmount: project.contract_amount,
+            minCompletionPhotos: project.min_completion_photos,
             currency: project.currency,
           }} />
           <ArchiveProjectButton projectId={project.id} archived={Boolean(project.archived_at)} name={project.name} />

@@ -74,11 +74,18 @@ export async function transitionOrder(
 
     // Rastro en el historial (order_updates). id generado en server acá:
     // esta acción no es de área installer, no necesita idempotencia offline.
+    //
+    // `from_status`/`to_status` son la traza real (FLD-R2.1). La nota en prosa
+    // se sigue escribiendo porque hay historial viejo que sólo tiene eso, pero
+    // ya no es la fuente: era una frase traducida al idioma de quien ejecutó
+    // el cambio, y reconstruir el historial obligaba a parsearla.
     await supabase.from("order_updates").insert({
       id: crypto.randomUUID(),
       order_id: orderId,
       company_id: companyId,
       type: "system",
+      from_status: order.status,
+      to_status: toStatus,
       note: note?.trim()
         ? t("systemStatusChangeNote", {
             status: statusT(`order.${toStatus}`),

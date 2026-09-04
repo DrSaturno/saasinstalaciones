@@ -81,13 +81,23 @@ export async function flush(): Promise<number> {
               type: item.updateType!,
               note: item.note ?? "",
               photos: photoPaths,
+              from_status: item.fromStatus ?? null,
+              to_status: item.toStatusTrace ?? null,
+              // `client_created_at` es el momento en que pasó de verdad
+              // (`occurred_at`); `created_at` lo pone la base cuando llega
+              // (`received_at`). Un evento que se sincroniza tres horas
+              // después conserva su hora real: REQ-14.7.
               client_created_at: new Date(item.createdAt).toISOString(),
             },
             { onConflict: "id", ignoreDuplicates: true },
           );
           if (error) throw error;
 
-          await requestPushDelivery(supabase, "update_received", item.id);
+          await requestPushDelivery(
+            supabase,
+            item.updateType === "blocker" ? "blocker_reported" : "update_received",
+            item.id,
+          );
 
           // Limpieza: quitar blobs ya subidos.
           for (const photoId of item.photoIds ?? []) await db.photos.delete(photoId);

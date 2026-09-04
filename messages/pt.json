@@ -72,6 +72,8 @@
       "pendiente": "Pendente",
       "relevamiento": "Levantamento",
       "planificada": "Planejada",
+      "en_camino": "A caminho",
+      "en_sitio": "No local",
       "en_proceso": "Em andamento",
       "en_revision": "Em revisão",
       "finalizada": "Concluída",
@@ -92,6 +94,7 @@
     },
     "update": {
       "checkin": "Check-in",
+      "travel": "Saída para o local",
       "progress": "Progresso",
       "blocker": "Impedimento",
       "done": "Trabalho concluído",
@@ -895,7 +898,8 @@
     "galleryNext": "Próxima imagem",
     "galleryCounter": "{current} de {total}",
     "unknownAuthor": "Alguém da equipe",
-    "you": "Você"
+    "you": "Você",
+    "syncedAt": "· sincronizado {at}"
   },
   "Team": {
     "title": "Equipe",
@@ -1107,7 +1111,10 @@
     "editDescription": "Você pode alterar o escopo, as zonas e a modalidade de cobrança durante o projeto.",
     "saving": "Salvando…",
     "save": "Salvar alterações",
-    "updated": "Projeto atualizado"
+    "updated": "Projeto atualizado",
+    "minCompletionPhotos": "Fotos mínimas para fechar",
+    "minCompletionPhotosPlaceholder": "Usar o da empresa",
+    "minCompletionPhotosHelp": "Deixe vazio para usar o mínimo da empresa. Um 0 significa que este projeto não pede fotos."
   },
   "ReuseSites": {
     "trigger": "Trazer de outro projeto",
@@ -1343,6 +1350,8 @@
       "pendiente": "Voltar para pendente",
       "relevamiento": "Enviar para levantamento",
       "planificada": "Planejar",
+      "en_camino": "A caminho",
+      "en_sitio": "No local",
       "en_proceso": "Iniciar trabalho",
       "en_revision": "Enviar para revisão",
       "finalizada": "Aprovar e concluir",
@@ -1661,7 +1670,19 @@
     "notReady": "A empresa ainda não liberou o início deste trabalho.",
     "photosReady": "{count, plural, =1 {# foto pronta} other {# fotos prontas}}",
     "pickPhotos": "Tirar ou anexar fotos",
-    "acceptFirst": "Confirme que você assume esta ordem para poder iniciá-la."
+    "acceptFirst": "Confirme que você assume esta ordem para poder iniciá-la.",
+    "departedNote": "Saí para o local",
+    "arrivedNote": "Cheguei ao local",
+    "depart": "Estou a caminho",
+    "departing": "Avisando…",
+    "departed": "Você avisou que está a caminho",
+    "arrive": "Cheguei ao local",
+    "arriving": "Registrando chegada…",
+    "arrived": "Chegada registrada",
+    "arrivalNotePlaceholder": "Como encontrou o local? (opcional)",
+    "arrivalPhotosHint": "Se quiser, tire fotos do estado inicial. Não são obrigatórias.",
+    "missingPhotos": "{missing, plural, =1 {Falta # foto} other {Faltam # fotos}} para poder fechar (o mínimo é {required}).",
+    "photoProgress": "{photos} de {required} fotos"
   },
   "SyncIndicator": {
     "offline": "Sem conexão",
@@ -1908,7 +1929,13 @@
     "passwordHint": "Pelo menos 8 caracteres.",
     "changePassword": "Alterar senha",
     "saving": "Salvando…",
-    "passwordUpdated": "Senha atualizada"
+    "passwordUpdated": "Senha atualizada",
+    "fieldTitle": "Trabalho em campo",
+    "fieldDescription": "O que o aplicativo exige do instalador para poder fechar uma ordem.",
+    "minCompletionPhotos": "Fotos mínimas para fechar",
+    "minCompletionPhotosHelp": "Contam todas as fotos da ordem, não só as do fechamento. Cada projeto pode definir seu próprio mínimo.",
+    "fieldSaved": "Pronto, salvo",
+    "save": "Salvar"
   },
   "Errors": {
     "membershipMustKeepRole": "A pessoa deve manter pelo menos uma função nesta empresa.",
@@ -1997,7 +2024,8 @@
     "assignmentScheduleConflict": "Esse instalador já tem um compromisso nesse horário. Não é possível atribuir.",
     "assignmentOutsideAvailability": "Esse instalador tem um período de ausência aprovado nessa data.",
     "assignmentTravelConflict": "O tempo entre este trabalho e o próximo compromisso do instalador é insuficiente.",
-    "assignmentActivityClosed": "Esta ordem já está fechada; não é possível atribuir um instalador."
+    "assignmentActivityClosed": "Esta ordem já está fechada; não é possível atribuir um instalador.",
+    "invalidMinPhotos": "O mínimo de fotos deve estar entre 0 e 20."
   },
   "Coordination": {
     "title": "Coordenação",
@@ -2030,6 +2058,8 @@
       "pendiente": "Para pendente",
       "relevamiento": "Para levantamento",
       "planificada": "Planejar",
+      "en_camino": "A caminho",
+      "en_sitio": "No local",
       "en_proceso": "Iniciar",
       "en_revision": "Para revisão",
       "finalizada": "Confirmar trabalho",
@@ -2368,5 +2398,32 @@
     "noTime": "Sem horário",
     "empty": "Você ainda não tem trabalhos agendados.",
     "noMatch": "Nenhum trabalho corresponde ao filtro."
+  },
+  "Review": {
+    "title": "Revisar a entrega",
+    "description": "O instalador marcou o trabalho como concluído. Revise a evidência antes de aprovar.",
+    "decisionLabel": "O que você quer fazer?",
+    "approve": "Aprovar e fechar",
+    "request_evidence": "Pedir mais fotos",
+    "request_changes": "Pedir correções",
+    "reopen": "Reabrir o trabalho",
+    "approveHelp": "O trabalho fica fechado.",
+    "request_evidenceHelp": "Volta ao instalador para somar evidência.",
+    "request_changesHelp": "Volta ao instalador para corrigir o que você indicar.",
+    "reopenHelp": "Reabre um trabalho já aprovado. Fica registrado.",
+    "reasonLabel": "Motivo",
+    "reasonPlaceholder": "Conte o que falta ou o que precisa ser corrigido…",
+    "reasonRequired": "Escreva o motivo: o instalador o lê para saber o que fazer.",
+    "reasonTooShort": "O motivo precisa ter pelo menos {min} caracteres para ser útil.",
+    "submit": "Confirmar",
+    "submitting": "Salvando…",
+    "approved": "Trabalho aprovado",
+    "returned": "Devolvido ao instalador",
+    "note": {
+      "approve": "Entrega aprovada.",
+      "request_evidence": "Foram pedidas mais fotos: {reason}",
+      "request_changes": "Foram pedidas correções: {reason}",
+      "reopen": "Trabalho reaberto: {reason}"
+    }
   }
 }

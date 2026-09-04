@@ -154,6 +154,7 @@ export async function updateProject(
             ? parsed.data.contractAmount
             : null,
         currency: parsed.data.country === "BR" ? "BRL" : "ARS",
+        min_completion_photos: parsed.data.minCompletionPhotos,
       })
       .eq("id", projectId)
       .eq("company_id", companyId)

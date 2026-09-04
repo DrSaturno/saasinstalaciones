@@ -27,6 +27,7 @@ const EMPTY: ProjectFormDefaults = {
   billingMode: "per_installation",
   contractAmount: null,
   currency: "ARS",
+  minCompletionPhotos: null,
 };
 
 const selectClass = "h-9 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring";
@@ -110,6 +111,22 @@ export function ProjectFormFields({
             <option value="project">{t("billingProject")}</option>
             <option value="per_installation">{t("billingInstallation")}</option>
           </select>
+        </div>
+        {/* Vacío = el mínimo de la empresa. Se deja explícito en el texto de
+            ayuda porque un 0 acá significa otra cosa: no pedir fotos. */}
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="min-completion-photos">{t("minCompletionPhotos")}</Label>
+          <Input
+            id="min-completion-photos"
+            name="minCompletionPhotos"
+            type="number"
+            min="0"
+            max="20"
+            placeholder={t("minCompletionPhotosPlaceholder")}
+            defaultValue={defaults.minCompletionPhotos ?? ""}
+            disabled={pending}
+          />
+          <p className="text-xs text-muted-foreground">{t("minCompletionPhotosHelp")}</p>
         </div>
       </div>
 

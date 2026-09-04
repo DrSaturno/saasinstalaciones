@@ -26,6 +26,8 @@ export type OrderStatus =
   | "pendiente"
   | "relevamiento"
   | "planificada"
+  | "en_camino"
+  | "en_sitio"
   | "en_proceso"
   | "en_revision"
   | "finalizada"
@@ -40,6 +42,7 @@ export type BillingMode = "project" | "per_installation";
  */
 export type PaymentStatus = "pending" | "paid";
 export type OrderUpdateType =
+  | "travel"
   | "checkin"
   | "progress"
   | "blocker"
@@ -764,6 +767,7 @@ export type Database = {
           created_at: string
           id: string
           logo_url: string | null
+          min_completion_photos: number
           name: string
           order_prefix: string
           order_seq: number
@@ -774,6 +778,7 @@ export type Database = {
           created_at?: string
           id?: string
           logo_url?: string | null
+          min_completion_photos?: number
           name: string
           order_prefix?: string
           order_seq?: number
@@ -784,6 +789,7 @@ export type Database = {
           created_at?: string
           id?: string
           logo_url?: string | null
+          min_completion_photos?: number
           name?: string
           order_prefix?: string
           order_seq?: number
@@ -2375,6 +2381,7 @@ export type Database = {
           resolved_by: string | null
           severity: IncidentSeverity
           status: IncidentStatus
+          update_id: string | null
           updated_at: string
         }
         Insert: {
@@ -2391,6 +2398,7 @@ export type Database = {
           resolved_by?: string | null
           severity?: IncidentSeverity
           status?: IncidentStatus
+          update_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -2407,6 +2415,7 @@ export type Database = {
           resolved_by?: string | null
           severity?: IncidentSeverity
           status?: IncidentStatus
+          update_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2443,6 +2452,13 @@ export type Database = {
             columns: ["resolved_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_incidents_update_id_fkey"
+            columns: ["update_id"]
+            isOneToOne: false
+            referencedRelation: "order_updates"
             referencedColumns: ["id"]
           },
         ]
@@ -2643,6 +2659,7 @@ export type Database = {
           company_id: string
           created_at: string
           created_by: string | null
+          from_status: string | null
           id: string
           installer_id: string | null
           links: string[]
@@ -2650,6 +2667,7 @@ export type Database = {
           order_id: string
           photos: Json
           search_vector: unknown
+          to_status: string | null
           type: OrderUpdateType
         }
         Insert: {
@@ -2657,6 +2675,7 @@ export type Database = {
           company_id: string
           created_at?: string
           created_by?: string | null
+          from_status?: string | null
           id: string
           installer_id?: string | null
           links?: string[]
@@ -2664,6 +2683,7 @@ export type Database = {
           order_id: string
           photos?: Json
           search_vector?: unknown
+          to_status?: string | null
           type: OrderUpdateType
         }
         Update: {
@@ -2671,6 +2691,7 @@ export type Database = {
           company_id?: string
           created_at?: string
           created_by?: string | null
+          from_status?: string | null
           id?: string
           installer_id?: string | null
           links?: string[]
@@ -2678,6 +2699,7 @@ export type Database = {
           order_id?: string
           photos?: Json
           search_vector?: unknown
+          to_status?: string | null
           type?: OrderUpdateType
         }
         Relationships: [
@@ -2851,6 +2873,7 @@ export type Database = {
           description: string
           ends_at: string | null
           id: string
+          min_completion_photos: number | null
           name: string
           planned_installations: number
           starts_at: string | null
@@ -2872,6 +2895,7 @@ export type Database = {
           description?: string
           ends_at?: string | null
           id?: string
+          min_completion_photos?: number | null
           name: string
           planned_installations?: number
           starts_at?: string | null
@@ -2893,6 +2917,7 @@ export type Database = {
           description?: string
           ends_at?: string | null
           id?: string
+          min_completion_photos?: number | null
           name?: string
           planned_installations?: number
           starts_at?: string | null
@@ -4331,6 +4356,8 @@ export type Database = {
         Returns: string
       }
       order_condition_snapshot: { Args: { p_order_id: string }; Returns: Json }
+      order_min_photos: { Args: { p_order: string }; Returns: number }
+      order_photo_count: { Args: { p_order: string }; Returns: number }
       persist_in_app_notification: {
         Args: {
           p_aggregate_id: string
@@ -4459,12 +4486,15 @@ export type Database = {
           author_id: string
           body: string
           created_at: string
+          from_status: string
           id: string
           kind: string
           links: string[]
+          occurred_at: string
           photos: Json
           storage_path: string
           subtype: string
+          to_status: string
         }[]
       }
       set_activity_schedule: {
@@ -4478,6 +4508,10 @@ export type Database = {
           p_timezone?: string
         }
         Returns: Json
+      }
+      set_company_min_completion_photos: {
+        Args: { p_value: number }
+        Returns: number
       }
       set_order_payment_status: {
         Args: { p_note?: string; p_order_id: string; p_status: string }

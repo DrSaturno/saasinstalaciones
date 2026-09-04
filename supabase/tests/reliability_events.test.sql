@@ -111,6 +111,16 @@ select is(
 
 update public.work_orders set status = 'en_proceso'
 where id = 'c4000000-0000-0000-0000-00000000004a';
+
+-- Desde el punto 24 cerrar exige evidencia mínima (3 fotos por defecto), y la
+-- valida el trigger. Este archivo prueba los eventos de confiabilidad, no la
+-- evidencia: la fixture cumple el requisito en vez de esquivarlo, porque
+-- esquivarlo sería probar un camino que en producción ya no existe.
+insert into public.order_updates (id, order_id, company_id, installer_id, type, note, photos)
+values (gen_random_uuid(), 'c4000000-0000-0000-0000-00000000004a',
+        'c4000000-0000-0000-0000-000000000001', 'c4000000-0000-0000-0000-000000000012',
+        'done', 'Trabajo terminado', '["a.jpg","b.jpg","c.jpg"]'::jsonb);
+
 update public.work_orders set status = 'en_revision'
 where id = 'c4000000-0000-0000-0000-00000000004a';
 update public.work_orders set status = 'finalizada'

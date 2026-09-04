@@ -23,28 +23,40 @@ const incidentSchema = z.object({
 
 export type IncidentActionState = { error: string | null; ok?: boolean };
 
+/**
+ * Quién puede tocar las incidencias de una orden.
+ *
+ * Gerencia y coordinación, como siempre. Desde el punto 24 se suma **el
+ * instalador asignado a esa orden** —no cualquier instalador de la empresa—:
+ * quien está parado en el sitio y ve el problema es quien puede describirlo, y
+ * hasta acá era justamente el único que no podía abrir el registro que el
+ * resto de la empresa consulta.
+ *
+ * La RLS ya lo permitía (`order_incidents_installer_insert` exige
+ * `created_by = auth.uid()` y la orden asignada); el muro estaba sólo acá.
+ */
 async function requireOperatorForOrder(orderId: string) {
   const [user, supabase] = await Promise.all([
     getCurrentUser(),
     createClient(),
   ]);
-  if (
-    !user ||
-    (user.role !== "company_manager" && !isCoordinatorSomewhere(user))
-  ) {
-    throw new Error("access");
-  }
+  if (!user) throw new Error("access");
 
   const { data: order } = await supabase
     .from("work_orders")
-    .select("id, company_id")
+    .select("id, company_id, assigned_installer_id")
     .eq("id", orderId)
     .single();
-  if (!order || !canOperateCompany(user, order.company_id)) {
-    throw new Error("access");
-  }
+  if (!order) throw new Error("access");
 
-  return { user, companyId: order.company_id, supabase };
+  const isAssignedInstaller = order.assigned_installer_id === user.id;
+  const operates =
+    (user.role === "company_manager" || isCoordinatorSomewhere(user)) &&
+    canOperateCompany(user, order.company_id);
+
+  if (!operates && !isAssignedInstaller) throw new Error("access");
+
+  return { user, companyId: order.company_id, supabase, isAssignedInstaller };
 }
 export async function createIncident(input: z.infer<typeof incidentSchema>): Promise<IncidentActionState> {
   const t = await getTranslations("Errors");
@@ -79,8 +91,15 @@ export async function resolveIncident(incidentId: string, orderId: string): Prom
   const t = await getTranslations("Errors");
   if (!z.string().uuid().safeParse(incidentId).success || !z.string().uuid().safeParse(orderId).success) return { error: t("invalidUpdate") };
   try {
-    const { user, companyId, supabase } =
+    const { user, companyId, supabase, isAssignedInstaller } =
       await requireOperatorForOrder(orderId);
+    // Reportar y dar por resuelto son cosas distintas. El instalador abre la
+    // incidencia porque es quien ve el problema; darla por cerrada es una
+    // decisión de la empresa, y dejársela a quien la reportó sería la misma
+    // autoaprobación que ADR-001 prohíbe en la entrega.
+    if (isAssignedInstaller && user.role !== "company_manager" && !isCoordinatorSomewhere(user)) {
+      return { error: t("accessDenied") };
+    }
     const { error } = await supabase.from("order_incidents").update({
       status: "resolved",
       resolved_by: user.id,

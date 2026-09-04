@@ -11,6 +11,9 @@ function item(over: Partial<EvidenceItem> = {}): EvidenceItem {
     links: [],
     authorId: "a1",
     createdAt: "2026-08-31T12:00:00Z",
+    occurredAt: "2026-08-31T12:00:00Z",
+    fromStatus: null,
+    toStatus: null,
     storagePath: null,
     ...over,
   };
