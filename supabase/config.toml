@@ -3,7 +3,10 @@ project_id = "instalapro"
 [db]
 port = 54322
 shadow_port = 54320
-major_version = 15
+# Debe coincidir con producción: los proyectos hosted corren Postgres 17.
+# Con 15 acá, las migraciones se validaban en local y en CI contra una major
+# distinta de la que las ejecuta de verdad (OPS-17 de la auditoría de producción).
+major_version = 17
 
 [db.seed]
 enabled = true

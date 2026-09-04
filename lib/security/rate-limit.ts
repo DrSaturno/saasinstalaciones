@@ -109,9 +109,14 @@ export async function enforceRateLimit(
       retryAfterSeconds: success ? 0 : Math.max(0, Math.ceil((reset - Date.now()) / 1000)),
     };
   } catch (error) {
+    // La clave NO puede llamarse `message`: el sanitizador de logs redacta por
+    // nombre de clave y `message` está en su lista, así que el texto del error
+    // salía siempre como "[redacted]" — es decir, este log no servía para nada.
+    // `reason` no matchea, y el contenido es un error de infraestructura de
+    // Upstash, no dato de usuario.
     logEvent("error", "rate_limit.backend_error", {
       bucket,
-      message: error instanceof Error ? error.message : String(error),
+      reason: error instanceof Error ? error.message : String(error),
     });
     return { allowed: true, retryAfterSeconds: 0 };
   }

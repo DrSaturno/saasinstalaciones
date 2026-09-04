@@ -3,6 +3,7 @@ import "server-only";
 import type { OAuth2Client } from "google-auth-library";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { applicationOrigin, decryptGoogleToken, encryptGoogleToken, googleOAuthClient } from "@/lib/google-calendar/config";
+import { EXTERNAL_TIMEOUT_MS } from "@/lib/http/timeout";
 import type { Database, OrderStatus } from "@/types/database";
 
 type Connection = Database["public"]["Tables"]["calendar_connections"]["Row"];
@@ -36,10 +37,10 @@ function eventBody(order: CalendarOrder, projectName: string, site: { name: stri
 async function upsertEvent(client: OAuth2Client, calendarId: string, eventId: string | null, body: ReturnType<typeof eventBody>) {
   const base = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`;
   if (eventId) {
-    try { const response = await client.request<{ id: string }>({ url: `${base}/${encodeURIComponent(eventId)}`, method: "PUT", data: body }); return response.data.id; }
+    try { const response = await client.request<{ id: string }>({ url: `${base}/${encodeURIComponent(eventId)}`, method: "PUT", data: body, timeout: EXTERNAL_TIMEOUT_MS }); return response.data.id; }
     catch (error) { const status = (error as { response?: { status?: number } }).response?.status; if (status !== 404 && status !== 410) throw error; }
   }
-  const response = await client.request<{ id: string }>({ url: base, method: "POST", data: body });
+  const response = await client.request<{ id: string }>({ url: base, method: "POST", data: body, timeout: EXTERNAL_TIMEOUT_MS });
   return response.data.id;
 }
 
@@ -66,7 +67,7 @@ export async function syncCompanyCalendar(supabase: SupabaseClient<Database>, us
   for (const order of orderRows) {
     const mapping = mappingMap.get(order.id);
     if (order.status === "cancelada") {
-      if (mapping) { try { await client.request({ url: `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(connection.calendar_id)}/events/${encodeURIComponent(mapping.google_event_id)}`, method: "DELETE" }); } catch { /* A deleted remote event is already consistent. */ } await supabase.from("calendar_order_events").delete().eq("id", mapping.id); removed++; }
+      if (mapping) { try { await client.request({ url: `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(connection.calendar_id)}/events/${encodeURIComponent(mapping.google_event_id)}`, method: "DELETE", timeout: EXTERNAL_TIMEOUT_MS }); } catch { /* A deleted remote event is already consistent. */ } await supabase.from("calendar_order_events").delete().eq("id", mapping.id); removed++; }
       continue;
     }
     const site = siteMap.get(order.site_id); if (!site) continue;

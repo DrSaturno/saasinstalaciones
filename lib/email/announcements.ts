@@ -1,5 +1,8 @@
 import "server-only";
 
+import { logEvent } from "@/lib/observability";
+import { EXTERNAL_TIMEOUT_MS } from "@/lib/http/timeout";
+
 export type AnnouncementEmailStatus = "sent" | "not_configured" | "failed";
 
 type AnnouncementEmailInput = {
@@ -42,15 +45,26 @@ export async function sendAnnouncementEmail(
         text: [input.copy.intro, input.title, input.body, input.copy.footer].join("\n\n"),
       }),
       cache: "no-store",
+      signal: AbortSignal.timeout(EXTERNAL_TIMEOUT_MS),
     });
 
     if (!response.ok) {
-      console.error(`[resend] Announcement delivery failed with status ${response.status}`);
+      logEvent("error", "email.announcement.failed", {
+        provider: "resend",
+        http_status: response.status,
+        announcement_id: input.announcementId,
+        recipients: input.to.length,
+      });
       return "failed";
     }
     return "sent";
-  } catch {
-    console.error("[resend] Announcement delivery failed before receiving a response");
+  } catch (error) {
+    logEvent("error", "email.announcement.failed", {
+      provider: "resend",
+      reason: error instanceof Error ? error.name : "unknown",
+      announcement_id: input.announcementId,
+      recipients: input.to.length,
+    });
     return "failed";
   }
 }

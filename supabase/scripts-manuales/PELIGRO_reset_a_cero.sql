@@ -1,3 +1,24 @@
+-- ############################################################################
+-- ##  GUARDA DE EJECUCION - NO BORRAR ESTE BLOQUE                           ##
+-- ############################################################################
+-- Este script DESTRUYE DATOS y NO SE PUEDE DESHACER.
+--
+-- Contexto que importa: hoy la organizacion de Supabase esta en plan `free`,
+-- que NO provee backups restaurables ni PITR. Si esto corre por error, los
+-- datos NO se recuperan. Ver docs/BACKUP_AND_RESTORE.md
+--
+-- Para ejecutarlo, a conciencia:
+--   1. Confirma a que proyecto estas conectado. Leelo dos veces.
+--   2. Toma un respaldo manual antes.
+--   3. Recien ahi, comenta la linea `raise exception` de abajo.
+--
+-- Mientras esa linea siga activa, correr el archivo entero aborta sin tocar nada.
+do $$
+begin
+  raise exception 'BLOQUEADO: lee el encabezado de este archivo antes de ejecutarlo.';
+end $$;
+-- ############################################################################
+
 -- ============================================================================
 -- RESET A CERO — deja solo el perfil maestro y 1 perfil empresa
 -- ============================================================================

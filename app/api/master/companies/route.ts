@@ -36,7 +36,15 @@ export async function GET() {
     .order("created_at", { ascending: false });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    // El mensaje crudo de Postgres viajaba por la red: nombres de tabla, de
+    // columna y de constraint, más detalles de la política de RLS. Está detrás
+    // de `requirePlatformAdmin`, así que la exposición era acotada, pero no hay
+    // razón para publicarlo — la interfaz ni siquiera lo muestra. Va al log,
+    // que es donde sirve.
+    logEvent("error", "master.companies.list_failed", {
+      database_code: error.code ?? "unknown",
+    });
+    return NextResponse.json({ error: "list_companies_failed" }, { status: 500 });
   }
 
   // Conteos por empresa (proyectos, órdenes, usuarios).

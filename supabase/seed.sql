@@ -9,6 +9,35 @@
 --   instalador3@demo.dev       → installer (Córdoba)
 -- =============================================================
 
+-- 0. GUARDA DE ENTORNO
+--
+-- Este archivo crea cuentas con una contraseña que está versionada en el repo,
+-- incluido un `platform_admin`. El CLI sólo lo ejecuta en local (`db start` /
+-- `db reset`) y nunca en `db push`, así que en condiciones normales no llega a
+-- un entorno hosted. Pero nada impedía pegarlo en el SQL Editor de producción.
+--
+-- La guarda es por datos, no por nombre de entorno: si la base contiene alguna
+-- empresa que no salió de este mismo seed, es un entorno real y se aborta. En
+-- una base limpia (local o CI) `companies` está vacía y esto no molesta.
+do $$
+declare
+  v_ajenas integer;
+begin
+  select count(*) into v_ajenas
+  from public.companies
+  where id not in (
+    '11111111-1111-1111-1111-111111111111',
+    '66666666-6666-6666-6666-666666666666',
+    '77777777-7777-7777-7777-777777777777'
+  );
+
+  if v_ajenas > 0 then
+    raise exception
+      'seed.sql ABORTADO: hay % empresa(s) ajenas al seed. Esto parece un entorno real; el seed crea un platform_admin con contraseña conocida.',
+      v_ajenas;
+  end if;
+end $$;
+
 -- 1. Empresa demo (uuid fijo para referencia)
 insert into public.companies (id, name, country, order_prefix)
 values ('11111111-1111-1111-1111-111111111111', 'Gráfica Demo SA', 'AR', 'DEM')

@@ -1,6 +1,7 @@
 "use client";
 
 import { useAutoReloadOnError } from "@/lib/use-auto-reload";
+import { useErrorReport } from "@/lib/use-error-report";
 
 /*
  * Fallback de último recurso: se activa si falla el propio layout raíz, por lo
@@ -27,9 +28,18 @@ function readLocale(): "es" | "pt" {
   return match?.[1] === "pt" ? "pt" : "es";
 }
 
-export default function GlobalError({ reset }: { reset: () => void }) {
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
   const c = COPY[readLocale()];
 
+  // Este boundary ni siquiera declaraba `error`. Es el caso más grave de todos
+  // —falló el layout raíz— y era el que menos rastro dejaba.
+  useErrorReport(error, "global");
   useAutoReloadOnError();
 
   return (
