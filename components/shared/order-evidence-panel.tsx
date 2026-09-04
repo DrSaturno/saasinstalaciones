@@ -115,8 +115,35 @@ export async function OrderEvidencePanel({
                         </span>
                       ) : null}
                     </span>
-                    <span className="shrink-0 font-mono">{dateLabel(item.createdAt)}</span>
+                    <span className="shrink-0 font-mono">{dateLabel(item.occurredAt)}</span>
                   </div>
+
+                  {/* La traza que pide REQ-14.2: de dónde a dónde pasó la
+                      orden, en columnas y no dentro de una frase traducida.
+                      Antes esto sólo existía como texto en prosa, así que
+                      reconstruir el historial obligaba a parsearlo. */}
+                  {item.toStatus ? (
+                    <p className="mt-1 flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+                      {item.fromStatus ? (
+                        <>
+                          <span>{statusT(`order.${item.fromStatus}`)}</span>
+                          <span aria-hidden="true">→</span>
+                        </>
+                      ) : null}
+                      <span className="font-medium text-foreground">
+                        {statusT(`order.${item.toStatus}`)}
+                      </span>
+                      {/* Sólo cuando difieren: en todo lo escrito desde el
+                          escritorio son el mismo instante y repetirlo sería
+                          ruido. Un evento sincronizado tarde sí necesita
+                          decir cuándo llegó (REQ-14.7). */}
+                      {item.occurredAt !== item.createdAt ? (
+                        <span className="ml-1">
+                          {t("syncedAt", { at: dateLabel(item.createdAt) })}
+                        </span>
+                      ) : null}
+                    </p>
+                  ) : null}
 
                   {item.kind === "message" ? (
                     <div className="mt-1.5">

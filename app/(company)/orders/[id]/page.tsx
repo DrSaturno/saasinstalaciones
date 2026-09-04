@@ -7,6 +7,7 @@ import { fetchActiveRoster } from "@/lib/data/orders";
 import { fetchOrderEvidence } from "@/lib/data/order-evidence";
 import { fetchOrderSchedule } from "@/lib/data/order-schedule";
 import { OrderActions } from "@/components/company/order-actions";
+import { ReviewDeliveryDialog } from "@/components/company/review-delivery-dialog";
 import { OrderIncidents } from "@/components/company/order-incidents";
 import { CancellationReview } from "@/components/company/cancellation-review";
 import { SurveyReview } from "@/components/company/survey-review";
@@ -384,7 +385,11 @@ export default async function OrderDetailPage({
 
         {/* Panel de acciones */}
         <Card className="h-fit">
-          <CardContent className="pt-6">
+          <CardContent className="flex flex-col gap-4 pt-6">
+            {/* Aprobar, pedir evidencia, pedir correcciones o reabrir. Va
+                arriba del cambio de estado genérico porque, cuando la orden
+                está en revisión, es la única decisión que corresponde tomar. */}
+            <ReviewDeliveryDialog orderId={order.id} status={order.status as OrderStatus} />
             <OrderActions
               orderId={order.id}
               status={order.status as OrderStatus}

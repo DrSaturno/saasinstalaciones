@@ -16,15 +16,24 @@ export type TaskRow = {
   accepted_at: string | null;
 };
 
-/** Peso para ordenar: lo accionable primero, lo cerrado al final. */
+/**
+ * Peso para ordenar: lo accionable primero, lo cerrado al final.
+ *
+ * El traslado y la llegada se ubican arriba, junto a `en_proceso`: es el
+ * trabajo de hoy, el que el instalador tiene entre manos ahora mismo. Una
+ * orden en la que ya salió hacia el punto no puede quedar debajo de una
+ * planificada para la semana que viene.
+ */
 const STATUS_WEIGHT: Record<OrderStatus, number> = {
   en_proceso: 0,
-  planificada: 1,
-  en_revision: 2,
-  relevamiento: 3,
-  pendiente: 4,
-  finalizada: 5,
-  cancelada: 6,
+  en_sitio: 1,
+  en_camino: 2,
+  planificada: 3,
+  en_revision: 4,
+  relevamiento: 5,
+  pendiente: 6,
+  finalizada: 7,
+  cancelada: 8,
 };
 
 type RawTask = {

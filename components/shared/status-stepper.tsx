@@ -9,6 +9,8 @@ const STEPS: OrderStatus[] = [
   "pendiente",
   "relevamiento",
   "planificada",
+  "en_camino",
+  "en_sitio",
   "en_proceso",
   "en_revision",
   "finalizada",

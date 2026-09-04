@@ -18,6 +18,8 @@ export type OrderStatus =
   | "pendiente"
   | "relevamiento"
   | "planificada"
+  | "en_camino"
+  | "en_sitio"
   | "en_proceso"
   | "en_revision"
   | "finalizada"
@@ -32,6 +34,7 @@ export type BillingMode = "project" | "per_installation";
  */
 export type PaymentStatus = "pending" | "paid";
 export type OrderUpdateType =
+  | "travel"
   | "checkin"
   | "progress"
   | "blocker"

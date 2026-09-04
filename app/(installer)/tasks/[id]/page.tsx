@@ -59,14 +59,21 @@ export default async function TaskDetailPage({
     .single();
   if (!order) notFound();
 
-  const [{ data: site }, evidence] = await Promise.all([
-    supabase
-      .from("sites")
-      .select("name, address, city, state, zone, lat, lng")
-      .eq("id", order.site_id)
-      .single(),
-    fetchOrderEvidence(supabase, id, { query: evidenceQuery, kind: evidenceKind }),
-  ]);
+  // El mínimo de fotos y el conteo actual salen de la misma función que usa el
+  // trigger, así que el botón de cerrar dice exactamente lo que la base va a
+  // exigir. Calcularlo acá con otra consulta habría dado dos números capaces
+  // de discrepar, que es peor que no mostrar ninguno.
+  const [{ data: site }, evidence, { data: minPhotos }, { data: photoCount }] =
+    await Promise.all([
+      supabase
+        .from("sites")
+        .select("name, address, city, state, zone, lat, lng")
+        .eq("id", order.site_id)
+        .single(),
+      fetchOrderEvidence(supabase, id, { query: evidenceQuery, kind: evidenceKind }),
+      supabase.rpc("order_min_photos", { p_order: id }),
+      supabase.rpc("order_photo_count", { p_order: id }),
+    ]);
 
   // Reprogramación pendiente de este instalador, si la hay. Se resuelve el
   // vencimiento en el servidor: el calendario de feriados vive acá, y mandarlo
@@ -285,6 +292,8 @@ export default async function TaskDetailPage({
             companyId={order.company_id}
             status={order.status as OrderStatus}
             acceptedAt={order.installer_accepted_at}
+            minPhotos={minPhotos ?? 3}
+            photoCount={photoCount ?? 0}
           />
         </CardContent>
       </Card>

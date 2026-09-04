@@ -8,7 +8,8 @@ export type PushEvent =
   | "application_rejected"
   | "order_assigned"
   | "update_received"
-  | "announcement";
+  | "announcement"
+  | "blocker_reported";
 
 /**
  * Despacha el push como mejora progresiva. La notificación in-app ya fue

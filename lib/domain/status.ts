@@ -8,6 +8,11 @@ export const ORDER_STATUS: Record<
   pendiente: { key: "order.pendiente", bg: "#868c9820", fg: "#5b6069" },
   relevamiento: { key: "order.relevamiento", bg: "#2196f320", fg: "#1565a8" },
   planificada: { key: "order.planificada", bg: "#c0d5ff", fg: "#371866" },
+  // Traslado y llegada comparten familia con `en_proceso` (el trabajo ya
+  // está en curso) pero en tonos más claros: se distinguen de un vistazo sin
+  // parecer otro tramo del ciclo.
+  en_camino: { key: "order.en_camino", bg: "#c0eaff", fg: "#166a95" },
+  en_sitio: { key: "order.en_sitio", bg: "#2597d015", fg: "#12586f" },
   en_proceso: { key: "order.en_proceso", bg: "#2597d020", fg: "#166a95" },
   en_revision: { key: "order.en_revision", bg: "#ffecc0", fg: "#8a6d1f" },
   finalizada: { key: "order.finalizada", bg: "#43a04720", fg: "#2c6e2f" },

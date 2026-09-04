@@ -58,6 +58,11 @@ export async function fetchOrderEvidence(
     authorId: row.author_id,
     createdAt: row.created_at,
     storagePath: row.storage_path,
+    fromStatus: (row.from_status as EvidenceItem["fromStatus"]) ?? null,
+    toStatus: (row.to_status as EvidenceItem["toStatus"]) ?? null,
+    // Cuándo pasó, no cuándo llegó. Para lo escrito desde el escritorio son
+    // el mismo instante; para lo que viene del campo pueden diferir en horas.
+    occurredAt: row.occurred_at ?? row.created_at,
   }));
 
   // "Enlaces" no lo sabe la búsqueda SQL: se pidió "message" arriba y se

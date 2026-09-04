@@ -46,6 +46,19 @@ export const projectInputSchema = z
     plannedInstallations: z.coerce.number().int().min(0).max(100000),
     billingMode: z.enum(["project", "per_installation"]),
     contractAmount: optionalAmount,
+    // Override del mínimo de fotos para cerrar (FLD-R4.2). Vacío significa
+    // "usá el de la empresa", que NO es lo mismo que cero: cero es una
+    // decisión explícita de no pedir evidencia en este proyecto.
+    minCompletionPhotos: z
+      .string()
+      .trim()
+      .optional()
+      .transform((value) => (!value ? null : Number(value)))
+      .refine(
+        (value) => value === null || (Number.isInteger(value) && value >= 0 && value <= 20),
+        { message: "invalidMinPhotos" },
+      )
+      .default(null),
   })
   .superRefine((value, context) => {
     if (value.startsAt && value.endsAt && value.endsAt < value.startsAt) {
@@ -78,6 +91,8 @@ export type ProjectFormDefaults = {
   billingMode: BillingMode;
   contractAmount: number | null;
   currency: OrderCurrency;
+  /** Null = hereda el mínimo de la empresa. Cero = este proyecto no pide fotos. */
+  minCompletionPhotos: number | null;
 };
 
 export function projectCurrency(country: Country): OrderCurrency {

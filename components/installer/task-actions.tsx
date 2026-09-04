@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { OrderStatus } from "@/types/database";
 import type { PendingPhoto } from "@/lib/offline/db";
+import { completionReadiness } from "@/lib/domain/field-flow";
 
 type Props = {
   orderId: string;
@@ -18,6 +19,9 @@ type Props = {
   status: OrderStatus;
   /** Null mientras el instalador no confirmó que se hace cargo. */
   acceptedAt: string | null;
+  /** Fotos que la orden exige para poder cerrarse, y las que ya tiene. */
+  minPhotos: number;
+  photoCount: number;
 };
 
 /** Estados en los que la orden todavía no arrancó y confirmarla tiene sentido. */
@@ -33,7 +37,14 @@ function makePhotos(companyId: string, orderId: string, files: File[]): PendingP
   }));
 }
 
-export function TaskActions({ orderId, companyId, status: initialStatus, acceptedAt }: Props) {
+export function TaskActions({
+  orderId,
+  companyId,
+  status: initialStatus,
+  acceptedAt,
+  minPhotos,
+  photoCount,
+}: Props) {
   const t = useTranslations("TaskActions");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -53,6 +64,82 @@ export function TaskActions({ orderId, companyId, status: initialStatus, accepte
     if (online()) setTimeout(() => router.refresh(), 400);
   };
 
+  /**
+   * Etapa 2: salgo hacia la locación.
+   *
+   * La única acción del flujo sin evidencia: se sale de un estacionamiento,
+   * no de una obra. Un solo toque, que es lo que se puede pedir de alguien
+   * que está por subirse a la camioneta.
+   */
+  const depart = () => {
+    const updateId = crypto.randomUUID();
+    startTransition(async () => {
+      await enqueue({
+        id: updateId,
+        kind: "update",
+        orderId,
+        companyId,
+        updateType: "travel",
+        note: t("departedNote"),
+        fromStatus: "planificada",
+        toStatusTrace: "en_camino",
+      });
+      await enqueue({
+        id: crypto.randomUUID(),
+        kind: "transition",
+        orderId,
+        toStatus: "en_camino",
+      });
+      setStatus("en_camino");
+      done(t("departed"));
+    });
+  };
+
+  /**
+   * Etapa 3: llegué.
+   *
+   * Las fotos del estado inicial son OPCIONALES (FLD-R3.2): exigir evidencia
+   * para poder declarar que se llegó dejaría a alguien sin señal parado en la
+   * puerta sin poder registrar nada. El mínimo obligatorio es al cerrar.
+   */
+  const arrive = () => {
+    const photos = makePhotos(companyId, orderId, files);
+    startTransition(async () => {
+      await enqueue(
+        {
+          id: crypto.randomUUID(),
+          kind: "update",
+          orderId,
+          companyId,
+          updateType: "checkin",
+          note: note.trim() || t("arrivedNote"),
+          photoIds: photos.map((p) => p.id),
+          // El origen se lee del estado actual y no se asume: a la llegada se
+          // puede venir del traslado o directo desde `planificada`, cuando el
+          // instalador ya estaba en el punto por otra orden.
+          fromStatus: status,
+          toStatusTrace: "en_sitio",
+        },
+        photos,
+      );
+      await enqueue({
+        id: crypto.randomUUID(),
+        kind: "transition",
+        orderId,
+        toStatus: "en_sitio",
+      });
+      setStatus("en_sitio");
+      done(t("arrived"));
+    });
+  };
+
+  /**
+   * Etapa 4: empieza el trabajo.
+   *
+   * Hasta el punto 24 este botón hacía tres cosas —check-in, arranque y
+   * transición— y era la única puerta al trabajo. Ahora es sólo el arranque:
+   * la llegada tiene su propia etapa.
+   */
   const start = () => {
     startTransition(async () => {
       await enqueue({
@@ -62,6 +149,8 @@ export function TaskActions({ orderId, companyId, status: initialStatus, accepte
         companyId,
         updateType: "checkin",
         note: t("startedNote"),
+        fromStatus: status,
+        toStatusTrace: "en_proceso",
       });
       await enqueue({
         id: crypto.randomUUID(),
@@ -144,7 +233,37 @@ export function TaskActions({ orderId, companyId, status: initialStatus, accepte
     );
   }
 
+  // Una acción por etapa. La base acepta los atajos —se puede ir de
+  // `planificada` derecho a `en_proceso`—, pero la pantalla es un teléfono al
+  // sol y con guantes puestos: ofrecer las tres salidas posibles sería
+  // técnicamente correcto y prácticamente un estorbo. La secuencia se guía.
   if (status === "planificada") {
+    return (
+      <Button onClick={depart} disabled={pending} className="w-full" size="lg">
+        {pending ? t("departing") : t("depart")}
+      </Button>
+    );
+  }
+
+  if (status === "en_camino") {
+    return (
+      <div className="flex flex-col gap-4">
+        <p className="text-sm text-muted-foreground">{t("arrivalPhotosHint")}</p>
+        <Textarea
+          placeholder={t("arrivalNotePlaceholder")}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          rows={2}
+        />
+        <FilePicker files={files} onChange={setFiles} disabled={pending} />
+        <Button onClick={arrive} disabled={pending} className="w-full" size="lg">
+          {pending ? t("arriving") : t("arrive")}
+        </Button>
+      </div>
+    );
+  }
+
+  if (status === "en_sitio") {
     return (
       <Button onClick={start} disabled={pending} className="w-full" size="lg">
         {pending ? t("starting") : t("start")}
@@ -153,6 +272,7 @@ export function TaskActions({ orderId, companyId, status: initialStatus, accepte
   }
 
   if (status === "en_proceso") {
+    const readiness = completionReadiness(photoCount, minPhotos, files.length);
     return (
       <div className="flex flex-col gap-4">
         <Textarea
@@ -180,9 +300,20 @@ export function TaskActions({ orderId, companyId, status: initialStatus, accepte
             {t("reportBlocker")}
           </Button>
         </div>
-        <Button onClick={finish} disabled={pending} size="lg">
-          {pending ? t("sending") : t("markDone")}
-        </Button>
+        {/* El conteo se ve ANTES de apretar, y suma las fotos que están por
+            adjuntarse en este mismo cierre. Un botón que se habilita cuando
+            alcanza le dice a alguien qué hacer; un error después de apretar,
+            sólo que se equivocó. */}
+        <div className="flex flex-col gap-1">
+          <Button onClick={finish} disabled={pending || !readiness.ready} size="lg">
+            {pending ? t("sending") : t("markDone")}
+          </Button>
+          <p className={`text-xs ${readiness.ready ? "text-muted-foreground" : "text-[var(--warning)]"}`}>
+            {readiness.ready
+              ? t("photoProgress", { photos: readiness.photos, required: readiness.required })
+              : t("missingPhotos", { missing: readiness.missing, required: readiness.required })}
+          </p>
+        </div>
       </div>
     );
   }

@@ -19,6 +19,8 @@ const EMPTY_STATUS: Record<OrderStatus, number> = {
   pendiente: 0,
   relevamiento: 0,
   planificada: 0,
+  en_camino: 0,
+  en_sitio: 0,
   en_proceso: 0,
   en_revision: 0,
   finalizada: 0,

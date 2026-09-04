@@ -18,9 +18,12 @@ export type OutboxItem = {
   id: string; // uuid de la operación (idempotencia)
   kind: OutboxKind;
   orderId?: string;
-  // update: los cuatro primeros son hitos operativos; "message" es un mensaje
+  // update: los cinco primeros son hitos operativos; "message" es un mensaje
   // libre del espacio de evidencia, que no mueve el estado de la orden.
-  updateType?: "checkin" | "progress" | "blocker" | "done" | "message";
+  updateType?: "travel" | "checkin" | "progress" | "blocker" | "done" | "message";
+  // Sólo los hitos que mueven el estado los traen; el resto van sin.
+  fromStatus?: string;
+  toStatusTrace?: string;
   note?: string;
   photoIds?: string[]; // referencias a la tabla photos
   companyId?: string;

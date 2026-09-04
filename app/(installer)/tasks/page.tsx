@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchMyTasks } from "@/lib/data/tasks";
 import { PwaLaunchRedirect } from "@/components/installer/pwa-launch-redirect";
 import { TasksView } from "@/components/installer/tasks-view";
-import { isTerminal } from "@/lib/domain/transitions";
+import { isClosed } from "@/lib/domain/transitions";
 
 export default async function InstallerTasks() {
   const user = await getCurrentUser();
@@ -16,11 +16,11 @@ export default async function InstallerTasks() {
   const supabase = await createClient();
   const tasks = await fetchMyTasks(supabase, user.id);
 
-  const open = tasks.filter((task) => !isTerminal(task.status));
+  const open = tasks.filter((task) => !isClosed(task.status));
   // Asignadas que todavía no confirmó: van primero, son la decisión pendiente.
   const toAccept = open.filter((task) => !task.accepted_at);
   const active = open.filter((task) => task.accepted_at);
-  const closed = tasks.filter((task) => isTerminal(task.status));
+  const closed = tasks.filter((task) => isClosed(task.status));
 
   return (
     <div className="mx-auto w-full max-w-[1480px]">

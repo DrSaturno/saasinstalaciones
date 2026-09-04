@@ -16,6 +16,7 @@ const EVENTS = [
   "order_assigned",
   "update_received",
   "announcement",
+  "blocker_reported",
 ] as const;
 type EventName = (typeof EVENTS)[number];
 
@@ -182,6 +183,10 @@ function notificationFilter(input: Input): { type: string; data: Record<string, 
   // Un comunicado urgente sólo sirve si suena el teléfono: sin esta rama, el
   // aviso quedaba esperando a que la persona abriera la app.
   if (input.event === "announcement") return { type: "announcement", data: { announcement_id: input.resourceId } };
+  // Un bloqueo es lo único del flujo de campo que le cambia el día a quien
+  // coordina: si nadie interviene, el instalador se queda parado en el sitio.
+  // Por eso suena el teléfono en vez de esperar a que alguien abra la app.
+  if (input.event === "blocker_reported") return { type: "blocker_reported", data: { update_id: input.resourceId } };
   return { type: "update_received", data: { update_id: input.resourceId } };
 }
 
