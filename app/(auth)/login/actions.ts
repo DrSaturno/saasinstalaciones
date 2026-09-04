@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ROLE_HOME } from "@/lib/auth";
 import { isCompanyManagerBlocked } from "@/lib/domain/company-access";
 import { LOCALE_COOKIE } from "@/i18n/config";
+import { clientIp, enforceRateLimit } from "@/lib/security/rate-limit";
 import type { Locale, UserRole } from "@/types/database";
 
 const loginSchema = z.object({
@@ -31,6 +32,16 @@ export async function loginAction(
 
   if (!parsed.success) {
     return { error: t("invalidData") };
+  }
+
+  // Freno de fuerza bruta (SEC-08): por IP, antes de tocar Supabase Auth. El
+  // límite de la plataforma es el respaldo; éste corta mucho antes y sin
+  // depender del proveedor. 8 intentos cada 5 minutos deja margen a quien
+  // tipea mal la clave y ahoga un ataque automatizado.
+  const ip = await clientIp();
+  const gate = await enforceRateLimit("login", ip, 8, 300);
+  if (!gate.allowed) {
+    return { error: t("tooManyAttempts") };
   }
 
   const supabase = await createClient();

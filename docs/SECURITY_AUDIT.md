@@ -40,6 +40,22 @@
 >   autoriza `announcement` y `blocker_reported` (mismo patrón que
 >   `update_received`/`order_assigned`). **Requiere redeploy de la función**
 >   para tomar efecto en producción — no viaja con las migraciones.
+> - **SEC-08 CORREGIDO** (código): rate limiting distribuido con Upstash Redis
+>   (`lib/security/rate-limit.ts`), aplicado a login (8/5min por IP),
+>   recuperación de contraseña (5/15min por IP, respuesta uniforme) y export de
+>   locaciones (20/h por usuario). **Degrada a no-op sin las env vars**
+>   (`UPSTASH_REDIS_REST_URL`/`TOKEN`), así que dev/CI andan igual y se activa
+>   al aprovisionar el servicio. Falla abierto ante error de Redis (un problema
+>   del limitador no puede dejar a la gente afuera de su cuenta). Test del
+>   no-op incluido.
+> - **SEC-11:** es un toggle del dashboard de Supabase Auth (Prevent leaked
+>   passwords / HIBP) — no se puede tocar por MCP; queda del lado del usuario.
+> - **SEC-12 VERIFICADO — bajo riesgo, sin acción.** Las 14 funciones que marca
+>   el advisor son todas `SECURITY INVOKER` (corren con los privilegios del que
+>   llama, no elevan). Las `SECURITY DEFINER` ya tienen `search_path` fijo. Dos
+>   de las marcadas (`immutable_unaccent`, `tokenizable_words`) alimentan
+>   índices de búsqueda: alterarlas es riesgo real por beneficio marginal. Se
+>   deja como hygiene opcional para más adelante.
 > - **SEC-10 REEVALUADO — no es un hueco de seguridad.** Verificado
 >   empíricamente: la policy `evidence_read`/`evidence_company_delete` usa
 >   `storage.foldername(name)` dentro de un subquery `sites s`, donde `name`
