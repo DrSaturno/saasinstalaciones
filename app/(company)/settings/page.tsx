@@ -1,22 +1,24 @@
-import { Camera, KeyRound, UserRound } from "lucide-react";
+import { Camera, KeyRound, ShieldCheck, UserRound } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { getCurrentUser } from "@/lib/auth";
 import { ChangePasswordForm } from "@/components/shared/change-password-form";
 import { FieldSettingsForm } from "@/components/company/field-settings-form";
+import { TwoFactorSettings } from "@/components/security/two-factor-settings";
 import { createClient } from "@/lib/supabase/server";
+import { fetchTwoFactorStatus, mfaRequiredFor } from "@/lib/data/two-factor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function SettingsPage() {
-  const [t, user, supabase] = await Promise.all([
+  const [t, twoFactorT, user, supabase] = await Promise.all([
     getTranslations("Settings"),
+    getTranslations("TwoFactor"),
     getCurrentUser(),
     createClient(),
   ]);
-  const { data: company } = await supabase
-    .from("companies")
-    .select("min_completion_photos")
-    .limit(1)
-    .maybeSingle();
+  const [{ data: company }, twoFactor] = await Promise.all([
+    supabase.from("companies").select("min_completion_photos").limit(1).maybeSingle(),
+    fetchTwoFactorStatus(supabase),
+  ]);
   const isManager = user?.role === "company_manager";
 
   return (
@@ -69,6 +71,21 @@ export default async function SettingsPage() {
           </CardHeader>
           <CardContent>
             <ChangePasswordForm />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="border-b">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="size-4 text-primary" aria-hidden="true" />
+              <CardTitle>{twoFactorT("settingsTitle")}</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <TwoFactorSettings
+              enrolled={twoFactor.enrolled}
+              required={user ? mfaRequiredFor(user.role) : false}
+            />
           </CardContent>
         </Card>
       </div>

@@ -9,6 +9,7 @@ import { ROLE_HOME } from "@/lib/auth";
 import { isCompanyManagerBlocked } from "@/lib/domain/company-access";
 import { LOCALE_COOKIE } from "@/i18n/config";
 import { clientIp, enforceRateLimit } from "@/lib/security/rate-limit";
+import { fetchTwoFactorStatus } from "@/lib/data/two-factor";
 import type { Locale, UserRole } from "@/types/database";
 
 const loginSchema = z.object({
@@ -88,6 +89,12 @@ export async function loginAction(
     path: "/",
     maxAge: 60 * 60 * 24 * 365,
   });
+
+  // Segundo factor (SEC-13): quien tiene un TOTP verificado pasa por el código
+  // antes de entrar. El enrolamiento obligatorio de admin/gerentes sin factor
+  // lo fuerza el layout de su área, así que acá alcanza con atajar el step-up.
+  const twoFactor = await fetchTwoFactorStatus(supabase);
+  if (twoFactor.mustStepUp) redirect("/two-factor/verify");
 
   // Solo rutas internas: rechazar protocol-relative (//evil.com) y backslash
   // (/\evil.com), que el navegador resolvería como destinos externos.

@@ -58,6 +58,21 @@
 >   PWA.
 > - **SEC-11:** es un toggle del dashboard de Supabase Auth (Prevent leaked
 >   passwords / HIBP) — no se puede tocar por MCP; queda del lado del usuario.
+> - **SEC-13 CORREGIDO** (código): segundo factor TOTP con la API MFA de
+>   Supabase Auth. **Obligatorio para `platform_admin` y `company_manager`**
+>   (`MFA_REQUIRED_ROLES` en `lib/data/two-factor.ts`), **opcional para el
+>   instalador**. El enrolamiento forzado y el step-up se resuelven en los
+>   layouts de `(company)`/`(master)` (`twoFactorGate`) y en `loginAction`; el
+>   área installer nunca invoca el gate, así que un instalador jamás es forzado.
+>   La ruta `/two-factor/*` vive fuera de los route groups de rol para no entrar
+>   en loop de redirección. `confirmTotpEnrollment`/`verifyTotpChallenge` pasan
+>   por el rate-limiter (`mfa_verify`, 10/5min). Verificado end-to-end en Demo
+>   con navegador real y TOTP RFC-6238 calculado con Web Crypto: (1) gerente sin
+>   factor → `/two-factor/setup` → activar → `/dashboard` con sesión en AAL2;
+>   (2) tras cerrar y volver a entrar → `/two-factor/verify` → código → dashboard;
+>   (3) instalador no forzado (garantía arquitectónica + `two-factor.test.ts`
+>   5/5). Datos de prueba de Demo limpiados. **No lleva migración** — usa las
+>   tablas de MFA nativas de Supabase Auth.
 > - **SEC-12 VERIFICADO — bajo riesgo, sin acción.** Las 14 funciones que marca
 >   el advisor son todas `SECURITY INVOKER` (corren con los privilegios del que
 >   llama, no elevan). Las `SECURITY DEFINER` ya tienen `search_path` fijo. Dos
@@ -158,7 +173,7 @@ operativos por tenant.
 | **SEC-10** | P2 | AuthZ (policy) | `storage.objects`: policies `evidence_read`/`evidence_company_delete` usan `storage.foldername(s.name)` (columna `sites.name`) en vez de `objects.name` | [POTENCIAL] | Parece copy-paste: esa rama OR evalúa el path sobre el *nombre* del sitio. Probablemente **falla cerrado** (no concede), pero hay que verificar que no conceda lecturas inesperadas ni rompa lecturas legítimas de evidencia ligada a sites. **Requiere revisión humana.** |
 | **SEC-11** | P2 | Auth config | Advisor Supabase `auth_leaked_password_protection` = deshabilitado | [CONFIRMADO] | Activar protección contra contraseñas filtradas (HIBP) en Supabase Auth. ASVS L2 lo pide para cuentas sensibles. |
 | **SEC-12** | P2 | Config DB | Advisor Supabase: 14 funciones `function_search_path_mutable` | [POTENCIAL] | Mi consulta directa mostró que **todas las `SECURITY DEFINER` tienen `search_path` fijo**; las 14 flagueadas serían no-secdef o falsos positivos. Revisar el listado del advisor y fijar `search_path` donde falte. |
-| **SEC-13** | P3 | Config MFA | Sin MFA para `platform_admin` ni `company_manager` | [CONFIRMADO por ausencia] | ASVS L2 recomienda MFA para cuentas administrativas y de tenant. Habilitar TOTP de Supabase Auth al menos para admin/gerencia. |
+| **SEC-13** ✅ | P3 | Config MFA | Sin MFA para `platform_admin` ni `company_manager` | [CORREGIDO] | TOTP con la API MFA de Supabase Auth: **obligatorio** para admin/gerencia (enrolamiento forzado + step-up en login vía `twoFactorGate`/`loginAction`), **opcional** para el instalador. Verificado end-to-end en Demo. Ver bloque de estado arriba. |
 | **SEC-14** | P3 | Funcional/seguridad | Edge Function `send-event-push`: eventos `announcement` y `blocker_reported` en `EVENTS` **sin rama en `isAuthorized`** → siempre 403 | [CONFIRMADO] | Falla cerrado (no es hueco de seguridad), pero **el push de anuncios y bloqueos nunca se entrega**. Agregar las ramas de autorización. (Bug introducido en puntos 23/24.) |
 | **SEC-15** | P3 | CSRF | `POST /api/master/*` autentican por cookie de sesión | [POTENCIAL, bajo] | Mitigado por SameSite=Lax (bloquea POST cross-site) + esperan JSON (preflight CORS, sin CORS permisivo). Las Server Actions de Next 16 traen verificación de Origin propia. Residual bajo; documentar y, opcionalmente, doble-submit token en `/api/master`. |
 
