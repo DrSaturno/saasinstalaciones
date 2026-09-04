@@ -134,6 +134,25 @@ Producción y no se toca).
    sí pasaba. No es un bug del producto: es cómo hay que sembrar datos de
    prueba de acá en más.
 
+### Gap real, documentado y no cerrado
+
+**La evidencia mínima no se aplica cuando la orden llega a `en_revision` por
+la proyección desde `work_activities`.** `validate_order_transition` arranca
+con un `return new` cuando `app.activity_sync = 'on'`, que es como el punto 17
+dejó que las actividades muevan el estado sin pelearse con la máquina vieja.
+Una orden cerrada por ese camino esquiva el mínimo de fotos.
+
+No se cerró acá a propósito: taparlo significa decidir qué evidencia exige el
+lifecycle de una actividad —que tiene su propio `submitted` con sus propias
+reglas— y eso es rediseñar el punto 17, no terminar el 24. Queda anotado para
+cuando se unifiquen las dos máquinas de estado, que es lo que `R5-CMD-05` de
+la spec madre ya prevé.
+
+Lo detectó el CI: dos fixtures existentes (`reliability_events`,
+`review_decision`) cerraban órdenes sin fotos y pasaron a fallar. Se les
+agregó la evidencia en vez de debilitar la regla — una fixture que esquiva el
+requisito prueba un camino que en producción ya no existe.
+
 ## Fuera de alcance, a propósito
 
 - **Offline v2** (`R5-OFF-01..06`, `R5-CMD-01`): command envelope con

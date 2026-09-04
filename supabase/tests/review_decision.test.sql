@@ -104,6 +104,18 @@ select is(
 -- ADR-001 / AC-24-F: quien ejecutó no cierra su propia entrega, aunque además
 -- coordine el proyecto. Ahora cubre también la reapertura desde `finalizada`,
 -- que antes ni existía como transición.
+--
+-- La orden vuelve a revisión, y para eso hay que cumplir la evidencia mínima
+-- de la Fase 1: el trigger la exige en `en_proceso → en_revision`, así que
+-- una fixture que no la cumpla no llega hasta acá.
+insert into public.order_updates (
+  id, order_id, company_id, installer_id, type, note, photos
+) values (
+  'd8000000-0000-0000-0000-000000000062', 'd8000000-0000-0000-0000-000000000041',
+  'd8000000-0000-0000-0000-000000000001', 'd8000000-0000-0000-0000-000000000011',
+  'done', 'Corregido', '["a.jpg","b.jpg","c.jpg"]'::jsonb
+);
+
 update public.work_orders set status = 'en_revision'
  where id = 'd8000000-0000-0000-0000-000000000041';
 
