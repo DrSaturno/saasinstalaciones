@@ -16,13 +16,22 @@
 > `0.20.3` (`https://cdn.sheetjs.com/...`), que corrige el prototype pollution
 > y el ReDoS. Se conserva SheetJS (no exceljs) a propósito: su tolerancia con
 > dialectos de `.xlsx` es la que el importador necesita. Misma API, sin cambio
-> de código; `pnpm audit --audit-level=high` ya no lista `xlsx`. Resto:
-> pendientes.
+> de código; `pnpm audit --audit-level=high` ya no lista `xlsx`.
+>
+> **SEC-05 y SEC-09 CORREGIDOS** — `supabase/migrations/20260908000006_storage_hardening.sql`
+> fija `allowed_mime_types` + `file_size_limit` en los buckets. `avatars`
+> (público) queda restringido a imágenes de trama: verificado
+> empíricamente en Demo con una sesión real — subir `image/svg+xml` da
+> **400 `invalid_mime_type`**, un PNG entra. `evidence` a imágenes+PDF,
+> `chat` sólo con límite de tamaño (transporta documentos, es privado y
+> aislado). Resto (P2/P3): pendientes.
+>
+> **Con esto los cuatro P1 (SEC-01..05) están cerrados.**
 
 > Las pruebas dinámicas se ejecutaron **exclusivamente contra Demo**
 > (`krxewmfauohixmmzsvkp`) y contra la base por SQL. En producción sólo se
-> leyó metadata (esquema, policies, permisos); **no se ejecutó ninguna RPC con
-> efectos** ni se inyectó dato alguno.
+> leyó/ajustó configuración (permisos de función, límites de bucket); **no se
+> ejecutó ninguna RPC con efectos** ni se inyectó dato alguno.
 
 Cada hallazgo se marca como **[CONFIRMADO]** (probado empíricamente),
 **[POTENCIAL]** (código indica el riesgo, falta prueba dinámica) o
