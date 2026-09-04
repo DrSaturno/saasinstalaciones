@@ -80,24 +80,6 @@ where u.id in (
 )
 on conflict do nothing;
 
--- 2b. Segundo factor (SEC-13): platform_admin y company_manager tienen la
--- verificación en dos pasos OBLIGATORIA, así que su login real pasa por el
--- step-up. Para que el E2E pueda entrar, se les siembra un factor TOTP ya
--- verificado con un secreto conocido; `e2e/auth.setup.ts` calcula el código
--- desde ese mismo secreto (`E2E_MFA_SECRET`). Es una cuenta sintética de un
--- entorno desechable, igual que la contraseña del seed — no es un secreto real.
-insert into auth.mfa_factors (
-  id, user_id, friendly_name, factor_type, status, secret, created_at, updated_at
-)
-values
-  ('f0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001',
-   'e2e-totp', 'totp', 'verified', 'A7W4YKU52M5CBGOZZJGCOI7K7OA5LNRR', now(), now()),
-  ('f0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000002',
-   'e2e-totp', 'totp', 'verified', 'A7W4YKU52M5CBGOZZJGCOI7K7OA5LNRR', now(), now()),
-  ('f0000000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000007',
-   'e2e-totp', 'totp', 'verified', 'A7W4YKU52M5CBGOZZJGCOI7K7OA5LNRR', now(), now())
-on conflict (id) do nothing;
-
 -- 3. Zonas y skills de los instaladores
 update public.installers set zones = '{AR-BA-AMBA}', skills = '{ploteo_vehicular,vidrieras}'
   where id = 'a0000000-0000-0000-0000-000000000003';

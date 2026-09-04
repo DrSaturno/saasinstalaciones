@@ -18,12 +18,18 @@ for (const [name, actor] of Object.entries(ACTORS) as [ActorName, (typeof ACTORS
     await page.getByRole("button", { name: /ingresar|entrar|iniciar/i }).click();
 
     // Segundo factor (SEC-13): los roles con MFA obligatoria (admin/gerencia)
-    // caen en el step-up. Se calcula el código desde el secreto sembrado y se
-    // completa, igual que haría una app de autenticación.
-    if (actor.mfaSecret) {
-      await page.waitForURL("**/two-factor/verify", { timeout: 30_000 });
-      await page.locator("#totp-code").fill(generateTotp(actor.mfaSecret));
-      await page.getByRole("button", { name: /continuar/i }).click();
+    // no pueden entrar sin enrolar. Sobre la base fresca del CI no hay factor,
+    // así que el gate manda a /two-factor/setup: se hace el enrolamiento real,
+    // leyendo el secreto que genera Supabase y calculando el código con él (en
+    // vez de sembrar un secreto propio, que Supabase podría guardar cifrado).
+    if (actor.mfa) {
+      await page.waitForURL("**/two-factor/setup", { timeout: 30_000 });
+      const secretBox = page.locator("code").first();
+      await expect(secretBox).toBeVisible({ timeout: 15_000 });
+      const secret = ((await secretBox.textContent()) ?? "").trim();
+      expect(secret.length).toBeGreaterThan(0);
+      await page.locator("#totp-code").fill(generateTotp(secret));
+      await page.getByRole("button", { name: /activar/i }).click();
     }
 
     // El proxy resuelve el rol y manda a su área: llegar ahí es la señal de
