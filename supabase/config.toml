@@ -13,3 +13,11 @@ sql_paths = ["./seed.sql"]
 enabled = true
 site_url = "http://127.0.0.1:3000"
 additional_redirect_urls = ["http://localhost:3000"]
+
+# Segundo factor TOTP (SEC-13). El CLI lo trae deshabilitado por defecto, así
+# que sin esto `auth.mfa.enroll` falla en local/CI y el enrolamiento obligatorio
+# de admin/gerencia no se puede probar. El proyecto hosted (Demo/prod) ya lo
+# tiene habilitado a nivel proyecto.
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
