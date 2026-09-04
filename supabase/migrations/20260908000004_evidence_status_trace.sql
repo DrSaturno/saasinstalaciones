@@ -10,6 +10,16 @@
 -- hecho ocurre y `created_at` la base cuando la fila entra. Nunca había
 -- llegado a la pantalla, así que un evento sincronizado tres horas más tarde
 -- se leía como si hubiera pasado al sincronizar.
+-- `create or replace` NO puede cambiar el tipo de retorno de una función que
+-- ya existe (42P13): agregar columnas a un `returns table` es cambiarlo. Hay
+-- que dropearla primero.
+--
+-- Se aplicó así en Demo pero el drop no había quedado en el archivo, y el
+-- schema de Demo ya tenía la versión nueva, así que la migración volvía a
+-- pasar ahí sin ruido. CI, que reconstruye desde cero sobre la versión vieja,
+-- fue el único que lo vio.
+drop function if exists public.search_order_evidence(uuid, text, text[]);
+
 create or replace function public.search_order_evidence(
   p_order_id uuid,
   p_query text default null,
