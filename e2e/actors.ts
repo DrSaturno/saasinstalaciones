@@ -7,6 +7,14 @@
  */
 export const E2E_PASSWORD = process.env.E2E_PASSWORD ?? "InstalaPro2026!";
 
+/**
+ * Secreto TOTP sembrado (SEC-13) para los actores con MFA obligatoria. Coincide
+ * con el `secret` que `supabase/seed.sql` inserta en `auth.mfa_factors`. No es
+ * una credencial real: es la clave de una cuenta sintética de un entorno
+ * desechable, versionada junto con la contraseña del seed.
+ */
+export const E2E_MFA_SECRET = "A7W4YKU52M5CBGOZZJGCOI7K7OA5LNRR";
+
 export type ActorName =
   | "platformAdmin"
   | "manager"
@@ -21,6 +29,11 @@ export type Actor = {
   /** Rutas de otras áreas: el proxy tiene que sacarlo de acá. */
   forbidden: string[];
   storageState: string;
+  /**
+   * Secreto TOTP si el rol tiene MFA obligatoria (SEC-13): el login pasa por el
+   * step-up y el setup calcula el código desde acá. Ausente = sin MFA.
+   */
+  mfaSecret?: string;
 };
 
 export const ACTORS: Record<ActorName, Actor> = {
@@ -29,12 +42,14 @@ export const ACTORS: Record<ActorName, Actor> = {
     landing: "/master",
     forbidden: ["/dashboard", "/home"],
     storageState: "e2e/.auth/platform-admin.json",
+    mfaSecret: E2E_MFA_SECRET,
   },
   manager: {
     email: "gerente@demo.dev",
     landing: "/dashboard",
     forbidden: ["/master", "/home"],
     storageState: "e2e/.auth/manager.json",
+    mfaSecret: E2E_MFA_SECRET,
   },
   managerB: {
     // Segunda empresa: existe para probar aislamiento entre tenants.
@@ -42,6 +57,7 @@ export const ACTORS: Record<ActorName, Actor> = {
     landing: "/dashboard",
     forbidden: ["/master"],
     storageState: "e2e/.auth/manager-b.json",
+    mfaSecret: E2E_MFA_SECRET,
   },
   coordinator: {
     email: "coordinador@demo.dev",

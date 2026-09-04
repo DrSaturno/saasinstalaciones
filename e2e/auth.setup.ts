@@ -1,5 +1,6 @@
 import { test as setup, expect } from "@playwright/test";
 import { ACTORS, E2E_PASSWORD, type ActorName } from "./actors";
+import { generateTotp } from "./totp";
 
 /**
  * Inicia sesión una vez por actor y guarda la cookie en disco.
@@ -15,6 +16,15 @@ for (const [name, actor] of Object.entries(ACTORS) as [ActorName, (typeof ACTORS
     await page.getByLabel(/email/i).fill(actor.email);
     await page.locator("#password").fill(E2E_PASSWORD);
     await page.getByRole("button", { name: /ingresar|entrar|iniciar/i }).click();
+
+    // Segundo factor (SEC-13): los roles con MFA obligatoria (admin/gerencia)
+    // caen en el step-up. Se calcula el código desde el secreto sembrado y se
+    // completa, igual que haría una app de autenticación.
+    if (actor.mfaSecret) {
+      await page.waitForURL("**/two-factor/verify", { timeout: 30_000 });
+      await page.locator("#totp-code").fill(generateTotp(actor.mfaSecret));
+      await page.getByRole("button", { name: /continuar/i }).click();
+    }
 
     // El proxy resuelve el rol y manda a su área: llegar ahí es la señal de
     // que la sesión quedó bien, no que el POST devolvió 200.
