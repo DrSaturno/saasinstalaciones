@@ -2,13 +2,28 @@ import type { NextConfig } from "next";
 import path from "node:path";
 import createNextIntlPlugin from "next-intl/plugin";
 
+// CSP (SEC-07 de la auditoría). Pasa de Report-Only —que no bloqueaba ni
+// reportaba nada— a ENFORCING. Los allowlists reflejan lo que la app carga de
+// verdad: scripts sólo propios, conexiones e imágenes sólo a Supabase, el único
+// iframe es Google Maps.
+//
+// Se conserva `'unsafe-inline'` en script y style: Next inyecta scripts inline
+// (bootstrap + payload RSC) y Radix/Tailwind estilos inline; quitarlos exige
+// nonces, que fuerzan render dinámico en todas las páginas (impacto en el caché
+// del PWA) — queda como próximo paso con verificación de staging. Por eso este
+// enforcing endurece todo lo demás (object-src, base-uri, form-action,
+// frame-ancestors, connect-src, img-src) sin el riesgo de romper la hidratación.
+//
+// `'unsafe-eval'` SÓLO en desarrollo: React lo usa para el HMR y los stacks de
+// error; en producción ni Next ni React lo necesitan, así que se saca.
+const isDev = process.env.NODE_ENV !== "production";
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
   "object-src 'none'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://*.supabase.co https://*.supabase.net",
   "font-src 'self' data:",
@@ -70,8 +85,8 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // Endurecimiento global. Una CSP con nonces queda como paso siguiente;
-        // estos headers son seguros de aplicar sin romper scripts inline.
+        // Endurecimiento global. La CSP se aplica enforcing (ver arriba); el
+        // paso con nonces —que permite quitar unsafe-inline— queda pendiente.
         source: "/:path*",
         headers: [
           { key: "X-Frame-Options", value: "DENY" },
@@ -86,8 +101,9 @@ const nextConfig: NextConfig = {
             value: "camera=(self), geolocation=(self), microphone=(), payment=(), usb=(), browsing-topics=()",
           },
           {
-            // Se releva en staging antes de pasar a enforcement con nonce.
-            key: "Content-Security-Policy-Report-Only",
+            // SEC-07: enforcing. La versión con nonce (sin unsafe-inline) es el
+            // próximo paso y necesita relevar el impacto de render dinámico/PWA.
+            key: "Content-Security-Policy",
             value: contentSecurityPolicy,
           },
         ],
