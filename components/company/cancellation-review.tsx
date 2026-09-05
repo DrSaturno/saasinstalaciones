@@ -118,7 +118,7 @@ export function CancellationReview({
                 checked={justified}
                 onChange={(event) => setJustified(event.target.checked)}
                 disabled={pending}
-                className="mt-0.5 size-4 rounded border-input"
+                className="mt-0.5 rounded border-input size-4 accent-primary"
               />
               <span>
                 {t("justified")}

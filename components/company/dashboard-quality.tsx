@@ -20,9 +20,9 @@ export function DashboardQuality({
           <p className="font-mono text-4xl font-semibold tracking-tight">{quality.firstResolutionRate}%</p>
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{t("firstResolutionDescription")}</p>
           <div className="mt-5 grid grid-cols-3 gap-3 border-t pt-4">
-            <div><p className="font-mono text-lg font-semibold">{quality.finalized}</p><p className="text-[11px] text-muted-foreground">{t("finalizedOrders")}</p></div>
-            <div><p className="font-mono text-lg font-semibold">{quality.repeatVisits}</p><p className="text-[11px] text-muted-foreground">{t("repeatVisits")}</p></div>
-            <div><p className="font-mono text-lg font-semibold text-warning">{quality.incidentRate}%</p><p className="text-[11px] text-muted-foreground">{t("incidentRate")}</p></div>
+            <div><p className="font-mono text-lg font-semibold">{quality.finalized}</p><p className="text-caption text-muted-foreground">{t("finalizedOrders")}</p></div>
+            <div><p className="font-mono text-lg font-semibold">{quality.repeatVisits}</p><p className="text-caption text-muted-foreground">{t("repeatVisits")}</p></div>
+            <div><p className="font-mono text-lg font-semibold text-warning">{quality.incidentRate}%</p><p className="text-caption text-muted-foreground">{t("incidentRate")}</p></div>
           </div>
         </CardContent>
       </Card>

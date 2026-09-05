@@ -81,7 +81,7 @@ export function OrderFilesField({ files, disabled, onAdd, onRemove }: Props) {
               )}
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-xs font-medium">{file.name}</span>
-                <span className="font-mono text-[10px] text-muted-foreground">
+                <span className="font-mono text-caption text-muted-foreground">
                   {formatFileSize(file.size)}
                 </span>
               </span>

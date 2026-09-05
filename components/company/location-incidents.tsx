@@ -53,7 +53,7 @@ export async function LocationIncidents({ items }: { items: LocationIncidentView
                   </div>
                   <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{item.description}</p>
                 </div>
-                <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
+                <span className="shrink-0 font-mono text-caption text-muted-foreground">
                   {format.dateTime(new Date(item.occurred_at ?? item.created_at), {
                     dateStyle: "medium",
                     timeStyle: "short",

@@ -85,7 +85,7 @@ export function DashboardApplicationsPeek({ broadcasts }: { broadcasts: ManagerB
             <div className="flex items-center gap-2">
               <p className="truncate text-sm font-medium">{application.name}</p>
               {application.ratingCount > 0 ? (
-                <span className="flex shrink-0 items-center gap-0.5 font-mono text-[11px] text-muted-foreground">
+                <span className="flex shrink-0 items-center gap-0.5 font-mono text-caption text-muted-foreground">
                   <Star className="size-3 fill-current" aria-hidden="true" />
                   {application.ratingAvg.toFixed(1)}
                 </span>

@@ -62,7 +62,7 @@ export function OrderFormSummary({
     <aside className="lg:sticky lg:top-0 lg:self-start">
       <div className="overflow-hidden rounded-2xl border border-primary/20 bg-primary-soft/20">
         <div className="border-b border-primary/15 px-4 py-4">
-          <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+          <p className="font-mono text-caption font-semibold uppercase tracking-[0.18em] text-primary">
             {t("summary.eyebrow")}
           </p>
           <h3 className="mt-1 text-base font-semibold">{t("summary.title")}</h3>
@@ -72,7 +72,7 @@ export function OrderFormSummary({
             <div key={row.label} className="flex gap-3 px-4 py-3.5">
               <row.icon className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
               <div className="min-w-0">
-                <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                <dt className="text-caption font-medium uppercase tracking-wide text-muted-foreground">
                   {row.label}
                 </dt>
                 <dd className="mt-0.5 truncate text-sm font-medium">{row.value}</dd>

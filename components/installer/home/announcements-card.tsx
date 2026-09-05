@@ -43,7 +43,7 @@ export function AnnouncementsCard({
             >
               <div className="flex items-baseline justify-between gap-2">
                 <p className="font-medium">{item.title}</p>
-                <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                <span className="shrink-0 font-mono text-caption text-muted-foreground">
                   {item.relativeTime}
                 </span>
               </div>
@@ -51,7 +51,7 @@ export function AnnouncementsCard({
                 {item.body}
               </p>
               {item.companyName ? (
-                <p className="mt-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+                <p className="mt-2 text-caption uppercase tracking-wider text-muted-foreground">
                   {item.companyName}
                 </p>
               ) : null}

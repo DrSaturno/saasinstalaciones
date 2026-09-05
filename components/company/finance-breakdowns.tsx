@@ -22,10 +22,10 @@ export function FinanceBreakdowns({ zones, installers }: { zones: FinanceBreakdo
           <CardContent className="px-0">
             {rows.length === 0 ? <p className="px-4 py-8 text-center text-sm text-muted-foreground">{t("emptyBreakdown")}</p> : rows.slice(0, 12).map((row) => (
               <div key={`${row.currency}-${row.name}`} className="flex items-center justify-between gap-4 border-b px-4 py-3 last:border-b-0">
-                <div className="min-w-0"><p className="truncate font-medium">{row.name}</p><p className="font-mono text-[11px] text-muted-foreground">{t("ordersCount", { count: row.orders })} · {row.currency}</p></div>
+                <div className="min-w-0"><p className="truncate font-medium">{row.name}</p><p className="font-mono text-caption text-muted-foreground">{t("ordersCount", { count: row.orders })} · {row.currency}</p></div>
                 <div className="text-right">
                   <p className="font-mono text-sm font-semibold">{money(showCost ? row.installerCost : row.completed, row.currency)}</p>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-caption text-muted-foreground">
                     {showCost
                       ? t("generatedRevenue", { value: money(row.completed, row.currency) })
                       : t("ofContracted", { value: money(row.contracted, row.currency) })}

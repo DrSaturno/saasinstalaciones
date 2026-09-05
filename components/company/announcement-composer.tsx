@@ -153,7 +153,7 @@ function ComposerForm({
 
             <fieldset className="flex flex-col gap-2">
               <legend className="text-sm font-medium">{t("audienceLabel")}</legend>
-              <p className="text-[11px] text-muted-foreground">{t("audienceHelp")}</p>
+              <p className="text-caption text-muted-foreground">{t("audienceHelp")}</p>
 
               {zones.length ? (
                 <div className="mt-1 flex flex-wrap gap-1.5">
@@ -172,7 +172,7 @@ function ComposerForm({
                         value={zone}
                         checked={selectedZones.includes(zone)}
                         onChange={() => setSelectedZones((list) => toggle(list, zone))}
-                        className="sr-only"
+                        className="sr-only size-4 accent-primary"
                         disabled={pending}
                       />
                       {zone}
@@ -180,7 +180,7 @@ function ComposerForm({
                   ))}
                 </div>
               ) : (
-                <p className="text-[11px] text-muted-foreground">{t("noZones")}</p>
+                <p className="text-caption text-muted-foreground">{t("noZones")}</p>
               )}
 
               {projects.length ? (
@@ -209,7 +209,7 @@ function ComposerForm({
                   name="availableOnly"
                   checked={availableOnly}
                   onChange={(event) => setAvailableOnly(event.target.checked)}
-                  className="accent-primary"
+                  className="size-4 accent-primary"
                   disabled={pending}
                 />
                 {t("availableOnly")}
@@ -244,7 +244,7 @@ function ComposerForm({
               <Send className="size-3.5" aria-hidden="true" />
               {pending ? t("publishing") : t("publish")}
             </Button>
-            <p className="text-[11px] leading-tight text-muted-foreground">{t("deliveryNote")}</p>
+            <p className="text-caption leading-tight text-muted-foreground">{t("deliveryNote")}</p>
           </div>
         </form>
       </CardContent>

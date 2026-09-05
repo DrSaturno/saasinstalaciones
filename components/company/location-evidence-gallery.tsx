@@ -58,10 +58,10 @@ export async function LocationEvidenceGallery({ items }: { items: LocationEviden
                 <p className="truncate text-xs font-medium" title={item.note || item.fileName}>
                   {item.note || (item.origin === "order_update" ? t("evidence.progressPhoto") : t("evidence.orderAttachment"))}
                 </p>
-                <p className="truncate text-[11px] text-muted-foreground" title={item.projectName}>
+                <p className="truncate text-caption text-muted-foreground" title={item.projectName}>
                   {item.projectName || t("history.unknownProject")}
                 </p>
-                <div className="flex items-center justify-between gap-2 font-mono text-[10px] text-muted-foreground">
+                <div className="flex items-center justify-between gap-2 font-mono text-caption text-muted-foreground">
                   <Link href={`/orders/${item.orderId}`} className="truncate transition-colors hover:text-primary">
                     {item.orderNumber}
                   </Link>

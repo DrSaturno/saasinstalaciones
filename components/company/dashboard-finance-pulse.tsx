@@ -40,5 +40,5 @@ export function DashboardFinancePulse({ finances }: { finances: DashboardOvervie
   );
 }
 function Value({ label, value }: { label: string; value: string }) {
-  return <div><p className="font-mono text-sm font-semibold">{value}</p><p className="mt-1 text-[11px] text-muted-foreground">{label}</p></div>;
+  return <div><p className="font-mono text-sm font-semibold">{value}</p><p className="mt-1 text-caption text-muted-foreground">{label}</p></div>;
 }

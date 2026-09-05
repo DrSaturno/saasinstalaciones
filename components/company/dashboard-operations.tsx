@@ -22,7 +22,7 @@ export function DashboardOperations({ forecasts, calendarEmail, calendarConfigur
                 <div key={forecast.name} className="rounded-xl border bg-background/80 p-3">
                   <div className="flex items-center justify-between gap-2"><p className="font-mono text-xs font-semibold">{forecast.name}</p><Badge variant={forecast.severity === "danger" ? "destructive" : "outline"} className={forecast.severity === "warning" ? "border-amber-300 bg-amber-50 text-amber-800" : ""}>{t(`weatherSeverity.${forecast.severity}`)}</Badge></div>
                   <p className="mt-3 font-mono text-xl font-semibold">{Math.round(forecast.max)}° <span className="text-sm font-normal text-muted-foreground">/ {Math.round(forecast.min)}°</span></p>
-                  <div className="mt-2 flex gap-3 text-[11px] text-muted-foreground"><span className="flex items-center gap-1"><CloudSunRain className="size-3" aria-hidden="true" />{forecast.rain}%</span><span className="flex items-center gap-1"><Wind className="size-3" aria-hidden="true" />{Math.round(forecast.wind)} km/h</span></div>
+                  <div className="mt-2 flex gap-3 text-caption text-muted-foreground"><span className="flex items-center gap-1"><CloudSunRain className="size-3" aria-hidden="true" />{forecast.rain}%</span><span className="flex items-center gap-1"><Wind className="size-3" aria-hidden="true" />{Math.round(forecast.wind)} km/h</span></div>
                 </div>
               ))}
             </div>

@@ -110,7 +110,7 @@ export async function OrderEvidencePanel({
                           del sistema se omite: el autor ya dice "Sistema" y
                           repetirlo al lado no agrega nada. */}
                       {item.subtype && item.subtype !== "message" && item.subtype !== "system" ? (
-                        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium">
+                        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-caption font-medium">
                           {statusT(`update.${item.subtype}`)}
                         </span>
                       ) : null}
@@ -123,7 +123,7 @@ export async function OrderEvidencePanel({
                       Antes esto sólo existía como texto en prosa, así que
                       reconstruir el historial obligaba a parsearlo. */}
                   {item.toStatus ? (
-                    <p className="mt-1 flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+                    <p className="mt-1 flex flex-wrap items-center gap-1 text-caption text-muted-foreground">
                       {item.fromStatus ? (
                         <>
                           <span>{statusT(`order.${item.fromStatus}`)}</span>

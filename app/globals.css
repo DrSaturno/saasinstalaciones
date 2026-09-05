@@ -126,9 +126,13 @@
   --text-label: 0.8125rem;
   --text-label--line-height: 1.125rem;
   --text-label--font-weight: 500;
+  /* `caption` NO fija peso a propósito, a diferencia de los títulos. Es el
+     nivel que más se combina con otras clases (`font-medium`, `font-semibold`,
+     `uppercase`), y si el token trajera su propio `font-weight` el resultado
+     dependería del orden en que Tailwind emite las reglas. Que sea sólo tamaño
+     lo vuelve predecible: el peso lo decide quien lo usa. */
   --text-caption: 0.75rem;
   --text-caption--line-height: 1rem;
-  --text-caption--font-weight: 500;
 
   /* --------------------------------------------------------------------
    * Elevación

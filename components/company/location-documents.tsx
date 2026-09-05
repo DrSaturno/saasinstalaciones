@@ -59,7 +59,7 @@ export async function LocationDocuments({ items }: { items: LocationDocumentView
                   <span className="block truncate text-sm font-medium">{item.fileName}</span>
                   <span className="mt-1 flex flex-wrap items-center gap-2">
                     <Badge variant="outline">{t(`documents.category.${categoryKey(item.category)}`)}</Badge>
-                    <span className="font-mono text-[10px] text-muted-foreground">
+                    <span className="font-mono text-caption text-muted-foreground">
                       {t("documents.sizeMb", {
                         size: format.number(item.sizeBytes / 1_048_576, {
                           maximumFractionDigits: 1,

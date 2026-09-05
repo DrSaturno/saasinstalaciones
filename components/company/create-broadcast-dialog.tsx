@@ -170,7 +170,7 @@ export function CreateBroadcastDialog({
           {canManageFinance ? (
             <div className="rounded-xl border p-4">
               <label className="flex items-center gap-2 text-sm font-medium">
-                <input type="checkbox" name="payVisible" checked={showPay} onChange={(event) => setShowPay(event.target.checked)} className="accent-primary" />
+                <input type="checkbox" name="payVisible" checked={showPay} onChange={(event) => setShowPay(event.target.checked)} className="size-4 accent-primary" />
                 {t("showPay")}
               </label>
               {showPay ? <div className="mt-3 grid gap-2"><Label htmlFor="broadcast-pay">{t("payAmount")}</Label><Input id="broadcast-pay" name="payAmount" type="number" min="0" step="0.01" required /></div> : <input type="hidden" name="payAmount" value="" />}

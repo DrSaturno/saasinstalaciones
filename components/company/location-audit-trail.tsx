@@ -76,7 +76,7 @@ export async function LocationAuditTrail({ items }: { items: LocationEventView[]
                 <span className="absolute -left-5 top-1 size-[11px] rounded-full border-[3px] border-background bg-primary" />
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-medium">{t(`audit.event.${eventKey(item.event_type)}`)}</p>
-                  <time className="font-mono text-[10px] text-muted-foreground">
+                  <time className="font-mono text-caption text-muted-foreground">
                     {format.dateTime(new Date(item.client_created_at ?? item.created_at), {
                       day: "2-digit",
                       month: "2-digit",

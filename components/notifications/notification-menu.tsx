@@ -77,7 +77,7 @@ export function NotificationMenu({
         <Button variant="ghost" size="icon-sm" className="relative" aria-label={t("unread", { count: unreadCount })}>
           {unreadCount ? <BellRing /> : <Bell />}
           {unreadCount ? (
-            <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-destructive px-1 font-mono text-[10px] leading-4 text-white">
+            <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-destructive px-1 font-mono text-caption leading-4 text-white">
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           ) : null}
@@ -104,7 +104,7 @@ export function NotificationMenu({
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium">{item.title}</span>
                 {item.body ? <span className="mt-0.5 block line-clamp-2 text-xs leading-5 text-muted-foreground">{item.body}</span> : null}
-                <span className="mt-1 block font-mono text-[10px] text-muted-foreground">
+                <span className="mt-1 block font-mono text-caption text-muted-foreground">
                   {format.dateTime(new Date(item.createdAt), { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                 </span>
               </span>
@@ -181,7 +181,7 @@ function PushPermissionControl({ vapidPublicKey }: { vapidPublicKey: string | nu
     <div className="flex items-center justify-between gap-3 px-3 py-2.5">
       <div>
         <p className="text-xs font-medium">{t("browserAlerts")}</p>
-        <p className="text-[11px] text-muted-foreground">{vapidPublicKey ? (active ? t("active") : t("inactive")) : t("pendingConfig")}</p>
+        <p className="text-caption text-muted-foreground">{vapidPublicKey ? (active ? t("active") : t("inactive")) : t("pendingConfig")}</p>
       </div>
       <Button size="xs" variant="outline" disabled={!vapidPublicKey || pending} onClick={toggle}>
         {active ? t("disable") : t("enable")}

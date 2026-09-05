@@ -169,7 +169,7 @@ export function CreateOrdersDialog({
                 </div>
               </div>
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" name="indoor" className="size-4" disabled={pending} />
+                <input type="checkbox" name="indoor" className="size-4 accent-primary" disabled={pending} />
                 {orderT("indoor")}
               </label>
             </OrderFormSection>
@@ -197,7 +197,7 @@ export function CreateOrdersDialog({
                 <input
                   type="checkbox"
                   name="requiresFreight"
-                  className="size-4"
+                  className="size-4 accent-primary"
                   checked={requiresFreight}
                   onChange={(event) => setRequiresFreight(event.target.checked)}
                   disabled={pending}

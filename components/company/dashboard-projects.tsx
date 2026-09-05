@@ -43,11 +43,11 @@ export function DashboardProjects({ projects }: { projects: DashboardOverview["p
                 <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
                   <div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${project.progress}%` }} />
                 </div>
-                <div className="mt-2 flex flex-wrap items-center justify-between gap-2 font-mono text-[11px] text-muted-foreground">
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-2 font-mono text-caption text-muted-foreground">
                   <span>{t("ordersProgress", { done: project.completed, total: project.total })}</span>
                   <span className={project.variance < 0 ? "text-destructive" : "text-success"}>{t("planVariance", { value: project.variance })}</span>
                 </div>
-                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-caption text-muted-foreground">
                   <span>{project.forecastDate ? t("forecastDate", { date: project.forecastDate }) : t("forecastPending")}</span>
                   {project.requiredPerWeek > 0 ? <span>{t("requiredPerWeek", { count: project.requiredPerWeek })}</span> : null}
                 </div>

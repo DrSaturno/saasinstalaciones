@@ -79,7 +79,7 @@ export function CoverageSettings({
                     value={province}
                     checked={selected.includes(province)}
                     onChange={() => toggle(province)}
-                    className="accent-primary"
+                    className="size-4 accent-primary"
                   />
                   {province}
                 </label>

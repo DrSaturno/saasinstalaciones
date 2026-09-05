@@ -8,35 +8,36 @@ const status = (over: Partial<TwoFactorStatus> = {}): TwoFactorStatus => ({
   ...over,
 });
 
+const ROLES = ["platform_admin", "company_manager", "installer"] as const;
+
 describe("mfaRequiredFor", () => {
-  it("obliga a admin y gerentes, no a instaladores", () => {
-    expect(mfaRequiredFor("platform_admin")).toBe(true);
-    expect(mfaRequiredFor("company_manager")).toBe(true);
-    expect(mfaRequiredFor("installer")).toBe(false);
+  it("hoy no obliga a ningún rol: la verificación es opt-in", () => {
+    for (const role of ROLES) {
+      expect(mfaRequiredFor(role)).toBe(false);
+    }
   });
 });
 
 describe("twoFactorGate", () => {
   it("con la sesión en AAL2 deja pasar a cualquiera", () => {
-    for (const role of ["platform_admin", "company_manager", "installer"] as const) {
+    for (const role of ROLES) {
       expect(twoFactorGate(status({ satisfied: true, enrolled: true }), role)).toBeNull();
     }
   });
 
-  it("con factor pero sin subir de nivel, manda a verificar (todos los roles)", () => {
+  it("quien activó la verificación la usa al entrar, sea cual sea su rol", () => {
+    // Ésta es la parte que NO cambia al volverla opcional: si alguien se
+    // enroló, el segundo factor se le sigue pidiendo. Opcional es la decisión
+    // de activarla, no la de cumplirla una vez activada.
     const s = status({ enrolled: true, mustStepUp: true });
-    expect(twoFactorGate(s, "company_manager")).toBe("/two-factor/verify");
-    // Un instalador que SÍ activó la verificación también la usa al entrar.
-    expect(twoFactorGate(s, "installer")).toBe("/two-factor/verify");
+    for (const role of ROLES) {
+      expect(twoFactorGate(s, role)).toBe("/two-factor/verify");
+    }
   });
 
-  it("obliga a enrolar al admin y al gerente sin factor", () => {
-    const s = status();
-    expect(twoFactorGate(s, "platform_admin")).toBe("/two-factor/setup");
-    expect(twoFactorGate(s, "company_manager")).toBe("/two-factor/setup");
-  });
-
-  it("al instalador sin factor lo deja pasar: para él es opcional", () => {
-    expect(twoFactorGate(status(), "installer")).toBeNull();
+  it("sin factor, nadie queda forzado a enrolarse", () => {
+    for (const role of ROLES) {
+      expect(twoFactorGate(status(), role)).toBeNull();
+    }
   });
 });

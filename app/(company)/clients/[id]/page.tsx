@@ -51,7 +51,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           <LinkField label={t("tiktok")} value={detail.client.tiktok} base="https://tiktok.com/@" />
           {detail.client.notes ? (
             <div className="sm:col-span-2 lg:col-span-3">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{t("notes")}</p>
+              <p className="text-caption font-medium uppercase tracking-wider text-muted-foreground">{t("notes")}</p>
               <p className="mt-1 whitespace-pre-wrap text-sm">{detail.client.notes}</p>
             </div>
           ) : null}
@@ -99,7 +99,7 @@ function LinkField({ label, value, base = "https://" }: { label: string; value: 
     : `${base}${value.replace(/^@/, "")}`;
   return (
     <div className="min-w-0">
-      <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="text-caption font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
       <a
         href={href}
         target="_blank"
@@ -115,7 +115,7 @@ function LinkField({ label, value, base = "https://" }: { label: string; value: 
 function Field({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="min-w-0">
-      <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="text-caption font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
       <p className={`mt-1 truncate ${mono ? "font-mono text-sm" : "text-sm"}`}>{value || "—"}</p>
     </div>
   );

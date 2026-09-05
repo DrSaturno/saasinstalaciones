@@ -26,7 +26,7 @@ export function StatusStepper({ status }: { status: OrderStatus }) {
   if (status === "cancelada") {
     return (
       <div className="flex items-center gap-2 rounded-xl border border-destructive/25 bg-destructive/5 px-4 py-3 text-destructive">
-        <Ban className="size-4 shrink-0" aria-hidden="true" />
+        <Ban className="size-4" aria-hidden="true" />
         <span className="text-sm font-medium">{t(ORDER_STATUS.cancelada.key)}</span>
       </div>
     );
@@ -72,7 +72,7 @@ export function StatusStepper({ status }: { status: OrderStatus }) {
                 <span className="flex-1" aria-hidden="true" />
               )}
             </div>
-            <span className={`px-1 text-center text-[11px] leading-tight ${labelClass}`}>
+            <span className={`px-1 text-center text-caption leading-tight ${labelClass}`}>
               {t(ORDER_STATUS[step].key)}
             </span>
           </li>

@@ -29,7 +29,7 @@ export function DashboardAgenda({ agenda }: Pick<DashboardOverview, "agenda">) {
                 type="button"
                 onClick={() => setDays(range)}
                 aria-pressed={days === range}
-                className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${days === range ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:text-foreground"}`}
+                className={`rounded-full border px-2.5 py-1 text-caption font-medium transition-colors ${days === range ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:text-foreground"}`}
               >
                 {t("agendaRange", { days: range })}
               </button>
@@ -50,15 +50,15 @@ export function DashboardAgenda({ agenda }: Pick<DashboardOverview, "agenda">) {
             return (
               <div key={day.date} className={`rounded-lg border p-2.5 ${tone}`}>
                 <div className="flex items-baseline justify-between gap-1">
-                  <p className="text-[11px] font-medium capitalize">{format.dateTime(new Date(`${day.date}T12:00:00Z`), { weekday: "short" })}</p>
-                  <p className="font-mono text-[10px] text-muted-foreground">{format.dateTime(new Date(`${day.date}T12:00:00Z`), { day: "2-digit", month: "2-digit" })}</p>
+                  <p className="text-caption font-medium capitalize">{format.dateTime(new Date(`${day.date}T12:00:00Z`), { weekday: "short" })}</p>
+                  <p className="font-mono text-caption text-muted-foreground">{format.dateTime(new Date(`${day.date}T12:00:00Z`), { day: "2-digit", month: "2-digit" })}</p>
                 </div>
                 <p className="mt-1.5 font-mono text-xl font-semibold leading-none">{day.total}</p>
-                <p className="text-[10px] text-muted-foreground">{t("agendaJobs")}</p>
+                <p className="text-caption text-muted-foreground">{t("agendaJobs")}</p>
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
                   <div className={`h-full rounded-full ${bar}`} style={{ width: `${Math.min(100, day.load)}%` }} />
                 </div>
-                <p className="mt-1 font-mono text-[9px] text-muted-foreground">{t("agendaLoad", { load: day.load, capacity: day.capacity })}</p>
+                <p className="mt-1 font-mono text-caption text-muted-foreground">{t("agendaLoad", { load: day.load, capacity: day.capacity })}</p>
               </div>
             );
           })}
@@ -83,7 +83,7 @@ export function DashboardCapacity({
           {/* Instaladores: los únicos que consumen agenda, porque son los
               únicos a los que se les puede asignar una orden. */}
           <div>
-            <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("capacityInstallers")}</p>
+            <p className="mb-2 text-caption font-medium uppercase tracking-wide text-muted-foreground">{t("capacityInstallers")}</p>
             <div className="grid grid-cols-2 gap-4">
               <Data label={t("availableToday")} value={`${capacity.availableToday}/${capacity.total}`} />
               <Data label={t("weeklyAssignments")} value={capacity.weeklyAssignments} />
@@ -93,7 +93,7 @@ export function DashboardCapacity({
           </div>
           {/* Coordinación: se mide por cobertura de proyectos, no por jornadas. */}
           <div className="border-t pt-4">
-            <p className="mb-2 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="mb-2 flex items-center gap-1.5 text-caption font-medium uppercase tracking-wide text-muted-foreground">
               <Users className="size-3" aria-hidden="true" />
               {t("capacityCoordinators")}
             </p>
@@ -114,7 +114,7 @@ export function DashboardCapacity({
           <Data label={t("rescheduled")} value={sla.rescheduled} />
           <div>
             <p className="font-mono text-lg font-semibold">{sla.completionChange === null ? t("newComparison") : `${sla.completionChange >= 0 ? "+" : ""}${sla.completionChange}%`}</p>
-            <p className="text-[11px] text-muted-foreground">{t("monthComparison")}</p>
+            <p className="text-caption text-muted-foreground">{t("monthComparison")}</p>
           </div>
           <Data label={t("cancelledLabel")} value={sla.cancelled} danger={sla.cancelled > 0} />
         </CardContent>
@@ -127,7 +127,7 @@ function Data({ label, value, danger = false }: { label: string; value: string |
   return (
     <div>
       <p className={`font-mono text-lg font-semibold ${danger ? "text-destructive" : ""}`}>{value}</p>
-      <p className="text-[11px] leading-tight text-muted-foreground">{label}</p>
+      <p className="text-caption leading-tight text-muted-foreground">{label}</p>
     </div>
   );
 }

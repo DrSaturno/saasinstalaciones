@@ -104,7 +104,7 @@ export function SiteGallery({
 
                 {item.fromProject ? (
                   <span
-                    className="absolute left-1.5 top-1.5 max-w-[85%] truncate rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-medium"
+                    className="absolute left-1.5 top-1.5 max-w-[85%] truncate rounded-full bg-background/90 px-2 py-0.5 text-caption font-medium"
                     title={t("fromProject", { project: item.fromProject })}
                   >
                     {item.fromProject}
@@ -114,14 +114,14 @@ export function SiteGallery({
                 <figcaption className="mt-1.5 text-xs">
                   <Link
                     href={`/orders/${item.orderId}`}
-                    className="font-mono text-[11px] text-muted-foreground hover:text-primary"
+                    className="font-mono text-caption text-muted-foreground hover:text-primary"
                   >
                     {item.orderNumber}
                   </Link>
                   <p className="truncate text-muted-foreground" title={item.note}>
                     {item.note}
                   </p>
-                  <p className="font-mono text-[10px] text-muted-foreground">
+                  <p className="font-mono text-caption text-muted-foreground">
                     {format.dateTime(new Date(item.createdAt), {
                       day: "2-digit",
                       month: "2-digit",

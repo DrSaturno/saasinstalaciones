@@ -28,7 +28,7 @@ export function EvidenceLink({ url }: { url: string }) {
       <ExternalLink className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden="true" />
       <span className="min-w-0">
         <span className="block truncate text-xs font-medium">{host}</span>
-        <span className="block truncate text-[11px] text-muted-foreground">{url}</span>
+        <span className="block truncate text-caption text-muted-foreground">{url}</span>
       </span>
     </a>
   );

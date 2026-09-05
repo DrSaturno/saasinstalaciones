@@ -65,7 +65,7 @@ export function DashboardPulse({
                     <span className={`size-2 shrink-0 rounded-full ${alert.severity === "danger" ? "bg-destructive" : "bg-warning"}`} />
                     <span className="min-w-0 flex-1 text-left">
                       <span className="block text-sm font-medium">{label}</span>
-                      <span className="block truncate font-mono text-[11px] text-muted-foreground">{alert.subject}</span>
+                      <span className="block truncate font-mono text-caption text-muted-foreground">{alert.subject}</span>
                     </span>
                     <ArrowUpRight className="size-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
                   </>
@@ -94,7 +94,7 @@ export function DashboardPulse({
                       <p className="mt-0.5 text-xs text-muted-foreground">
                         {t("weatherAlertBody", { event: t(`weatherEvent.${forecast.event}`), zone: forecast.name })}
                       </p>
-                      <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+                      <p className="mt-1 font-mono text-caption text-muted-foreground">
                         {orders > 0 ? t("weatherAlertOrders", { count: orders }) : t("weatherAlertNoOrders")}
                       </p>
                     </div>

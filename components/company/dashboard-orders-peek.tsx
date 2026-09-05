@@ -48,7 +48,7 @@ export function DashboardOrdersPeek({ orders }: { orders: OrderRow[] }) {
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {order.scheduled_date ? (
-              <span className="font-mono text-[11px] text-muted-foreground">
+              <span className="font-mono text-caption text-muted-foreground">
                 {format.dateTime(new Date(`${order.scheduled_date}T12:00:00Z`), { day: "2-digit", month: "2-digit" })}
               </span>
             ) : null}

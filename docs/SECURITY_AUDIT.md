@@ -65,7 +65,19 @@
 >   devuelve "available on Pro Plans and up" y el advisor lo sigue marcando
 >   deshabilitado. Es un control **preventivo P2**, no una vulnerabilidad viva:
 >   se acepta como residual hasta que se suba a Pro (donde es un toggle inmediato).
-> - **SEC-13 CORREGIDO y ACTIVO en prod**: segundo factor TOTP con la API MFA de
+> - **⚠️ SEC-13 — la obligatoriedad se REVIRTIÓ el 05-09-2026 por decisión de
+>   producto.** `MFA_REQUIRED_ROLES` quedó **vacío**: nadie está forzado a
+>   enrolarse, y el login entra directo al área de cada rol. La funcionalidad
+>   sigue completa —se activa desde Configuración y, quien la activa, la usa al
+>   entrar—, pero **el hallazgo SEC-13 vuelve a estar ABIERTO**: ASVS L2
+>   recomienda segundo factor para cuentas administrativas y de tenant, y hoy
+>   `platform_admin` y `company_manager` pueden operar sólo con contraseña.
+>   Se restablece agregando los roles a esa constante; el gate, los layouts y
+>   el step-up del login ya lo respetan. Lo que sigue describe cómo quedó
+>   implementado.
+>
+> - **SEC-13 CORREGIDO y ACTIVO en prod** *(implementación; ver la nota de
+>   arriba sobre la obligatoriedad)*: segundo factor TOTP con la API MFA de
 >   Supabase Auth. **TOTP habilitado a nivel proyecto en producción** (sin eso el
 >   enrolamiento obligatorio falla). **Obligatorio para `platform_admin` y `company_manager`**
 >   (`MFA_REQUIRED_ROLES` en `lib/data/two-factor.ts`), **opcional para el
@@ -185,7 +197,7 @@ operativos por tenant.
 | **SEC-10** | P2 | AuthZ (policy) | `storage.objects`: policies `evidence_read`/`evidence_company_delete` usan `storage.foldername(s.name)` (columna `sites.name`) en vez de `objects.name` | [POTENCIAL] | Parece copy-paste: esa rama OR evalúa el path sobre el *nombre* del sitio. Probablemente **falla cerrado** (no concede), pero hay que verificar que no conceda lecturas inesperadas ni rompa lecturas legítimas de evidencia ligada a sites. **Requiere revisión humana.** |
 | **SEC-11** ⛔ | P2 | Auth config | Advisor Supabase `auth_leaked_password_protection` = deshabilitado | [BLOQUEADO POR PLAN] | La protección HIBP **sólo existe en plan Pro**; el proyecto está en Hobby/Free (guardar da "available on Pro Plans and up"). Preventivo, no vuln viva: residual aceptado hasta subir a Pro. Ver bloque de estado. |
 | **SEC-12** | P2 | Config DB | Advisor Supabase: 14 funciones `function_search_path_mutable` | [POTENCIAL] | Mi consulta directa mostró que **todas las `SECURITY DEFINER` tienen `search_path` fijo**; las 14 flagueadas serían no-secdef o falsos positivos. Revisar el listado del advisor y fijar `search_path` donde falte. |
-| **SEC-13** ✅ | P3 | Config MFA | Sin MFA para `platform_admin` ni `company_manager` | [CORREGIDO] | TOTP con la API MFA de Supabase Auth: **obligatorio** para admin/gerencia (enrolamiento forzado + step-up en login vía `twoFactorGate`/`loginAction`), **opcional** para el instalador. Verificado end-to-end en Demo. Ver bloque de estado arriba. |
+| **SEC-13** ⚠️ | P3 | Config MFA | Sin MFA para `platform_admin` ni `company_manager` | [REABIERTO 05-09-2026] | La funcionalidad TOTP existe y anda, pero **la obligatoriedad se quitó por decisión de producto**: `MFA_REQUIRED_ROLES` está vacío, así que admin y gerencia pueden operar sólo con contraseña. Es opt-in desde Configuración. Se restablece agregando los roles a esa constante. Ver bloque de estado arriba. |
 | **SEC-14** ✅ | P3 | Funcional/seguridad | Edge Function `send-event-push`: eventos `announcement` y `blocker_reported` en `EVENTS` **sin rama en `isAuthorized`** → siempre 403 | [CORREGIDO y DESPLEGADO] | Ramas de autorización agregadas; función **redeployada a prod (v3)** y verificada por MCP. El push de anuncios y bloqueos ya se entrega. Ver bloque de estado. |
 | **SEC-15** | P3 | CSRF | `POST /api/master/*` autentican por cookie de sesión | [POTENCIAL, bajo] | Mitigado por SameSite=Lax (bloquea POST cross-site) + esperan JSON (preflight CORS, sin CORS permisivo). Las Server Actions de Next 16 traen verificación de Origin propia. Residual bajo; documentar y, opcionalmente, doble-submit token en `/api/master`. |
 
