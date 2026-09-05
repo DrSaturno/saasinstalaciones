@@ -2,6 +2,30 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/*
+ * Sistema visual de Se Instala.
+ *
+ * Los valores de este archivo salen de `docs/UI_AUDIT.md`. El diagnóstico de
+ * esa auditoría fue que la aplicación no tenía un problema de gusto sino de
+ * RANGO: fondo y tarjeta separados por 1.04:1, bordes a 1.18:1 y el 88% del
+ * texto apretado entre 10 y 14px. Con los tres mecanismos de jerarquía
+ * anulados a la vez, nada podía destacarse. Acá se les devuelve recorrido.
+ *
+ * Todo contraste anotado está calculado sobre sRGB según WCAG 2.2.
+ */
+
+/*
+ * El bloque `.dark` con la paleta gris de shadcn se eliminó: definía un tema
+ * oscuro entero, ajeno a la identidad (con `--primary` en casi blanco), que
+ * nadie usaba y que cualquiera podía activar por error. `AGENTS.md` dice "sin
+ * dark mode en v1".
+ *
+ * Esta línea NO se puede borrar junto con él. Sin ella, Tailwind v4 resuelve
+ * `dark:` por `prefers-color-scheme`, y las decenas de clases `dark:` que
+ * quedan en los componentes se activarían solas en cualquier equipo con el
+ * modo oscuro del sistema — ya sin tokens oscuros detrás. Atándola a `.dark`,
+ * que nunca se aplica, quedan inertes.
+ */
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -10,7 +34,22 @@
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-heading: var(--font-sans); /* Open Runde cuando sumemos los woff2 */
+
+  /* Superficies: cuatro niveles donde antes había dos indistinguibles. */
+  --color-surface: var(--surface);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-surface-sunken: var(--surface-sunken);
+
+  /* Marca. `brand` es la identidad; `primary` es la que lleva texto encima. */
+  --color-brand: var(--brand);
+  --color-primary-text: var(--primary-text);
+  --color-primary-hover: var(--primary-hover);
   --color-primary-soft: var(--primary-soft);
+
+  --color-text-secondary: var(--text-secondary);
+  --color-border-strong: var(--border-strong);
+  --color-disabled-fg: var(--disabled-fg);
+
   --color-cream: var(--cream);
   --color-lavender: var(--lavender);
   --color-brand-purple: var(--brand-purple);
@@ -53,6 +92,7 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -60,39 +100,130 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
-  /* Sombras "premium" (estética proyecto2, paleta propia): capas suaves y un
-     hover con leve tinte de primary. Habilitan shadow-premium / -hover. */
-  --shadow-premium: 0 1px 2px rgb(0 0 0 / 0.04), 0 10px 26px -12px rgb(0 0 0 / 0.10);
-  --shadow-premium-hover: 0 2px 6px rgb(0 0 0 / 0.05), 0 20px 40px -14px color-mix(in oklab, var(--primary) 24%, transparent);
+
+  /* --------------------------------------------------------------------
+   * Escala tipográfica
+   *
+   * Antes no existía: se usaba la escala default de Tailwind sin criterio,
+   * y aparecieron 95 usos de `[10px]`/`[11px]` fuera de todo sistema. El
+   * piso ahora es 12px (`caption`), porque 10px sobre gris claro es
+   * ilegible a la intemperie, que es donde se usa la mitad de esta app.
+   * ------------------------------------------------------------------ */
+  --text-display: 2rem;
+  --text-display--line-height: 2.375rem;
+  --text-display--font-weight: 600;
+  --text-h1: 1.5rem;
+  --text-h1--line-height: 1.875rem;
+  --text-h1--font-weight: 700;
+  --text-h2: 1.25rem;
+  --text-h2--line-height: 1.625rem;
+  --text-h2--font-weight: 600;
+  --text-h3: 1rem;
+  --text-h3--line-height: 1.375rem;
+  --text-h3--font-weight: 600;
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.25rem;
+  --text-label: 0.8125rem;
+  --text-label--line-height: 1.125rem;
+  --text-label--font-weight: 500;
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1rem;
+  --text-caption--font-weight: 500;
+
+  /* --------------------------------------------------------------------
+   * Elevación
+   *
+   * Antes había una sola sombra y `Card` la aplicaba SIEMPRE. Si todo
+   * flota, nada flota: la sombra dejaba de significar "esto está encima" y
+   * pasaba a ser textura. Ahora la tarjeta se define por superficie +
+   * borde, y la sombra queda para lo que de verdad se despega.
+   * ------------------------------------------------------------------ */
+  --shadow-raised: 0 1px 2px rgb(16 24 40 / 0.04);
+  --shadow-hover: 0 4px 12px -2px rgb(16 24 40 / 0.08);
+  --shadow-overlay: 0 8px 24px -4px rgb(16 24 40 / 0.12);
+  --shadow-modal: 0 24px 48px -12px rgb(16 24 40 / 0.18);
+  /* Compatibilidad: `shadow-premium` sigue existiendo mientras quede algún
+     uso suelto, pero apunta al nivel correcto. */
+  --shadow-premium: var(--shadow-raised);
+  --shadow-premium-hover: var(--shadow-hover);
+
+  /* Movimiento. Duraciones cortas: esto es una herramienta de trabajo. */
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 :root {
-  /* Instala Pro design system — ref: letters-app-reference.css */
-  --background: #fafafa;
-  --foreground: #070709;
+  /* ====================================================================
+   * SUPERFICIES
+   *
+   * El cambio de mayor impacto de toda la auditoría. Antes:
+   *   background #fafafa vs card #ffffff  →  1.04:1  (invisible)
+   * Ahora:
+   *   background #f2f4f7 vs card #ffffff  →  1.10:1  (sutil pero real)
+   * ================================================================== */
+  --background: #f2f4f7;
+  --surface: #ffffff;
+  --surface-subtle: #f7f8fa; /* relleno tenue SOBRE una superficie blanca */
+  --surface-sunken: #eef1f5; /* zonas hundidas: filtros, encabezado de tabla */
+  --foreground: #070709; /* 19.5:1 */
   --card: #ffffff;
   --card-foreground: #070709;
   --popover: #ffffff;
   --popover-foreground: #070709;
-  --primary: #2597d0;
+
+  /* ====================================================================
+   * MARCA
+   *
+   * `#2597d0` es la identidad y se conserva, pero sólo da 3.27:1 contra
+   * blanco: sirve como color de un objeto, no como fondo de un botón con
+   * texto ni como texto. Se separa en tres roles para no tener que elegir
+   * entre accesibilidad e identidad.
+   * ================================================================== */
+  --brand: #2597d0; /* identidad: logo, foco, gráficos. Usos no textuales */
+  --primary: #1e7cab; /* fondo de botón — blanco encima da 4.64:1 */
+  --primary-hover: #1a6c94;
+  --primary-text: #0d6ea3; /* texto y enlaces sobre blanco — 5.56:1 */
   --primary-foreground: #ffffff;
-  --secondary: #f5f5f5;
-  --secondary-foreground: #070709;
-  --muted: #f5f5f5;
-  --muted-foreground: #868c98;
-  --accent: #c0eaff;
-  --accent-foreground: #070709;
-  --destructive: #d32f2f;
-  --border: #ececef;
-  --input: #ececef;
-  --ring: #2597d0;
   --primary-soft: #c0eaff;
+
+  /* ====================================================================
+   * TEXTO
+   * ================================================================== */
+  --text-secondary: #4b5563; /* 7.56:1 */
+  --muted-foreground: #5f6672; /* 5.78:1 — antes #868c98 daba 3.38:1 */
+  --disabled-fg: #9aa1ac;
+
+  --secondary: #eef1f5;
+  --secondary-foreground: #070709;
+  --muted: #eef1f5;
+  --accent: #c0eaff;
+  --accent-foreground: #0d3c52;
+
+  /* ====================================================================
+   * BORDES
+   *
+   * `--input` es más oscuro a propósito: WCAG 1.4.11 pide 3:1 para el
+   * límite de un control de formulario, y el borde de 1.18:1 anterior
+   * hacía que un campo fuera casi indistinguible del fondo.
+   * ================================================================== */
+  --border: #dfe3e9; /* 1.29:1 — divisores */
+  --border-strong: #b5bcc8; /* 1.91:1 — separación con énfasis */
+  --input: #8a93a1; /* 3.10:1 — límite de control */
+  --ring: #2597d0;
+
+  /* ====================================================================
+   * SEMÁNTICOS — todos ≥4.5:1 sobre blanco, para poder usarse como texto
+   * ================================================================== */
+  --success: #2e7d32; /* 5.13:1 */
+  --warning: #a15c00; /* 5.19:1 — antes #ff9800 daba 2.16:1, el peor del sistema */
+  --info: #0b6bcb; /* 5.28:1 */
+  --destructive: #c62828; /* 5.9:1 */
+
   --cream: #ffecc0;
   --lavender: #c0d5ff;
   --brand-purple: #371866;
-  --success: #43a047;
-  --warning: #ff9800;
-  --info: #2196f3;
+
+  /* Colores de estado de orden: son fondo de chip, no texto. Se conservan
+     tal cual porque ya son parte del lenguaje del producto. */
   --status-pendiente: #868c98;
   --status-relevamiento: #2196f3;
   --status-planificada: #c0d5ff;
@@ -100,54 +231,32 @@
   --status-en-revision: #ffecc0;
   --status-finalizada: #43a047;
   --status-cancelada: #d32f2f;
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* Paleta de gráficos: antes eran cinco grises `oklch` de shadcn que nadie
+     personalizó. Ahora derivan de la identidad. */
+  --chart-1: #2597d0;
+  --chart-2: #2e7d32;
+  --chart-3: #6b4fa0;
+  --chart-4: #d99000;
+  --chart-5: #64748b;
+
+  --radius: 0.625rem; /* 10px — el radio de tarjeta que declara AGENTS.md */
+
+  /* ====================================================================
+   * NAVEGACIÓN
+   *
+   * Antes el sidebar era `bg-card` (blanco) y el contenido gris: la
+   * navegación era MÁS clara que el contenido, al revés de la convención.
+   * Ahora el chrome retrocede y el contenido avanza.
+   * ================================================================== */
+  --sidebar: #111827;
+  --sidebar-foreground: #e5e7eb; /* 14.33:1 sobre el sidebar */
+  --sidebar-primary: #2597d0; /* ítem activo */
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1f2937; /* hover */
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #1f2937;
+  --sidebar-ring: #2597d0;
 }
 
 @layer base {
@@ -160,9 +269,13 @@
   html {
     @apply font-sans;
   }
+  /* Los números se leen en columna: que no bailen al cambiar de dígito. */
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+  }
 }
 
-/* Entrada sutil de tarjetas/listas (estética proyecto2). Respeta reduced-motion. */
+/* Entrada sutil de tarjetas/listas. Respeta reduced-motion. */
 @keyframes fade-in-up {
   from {
     opacity: 0;
@@ -175,7 +288,7 @@
 }
 
 @utility animate-fade-in-up {
-  animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: fade-in-up 0.5s var(--ease-out-soft) both;
 }
 
 @media (prefers-reduced-motion: reduce) {

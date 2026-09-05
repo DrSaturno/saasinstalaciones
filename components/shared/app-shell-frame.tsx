@@ -67,18 +67,23 @@ export function AppShellFrame({
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-[248px] flex-col border-r bg-card transition-[width,transform] duration-200 lg:sticky lg:top-0 lg:h-svh lg:translate-x-0",
+          // El chrome retrocede y el contenido avanza. Antes este panel era
+          // `bg-card` (blanco) sobre un contenido gris: la navegación resultaba
+          // MÁS clara que el contenido, al revés de la convención, y como sólo
+          // los separaba un 2% de luminosidad la app entera se veía de un tono.
+          "fixed inset-y-0 left-0 z-50 flex w-[248px] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width,transform] duration-200 lg:sticky lg:top-0 lg:h-svh lg:translate-x-0",
           collapsed && "lg:w-[72px]",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex h-16 items-center gap-3 border-b px-4">
-          <div className="grid size-8 shrink-0 place-items-center rounded-xl bg-primary font-mono text-xs font-semibold text-primary-foreground">
+        <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-4">
+          {/* El chip del logo usa `brand`: acá el azul es identidad, no acción. */}
+          <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand font-mono text-xs font-semibold text-white">
             IP
           </div>
           <div className={cn("min-w-0 flex-1", collapsed && "lg:hidden")}>
             <p className="truncate font-mono text-sm font-semibold">Se Instala</p>
-            <p className="truncate text-xs text-muted-foreground">{area}</p>
+            <p className="truncate text-caption text-sidebar-foreground/70">{area}</p>
           </div>
           <Button
             type="button"
@@ -98,13 +103,13 @@ export function AppShellFrame({
           onNavigate={() => setMobileOpen(false)}
         />
 
-        <div className="border-t p-3">
-          <div className={cn("rounded-xl bg-muted/60 p-3", collapsed && "lg:p-2")}>
+        <div className="border-t border-sidebar-border p-3">
+          <div className={cn("rounded-lg bg-sidebar-accent p-3", collapsed && "lg:p-2")}>
             <div className={cn("flex items-center gap-3", collapsed && "lg:justify-center")}>
-              <div className="grid size-8 shrink-0 place-items-center rounded-full bg-primary-soft font-mono text-xs font-semibold text-primary">
+              <div className="grid size-8 shrink-0 place-items-center rounded-full bg-brand font-mono text-xs font-semibold text-white">
                 {userName.trim().charAt(0).toUpperCase() || "U"}
               </div>
-              <p className={cn("min-w-0 truncate text-xs font-medium", collapsed && "lg:hidden")}>
+              <p className={cn("min-w-0 truncate text-caption", collapsed && "lg:hidden")}>
                 {userName}
               </p>
             </div>
@@ -124,7 +129,9 @@ export function AppShellFrame({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b bg-background/90 px-4 backdrop-blur sm:px-6">
+        {/* Sobre superficie blanca, no sobre el mismo tono que el contenido:
+            antes era `bg-background/90` y la barra se confundía con la página. */}
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-border bg-surface px-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <Button
               type="button"
