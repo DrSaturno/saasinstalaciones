@@ -36,6 +36,34 @@ La primera fase aprobada ya está aplicada en el producto. Se mantuvieron los fi
 
 La validación automatizada cerró con **62 archivos / 453 tests**, lint completo sin errores y build de producción exitoso. Docker, la CLI de Supabase y el stack local no están disponibles en este equipo, por lo que los escenarios E2E autenticados/offline siguen siendo el criterio pendiente antes de declarar la fase completamente cerrada.
 
+### Cierre de la fase E2E — 2026-09-05
+
+Los recorridos que faltaban se ejecutaron contra el **Supabase local de CI** con
+un build de producción (el service worker sólo se registra ahí). Resultado:
+**51 pruebas E2E en verde, sin skips ni reintentos**.
+
+| Recorrido | Estado | Qué cubre |
+|---|---|---|
+| E2E-01 continuidad de estados | ✅ | Aceptar → en camino → llegué → iniciar; tras cada transición la orden sigue listada y el estado sobrevive a recargar |
+| E2E-02 reapertura sin red | ✅ | `/home` y `/tasks` ya visitadas reabren con la red cortada |
+| E2E-03 mutación offline | ✅ | Un avance sin red se encola, se avisa como «sin enviar» y sincroniza al volver |
+| E2E-06 MFA sin callejón | ✅ | Salida, orientación de recuperación, cuenta visible, target ≥44 px, código inválido |
+| E2E-04 conflicto forzado | ⬜ | Requiere manipular el servidor a mitad del flujo |
+| E2E-05 aislamiento entre cuentas | ⬜ | Falta la verificación completa de Cache Storage/IndexedDB entre dos identidades |
+| E2E-07 bordes de medianoche | ⬜ | Cubierto por unit tests AR/BR; falta el E2E con reloj sintético |
+
+> **Hallazgo de la fase (abierto): la cola no se recupera sola tras un corte de
+> red prolongado.** Al volver la señal, `flush()` aborta en
+> `supabase.auth.getUser()` con `TypeError: Failed to fetch` usando el cliente
+> que quedó del corte. Como la excepción salta **antes** de tocar la cola, el
+> ítem ni siquiera suma un intento fallido: queda pendiente indefinidamente y
+> **no aparece en la bandeja de conflictos**, que es justo el mecanismo que
+> UX-003 agregó para que nada quede invisible. Se recupera al reabrir la
+> pantalla (remonta el hook con un cliente nuevo), que es lo que hace la mayoría
+> al salir de un sótano — por eso no es un P0, pero sí conviene cerrarlo:
+> reintentar `getUser()` o recrear el cliente dentro de `flush()` cuando la
+> llamada falla por red.
+
 ### P1 restantes después de esta fase
 
 1. Reemplazar filas sólo clickeables por enlaces/controles semánticos y operables por teclado.
