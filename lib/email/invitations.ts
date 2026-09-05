@@ -1,6 +1,8 @@
 import "server-only";
 
 import { applicationOrigin } from "@/lib/app-origin";
+import { logEvent } from "@/lib/observability";
+import { EXTERNAL_TIMEOUT_MS } from "@/lib/http/timeout";
 
 export type InvitationEmailStatus = "sent" | "not_configured" | "failed";
 
@@ -114,15 +116,27 @@ async function sendEmail(input: {
         text: invitationText(input.url, input.copy),
       }),
       cache: "no-store",
+      // Sin timeout, un Resend colgado bloquea la Server Action que lo espera
+      // hasta que la plataforma corta la función. En el alta de empresa eso es
+      // grave: la compensación que borra empresa y usuario corre DESPUÉS de
+      // esta llamada, así que un cuelgue deja exactamente el huérfano que esa
+      // compensación existe para evitar (OPS-13).
+      signal: AbortSignal.timeout(EXTERNAL_TIMEOUT_MS),
     });
 
     if (!response.ok) {
-      console.error(`[resend] Invitation delivery failed with status ${response.status}`);
+      logEvent("error", "email.invitation.failed", {
+        provider: "resend",
+        http_status: response.status,
+      });
       return "failed";
     }
     return "sent";
-  } catch {
-    console.error("[resend] Invitation delivery failed before receiving a response");
+  } catch (error) {
+    logEvent("error", "email.invitation.failed", {
+      provider: "resend",
+      reason: error instanceof Error ? error.name : "unknown",
+    });
     return "failed";
   }
 }

@@ -52,6 +52,30 @@ jobs:
       - name: Production build
         run: pnpm build
 
+      # Informativo, no bloqueante (OPS-20). La auditoría de seguridad dejó 6
+      # vulnerabilidades high aceptadas como residuales: son DoS de tiempo de
+      # build en transitivas de `next`/`exceljs`, sin exploit en esta app, y
+      # forzarlas con overrides saltaba de versión mayor y rompía el framework.
+      # Hacerlo bloqueante dejaría el CI permanentemente en rojo y se volvería
+      # ruido que nadie mira. Queda visible para detectar lo que SÍ es nuevo.
+      - name: Dependency audit (informativo)
+        continue-on-error: true
+        run: pnpm audit --audit-level=high
+
+      # Guarda contra una regresión concreta: los scripts que borran datos de
+      # producción vivían junto a las migraciones, con la misma extensión y sin
+      # nada que los distinguiera (OPS-05). Ya se movieron a
+      # `supabase/scripts-manuales/`; esto impide que vuelvan a colarse.
+      - name: Verificar que no haya SQL suelto en supabase/
+        run: |
+          sueltos=$(find supabase -maxdepth 1 -name '*.sql' ! -name 'seed.sql' -print)
+          if [ -n "$sueltos" ]; then
+            echo "::error::Hay scripts .sql sueltos en supabase/. Los manuales van en supabase/scripts-manuales/:"
+            echo "$sueltos"
+            exit 1
+          fi
+          echo "OK: supabase/ sólo contiene seed.sql y los directorios esperados."
+
   database:
     name: Database pgTAP
     runs-on: ubuntu-latest

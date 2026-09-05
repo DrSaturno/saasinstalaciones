@@ -5,6 +5,7 @@ import { z } from "zod";
 import { applicationOrigin } from "@/lib/app-origin";
 import { createClient } from "@/lib/supabase/server";
 import { clientIp, enforceRateLimit } from "@/lib/security/rate-limit";
+import { logEvent } from "@/lib/observability";
 
 const requestSchema = z.object({ email: z.string().email() });
 
@@ -42,9 +43,20 @@ export async function requestPasswordReset(
       { redirectTo: `${applicationOrigin()}/api/auth/callback` },
     );
     // Incluye el rate limit de Supabase: reintentar seguido no delata nada.
-    if (error) console.error("password reset request failed", error.message);
+    //
+    // Va por `logEvent` y no por `console.error`: el objeto de error de Supabase
+    // llegaba crudo a stdout, sin pasar por el sanitizador. Acá se registra el
+    // código, que es lo que sirve para diagnosticar, y nunca el email — este es
+    // un formulario público y la dirección es dato de quien lo usa.
+    if (error) {
+      logEvent("warn", "password_reset.request_failed", {
+        auth_code: error.code ?? "unknown",
+      });
+    }
   } catch (error) {
-    console.error("password reset request failed", error);
+    logEvent("error", "password_reset.request_failed", {
+      reason: error instanceof Error ? error.name : "unknown",
+    });
   }
 
   return { error: null, sent: true };

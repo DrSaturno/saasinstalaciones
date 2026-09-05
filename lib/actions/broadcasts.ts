@@ -18,6 +18,7 @@ import {
 } from "@/lib/domain/broadcasts";
 import { hasActiveCompanyRole } from "@/lib/data/company-membership-roles";
 import { requestPushDelivery } from "@/lib/push/events";
+import { logEvent } from "@/lib/observability";
 import { createClient } from "@/lib/supabase/server";
 import type { OrderCurrency } from "@/types/database";
 
@@ -66,8 +67,20 @@ async function requireInstaller() {
   return { user, supabase: await createClient() };
 }
 
+/**
+ * Devuelve el texto genérico que ve la persona y —esto es lo nuevo— deja
+ * registro del error.
+ *
+ * Antes las dos ramas de esta función devolvían el mismo `fallback`: recibía el
+ * error y lo descartaba. Parecía manejo de errores sin serlo, y los siete
+ * `catch` de este módulo quedaban mudos. Lo que se le muestra a la persona no
+ * cambia (sigue sin filtrarse nada del motor de base), pero ahora el fallo
+ * queda en el log, que es donde sirve para diagnosticarlo.
+ */
 function errorMessage(error: unknown, fallback: string) {
-  if (!(error instanceof Error)) return fallback;
+  logEvent("error", "broadcasts.action_failed", {
+    reason: error instanceof Error ? error.name : "unknown",
+  });
   return fallback;
 }
 

@@ -36,18 +36,21 @@
 >   config/args controlados por el atacante) — **se aceptan como residual** en
 >   vez de forzar overrides que saltan de versión mayor (nanoid 3→6 rompía
 >   next). Se limpian cuando se actualice el framework.
-> - **SEC-14 CORREGIDO** (código): la Edge Function `send-event-push` ya
+> - **SEC-14 CORREGIDO y DESPLEGADO**: la Edge Function `send-event-push` ya
 >   autoriza `announcement` y `blocker_reported` (mismo patrón que
->   `update_received`/`order_assigned`). **Requiere redeploy de la función**
->   para tomar efecto en producción — no viaja con las migraciones.
-> - **SEC-08 CORREGIDO** (código): rate limiting distribuido con Upstash Redis
->   (`lib/security/rate-limit.ts`), aplicado a login (8/5min por IP),
->   recuperación de contraseña (5/15min por IP, respuesta uniforme) y export de
->   locaciones (20/h por usuario). **Degrada a no-op sin las env vars**
->   (`UPSTASH_REDIS_REST_URL`/`TOKEN`), así que dev/CI andan igual y se activa
->   al aprovisionar el servicio. Falla abierto ante error de Redis (un problema
->   del limitador no puede dejar a la gente afuera de su cuenta). Test del
->   no-op incluido.
+>   `update_received`/`order_assigned`). **Redeployada a producción (v3)** el
+>   04-09-2026 y verificada por MCP (`get_edge_function` → version 3, ambas ramas
+>   presentes). No viaja con las migraciones: requiere `supabase functions deploy`.
+> - **SEC-08 CORREGIDO y ACTIVO en prod**: rate limiting distribuido con Upstash
+>   Redis (`lib/security/rate-limit.ts`), aplicado a login (8/5min por IP),
+>   recuperación de contraseña (5/15min por IP, respuesta uniforme), export de
+>   locaciones (20/h por usuario) y verificación MFA (`mfa_verify`, 10/5min).
+>   **Degrada a no-op sin las env vars**, así que dev/CI andan igual. En prod se
+>   aprovisionó Upstash por la integración de Vercel, que inyecta
+>   `KV_REST_API_URL`/`KV_REST_API_TOKEN`; por eso `client()` lee ambas
+>   convenciones (`UPSTASH_REDIS_REST_URL`/`TOKEN` preferido, `KV_*` como
+>   fallback). Falla abierto ante error de Redis (un problema del limitador no
+>   puede dejar a la gente afuera de su cuenta). Test del no-op incluido.
 > - **SEC-07 CORREGIDO** (código): la CSP pasó de `Report-Only` (que no
 >   bloqueaba ni reportaba) a **enforcing**. Se conserva `unsafe-inline`
 >   (Next/Radix), se saca `unsafe-eval` en producción, y se endurece el resto.
@@ -56,10 +59,15 @@
 >   local contra Demo). El salto a nonce+strict-dynamic (para quitar
 >   `unsafe-inline`) queda pendiente: fuerza render dinámico y toca el caché del
 >   PWA.
-> - **SEC-11:** es un toggle del dashboard de Supabase Auth (Prevent leaked
->   passwords / HIBP) — no se puede tocar por MCP; queda del lado del usuario.
-> - **SEC-13 CORREGIDO** (código): segundo factor TOTP con la API MFA de
->   Supabase Auth. **Obligatorio para `platform_admin` y `company_manager`**
+> - **SEC-11 BLOQUEADO POR PLAN — residual aceptado.** La protección de
+>   contraseñas filtradas (HIBP) **sólo está disponible en plan Pro**. El
+>   proyecto está en Hobby/Free, así que al intentar guardarlo el dashboard
+>   devuelve "available on Pro Plans and up" y el advisor lo sigue marcando
+>   deshabilitado. Es un control **preventivo P2**, no una vulnerabilidad viva:
+>   se acepta como residual hasta que se suba a Pro (donde es un toggle inmediato).
+> - **SEC-13 CORREGIDO y ACTIVO en prod**: segundo factor TOTP con la API MFA de
+>   Supabase Auth. **TOTP habilitado a nivel proyecto en producción** (sin eso el
+>   enrolamiento obligatorio falla). **Obligatorio para `platform_admin` y `company_manager`**
 >   (`MFA_REQUIRED_ROLES` en `lib/data/two-factor.ts`), **opcional para el
 >   instalador**. El enrolamiento forzado y el step-up se resuelven en los
 >   layouts de `(company)`/`(master)` (`twoFactorGate`) y en `loginAction`; el
@@ -73,6 +81,10 @@
 >   (3) instalador no forzado (garantía arquitectónica + `two-factor.test.ts`
 >   5/5). Datos de prueba de Demo limpiados. **No lleva migración** — usa las
 >   tablas de MFA nativas de Supabase Auth.
+> - **Config de prod — NO prender el Captcha de Supabase Auth.** La app no
+>   implementa captcha; si se habilita "Enable Captcha protection", Supabase le
+>   exige un token a cada login/registro y **rompe todos los ingresos**. Quedó
+>   apagado a propósito. Prenderlo sólo si antes se integra hCaptcha en la app.
 > - **SEC-12 VERIFICADO — bajo riesgo, sin acción.** Las 14 funciones que marca
 >   el advisor son todas `SECURITY INVOKER` (corren con los privilegios del que
 >   llama, no elevan). Las `SECURITY DEFINER` ya tienen `search_path` fijo. Dos
@@ -168,13 +180,13 @@ operativos por tenant.
 |---|---|---|---|---|---|
 | **SEC-06** | P2 | Cadena de suministro | `shadcn` en **dependencies** (no devDependencies); arrastra `qs`, `hono`, `undici`, `ip-address`, `fast-uri`, `js-yaml` vulnerables vía `@modelcontextprotocol/sdk`→`express` | [CONFIRMADO] `pnpm audit`: 17 high + 13 moderate, casi todas por `shadcn` | `shadcn` es un CLI de scaffolding, no runtime: mover a `devDependencies` (o eliminar) saca ~la mayoría de los advisories del árbol de producción. |
 | **SEC-07** | P2 | Config web | `next.config.ts`: CSP en `Content-Security-Policy-Report-Only`, **sin `report-uri`**, con `unsafe-inline`+`unsafe-eval` | [CONFIRMADO] | No bloquea ni reporta nada hoy. Plan: nonces + pasar a enforcement (`Content-Security-Policy`), quitar `unsafe-eval`. Es el mitigante de defensa-en-profundidad para SEC-05. |
-| **SEC-08** | P2 | Rate limiting | Todo el repo: **cero** rate limiting propio (grep sin coincidencias) | [CONFIRMADO] | Se depende sólo del rate limit interno de Supabase Auth. Endpoints propios (import, export, PDF, RPC) y login quedan sin límite de app. Agregar límite por IP/usuario en Route Handlers y Server Actions sensibles. |
+| **SEC-08** ✅ | P2 | Rate limiting | Todo el repo: **cero** rate limiting propio (grep sin coincidencias) | [CORREGIDO] | Rate limiting distribuido con Upstash Redis (`lib/security/rate-limit.ts`) en login, reset, export y `mfa_verify`. Upstash aprovisionado en prod (vars `KV_*` de Vercel; el código lee ambas convenciones). Ver bloque de estado. |
 | **SEC-09** | P2 | Storage | Buckets `chat` y `evidence`: sin `file_size_limit` ni `allowed_mime_types` | [CONFIRMADO] §storage.buckets | Aunque privados y con RLS por tenant, falta límite de tamaño/tipo → subida de archivos enormes o peligrosos (aunque el acceso esté acotado). Fijar límites. |
 | **SEC-10** | P2 | AuthZ (policy) | `storage.objects`: policies `evidence_read`/`evidence_company_delete` usan `storage.foldername(s.name)` (columna `sites.name`) en vez de `objects.name` | [POTENCIAL] | Parece copy-paste: esa rama OR evalúa el path sobre el *nombre* del sitio. Probablemente **falla cerrado** (no concede), pero hay que verificar que no conceda lecturas inesperadas ni rompa lecturas legítimas de evidencia ligada a sites. **Requiere revisión humana.** |
-| **SEC-11** | P2 | Auth config | Advisor Supabase `auth_leaked_password_protection` = deshabilitado | [CONFIRMADO] | Activar protección contra contraseñas filtradas (HIBP) en Supabase Auth. ASVS L2 lo pide para cuentas sensibles. |
+| **SEC-11** ⛔ | P2 | Auth config | Advisor Supabase `auth_leaked_password_protection` = deshabilitado | [BLOQUEADO POR PLAN] | La protección HIBP **sólo existe en plan Pro**; el proyecto está en Hobby/Free (guardar da "available on Pro Plans and up"). Preventivo, no vuln viva: residual aceptado hasta subir a Pro. Ver bloque de estado. |
 | **SEC-12** | P2 | Config DB | Advisor Supabase: 14 funciones `function_search_path_mutable` | [POTENCIAL] | Mi consulta directa mostró que **todas las `SECURITY DEFINER` tienen `search_path` fijo**; las 14 flagueadas serían no-secdef o falsos positivos. Revisar el listado del advisor y fijar `search_path` donde falte. |
 | **SEC-13** ✅ | P3 | Config MFA | Sin MFA para `platform_admin` ni `company_manager` | [CORREGIDO] | TOTP con la API MFA de Supabase Auth: **obligatorio** para admin/gerencia (enrolamiento forzado + step-up en login vía `twoFactorGate`/`loginAction`), **opcional** para el instalador. Verificado end-to-end en Demo. Ver bloque de estado arriba. |
-| **SEC-14** | P3 | Funcional/seguridad | Edge Function `send-event-push`: eventos `announcement` y `blocker_reported` en `EVENTS` **sin rama en `isAuthorized`** → siempre 403 | [CONFIRMADO] | Falla cerrado (no es hueco de seguridad), pero **el push de anuncios y bloqueos nunca se entrega**. Agregar las ramas de autorización. (Bug introducido en puntos 23/24.) |
+| **SEC-14** ✅ | P3 | Funcional/seguridad | Edge Function `send-event-push`: eventos `announcement` y `blocker_reported` en `EVENTS` **sin rama en `isAuthorized`** → siempre 403 | [CORREGIDO y DESPLEGADO] | Ramas de autorización agregadas; función **redeployada a prod (v3)** y verificada por MCP. El push de anuncios y bloqueos ya se entrega. Ver bloque de estado. |
 | **SEC-15** | P3 | CSRF | `POST /api/master/*` autentican por cookie de sesión | [POTENCIAL, bajo] | Mitigado por SameSite=Lax (bloquea POST cross-site) + esperan JSON (preflight CORS, sin CORS permisivo). Las Server Actions de Next 16 traen verificación de Origin propia. Residual bajo; documentar y, opcionalmente, doble-submit token en `/api/master`. |
 
 ---

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import type { Database, UserRole } from "@/types/database";
+import type { CompanyStatus, Database, UserRole } from "@/types/database";
 import { isProfileLocale, LOCALE_COOKIE } from "@/i18n/config";
 import { isCompanyManagerBlocked } from "@/lib/domain/company-access";
 
@@ -85,15 +85,38 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const path = request.nextUrl.pathname;
 
   // Las rutas /api se guardan a sí mismas y responden JSON (401/403).
   // Redirigirlas a /login devolvería HTML a un cliente que espera JSON.
   if (path.startsWith("/api/")) return response;
+
+  /**
+   * Distinguir "no hay sesión" de "Supabase no responde" (OPS-14).
+   *
+   * Antes esto era un `await` pelado. Cuando Supabase se caía, `user` venía
+   * nulo y el middleware mandaba a TODO el mundo a `/login` — una página que
+   * tampoco puede autenticar. El síntoma era un cierre de sesión masivo, que
+   * es exactamente el diagnóstico equivocado: se pierde tiempo revisando Auth
+   * mientras el problema es la base.
+   *
+   * Ante una falla de infraestructura se deja pasar la petición. No es un
+   * agujero: cada layout de área vuelve a resolver el usuario por su cuenta y
+   * redirige si no hay. Lo que se gana es que la persona vea un error honesto
+   * en vez de creer que la echaron.
+   */
+  let user: Awaited<ReturnType<typeof supabase.auth.getUser>>["data"]["user"] = null;
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    user = data.user;
+    // Un 401/400 es "no hay sesión" y se trata normal. Un error sin status o
+    // 5xx es el servicio, no la credencial.
+    if (error && (error.status === undefined || error.status >= 500)) {
+      return response;
+    }
+  } catch {
+    return response;
+  }
 
   // Sin sesión: solo rutas públicas.
   if (!user) {
@@ -105,11 +128,22 @@ export async function proxy(request: NextRequest) {
   }
 
   // Con sesión: resolvemos el rol.
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, locale, company_id")
-    .eq("id", user.id)
-    .single();
+  //
+  // Mismo criterio que arriba: si la consulta falla por infraestructura, dejar
+  // pasar. Mandar a `/login` a alguien con sesión válida porque la base no
+  // contesta es el peor de los dos errores posibles.
+  let profile: { role: string; locale: string; company_id: string | null } | null = null;
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("role, locale, company_id")
+      .eq("id", user.id)
+      .single();
+    if (error && error.code !== "PGRST116") return response; // PGRST116 = sin filas
+    profile = data;
+  } catch {
+    return response;
+  }
 
   const role = profile?.role as UserRole | undefined;
   if (!profile || !role) {
@@ -133,13 +167,24 @@ export async function proxy(request: NextRequest) {
   // El gerente depende de un único tenant. Si quedó suspendido, revocamos la
   // sesión y evitamos que un token todavía vigente llegue al área empresa.
   if (role === "company_manager") {
-    const { data: company } = profile.company_id
-      ? await supabase
-          .from("companies")
-          .select("status")
-          .eq("id", profile.company_id)
-          .maybeSingle()
-      : { data: null };
+    // Si esta consulta falla no se puede afirmar que la empresa esté suspendida.
+    // Cerrar la sesión ante la duda convertiría una caída de la base en una
+    // expulsión con un mensaje falso ("empresa suspendida"), que es peor que
+    // dejar pasar: el layout del área vuelve a comprobarlo igual.
+    let company: { status: CompanyStatus } | null = null;
+    try {
+      const { data, error } = profile.company_id
+        ? await supabase
+            .from("companies")
+            .select("status")
+            .eq("id", profile.company_id)
+            .maybeSingle()
+        : { data: null, error: null };
+      if (error) return response;
+      company = data;
+    } catch {
+      return response;
+    }
 
     if (isCompanyManagerBlocked(role, company?.status)) {
       await supabase.auth.signOut();

@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { useAutoReloadOnError } from "@/lib/use-auto-reload";
+import { useErrorReport } from "@/lib/use-error-report";
 
 /**
  * Boundary de error de las rutas bajo el layout raíz. Vive dentro del
  * NextIntlClientProvider, así que puede localizar sus textos.
  */
 export default function ErrorBoundary({
+  error,
   reset,
 }: {
   error: Error & { digest?: string };
@@ -17,6 +19,10 @@ export default function ErrorBoundary({
 }) {
   const t = useTranslations("AppStates");
 
+  // El `error` estaba declarado en el tipo pero no se desestructuraba: llegaba
+  // con su `digest` y se descartaba. Sin eso, ningún crash de producción quedaba
+  // registrado, y la recarga automática de abajo terminaba de borrar el rastro.
+  useErrorReport(error, "route");
   useAutoReloadOnError();
 
   return (
