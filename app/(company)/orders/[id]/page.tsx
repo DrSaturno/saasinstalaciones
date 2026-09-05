@@ -39,6 +39,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ORDER_EVIDENCE_KINDS, type EvidenceKind } from "@/lib/domain/order-evidence";
 import type { OrderStatus } from "@/types/database";
 import { canOperateCompany, getCurrentUser } from "@/lib/auth";
+import { PageContainer } from "@/components/shared/page-container";
 import { BackLink } from "@/components/shared/back-link";
 import { throwIfDataError } from "@/lib/data/errors";
 
@@ -162,7 +163,7 @@ export default async function OrderDetailPage({
     : false;
 
   return (
-    <div className="mx-auto w-full max-w-[1480px]">
+    <PageContainer>
       <BackLink href="/orders" label={t("back")} />
 
       <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
@@ -173,7 +174,7 @@ export default async function OrderDetailPage({
             </span>
             <StatusBadge status={order.status as OrderStatus} kind="order" />
           </div>
-          <h1 className="mt-1 text-2xl font-bold">{order.title}</h1>
+          <h1 className="mt-1 font-heading text-h1 text-balance">{order.title}</h1>
           {project && (
             <Link
               href={`/projects/${order.project_id}`}
@@ -415,6 +416,6 @@ export default async function OrderDetailPage({
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageContainer>
   );
 }

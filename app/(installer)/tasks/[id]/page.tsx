@@ -25,6 +25,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ORDER_EVIDENCE_KINDS, type EvidenceKind } from "@/lib/domain/order-evidence";
 import type { OrderStatus } from "@/types/database";
 import { getCurrentUser } from "@/lib/auth";
+import { PageContainer } from "@/components/shared/page-container";
 import { BackLink } from "@/components/shared/back-link";
 import { throwIfDataError } from "@/lib/data/errors";
 
@@ -180,7 +181,7 @@ export default async function TaskDetailPage({
     : null;
 
   return (
-    <div className="mx-auto w-full max-w-[1480px]">
+    <PageContainer>
       <BackLink href="/tasks" label={t("back")} />
 
       <div className="mt-3 flex items-center gap-3">
@@ -190,7 +191,7 @@ export default async function TaskDetailPage({
         <StatusBadge status={order.status as OrderStatus} kind="order" />
       </div>
       <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold">{order.title}</h1>
+        <h1 className="font-heading text-h1 text-balance">{order.title}</h1>
         <div className="flex flex-wrap items-center gap-2">
           <OrderPdfButton orderId={order.id} />
           {cancelPrompt ? (
@@ -323,6 +324,6 @@ export default async function TaskDetailPage({
           currentUserId={user?.id ?? null}
         />
       </div>
-    </div>
+    </PageContainer>
   );
 }
