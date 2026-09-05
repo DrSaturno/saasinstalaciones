@@ -1288,6 +1288,7 @@
     "scheduleHelp": "Informar o horário permite que a plataforma detecte choques de agenda e deslocamentos impossíveis antes de atribuir. Sem hora, a ordem fica agendada por dia e esses controles não podem ser aplicados."
   },
   "SitesTable": {
+    "tableLabel": "Pontos do projeto",
     "all": "Todos",
     "search": "Buscar por nome, endereço, cidade ou código…",
     "allZones": "Todas as regiões",

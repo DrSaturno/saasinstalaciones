@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
+import Link from "next/link";
+import { DataGrid, DataGridCell, DataGridHeader, DataGridRow } from "@/components/shared/data-grid";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ORDER_STATUS } from "@/lib/domain/status";
 import { Input } from "@/components/ui/input";
@@ -31,7 +32,6 @@ export function AgendaTable({
   const t = useTranslations("Agenda");
   const statusT = useTranslations("Status");
   const format = useFormatter();
-  const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all");
   const [installerFilter, setInstallerFilter] = useState("all");
@@ -66,6 +66,9 @@ export function AgendaTable({
     for (const row of rows) base[row.orderStatus]++;
     return base;
   }, [rows]);
+
+  const columns = [t("date"), t("order"), t("project"), t("installer"), t("type"), t("status")];
+  const template = "130px 1fr 170px 160px 110px 130px";
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -167,57 +170,78 @@ export function AgendaTable({
         </span>
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-xl border bg-card">
-        <div className="grid min-w-[980px] grid-cols-[130px_1fr_170px_160px_110px_130px] gap-4 border-b bg-muted/30 px-4 py-2 text-xs font-medium text-muted-foreground">
-          <span>{t("date")}</span>
-          <span>{t("order")}</span>
-          <span>{t("project")}</span>
-          <span>{t("installer")}</span>
-          <span>{t("type")}</span>
-          <span>{t("status")}</span>
-        </div>
+      <div className="mt-4 rounded-lg border border-border bg-card">
         {filtered.length === 0 ? (
           <p className="py-16 text-center text-sm text-muted-foreground">
             {rows.length === 0 ? t("empty") : t("noMatch")}
           </p>
         ) : (
-          <div>
-            {filtered.map((row) => (
-              <div
-                key={row.activityId}
-                onClick={() => router.push(`/orders/${row.orderId}`)}
-                className="grid min-w-[980px] cursor-pointer grid-cols-[130px_1fr_170px_160px_110px_130px] items-center gap-4 border-b px-4 py-3 text-sm transition-colors last:border-b-0 hover:bg-muted/40"
-              >
-                <div className="font-mono text-xs">
-                  <p>{format.dateTime(new Date(`${row.date}T12:00:00`), { day: "2-digit", month: "2-digit", year: "numeric" })}</p>
-                  <p className="text-muted-foreground">
-                    {row.startTime ? `${row.startTime}–${row.endTime}` : t("noTime")}
-                  </p>
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate font-medium">
-                    <span className="font-mono text-xs text-muted-foreground">{row.orderNumber}</span>{" "}
-                    {row.orderTitle}
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {row.siteName}
-                    {row.siteCity ? ` · ${row.siteCity}` : ""}
-                  </p>
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate text-muted-foreground">{row.projectName}</p>
-                  <p className="truncate font-mono text-xs text-muted-foreground">{row.siteZone || "—"}</p>
-                </div>
-                <span className="truncate text-muted-foreground">
-                  {row.installerName ?? <span className="text-xs italic opacity-60">{t("unassigned")}</span>}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {row.activityType === "survey" ? t("typeSurvey") : t("typeExecution")}
-                </span>
-                <StatusBadge status={row.orderStatus} kind="order" />
+          <>
+            <div className="hidden md:block">
+              <div className="overflow-x-auto">
+                <DataGrid label={t("title")} rowCount={filtered.length} colCount={6} className="min-w-[980px]">
+                  <DataGridHeader columns={columns} template={template} />
+                  {filtered.map((row, index) => (
+                    <DataGridRow
+                      key={row.activityId}
+                      href={`/orders/${row.orderId}`}
+                      rowIndex={index}
+                      template={template}
+                      className="py-3 last:border-b-0"
+                    >
+                      <DataGridCell colIndex={1} className="font-mono text-caption">
+                        <p>{format.dateTime(new Date(`${row.date}T12:00:00`), { day: "2-digit", month: "2-digit", year: "numeric" })}</p>
+                        <p className="text-muted-foreground">{row.startTime ? `${row.startTime}–${row.endTime}` : t("noTime")}</p>
+                      </DataGridCell>
+                      <DataGridCell colIndex={2}>
+                        <p className="truncate font-medium">
+                          <span className="font-mono text-caption text-muted-foreground">{row.orderNumber}</span>{" "}
+                          {row.orderTitle}
+                        </p>
+                        <p className="truncate text-caption text-muted-foreground">
+                          {row.siteName}{row.siteCity ? ` · ${row.siteCity}` : ""}
+                        </p>
+                      </DataGridCell>
+                      <DataGridCell colIndex={3}>
+                        <p className="truncate text-muted-foreground">{row.projectName}</p>
+                        <p className="truncate font-mono text-caption text-muted-foreground">{row.siteZone || "—"}</p>
+                      </DataGridCell>
+                      <DataGridCell colIndex={4} className="truncate text-muted-foreground">
+                        {row.installerName ?? <span className="text-caption italic opacity-60">{t("unassigned")}</span>}
+                      </DataGridCell>
+                      <DataGridCell colIndex={5} className="text-caption text-muted-foreground">
+                        {row.activityType === "survey" ? t("typeSurvey") : t("typeExecution")}
+                      </DataGridCell>
+                      <DataGridCell colIndex={6}><StatusBadge status={row.orderStatus} kind="order" /></DataGridCell>
+                    </DataGridRow>
+                  ))}
+                </DataGrid>
               </div>
-            ))}
-          </div>
+            </div>
+
+            <ul className="divide-y divide-border md:hidden">
+              {filtered.map((row) => (
+                <li key={row.activityId}>
+                  <Link href={`/orders/${row.orderId}`} className="flex flex-col gap-1 px-4 py-3 transition-colors hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-caption">
+                        {format.dateTime(new Date(`${row.date}T12:00:00`), { day: "2-digit", month: "2-digit" })}
+                        {row.startTime ? ` · ${row.startTime}–${row.endTime}` : ""}
+                      </span>
+                      <StatusBadge status={row.orderStatus} kind="order" />
+                    </div>
+                    <p className="font-medium">{row.orderTitle}</p>
+                    <p className="text-caption text-muted-foreground">
+                      {row.siteName}{row.siteCity ? ` · ${row.siteCity}` : ""}
+                    </p>
+                    <p className="text-caption text-muted-foreground">
+                      {row.installerName ?? t("unassigned")} · {row.activityType === "survey" ? t("typeSurvey") : t("typeExecution")}
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </div>
     </div>

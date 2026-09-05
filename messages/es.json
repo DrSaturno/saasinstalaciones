@@ -1288,6 +1288,7 @@
     "scheduleHelp": "Cargar el horario permite que la plataforma detecte choques de agenda y traslados imposibles antes de asignar. Sin hora, la orden queda agendada por día y esos controles no se pueden aplicar."
   },
   "SitesTable": {
+    "tableLabel": "Puntos del proyecto",
     "all": "Todos",
     "search": "Buscar por nombre, dirección, ciudad o código…",
     "allZones": "Todas las zonas",

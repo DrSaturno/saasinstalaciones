@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
+import { DataGrid, DataGridCell, DataGridHeader, DataGridRow } from "@/components/shared/data-grid";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { SITE_STATUS, SITE_STATUS_ORDER } from "@/lib/domain/status";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,6 @@ const ROW_HEIGHT = 56;
 export function SitesTable({ sites, projectId }: { sites: SiteRow[]; projectId: string }) {
   const t = useTranslations("SitesTable");
   const statusT = useTranslations("Status");
-  const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<SiteStatus | "all">("all");
   const [zoneFilter, setZoneFilter] = useState("all");
@@ -31,6 +31,9 @@ export function SitesTable({ sites, projectId }: { sites: SiteRow[]; projectId: 
     for (const site of sites) base[site.status]++;
     return base;
   }, [sites]);
+  const columns = [t("site"), t("address"), t("city"), t("zone"), t("progress"), t("status")];
+  const template = "1fr 1fr 130px 110px 110px 130px";
+
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
     return sites.filter((site) => {
@@ -74,30 +77,72 @@ export function SitesTable({ sites, projectId }: { sites: SiteRow[]; projectId: 
         <span className="font-mono text-xs text-muted-foreground">{t("resultCount", { filtered: filtered.length, total: sites.length })}</span>
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-xl border bg-card">
-        <div className="grid min-w-[860px] grid-cols-[1fr_1fr_130px_110px_110px_130px] gap-4 border-b bg-muted/30 px-4 py-2 text-xs font-medium text-muted-foreground">
-          <span>{t("site")}</span><span>{t("address")}</span><span>{t("city")}</span><span>{t("zone")}</span><span>{t("progress")}</span><span>{t("status")}</span>
-        </div>
+      <div className="mt-4 rounded-lg border border-border bg-card">
         {filtered.length === 0 ? (
           <p className="py-16 text-center text-sm text-muted-foreground">{sites.length === 0 ? t("empty") : t("noMatch")}</p>
         ) : (
-          <div ref={scrollRef} className="max-h-[600px] min-w-[860px] overflow-auto">
-            <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
-              {virtualizer.getVirtualItems().map((virtualRow) => {
-                const site = filtered[virtualRow.index];
-                return (
-                  <div key={site.id} onClick={() => router.push(`/projects/${projectId}/sites/${site.id}`)} className={`absolute inset-x-0 grid cursor-pointer grid-cols-[1fr_1fr_130px_110px_110px_130px] items-center gap-4 border-b px-4 text-sm transition-colors hover:bg-muted/40 ${site.archived_at ? "opacity-55" : ""}`} style={{ height: virtualRow.size, transform: `translateY(${virtualRow.start}px)` }}>
-                    <div className="min-w-0"><p className="truncate font-medium">{site.name}</p>{site.external_ref ? <p className="truncate font-mono text-xs text-muted-foreground">{site.external_ref}</p> : null}</div>
-                    <span className="truncate text-muted-foreground">{site.address || "—"}</span>
-                    <span className="truncate text-muted-foreground">{site.city || "—"}</span>
-                    <span className="truncate font-mono text-xs text-muted-foreground">{site.zone || "—"}</span>
-                    <div className="flex items-center gap-2"><div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-[var(--success)]" style={{ width: `${site.progress}%` }} /></div><span className="w-9 text-right font-mono text-xs">{site.progress}%</span></div>
-                    <StatusBadge status={site.status} kind="site" />
+          <>
+            <div className="hidden md:block">
+              <div className="overflow-x-auto">
+                <DataGrid label={t("tableLabel")} rowCount={filtered.length} colCount={6} className="min-w-[860px]">
+                  <DataGridHeader columns={columns} template={template} />
+                  <div ref={scrollRef} className="max-h-[600px] overflow-auto">
+                    <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
+                      {virtualizer.getVirtualItems().map((virtualRow) => {
+                        const site = filtered[virtualRow.index];
+                        return (
+                          <DataGridRow
+                            key={site.id}
+                            href={`/projects/${projectId}/sites/${site.id}`}
+                            rowIndex={virtualRow.index}
+                            template={template}
+                            className={`absolute inset-x-0 ${site.archived_at ? "opacity-55" : ""}`}
+                            style={{ height: virtualRow.size, transform: `translateY(${virtualRow.start}px)` }}
+                          >
+                            <DataGridCell colIndex={1}>
+                              <p className="truncate font-medium">{site.name}</p>
+                              {site.external_ref ? <p className="truncate font-mono text-caption text-muted-foreground">{site.external_ref}</p> : null}
+                            </DataGridCell>
+                            <DataGridCell colIndex={2} className="truncate text-muted-foreground">{site.address || "—"}</DataGridCell>
+                            <DataGridCell colIndex={3} className="truncate text-muted-foreground">{site.city || "—"}</DataGridCell>
+                            <DataGridCell colIndex={4} className="truncate font-mono text-caption text-muted-foreground">{site.zone || "—"}</DataGridCell>
+                            <DataGridCell colIndex={5} className="flex items-center gap-2">
+                              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-[var(--success)]" style={{ width: `${site.progress}%` }} /></div>
+                              <span className="w-9 text-right font-mono text-caption">{site.progress}%</span>
+                            </DataGridCell>
+                            <DataGridCell colIndex={6}><StatusBadge status={site.status} kind="site" /></DataGridCell>
+                          </DataGridRow>
+                        );
+                      })}
+                    </div>
                   </div>
-                );
-              })}
+                </DataGrid>
+              </div>
             </div>
-          </div>
+
+            <ul className="divide-y divide-border md:hidden">
+              {filtered.map((site) => (
+                <li key={site.id}>
+                  <Link
+                    href={`/projects/${projectId}/sites/${site.id}`}
+                    className={`flex flex-col gap-1 px-4 py-3 transition-colors hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring ${site.archived_at ? "opacity-55" : ""}`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate font-medium">{site.name}</span>
+                      <StatusBadge status={site.status} kind="site" />
+                    </div>
+                    <p className="truncate text-caption text-muted-foreground">
+                      {[site.address, site.city].filter(Boolean).join(" · ") || "—"}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-[var(--success)]" style={{ width: `${site.progress}%` }} /></div>
+                      <span className="w-9 text-right font-mono text-caption">{site.progress}%</span>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </div>
     </div>
