@@ -26,6 +26,7 @@ import { ORDER_EVIDENCE_KINDS, type EvidenceKind } from "@/lib/domain/order-evid
 import type { OrderStatus } from "@/types/database";
 import { getCurrentUser } from "@/lib/auth";
 import { BackLink } from "@/components/shared/back-link";
+import { throwIfDataError } from "@/lib/data/errors";
 
 export default async function TaskDetailPage({
   params,
@@ -47,23 +48,25 @@ export default async function TaskDetailPage({
   )
     ? (kindParam as EvidenceKind)
     : null;
+  if (!user) notFound();
 
   const supabase = await createClient();
 
-  const { data: order } = await supabase
+  const { data: order, error: orderError } = await supabase
     .from("work_orders")
     .select(
       "id, order_number, title, description, status, scheduled_date, scheduled_end_date, priority, indoor, requires_freight, freight_details, logistics_notes, company_id, site_id, installer_accepted_at",
     )
     .eq("id", id)
     .single();
+  throwIfDataError("task.detail", orderError);
   if (!order) notFound();
 
   // El mínimo de fotos y el conteo actual salen de la misma función que usa el
   // trigger, así que el botón de cerrar dice exactamente lo que la base va a
   // exigir. Calcularlo acá con otra consulta habría dado dos números capaces
   // de discrepar, que es peor que no mostrar ninguno.
-  const [{ data: site }, evidence, { data: minPhotos }, { data: photoCount }] =
+  const [siteResult, evidence, minPhotosResult, photoCountResult] =
     await Promise.all([
       supabase
         .from("sites")
@@ -74,6 +77,12 @@ export default async function TaskDetailPage({
       supabase.rpc("order_min_photos", { p_order: id }),
       supabase.rpc("order_photo_count", { p_order: id }),
     ]);
+  throwIfDataError("task.site", siteResult.error);
+  throwIfDataError("task.minimum_photos", minPhotosResult.error);
+  throwIfDataError("task.photo_count", photoCountResult.error);
+  const site = siteResult.data;
+  const minPhotos = minPhotosResult.data;
+  const photoCount = photoCountResult.data;
 
   // Reprogramación pendiente de este instalador, si la hay. Se resuelve el
   // vencimiento en el servidor: el calendario de feriados vive acá, y mandarlo
@@ -134,11 +143,12 @@ export default async function TaskDetailPage({
     order.status !== "finalizada" &&
     !(await hasOpenCancellationRequest(supabase, id, user.id))
   ) {
-    const { data: company } = await supabase
+    const { data: company, error: companyError } = await supabase
       .from("companies")
       .select("country")
       .eq("id", order.company_id)
       .maybeSingle();
+    throwIfDataError("task.company_country", companyError);
     const country = company?.country === "BR" ? "BR" : "AR";
     const calendar = await fetchBusinessCalendar(supabase, country, order.company_id);
     const timeZone =
@@ -288,6 +298,7 @@ export default async function TaskDetailPage({
       <Card className="mt-4">
         <CardContent className="pt-6">
           <TaskActions
+            userId={user.id}
             orderId={order.id}
             companyId={order.company_id}
             status={order.status as OrderStatus}

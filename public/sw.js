@@ -7,15 +7,29 @@
  * Estrategia:
  *  - Estáticos (_next/static, íconos, manifest): stale-while-revalidate → la
  *    app shell carga sus recursos sin depender de una cuenta.
- *  - Navegaciones autenticadas: siempre red. Cachearlas por URL mezclaría HTML
- *    entre cuentas que comparten un dispositivo. La lectura offline privada se
- *    habilitará cuando exista un snapshot particionado por identidad.
+ *  - Pantallas de campo: network-first y fallback a la última visita. La app
+ *    borra esta caché antes de cambiar de cuenta o cerrar sesión, por lo que el
+ *    HTML privado nunca se reutiliza entre identidades.
  *  - Todo lo demás (incluido Supabase, otro origen): pasa directo a la red. Las
  *    mutaciones offline las maneja la cola en Dexie, no el SW.
  */
-const VERSION = "v5";
+const VERSION = "v6";
 
 const STATIC_CACHE = `static-${VERSION}`;
+const FIELD_CACHE = `field-${VERSION}`;
+const FIELD_ROUTES = [
+  /^\/home$/,
+  /^\/tasks(?:\/|$)/,
+  /^\/schedule$/,
+  /^\/route$/,
+  /^\/jobs(?:\/|$)/,
+  /^\/earnings$/,
+  /^\/coordination$/,
+];
+
+function isFieldRoute(pathname) {
+  return FIELD_ROUTES.some((pattern) => pattern.test(pathname));
+}
 
 self.addEventListener("install", () => {
   self.skipWaiting();
@@ -39,6 +53,21 @@ self.addEventListener("message", (event) => {
     event.waitUntil(
       caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k)))),
     );
+    return;
+  }
+
+  if (event.data?.type === "cache-current-route") {
+    const url = new URL(event.data.url, self.location.origin);
+    if (url.origin !== self.location.origin || !isFieldRoute(url.pathname)) return;
+    event.waitUntil(
+      fetch(url.href, { credentials: "include" })
+        .then(async (response) => {
+          if (!response.ok) return;
+          const cache = await caches.open(FIELD_CACHE);
+          await cache.put(url.href, response.clone());
+        })
+        .catch(() => undefined),
+    );
   }
 });
 
@@ -54,6 +83,25 @@ async function staleWhileRevalidate(request, cacheName) {
   return cached || network;
 }
 
+async function networkFirst(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  try {
+    const response = await fetch(request);
+    if (response.ok) await cache.put(request, response.clone());
+    return response;
+  } catch {
+    const exact = await cache.match(request);
+    if (exact) return exact;
+
+    // Next agrega un parámetro efímero a los requests RSC. El pathname sigue
+    // identificando la misma pantalla visitada y es un fallback mejor que una
+    // navegación rota cuando no hay señal.
+    const byPath = await cache.match(request, { ignoreSearch: true });
+    if (byPath) return byPath;
+    throw new Error("offline_route_not_cached");
+  }
+}
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
@@ -67,6 +115,11 @@ self.addEventListener("fetch", (event) => {
     url.pathname === "/manifest.webmanifest"
   ) {
     event.respondWith(staleWhileRevalidate(request, STATIC_CACHE));
+    return;
+  }
+
+  if (isFieldRoute(url.pathname)) {
+    event.respondWith(networkFirst(request, FIELD_CACHE));
   }
 });
 

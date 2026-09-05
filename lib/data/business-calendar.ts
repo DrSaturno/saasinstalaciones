@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 import type { BusinessCalendar } from "@/lib/domain/business-days";
+import { throwIfDataError } from "@/lib/data/errors";
 
 /**
  * Días no laborables aplicables a una empresa: los feriados nacionales de su
@@ -17,10 +18,11 @@ export async function fetchBusinessCalendar(
   country: string,
   companyId: string | null = null,
 ): Promise<BusinessCalendar> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("non_working_days")
     .select("day, company_id")
     .eq("country", country);
+  throwIfDataError("business_calendar.days", error);
 
   const holidays = new Set<string>();
   for (const row of data ?? []) {

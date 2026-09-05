@@ -15,6 +15,7 @@ import type { OrderStatus } from "@/types/database";
 
 type Props = {
   orderId: string;
+  orderNumber: string;
   status: OrderStatus;
   installerId: string | null;
   scheduledDate: string | null;
@@ -30,6 +31,7 @@ type Props = {
 
 export function OrderActions({
   orderId,
+  orderNumber,
   status,
   installerId,
   scheduledDate,
@@ -63,6 +65,13 @@ export function OrderActions({
   );
 
   const doTransition = (to: OrderStatus) => {
+    if (
+      to === "cancelada" &&
+      !window.confirm(t("cancelConfirm", { order: orderNumber }))
+    ) {
+      return;
+    }
+
     startTransition(async () => {
       const res = await transitionOrder(orderId, to);
       if (res.error) toast.error(res.error);
@@ -75,9 +84,23 @@ export function OrderActions({
 
   const doAssign = (value: string) => {
     const id = value === "" ? null : value;
+    if (id === installerId) return;
+
+    const installer = id
+      ? (roster.find((member) => member.id === id)?.name ?? "")
+      : (roster.find((member) => member.id === installerId)?.name ?? "");
+    const confirmed = window.confirm(
+      id
+        ? t("assignConfirm", { installer, order: orderNumber })
+        : t("unassignConfirm", { installer, order: orderNumber }),
+    );
+    if (!confirmed) return;
+
     startTransition(async () => {
       const res = await assignInstaller(orderId, id);
-      if (res.error) toast.error(res.error);
+      if (res.error) {
+        toast.error(res.error);
+      }
       else {
         toast.success(id ? t("assigned") : t("unassignedToast"));
         router.refresh();
@@ -111,7 +134,13 @@ export function OrderActions({
           <select
             value={installerId ?? ""}
             disabled={pending}
-            onChange={(e) => doAssign(e.target.value)}
+            onChange={(event) => {
+              const value = event.target.value;
+              // La asignación se confirma antes de persistir; mientras tanto
+              // el selector conserva el valor que el servidor reconoce.
+              event.currentTarget.value = installerId ?? "";
+              doAssign(value);
+            }}
             className="mt-2 h-9 w-full rounded-lg border border-input bg-transparent px-2 text-sm disabled:opacity-50"
           >
             <option value="">{t("unassigned")}</option>

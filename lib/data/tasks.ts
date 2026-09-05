@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, OrderStatus } from "@/types/database";
+import { throwIfDataError } from "@/lib/data/errors";
 
 export type TaskRow = {
   id: string;
@@ -59,7 +60,7 @@ export async function fetchMyTasks(
   supabase: SupabaseClient<Database>,
   installerId: string,
 ): Promise<TaskRow[]> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("work_orders")
     .select(
       "id, order_number, title, status, scheduled_date, installer_accepted_at, company_id, sites(name, address, city), companies(name)",
@@ -67,6 +68,8 @@ export async function fetchMyTasks(
     .eq("assigned_installer_id", installerId)
     .order("scheduled_date", { ascending: true, nullsFirst: false })
     .overrideTypes<RawTask[]>();
+
+  throwIfDataError("tasks.mine", error);
 
   const rows: TaskRow[] = (data ?? []).map((o) => ({
     id: o.id,

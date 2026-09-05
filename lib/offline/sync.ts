@@ -20,6 +20,75 @@ export async function pendingCount(): Promise<number> {
   return db.outbox.count();
 }
 
+export type SyncIssue = {
+  id: string;
+  kind: OutboxItem["kind"];
+  orderId: string | null;
+  createdAt: number;
+  tries: number;
+  blocked: boolean;
+  reason: string | null;
+};
+
+export type QueueSnapshot = {
+  pending: number;
+  blocked: number;
+  issues: SyncIssue[];
+};
+
+/** Resumen visible de la cola, incluidos rechazos definitivos y reintentos repetidos. */
+export async function queueSnapshot(): Promise<QueueSnapshot> {
+  const items = await db.outbox.orderBy("createdAt").toArray();
+  const issues = items
+    .filter((item) => item.blocked || item.tries >= 3)
+    .map((item) => ({
+      id: item.id,
+      kind: item.kind,
+      orderId: item.orderId ?? null,
+      createdAt: item.createdAt,
+      tries: item.tries,
+      blocked: item.blocked === true,
+      reason: item.blocked ? (item.lastError ?? null) : null,
+    }));
+
+  return {
+    pending: items.length,
+    blocked: items.filter((item) => item.blocked).length,
+    issues,
+  };
+}
+
+/** Vuelve a habilitar un ítem para que el próximo flush lo intente otra vez. */
+export async function retryOutboxItem(id: string): Promise<void> {
+  await db.outbox.update(id, { blocked: false, lastError: undefined });
+}
+
+/** Descarta una operación y cualquier foto local que dependiera de ella. */
+export async function discardOutboxItem(id: string): Promise<void> {
+  await db.transaction("rw", db.outbox, db.photos, async () => {
+    const item = await db.outbox.get(id);
+    if (!item) return;
+    for (const photoId of item.photoIds ?? []) await db.photos.delete(photoId);
+    await db.outbox.delete(id);
+  });
+}
+
+/** Último estado optimista aún pendiente para una orden reabierta sin señal. */
+export async function latestPendingTransition(
+  orderId: string,
+): Promise<OutboxItem["toStatus"] | null> {
+  const transitions = await db.outbox
+    .where("orderId")
+    .equals(orderId)
+    .filter(
+      (item) =>
+        item.kind === "transition" && !item.blocked && Boolean(item.toStatus),
+    )
+    .toArray();
+  transitions.sort((a, b) => b.createdAt - a.createdAt);
+  return transitions[0]?.toStatus ?? null;
+}
+
 let flushing = false;
 
 /**

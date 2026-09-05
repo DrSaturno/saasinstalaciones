@@ -157,7 +157,10 @@ export function NotificationInboxList({
                 disabled={pending || item.readAt === null}
                 title={item.readAt === null ? t("archiveNeedsRead") : t("dismiss")}
                 aria-label={t("dismiss")}
-                onClick={() => run(() => dismissNotification(item.id))}
+                onClick={() => {
+                  if (!window.confirm(t("dismissConfirm", { title: item.title }))) return;
+                  run(() => dismissNotification(item.id));
+                }}
               >
                 <X />
               </Button>

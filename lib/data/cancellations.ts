@@ -4,6 +4,7 @@ import {
   CANCELLATION_REASONS,
   type CancellationReason,
 } from "@/lib/domain/cancellation-reasons";
+import { throwIfDataError } from "@/lib/data/errors";
 
 /**
  * El CHECK de la tabla ya limita los valores, pero el generador de tipos emite
@@ -38,7 +39,7 @@ export async function fetchPendingCancellation(
   supabase: SupabaseClient<Database>,
   orderId: string,
 ): Promise<PendingCancellation | null> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("order_cancellation_requests")
     .select(
       "id, order_id, installer_id, reason_code, reason_note, requested_at, scheduled_date_at_request",
@@ -48,14 +49,16 @@ export async function fetchPendingCancellation(
     .order("requested_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  throwIfDataError("cancellations.pending", error);
 
   if (!data) return null;
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("full_name")
     .eq("id", data.installer_id)
     .maybeSingle();
+  throwIfDataError("cancellations.installer", profileError);
 
   return {
     id: data.id,
@@ -75,11 +78,12 @@ export async function hasOpenCancellationRequest(
   orderId: string,
   installerId: string,
 ): Promise<boolean> {
-  const { count } = await supabase
+  const { count, error } = await supabase
     .from("order_cancellation_requests")
     .select("id", { count: "exact", head: true })
     .eq("order_id", orderId)
     .eq("installer_id", installerId)
     .eq("status", "pending");
+  throwIfDataError("cancellations.open_count", error);
   return (count ?? 0) > 0;
 }

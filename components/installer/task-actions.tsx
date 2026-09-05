@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { enqueue } from "@/lib/offline/sync";
+import { enqueue, latestPendingTransition } from "@/lib/offline/sync";
 import { notifyQueued } from "@/lib/offline/use-sync";
+import { prepareOfflineStorageForUser } from "@/lib/offline/session-storage";
 import { AcceptOrderButton } from "@/components/installer/accept-order-button";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +15,7 @@ import type { PendingPhoto } from "@/lib/offline/db";
 import { completionReadiness } from "@/lib/domain/field-flow";
 
 type Props = {
+  userId: string;
   orderId: string;
   companyId: string;
   status: OrderStatus;
@@ -38,6 +40,7 @@ function makePhotos(companyId: string, orderId: string, files: File[]): PendingP
 }
 
 export function TaskActions({
+  userId,
   orderId,
   companyId,
   status: initialStatus,
@@ -51,6 +54,34 @@ export function TaskActions({
   const [status, setStatus] = useState<OrderStatus>(initialStatus);
   const [note, setNote] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    const reconcile = () => {
+      void (async () => {
+        const ready = await prepareOfflineStorageForUser(userId);
+        if (!active) return;
+        if (!ready) {
+          setStatus(initialStatus);
+          return;
+        }
+
+        const queuedStatus = await latestPendingTransition(orderId);
+        if (active) setStatus(queuedStatus ?? initialStatus);
+      })();
+    };
+
+    reconcile();
+    const onSyncSettled = () => {
+      reconcile();
+      router.refresh();
+    };
+    window.addEventListener("instalapro:sync-settled", onSyncSettled);
+    return () => {
+      active = false;
+      window.removeEventListener("instalapro:sync-settled", onSyncSettled);
+    };
+  }, [initialStatus, orderId, router, userId]);
 
   const online = () => typeof navigator !== "undefined" && navigator.onLine;
 

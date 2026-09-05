@@ -1,7 +1,8 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { isCompanyManagerBlocked } from "@/lib/domain/company-access";
-import type { MembershipRole, UserRole } from "@/types/database";
+import { countryTimezone } from "@/lib/domain/availability";
+import type { Country, MembershipRole, UserRole } from "@/types/database";
 
 /** Ruta home de cada tipo global de cuenta tras el login. */
 export const ROLE_HOME: Record<UserRole, string> = {
@@ -13,8 +14,21 @@ export const ROLE_HOME: Record<UserRole, string> = {
 export type CompanyMembership = {
   companyId: string;
   companyName: string;
+  country: Country;
   role: MembershipRole;
 };
+
+/** Zona operativa preferida para fechas de agenda del usuario de campo. */
+export function operationalTimezone(user: CurrentUser): string {
+  const localeCountry: Country = user.locale === "pt" ? "BR" : "AR";
+  const country =
+    user.memberships.find((membership) => membership.country === localeCountry)
+      ?.country ??
+    user.memberships[0]?.country ??
+    localeCountry;
+
+  return countryTimezone(country);
+}
 
 export function coordinatorCompanies(
   user: CurrentUser,
@@ -97,13 +111,17 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
       .single(),
     supabase
       .from("company_installers")
-      .select("company_id, companies(name, status)")
+      .select("company_id, companies(name, status, country)")
       .eq("installer_id", user.id)
       .eq("status", "active")
       .overrideTypes<
         {
           company_id: string;
-          companies: { name: string; status: "active" | "suspended" } | null;
+          companies: {
+            name: string;
+            status: "active" | "suspended";
+            country: Country;
+          } | null;
         }[]
       >(),
     supabase
@@ -143,6 +161,9 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
       .map((membership) => ({
         companyId: membership.company_id,
         companyName: activeCompanies.get(membership.company_id)?.name ?? "",
+        country:
+          activeCompanies.get(membership.company_id)?.country ??
+          (profile.locale === "pt" ? "BR" : "AR"),
         role: membership.role,
       })),
   };

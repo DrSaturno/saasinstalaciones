@@ -5,6 +5,7 @@ import { ProjectsView } from "@/components/company/projects-view";
 import { Card, CardContent } from "@/components/ui/card";
 import { fetchClients } from "@/lib/data/clients";
 import { fetchCoordinators } from "@/lib/data/team";
+import { throwIfDataError } from "@/lib/data/errors";
 
 export default async function ProjectsPage() {
   const t = await getTranslations("Projects");
@@ -15,13 +16,18 @@ export default async function ProjectsPage() {
   ]);
 
   // RLS filtra por empresa: no hace falta (ni conviene) filtrar acá.
-  const { data: projects } = await supabase
+  const { data: projects, error: projectsError } = await supabase
     .from("projects")
     .select("id, name, client_name, status, starts_at, ends_at, archived_at, created_at")
     .order("created_at", { ascending: false });
 
   // Conteo de puntos por proyecto para el resumen de cada tarjeta.
-  const { data: sites } = await supabase.from("sites").select("project_id, status");
+  const { data: sites, error: sitesError } = await supabase
+    .from("sites")
+    .select("project_id, status");
+
+  throwIfDataError("projects.list", projectsError);
+  throwIfDataError("projects.site_stats", sitesError);
 
   const siteStats = (sites ?? []).reduce<
     Record<string, { total: number; done: number }>

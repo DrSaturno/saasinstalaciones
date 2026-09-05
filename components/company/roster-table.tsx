@@ -31,6 +31,10 @@ export function RosterTable({
     member: RosterMember,
     status: "active" | "removed",
   ) => {
+    if (status === "removed" && !window.confirm(t("removeConfirm", { name: member.name }))) {
+      return;
+    }
+
     startTransition(async () => {
       const result = await setRosterStatus(member.installerId, status);
       if (result.error) {

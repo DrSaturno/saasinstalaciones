@@ -10,6 +10,7 @@ import type {
   RosterStatus,
   UnavailabilityStatus,
 } from "@/types/database";
+import { throwIfDataError } from "@/lib/data/errors";
 
 export type RosterMember = {
   installerId: string;
@@ -47,11 +48,12 @@ export async function fetchCoordinators(
   const ids = [...new Set(memberships.map((item) => item.userId))];
   if (!ids.length) return [];
 
-  const { data: profiles } = await supabase
+  const { data: profiles, error } = await supabase
     .from("profiles")
     .select("id, full_name")
     .in("id", ids)
     .order("full_name");
+  throwIfDataError("team.coordinators", error);
   return (profiles ?? []).map((profile) => ({
     id: profile.id,
     name: profile.full_name,
@@ -72,17 +74,19 @@ export type UnavailableInstaller = {
 export async function fetchUnavailableInstallers(
   supabase: SupabaseClient<Database>,
 ): Promise<UnavailableInstaller[]> {
-  const { data: exceptions } = await supabase
+  const { data: exceptions, error: exceptionsError } = await supabase
     .from("installer_unavailability")
     .select("id, installer_id, starts_at, ends_at, reason, status, review_note")
     .gte("ends_at", new Date().toISOString())
     .order("starts_at");
+  throwIfDataError("team.unavailability", exceptionsError);
   const ids = [...new Set((exceptions ?? []).map((item) => item.installer_id))];
   if (!ids.length) return [];
-  const { data: profiles } = await supabase
+  const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
     .select("id, full_name")
     .in("id", ids);
+  throwIfDataError("team.unavailability_profiles", profilesError);
   const names = new Map((profiles ?? []).map((item) => [item.id, item.full_name]));
   return (exceptions ?? []).map((item) => ({
     id: item.id,
@@ -105,21 +109,17 @@ export async function fetchRoster(
   supabase: SupabaseClient<Database>,
 ): Promise<RosterMember[]> {
   const t = await getTranslations("DataFallbacks");
-  const { data: roster } = await supabase
+  const { data: roster, error: rosterError } = await supabase
     .from("company_installers")
     .select("company_id, installer_id, status, joined_at")
     .order("joined_at", { ascending: false });
+  throwIfDataError("team.roster", rosterError);
 
   if (!roster || roster.length === 0) return [];
 
   const ids = roster.map((r) => r.installer_id);
 
-  const [
-    { data: profiles },
-    { data: installers },
-    { data: orders },
-    { data: roleRows },
-  ] =
+  const [profilesResult, installersResult, ordersResult, rolesResult] =
     await Promise.all([
       supabase.from("profiles").select("id, full_name, avatar_path").in("id", ids),
       supabase
@@ -137,6 +137,14 @@ export async function fetchRoster(
         .in("company_id", [...new Set(roster.map((r) => r.company_id))])
         .in("user_id", ids),
     ]);
+  throwIfDataError("team.roster_profiles", profilesResult.error);
+  throwIfDataError("team.roster_installers", installersResult.error);
+  throwIfDataError("team.roster_orders", ordersResult.error);
+  throwIfDataError("team.roster_roles", rolesResult.error);
+  const profiles = profilesResult.data;
+  const installers = installersResult.data;
+  const orders = ordersResult.data;
+  const roleRows = rolesResult.data;
 
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
   const instById = new Map((installers ?? []).map((i) => [i.id, i]));
@@ -177,11 +185,12 @@ export async function fetchRoster(
 export async function fetchPendingInvitations(
   supabase: SupabaseClient<Database>,
 ): Promise<PendingInvitation[]> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("invitations")
     .select("id, email, token, created_at, expires_at, status, role")
     .eq("status", "pending")
     .order("created_at", { ascending: false });
+  throwIfDataError("team.pending_invitations", error);
 
   const now = Date.now();
   return (data ?? []).map((inv) => ({

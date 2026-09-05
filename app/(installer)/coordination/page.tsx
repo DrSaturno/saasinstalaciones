@@ -8,6 +8,7 @@ import {
   ROLE_HOME,
 } from "@/lib/auth";
 import { CoordinationBoard } from "@/components/installer/coordination-board";
+import { throwIfDataError } from "@/lib/data/errors";
 
 /**
  * Tablero de coordinación: exclusivo del coordinador dentro del área
@@ -22,15 +23,16 @@ export default async function CoordinationPage() {
   const t = await getTranslations("Coordination");
   const supabase = await createClient();
 
-  const { data: projects } = await supabase
+  const { data: projects, error: projectsError } = await supabase
     .from("projects")
     .select("id, name, company_id")
     .eq("coordinator_id", user.id)
     .is("archived_at", null);
+  throwIfDataError("coordination.projects", projectsError);
 
   const projectIds = (projects ?? []).map((project) => project.id);
 
-  const { data: orders } = projectIds.length
+  const { data: orders, error: ordersError } = projectIds.length
     ? await supabase
         .from("work_orders")
         .select(
@@ -38,7 +40,8 @@ export default async function CoordinationPage() {
         )
         .in("project_id", projectIds)
         .order("scheduled_date", { ascending: true, nullsFirst: false })
-    : { data: [] };
+    : { data: [], error: null };
+  throwIfDataError("coordination.orders", ordersError);
 
   const installerIds = [
     ...new Set(
@@ -47,22 +50,24 @@ export default async function CoordinationPage() {
         .filter((id): id is string => Boolean(id)),
     ),
   ];
-  const { data: installers } = installerIds.length
+  const { data: installers, error: installersError } = installerIds.length
     ? await supabase.from("profiles").select("id, full_name").in("id", installerIds)
-    : { data: [] };
+    : { data: [], error: null };
+  throwIfDataError("coordination.installers", installersError);
 
   // ¿Cuáles tienen acta de relevamiento? Sólo hace falta para las que están en
   // ese estado: sin acta no se puede planificar.
   const surveying = (orders ?? [])
     .filter((order) => order.status === "relevamiento")
     .map((order) => order.id);
-  const { data: surveys } = surveying.length
+  const { data: surveys, error: surveysError } = surveying.length
     ? await supabase
         .from("order_updates")
         .select("order_id")
         .in("order_id", surveying)
         .eq("type", "survey")
-    : { data: [] };
+    : { data: [], error: null };
+  throwIfDataError("coordination.surveys", surveysError);
   const withSurvey = new Set((surveys ?? []).map((row) => row.order_id));
 
   const installerName = new Map(

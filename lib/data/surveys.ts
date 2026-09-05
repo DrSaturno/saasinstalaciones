@@ -4,6 +4,7 @@ import {
   parseSurveyTemplate,
   type SurveyField,
 } from "@/lib/domain/survey-template";
+import { throwIfDataError } from "@/lib/data/errors";
 
 export type SurveyState = {
   activityId: string;
@@ -40,21 +41,23 @@ export async function fetchSurveyState(
   supabase: SupabaseClient<Database>,
   orderId: string,
 ): Promise<SurveyState | null> {
-  const { data: activity } = await supabase
+  const { data: activity, error: activityError } = await supabase
     .from("work_activities")
     .select("id, checklist_definition")
     .eq("work_order_id", orderId)
     .eq("activity_type", "survey")
     .maybeSingle();
+  throwIfDataError("surveys.activity", activityError);
   if (!activity) return null;
 
-  const { data: submission } = await supabase
+  const { data: submission, error: submissionError } = await supabase
     .from("survey_submissions")
     .select("id, version, status, notes, submitted_at, author_id")
     .eq("activity_id", activity.id)
     .order("version", { ascending: false })
     .limit(1)
     .maybeSingle();
+  throwIfDataError("surveys.submission", submissionError);
 
   const fields = parseSurveyTemplate(activity.checklist_definition);
 
@@ -73,13 +76,14 @@ export async function fetchSurveyState(
     };
   }
 
-  const { data: decision } = await supabase
+  const { data: decision, error: decisionError } = await supabase
     .from("survey_submission_decisions")
     .select("reason, created_at")
     .eq("submission_id", submission.id)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  throwIfDataError("surveys.last_decision", decisionError);
 
   return {
     activityId: activity.id,
@@ -107,9 +111,10 @@ export async function fetchSurveyDecisionAuthority(
   supabase: SupabaseClient<Database>,
   activityId: string,
 ): Promise<"coordinator" | "manager_fallback" | null> {
-  const { data } = await supabase.rpc("survey_decision_authority", {
+  const { data, error } = await supabase.rpc("survey_decision_authority", {
     p_activity_id: activityId,
   });
+  throwIfDataError("surveys.decision_authority", error);
   return data === "coordinator" || data === "manager_fallback" ? data : null;
 }
 
@@ -138,20 +143,22 @@ export async function fetchPrerequisiteState(
   supabase: SupabaseClient<Database>,
   orderId: string,
 ): Promise<PrerequisiteState | null> {
-  const { data: execution } = await supabase
+  const { data: execution, error: executionError } = await supabase
     .from("work_activities")
     .select("id, prerequisite_activity_id, prerequisite_waived_at, prerequisite_waived_reason")
     .eq("work_order_id", orderId)
     .eq("activity_type", "execution")
     .maybeSingle();
+  throwIfDataError("surveys.prerequisite", executionError);
 
   if (!execution || !execution.prerequisite_activity_id) return null;
 
-  const { count } = await supabase
+  const { count, error: approvalError } = await supabase
     .from("survey_submissions")
     .select("id", { count: "exact", head: true })
     .eq("activity_id", execution.prerequisite_activity_id)
     .eq("status", "approved");
+  throwIfDataError("surveys.prerequisite_approval", approvalError);
 
   const approved = (count ?? 0) > 0;
   return {

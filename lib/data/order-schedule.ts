@@ -2,6 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, SchedulePrecision } from "@/types/database";
+import { throwIfDataError } from "@/lib/data/errors";
 
 export type OrderSchedule = {
   precision: SchedulePrecision;
@@ -41,12 +42,13 @@ export async function fetchOrderSchedule(
   supabase: SupabaseClient<Database>,
   orderId: string,
 ): Promise<OrderSchedule | null> {
-  const { data: activities } = await supabase
+  const { data: activities, error } = await supabase
     .from("work_activities")
     .select(
       "activity_type, schedule_precision, scheduled_start_at, scheduled_end_at, estimated_duration_minutes, timezone",
     )
     .eq("work_order_id", orderId);
+  throwIfDataError("order.schedule", error);
 
   if (!activities || activities.length === 0) return null;
 

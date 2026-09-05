@@ -7,6 +7,8 @@ import type {
   OrderStatus,
   UnavailabilityStatus,
 } from "@/types/database";
+import { throwIfDataError } from "@/lib/data/errors";
+import { dateKeyInTimeZone } from "@/lib/domain/reschedule";
 
 export type InstallerStats = {
   assigned: number;
@@ -61,7 +63,15 @@ export type InstallerHome = {
 
 const DAY = 86_400_000;
 /** Estados en los que el trabajo todavía está vivo para el instalador. */
-const OPEN: OrderStatus[] = ["pendiente", "relevamiento", "planificada", "en_proceso", "en_revision"];
+const OPEN: OrderStatus[] = [
+  "pendiente",
+  "relevamiento",
+  "planificada",
+  "en_camino",
+  "en_sitio",
+  "en_proceso",
+  "en_revision",
+];
 
 function addDays(date: string, days: number) {
   return new Date(new Date(`${date}T12:00:00Z`).getTime() + days * DAY)
@@ -83,8 +93,9 @@ export async function fetchInstallerHome(
   supabase: SupabaseClient<Database>,
   installerId: string,
   today: string,
+  timeZone: string,
 ): Promise<InstallerHome> {
-  const [{ data: orders }, { data: announcements }, { data: companies }, { data: absences }] = await Promise.all([
+  const [ordersResult, announcementsResult, companiesResult, absencesResult] = await Promise.all([
     supabase
       .from("work_orders")
       .select(
@@ -106,6 +117,14 @@ export async function fetchInstallerHome(
       .order("starts_at")
       .limit(5),
   ]);
+  throwIfDataError("installer.home.orders", ordersResult.error);
+  throwIfDataError("installer.home.announcements", announcementsResult.error);
+  throwIfDataError("installer.home.companies", companiesResult.error);
+  throwIfDataError("installer.home.absences", absencesResult.error);
+  const orders = ordersResult.data;
+  const announcements = announcementsResult.data;
+  const companies = companiesResult.data;
+  const absences = absencesResult.data;
 
   type Row = {
     id: string;
@@ -127,8 +146,9 @@ export async function fetchInstallerHome(
       // Lo de hoy o vencido primero; después por fecha; lo sin fecha al final.
       const da = a.scheduled_date ?? "9999-12-31";
       const db = b.scheduled_date ?? "9999-12-31";
-      if (a.status === "en_proceso" && b.status !== "en_proceso") return -1;
-      if (b.status === "en_proceso" && a.status !== "en_proceso") return 1;
+      const active = ["en_camino", "en_sitio", "en_proceso"];
+      if (active.includes(a.status) && !active.includes(b.status)) return -1;
+      if (active.includes(b.status) && !active.includes(a.status)) return 1;
       return da.localeCompare(db);
     });
   const next = upcoming[0] ?? null;
@@ -152,12 +172,16 @@ export async function fetchInstallerHome(
     return {
       assigned: companyOpen.length,
       inProgress: companyOpen.filter(
-        (order) => order.status === "en_proceso",
+        (order) =>
+          order.status === "en_camino" ||
+          order.status === "en_sitio" ||
+          order.status === "en_proceso",
       ).length,
       doneToday: companyLive.filter(
         (order) =>
           order.status === "finalizada" &&
-          order.finalized_at?.slice(0, 10) === today,
+          order.finalized_at !== null &&
+          dateKeyInTimeZone(order.finalized_at, timeZone) === today,
       ).length,
       pending: companyOpen.filter((order) => order.status === "pendiente")
         .length,

@@ -8,6 +8,7 @@ import {
   type NotificationItem,
 } from "@/lib/domain/notifications";
 import type { Database } from "@/types/database";
+import { throwIfDataError } from "@/lib/data/errors";
 
 export type NotificationInbox = {
   items: NotificationItem[];
@@ -52,7 +53,7 @@ function shape(row: Row): NotificationItem {
 export async function fetchNotificationInbox(
   supabase: SupabaseClient<Database>,
 ): Promise<NotificationInbox> {
-  const [{ data }, { count }] = await Promise.all([
+  const [itemsResult, countResult] = await Promise.all([
     supabase
       .from("notifications")
       .select(COLUMNS)
@@ -67,10 +68,12 @@ export async function fetchNotificationInbox(
       .is("read_at", null)
       .is("dismissed_at", null),
   ]);
+  throwIfDataError("notifications.inbox", itemsResult.error);
+  throwIfDataError("notifications.unread_count", countResult.error);
 
   return {
-    unreadCount: count ?? 0,
-    items: (data ?? []).map(shape),
+    unreadCount: countResult.count ?? 0,
+    items: (itemsResult.data ?? []).map(shape),
   };
 }
 
@@ -102,7 +105,8 @@ export async function fetchNotificationPage(
   if (filter === "pending") query = query.is("archived_at", null);
   if (filter === "archived") query = query.not("archived_at", "is", null);
 
-  const { data } = await query.overrideTypes<Row[]>();
+  const { data, error } = await query.overrideTypes<Row[]>();
+  throwIfDataError("notifications.page", error);
   const rows = data ?? [];
 
   // Se pide uno de más para saber si hay página siguiente sin un count aparte.

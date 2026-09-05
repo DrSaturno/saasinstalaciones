@@ -1335,6 +1335,9 @@
     "transitioned": "Ordem → {status}",
     "assigned": "Instalador atribuído",
     "unassignedToast": "Atribuição removida",
+    "assignConfirm": "Atribuir {installer} à ordem {order}? A pessoa receberá acesso ao trabalho e às atualizações.",
+    "unassignConfirm": "Remover {installer} da ordem {order}? A ordem ficará sem responsável.",
+    "cancelConfirm": "Cancelar a ordem {order}? O trabalho deixará de estar ativo.",
     "schedule": "Programação",
     "startDate": "Data de início",
     "endDate": "Data de conclusão",
@@ -1423,6 +1426,7 @@
     "copy": "Copiar link",
     "copied": "Link copiado",
     "cancel": "Cancelar",
+    "cancelConfirm": "Cancelar o convite enviado para {email}? O link deixará de funcionar.",
     "cancelled": "Convite cancelado",
     "roles": {
       "installer": "Instalador",
@@ -1431,6 +1435,7 @@
   },
   "Roster": {
     "removed": "{name} saiu da equipe",
+    "removeConfirm": "Remover {name} da equipe? A pessoa não poderá mais acessar as ordens desta empresa.",
     "reactivated": "{name} foi reativado",
     "empty": "Você ainda não tem instaladores na equipe. Convide o primeiro.",
     "reactivate": "Reativar",
@@ -1689,7 +1694,24 @@
     "notSent": "{count} não enviados",
     "keepWorking": "continue trabalhando",
     "syncing": "Sincronizando…",
-    "pending": "{count, plural, =1 {# atualização para sincronizar} other {# atualizações para sincronizar}}"
+    "pending": "{count, plural, =1 {# atualização para sincronizar} other {# atualizações para sincronizar}}",
+    "blocked": "{count, plural, =1 {# alteração precisa da sua atenção} other {# alterações precisam da sua atenção}}",
+    "review": "Revisar",
+    "issuesTitle": "Alterações que não puderam ser sincronizadas",
+    "issuesDescription": "As informações continuam salvas neste dispositivo. Abra a ordem para revisar o status, tente novamente ou descarte a alteração se ela não for mais necessária.",
+    "rejectedItem": "O servidor rejeitou esta alteração e ela não será reenviada automaticamente.",
+    "reason": "Motivo: {reason}",
+    "retryingItem": "Falhou {count} vezes e continua pendente.",
+    "openTask": "Abrir ordem",
+    "retry": "Tentar novamente",
+    "discard": "Descartar",
+    "discardConfirm": "Descartar esta alteração local? As informações pendentes não serão enviadas e não poderão ser recuperadas.",
+    "kinds": {
+      "update": "Atualização da ordem",
+      "transition": "Alteração de status",
+      "chat": "Mensagem",
+      "chat_read": "Confirmação de leitura"
+    }
   },
   "Availability": {
     "absenceOnlyHelp": "Você está disponível. Se for faltar, registre abaixo as datas e o motivo: a empresa precisa aprovar a ausência para bloquear sua agenda.",
@@ -1772,6 +1794,7 @@
     "loadError": "Não foi possível carregar o resumo da plataforma."
   },
   "CompaniesTable": {
+    "suspendConfirm": "Suspender {name}? Os usuários perderão o acesso até que a empresa seja reativada.",
     "loadError": "Não foi possível carregar as empresas.",
     "count": "{count, plural, =1 {# empresa} other {# empresas}}",
     "company": "Empresa",
@@ -1847,6 +1870,7 @@
     "archive": "Arquivar",
     "unarchive": "Recuperar",
     "dismiss": "Descartar",
+    "dismissConfirm": "Descartar “{title}”? Não será possível recuperar a notificação.",
     "archiveNeedsRead": "Abra primeiro: o que está pendente fica à vista.",
     "moreAvailable": "Há mais notificações anteriores.",
     "pushUnavailable": "As notificações push não estão disponíveis neste dispositivo.",
@@ -2448,6 +2472,7 @@
     "continue": "Continuar",
     "setupTitle": "Ative a verificação em duas etapas",
     "setupRequiredHint": "Sua conta lida com dados sensíveis, então este passo é obrigatório para entrar.",
+    "recoveryHint": "Não tem acesso ao autenticador? Saia e entre com outra conta ou peça ajuda ao administrador da sua organização.",
     "setupOptionalHint": "Adicione uma camada extra de segurança à sua conta. É opcional.",
     "verifyTitle": "Verificação em duas etapas",
     "settingsTitle": "Verificação em duas etapas",

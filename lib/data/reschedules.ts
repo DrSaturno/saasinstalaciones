@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 import type { ScheduledOrder } from "@/lib/domain/schedule-conflicts";
+import { throwIfDataError } from "@/lib/data/errors";
 
 export type PendingReschedule = {
   id: string;
@@ -29,7 +30,7 @@ export async function fetchPendingReschedule(
   orderId: string,
   installerId: string,
 ): Promise<PendingReschedule | null> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("order_reschedules")
     .select(
       "id, order_id, previous_date, previous_end_date, new_date, new_end_date, reason, notified_at, response_window_days, calendar_country, calendar_timezone",
@@ -42,6 +43,7 @@ export async function fetchPendingReschedule(
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  throwIfDataError("reschedules.pending", error);
 
   if (!data || !data.notified_at) return null;
   return {
@@ -71,12 +73,13 @@ export async function fetchInstallerSchedule(
   supabase: SupabaseClient<Database>,
   installerId: string,
 ): Promise<ScheduledOrder[]> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("work_orders")
     .select("id, order_number, title, scheduled_date, scheduled_end_date")
     .eq("assigned_installer_id", installerId)
     .not("status", "in", "(cancelada,finalizada)")
     .not("scheduled_date", "is", null);
+  throwIfDataError("reschedules.installer_schedule", error);
 
   return (data ?? []).map((order) => ({
     id: order.id,

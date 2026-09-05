@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { activeMembershipRoles } from "@/lib/domain/membership-roles";
 import type { Database, MembershipRole } from "@/types/database";
+import { throwIfDataError } from "@/lib/data/errors";
 
 export type ActiveCompanyRoleMembership = {
   companyId: string;
@@ -37,7 +38,8 @@ export async function fetchActiveCompanyRoleMemberships(
   }
 
   const { data: roleRows, error: roleError } = await roleQuery;
-  if (roleError || !roleRows?.length) return [];
+  throwIfDataError("memberships.roles", roleError);
+  if (!roleRows?.length) return [];
 
   const companyIds = [...new Set(roleRows.map((row) => row.company_id))];
   const userIds = [...new Set(roleRows.map((row) => row.user_id))];
@@ -48,7 +50,8 @@ export async function fetchActiveCompanyRoleMemberships(
     .in("company_id", companyIds)
     .in("installer_id", userIds);
 
-  if (membershipError || !memberships) return [];
+  throwIfDataError("memberships.active", membershipError);
+  if (!memberships) return [];
 
   return activeMembershipRoles(memberships, roleRows).map((row) => ({
     companyId: row.company_id,

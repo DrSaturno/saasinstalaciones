@@ -5,6 +5,7 @@ import {
   getCurrentUser,
   installerCompanies,
   isInstallerArea,
+  operationalTimezone,
   ROLE_HOME,
 } from "@/lib/auth";
 import {
@@ -29,6 +30,7 @@ import { WeatherCard } from "@/components/installer/home/weather-card";
 import { WeekGrid } from "@/components/installer/home/week-grid";
 import { Card, CardContent } from "@/components/ui/card";
 import type { OrderStatus } from "@/types/database";
+import { dateKeyInTimeZone } from "@/lib/domain/reschedule";
 
 const EMPTY_INSTALLER: InstallerStatsData = {
   assigned: 0,
@@ -36,16 +38,6 @@ const EMPTY_INSTALLER: InstallerStatsData = {
   doneToday: 0,
   pending: 0,
 };
-
-/** Fecha local del instalador; el dominio opera en AR/BR. */
-function localDate() {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Argentina/Buenos_Aires",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
-}
 
 export default async function InstallerHomePage() {
   const user = await getCurrentUser();
@@ -58,8 +50,9 @@ export default async function InstallerHomePage() {
     getFormatter(),
     createClient(),
   ]);
-  const today = localDate();
-  const home = await fetchInstallerHome(supabase, user.id, today);
+  const timeZone = operationalTimezone(user);
+  const today = dateKeyInTimeZone(new Date().toISOString(), timeZone);
+  const home = await fetchInstallerHome(supabase, user.id, today, timeZone);
   const [coordination, forecasts] = await Promise.all([
     coordinatorCompanies(user).length
       ? fetchCoordinationHome(supabase, user.id, today)
