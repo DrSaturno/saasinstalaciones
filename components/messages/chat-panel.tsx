@@ -201,7 +201,7 @@ export function ChatPanel({
           <Avatar name={peerName} />
           <div className="min-w-0">
             <p className="truncate font-medium">{peerName || t("conversation")}</p>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               {peerTyping ? t("typing") : peerOnline ? t("online") : t("offline")}
             </p>
           </div>
@@ -220,7 +220,7 @@ export function ChatPanel({
             autoFocus
           />
           {search.trim() ? (
-            <p className="mt-1 px-1 text-[11px] text-muted-foreground">
+            <p className="mt-1 px-1 text-caption text-muted-foreground">
               {t("searchResults", { count: visible.length })}
             </p>
           ) : null}
@@ -242,7 +242,7 @@ export function ChatPanel({
             <div key={message.id}>
               {showDay ? (
                 <div className="my-3 flex justify-center">
-                  <span className="rounded-full bg-card px-3 py-1 text-[11px] text-muted-foreground shadow-sm">
+                  <span className="rounded-full bg-card px-3 py-1 text-caption text-muted-foreground shadow-sm">
                     {format.dateTime(new Date(message.createdAt), { dateStyle: "medium" })}
                   </span>
                 </div>
@@ -300,7 +300,7 @@ export function ChatPanel({
                     ),
                   )}
                   <div className="mt-1 flex items-center justify-end gap-1">
-                    <span className="font-mono text-[10px] opacity-65">
+                    <span className="font-mono text-caption opacity-65">
                       {new Date(message.createdAt).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
@@ -392,7 +392,7 @@ function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md" }) {
       aria-hidden="true"
       className={cn(
         "flex shrink-0 items-center justify-center rounded-full bg-primary-soft font-medium text-primary",
-        size === "sm" ? "size-6 text-[10px]" : "size-9 text-xs",
+        size === "sm" ? "size-6 text-caption" : "size-9 text-xs",
       )}
     >
       {initials || "·"}

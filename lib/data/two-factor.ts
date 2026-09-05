@@ -29,11 +29,21 @@ export async function fetchTwoFactorStatus(
   return { enrolled, satisfied, mustStepUp: enrolled && !satisfied };
 }
 
-/** Los roles a los que la verificación en dos pasos les es OBLIGATORIA. */
-export const MFA_REQUIRED_ROLES: readonly UserRole[] = [
-  "platform_admin",
-  "company_manager",
-];
+/**
+ * Los roles a los que la verificación en dos pasos les es OBLIGATORIA.
+ *
+ * **Hoy está vacío: la lista es opt-in para todos** (decisión de producto del
+ * 05-09-2026). La verificación en dos pasos sigue existiendo entera —se activa
+ * desde Configuración y, quien la activa, la usa al entrar—, pero nadie queda
+ * forzado a enrolarse para poder trabajar.
+ *
+ * El enforcement se recupera agregando roles acá y nada más: el gate de abajo,
+ * los layouts de `(company)`/`(master)` y el step-up del login ya lo respetan.
+ * Volver a `["platform_admin", "company_manager"]` restablece lo que pedía
+ * SEC-13 de la auditoría de seguridad (ASVS L2 recomienda segundo factor para
+ * cuentas administrativas y de tenant).
+ */
+export const MFA_REQUIRED_ROLES: readonly UserRole[] = [];
 
 export function mfaRequiredFor(role: UserRole): boolean {
   return MFA_REQUIRED_ROLES.includes(role);

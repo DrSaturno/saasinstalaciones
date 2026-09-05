@@ -157,7 +157,7 @@ export function CreateOrderDialog({ projects, roster, currency, trigger, canMana
         <form onSubmit={submit} className="contents">
           <DialogHeader className="border-b px-5 py-4 pr-12 sm:px-6 sm:py-5">
             <div className="flex items-center gap-3">
-              <span className="hidden rounded-lg bg-primary-soft px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-primary sm:inline">
+              <span className="hidden rounded-lg bg-primary-soft px-2 py-1 font-mono text-caption font-semibold uppercase tracking-wider text-primary sm:inline">
                 {t("eyebrow")}
               </span>
               <DialogTitle>{t("title")}</DialogTitle>

@@ -11,7 +11,7 @@ export function OrderFormSection({ number, title, description, children }: Props
   return (
     <section className="overflow-hidden rounded-2xl border bg-card">
       <div className="flex items-start gap-3 border-b bg-muted/25 px-4 py-4 sm:px-5">
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary font-mono text-[11px] font-semibold text-primary-foreground">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary font-mono text-caption font-semibold text-primary-foreground">
           {number}
         </span>
         <div>

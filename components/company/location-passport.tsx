@@ -71,7 +71,7 @@ export async function LocationPassport({
       <div className="grid lg:grid-cols-[1fr_360px]">
         <div className="px-6 py-6 sm:px-8 sm:py-8">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+            <span className="text-caption font-semibold uppercase tracking-[0.18em] text-primary">
               {t("eyebrow")}
             </span>
             {location.archived_at ? (
@@ -124,7 +124,7 @@ export async function LocationPassport({
                 <div className="flex items-baseline gap-1.5">
                   <span className="font-mono text-xl font-semibold">{metric.value}</span>
                   {metric.hint ? (
-                    <span className="text-[10px] text-destructive">{metric.hint}</span>
+                    <span className="text-caption text-destructive">{metric.hint}</span>
                   ) : null}
                 </div>
                 <p className="mt-0.5 text-xs text-muted-foreground">{metric.label}</p>
@@ -134,7 +134,7 @@ export async function LocationPassport({
         </div>
 
         <div className="border-t bg-primary/[0.045] px-6 py-6 lg:border-l lg:border-t-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          <p className="text-caption font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             {t("identity")}
           </p>
           <div className="mt-4 space-y-4 text-sm">
@@ -143,7 +143,7 @@ export async function LocationPassport({
               <div>
                 <p className="font-medium">{address || t("noAddress")}</p>
                 {coordinates ? (
-                  <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+                  <p className="mt-1 font-mono text-caption text-muted-foreground">
                     {coordinates}
                   </p>
                 ) : null}
@@ -180,7 +180,7 @@ export async function LocationPassport({
               </div>
             ) : null}
           </div>
-          <p className="mt-6 border-t pt-4 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+          <p className="mt-6 border-t pt-4 font-mono text-caption uppercase tracking-wide text-muted-foreground">
             {t("updated", {
               date: format.dateTime(new Date(location.updated_at), {
                 dateStyle: "medium",

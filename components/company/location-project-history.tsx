@@ -80,7 +80,7 @@ export async function LocationProjectHistory({ projects }: { projects: ProjectHi
                         </div>
                       </div>
                       {dateParts.length ? (
-                        <span className="inline-flex shrink-0 items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
+                        <span className="inline-flex shrink-0 items-center gap-1.5 font-mono text-caption text-muted-foreground">
                           <CalendarDays className="size-3.5" aria-hidden="true" />
                           {dateParts.join(" — ")}
                         </span>

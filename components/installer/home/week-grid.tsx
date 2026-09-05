@@ -30,7 +30,7 @@ export function WeekGrid({
                 index === 0 ? "border-primary/40 bg-primary-soft/25" : ""
               }`}
             >
-              <p className="text-[10px] capitalize text-muted-foreground">
+              <p className="text-caption capitalize text-muted-foreground">
                 {day.label}
               </p>
               <p className="font-mono text-base font-semibold leading-tight">

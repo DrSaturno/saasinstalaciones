@@ -93,7 +93,7 @@ export function OrdersTable({
       </div>
 
       <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-card">
-        <div className={`grid min-w-[940px] gap-4 sticky top-0 z-10 border-b border-border-strong bg-surface-sunken px-4 py-2.5 text-caption text-muted-foreground ${showAmounts ? "grid-cols-[110px_1fr_1fr_130px_110px_120px_130px]" : "grid-cols-[110px_1fr_1fr_150px_120px_130px]"}`}><span>{t("number")}</span><span>{t("titleSite")}</span><span>{t("project")}</span><span>{t("installer")}</span><span>{t("date")}</span>{showAmounts ? <span>{t("amount")}</span> : null}<span>{t("status")}</span></div>
+        <div className={`grid min-w-[940px] gap-4 sticky top-0 z-10 border-b border-border-strong bg-surface-sunken px-4 py-2.5 text-caption font-medium text-muted-foreground ${showAmounts ? "grid-cols-[110px_1fr_1fr_130px_110px_120px_130px]" : "grid-cols-[110px_1fr_1fr_150px_120px_130px]"}`}><span>{t("number")}</span><span>{t("titleSite")}</span><span>{t("project")}</span><span>{t("installer")}</span><span>{t("date")}</span>{showAmounts ? <span>{t("amount")}</span> : null}<span>{t("status")}</span></div>
         {filtered.length === 0 ? <p className="py-16 text-center text-sm text-muted-foreground">{orders.length === 0 ? t("empty") : t("noMatch")}</p> : (
           <div ref={scrollRef} className="max-h-[600px] min-w-[1060px] overflow-auto"><div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>{virtualizer.getVirtualItems().map((virtualRow) => {
             const order = filtered[virtualRow.index];

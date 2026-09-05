@@ -44,7 +44,7 @@ export function DashboardJobsPeek({ broadcasts }: { broadcasts: ManagerBroadcast
             </div>
             <div className="flex shrink-0 items-center gap-3">
               {waiting > 0 ? (
-                <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-medium text-primary">
+                <span className="rounded-full bg-primary-soft px-2 py-0.5 text-caption font-medium text-primary">
                   {t("peekWaiting", { count: waiting })}
                 </span>
               ) : null}

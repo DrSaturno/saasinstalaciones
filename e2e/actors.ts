@@ -21,12 +21,6 @@ export type Actor = {
   /** Rutas de otras áreas: el proxy tiene que sacarlo de acá. */
   forbidden: string[];
   storageState: string;
-  /**
-   * `true` si el rol tiene MFA obligatoria (SEC-13): el login cae en el
-   * enrolamiento y el setup lo completa leyendo el secreto que genera Supabase.
-   * Ausente = sin MFA.
-   */
-  mfa?: boolean;
 };
 
 export const ACTORS: Record<ActorName, Actor> = {
@@ -35,14 +29,12 @@ export const ACTORS: Record<ActorName, Actor> = {
     landing: "/master",
     forbidden: ["/dashboard", "/home"],
     storageState: "e2e/.auth/platform-admin.json",
-    mfa: true,
   },
   manager: {
     email: "gerente@demo.dev",
     landing: "/dashboard",
     forbidden: ["/master", "/home"],
     storageState: "e2e/.auth/manager.json",
-    mfa: true,
   },
   managerB: {
     // Segunda empresa: existe para probar aislamiento entre tenants.
@@ -50,7 +42,6 @@ export const ACTORS: Record<ActorName, Actor> = {
     landing: "/dashboard",
     forbidden: ["/master"],
     storageState: "e2e/.auth/manager-b.json",
-    mfa: true,
   },
   coordinator: {
     email: "coordinador@demo.dev",

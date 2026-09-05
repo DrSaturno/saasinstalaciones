@@ -136,7 +136,7 @@ export function ProjectFormFields({
         <div className="grid max-h-36 grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-4">
           {options.map((zone) => (
             <label key={zone} className="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm hover:bg-muted/60">
-              <input type="checkbox" name="zones" value={zone} checked={zones.includes(zone)} onChange={() => toggleZone(zone)} className="accent-primary" />
+              <input type="checkbox" name="zones" value={zone} checked={zones.includes(zone)} onChange={() => toggleZone(zone)} className="size-4 accent-primary" />
               {zone}
             </label>
           ))}

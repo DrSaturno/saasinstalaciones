@@ -91,7 +91,7 @@ export function OrderIncidents({ orderId, incidents }: { orderId: string; incide
               <label htmlFor="incident-occurred-at" className="text-xs text-muted-foreground">{t("occurredAt")}</label>
               <input id="incident-occurred-at" type="datetime-local" name="occurredAt" defaultValue={defaultOccurredAt} className="h-9 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" />
             </div>
-            <label className="flex items-center gap-2 text-sm sm:col-span-2"><input type="checkbox" name="requiresRevisit" className="size-4 accent-primary" />{t("requiresRevisit")}</label>
+            <label className="flex items-center gap-2 text-sm sm:col-span-2 size-4 accent-primary"><input type="checkbox" name="requiresRevisit" className="size-4" />{t("requiresRevisit")}</label>
             <div className="flex justify-end gap-2 sm:col-span-2"><Button type="button" variant="ghost" onClick={() => setShowForm(false)}>{t("cancel")}</Button><Button type="submit" disabled={pending}>{pending ? t("saving") : t("save")}</Button></div>
           </form>
         ) : null}
@@ -103,7 +103,7 @@ export function OrderIncidents({ orderId, incidents }: { orderId: string; incide
                   <div>
                     <div className="flex flex-wrap items-center gap-2"><p className="text-sm font-medium">{t(`categories.${incident.category}`)}</p><Badge variant={incident.severity === "critical" ? "destructive" : "outline"}>{t(`severityValues.${incident.severity}`)}</Badge>{incident.requires_revisit ? <Badge variant="outline">{t("revisit")}</Badge> : null}</div>
                     {incident.description ? <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{incident.description}</p> : null}
-                    <p className="mt-2 font-mono text-[11px] text-muted-foreground">{format.dateTime(new Date(incident.created_at), { dateStyle: "short", timeStyle: "short" })}</p>
+                    <p className="mt-2 font-mono text-caption text-muted-foreground">{format.dateTime(new Date(incident.created_at), { dateStyle: "short", timeStyle: "short" })}</p>
                   </div>
                   {incident.status === "open" ? <Button type="button" size="sm" variant="outline" disabled={pending} onClick={() => resolve(incident.id)}><CircleCheck className="size-4" aria-hidden="true" />{t("resolve")}</Button> : <Badge variant="secondary">{t("statusResolved")}</Badge>}
                 </div>

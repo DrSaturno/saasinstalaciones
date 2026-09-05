@@ -29,7 +29,7 @@ export default async function TwoFactorLayout({
             {t("recoveryHint")}
           </p>
           {user.email ? (
-            <p className="mt-1 truncate font-mono text-[11px] text-muted-foreground">
+            <p className="mt-1 truncate font-mono text-caption text-muted-foreground">
               {user.email}
             </p>
           ) : null}

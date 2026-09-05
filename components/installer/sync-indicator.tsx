@@ -106,7 +106,7 @@ export function SyncIndicator({ userId }: { userId: string }) {
                           {t("reason", { reason: issue.reason })}
                         </p>
                       ) : null}
-                      <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+                      <p className="mt-1 font-mono text-caption text-muted-foreground">
                         {format.dateTime(new Date(issue.createdAt), {
                           dateStyle: "short",
                           timeStyle: "short",

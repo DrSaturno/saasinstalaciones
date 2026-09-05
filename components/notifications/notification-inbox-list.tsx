@@ -93,13 +93,13 @@ export function NotificationInboxList({
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 {unread ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary-soft/50 px-2 py-0.5 text-[11px] font-medium text-primary">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary-soft/50 px-2 py-0.5 text-caption font-medium text-primary">
                     <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />
                     {t("unreadLabel")}
                   </span>
                 ) : null}
                 <span
-                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${severity.chip}`}
+                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-caption font-medium ${severity.chip}`}
                 >
                   <Icon className="size-3" aria-hidden="true" />
                   {t(`severity.${item.severity}`)}
@@ -118,7 +118,7 @@ export function NotificationInboxList({
               {item.body ? (
                 <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
               ) : null}
-              <p className="mt-1.5 font-mono text-[11px] text-muted-foreground">
+              <p className="mt-1.5 font-mono text-caption text-muted-foreground">
                 {format.dateTime(new Date(item.createdAt), {
                   day: "2-digit",
                   month: "short",

@@ -49,7 +49,7 @@ export function Metric({
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <p className="text-caption text-muted-foreground">{label}</p>
+        <p className="text-caption font-medium text-muted-foreground">{label}</p>
         {Icon ? (
           <Icon className="size-4 shrink-0 text-brand" aria-hidden="true" />
         ) : null}

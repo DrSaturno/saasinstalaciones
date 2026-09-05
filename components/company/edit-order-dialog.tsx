@@ -236,7 +236,7 @@ export function EditOrderDialog({
               type="checkbox"
               name="indoor"
               defaultChecked={defaults.indoor}
-              className="accent-primary"
+              className="size-4 accent-primary"
               disabled={pending}
             />
             {common("indoor")}
@@ -269,7 +269,7 @@ export function EditOrderDialog({
               name="requiresFreight"
               checked={requiresFreight}
               onChange={(event) => setRequiresFreight(event.target.checked)}
-              className="accent-primary"
+              className="size-4 accent-primary"
               disabled={pending}
             />
             {common("freight")}

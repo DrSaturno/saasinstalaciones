@@ -94,7 +94,7 @@ export default async function SettingsPage() {
 function Field({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="min-w-0">
-      <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="text-caption font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
       <p className={`mt-1 truncate ${mono ? "font-mono text-sm" : "text-sm font-medium"}`}>{value}</p>
     </div>
   );

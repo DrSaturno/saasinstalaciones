@@ -82,7 +82,7 @@ export async function TeamAvailability({
                     >
                       {item.name}
                     </Link>
-                    <span className="shrink-0 rounded-full bg-warning/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-amber-700">
+                    <span className="shrink-0 rounded-full bg-warning/15 px-2 py-0.5 text-caption font-medium uppercase tracking-wider text-amber-700">
                       {t("statusPending")}
                     </span>
                   </div>
@@ -101,7 +101,7 @@ export async function TeamAvailability({
                       {item.name}
                     </Link>
                     <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-caption font-medium uppercase tracking-wider ${
                         item.status === "approved"
                           ? "bg-success/15 text-green-700"
                           : "bg-destructive/10 text-destructive"

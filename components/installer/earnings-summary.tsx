@@ -34,17 +34,17 @@ export async function EarningsSummary({
             <div className="rounded-2xl border bg-card p-4">
               <p className="font-mono text-2xl font-semibold">{money(total.earned, total.currency)}</p>
               <p className="mt-1 text-xs text-muted-foreground">{t("totalEarned")}</p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">{t("doneOrders", { count: total.doneOrders })}</p>
+              <p className="mt-0.5 text-caption text-muted-foreground">{t("doneOrders", { count: total.doneOrders })}</p>
             </div>
             <div className="rounded-2xl border border-warning/40 bg-cream/30 p-4">
               <p className="font-mono text-2xl font-semibold">{money(total.unpaid, total.currency)}</p>
               <p className="mt-1 text-xs text-muted-foreground">{t("totalUnpaid")}</p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">{t("ordersCount", { count: total.unpaidOrders })}</p>
+              <p className="mt-0.5 text-caption text-muted-foreground">{t("ordersCount", { count: total.unpaidOrders })}</p>
             </div>
             <div className="rounded-2xl border bg-card p-4">
               <p className="font-mono text-2xl font-semibold text-emerald-600">{money(total.paid, total.currency)}</p>
               <p className="mt-1 text-xs text-muted-foreground">{t("totalPaid")}</p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">{t("ordersCount", { count: total.paidOrders })}</p>
+              <p className="mt-0.5 text-caption text-muted-foreground">{t("ordersCount", { count: total.paidOrders })}</p>
             </div>
           </div>
         </section>

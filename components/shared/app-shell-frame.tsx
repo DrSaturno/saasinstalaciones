@@ -109,7 +109,7 @@ export function AppShellFrame({
               <div className="grid size-8 shrink-0 place-items-center rounded-full bg-brand font-mono text-xs font-semibold text-white">
                 {userName.trim().charAt(0).toUpperCase() || "U"}
               </div>
-              <p className={cn("min-w-0 truncate text-caption", collapsed && "lg:hidden")}>
+              <p className={cn("min-w-0 truncate text-caption font-medium", collapsed && "lg:hidden")}>
                 {userName}
               </p>
             </div>

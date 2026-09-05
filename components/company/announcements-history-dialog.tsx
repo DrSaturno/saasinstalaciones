@@ -61,7 +61,7 @@ export function AnnouncementsHistoryDialog({
               <article key={item.id} className="py-3 first:pt-0 last:pb-0">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <p className="font-medium">{item.title}</p>
-                  <span className="font-mono text-[11px] text-muted-foreground">
+                  <span className="font-mono text-caption text-muted-foreground">
                     {format.dateTime(new Date(item.createdAt), { dateStyle: "short", timeStyle: "short" })}
                   </span>
                 </div>
@@ -70,8 +70,8 @@ export function AnnouncementsHistoryDialog({
                   <Badge variant={item.severity === "critical" ? "destructive" : "outline"}>
                     {t(SEVERITY_LABEL[item.severity])}
                   </Badge>
-                  <span className="text-[11px] text-muted-foreground">{audience(item)}</span>
-                  <span className="font-mono text-[11px] text-muted-foreground">
+                  <span className="text-caption text-muted-foreground">{audience(item)}</span>
+                  <span className="font-mono text-caption text-muted-foreground">
                     {t("historyRecipients", { count: item.recipients })}
                   </span>
                 </div>

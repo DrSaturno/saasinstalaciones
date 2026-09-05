@@ -44,7 +44,7 @@ export function AbsencesCard({
               <div className="flex items-start justify-between gap-2">
                 <p className="min-w-0 truncate text-sm">{item.reason}</p>
                 <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-caption font-medium uppercase tracking-wider ${
                     item.status === "approved"
                       ? "bg-success/15 text-green-700"
                       : item.status === "rejected"
@@ -55,16 +55,16 @@ export function AbsencesCard({
                   {item.statusLabel}
                 </span>
               </div>
-              <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+              <p className="mt-1 font-mono text-caption text-muted-foreground">
                 {item.dateRange}
               </p>
               {showCompany && item.companyName ? (
-                <p className="mt-1 text-[11px] font-medium text-primary">
+                <p className="mt-1 text-caption font-medium text-primary">
                   {item.companyName}
                 </p>
               ) : null}
               {item.reviewNote ? (
-                <p className="mt-1 text-[11px] italic text-muted-foreground">
+                <p className="mt-1 text-caption italic text-muted-foreground">
                   {item.reviewNote}
                 </p>
               ) : null}

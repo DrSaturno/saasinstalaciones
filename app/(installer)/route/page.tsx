@@ -168,7 +168,7 @@ export default async function InstallerRoutePage() {
                         </p>
                         <div className="mt-1 flex items-center justify-between gap-2">
                           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                            <span className="font-mono text-[11px] text-muted-foreground">
+                            <span className="font-mono text-caption text-muted-foreground">
                               {stop.order_number}
                               {stop.scheduled_date && stop.scheduled_date < today
                                 ? ` · ${t("overdue")}`
@@ -176,7 +176,7 @@ export default async function InstallerRoutePage() {
                             </span>
                             {user.memberships.length > 1 &&
                             stop.companies?.name ? (
-                              <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-medium text-primary">
+                              <span className="rounded-full bg-primary-soft px-2 py-0.5 text-caption font-medium text-primary">
                                 {t("company", {
                                   company: stop.companies.name,
                                 })}
@@ -194,7 +194,7 @@ export default async function InstallerRoutePage() {
                               {t("navigate")}
                             </a>
                           ) : (
-                            <span className="text-[11px] text-muted-foreground">
+                            <span className="text-caption text-muted-foreground">
                               {t("noLocation")}
                             </span>
                           )}

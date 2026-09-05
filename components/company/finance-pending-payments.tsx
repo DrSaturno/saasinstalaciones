@@ -59,7 +59,7 @@ export function FinancePendingPayments({
             {totals.map((total) => (
               <div key={total.currency} className="text-right">
                 <p className="font-mono text-lg font-semibold">{money(total.total, total.currency)}</p>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   {t("ordersCount", { count: total.orders })} · {total.currency}
                 </p>
               </div>

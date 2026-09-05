@@ -14,7 +14,7 @@ export function Stat({
       }`}
     >
       <p className="font-mono text-2xl font-semibold leading-none">{value}</p>
-      <p className="mt-1 text-[11px] leading-tight text-muted-foreground">
+      <p className="mt-1 text-caption leading-tight text-muted-foreground">
         {label}
       </p>
     </div>

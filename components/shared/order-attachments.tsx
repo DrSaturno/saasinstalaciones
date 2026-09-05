@@ -54,7 +54,7 @@ export function OrderAttachments({ attachments, title, openLabel }: Props) {
                 content
               )}
               <p className="mt-2 truncate text-xs font-medium">{attachment.fileName}</p>
-              <p className="font-mono text-[10px] text-muted-foreground">
+              <p className="font-mono text-caption text-muted-foreground">
                 {fileSize(attachment.sizeBytes)}
               </p>
             </article>

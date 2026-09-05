@@ -52,7 +52,7 @@ export async function EarningsList({
               </div>
               <div className="shrink-0 text-right">
                 <p className="font-mono text-lg font-semibold">{money(row.amount, row.currency)}</p>
-                <p className="font-mono text-[11px] text-muted-foreground">{row.currency}</p>
+                <p className="font-mono text-caption text-muted-foreground">{row.currency}</p>
               </div>
             </div>
 
@@ -71,7 +71,7 @@ export async function EarningsList({
                 </Badge>
               ) : null}
               {row.date ? (
-                <span className="ml-auto font-mono text-[11px] text-muted-foreground">
+                <span className="ml-auto font-mono text-caption text-muted-foreground">
                   {format.dateTime(new Date(row.date), { dateStyle: "short" })}
                 </span>
               ) : null}
