@@ -2,9 +2,16 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { MapPin, Route as RouteIcon } from "lucide-react";
 import { getTranslations } from "next-intl/server";
-import { getCurrentUser, ROLE_HOME, isInstallerArea } from "@/lib/auth";
+import {
+  getCurrentUser,
+  ROLE_HOME,
+  isInstallerArea,
+  operationalTimezone,
+} from "@/lib/auth";
 import { buildRouteUrl, stopHref } from "@/lib/domain/route";
+import { dateKeyInTimeZone } from "@/lib/domain/reschedule";
 import { createClient } from "@/lib/supabase/server";
+import { throwIfDataError } from "@/lib/data/errors";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,15 +34,6 @@ type Stop = {
   companies: { name: string } | null;
 };
 
-function localDate() {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Argentina/Buenos_Aires",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
-}
-
 export default async function InstallerRoutePage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -45,31 +43,43 @@ export default async function InstallerRoutePage() {
     getTranslations("InstallerRoute"),
     createClient(),
   ]);
-  const today = localDate();
+  const today = dateKeyInTimeZone(
+    new Date().toISOString(),
+    operationalTimezone(user),
+  );
 
   // Paradas de hoy: lo programado para hoy y lo que quedó pendiente de días
   // anteriores, que es trabajo que sigue estando en la calle.
   // El filtro por asignación va explícito: las policies de RLS se combinan con
   // OR y un coordinador vería acá las órdenes que solo coordina, no las que sale
   // a hacer él.
-  const { data } = await supabase
+  const { data, error: ordersError } = await supabase
     .from("work_orders")
     .select(
       "id, company_id, order_number, title, status, scheduled_date, sites(name, address, city, lat, lng), companies(name)",
     )
     .eq("assigned_installer_id", user.id)
-    .in("status", ["planificada", "en_proceso", "relevamiento"])
+    .in("status", [
+      "planificada",
+      "en_camino",
+      "en_sitio",
+      "en_proceso",
+      "relevamiento",
+    ])
     .not("scheduled_date", "is", null)
     .lte("scheduled_date", today)
     .order("scheduled_date", { ascending: true })
     .overrideTypes<Stop[]>();
 
   // Punto de partida: si cargó su base, el recorrido arranca de ahí.
-  const { data: installer } = await supabase
+  const { data: installer, error: installerError } = await supabase
     .from("installers")
     .select("base_address, base_city, base_lat, base_lng")
     .eq("id", user.id)
     .maybeSingle();
+
+  throwIfDataError("installer.route.orders", ordersError);
+  throwIfDataError("installer.route.profile", installerError);
 
   const base =
     installer && (installer.base_lat !== null || installer.base_address)

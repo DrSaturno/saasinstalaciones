@@ -11,6 +11,7 @@ import {
   installerCompanies,
   isCoordinatorSomewhere,
   isInstallerArea,
+  operationalTimezone,
   type CurrentUser,
 } from "./auth";
 
@@ -25,16 +26,19 @@ const multiCompanyUser: CurrentUser = {
     {
       companyId: "company-a",
       companyName: "Empresa A",
+      country: "AR",
       role: "coordinator",
     },
     {
       companyId: "company-a",
       companyName: "Empresa A",
+      country: "AR",
       role: "installer",
     },
     {
       companyId: "company-b",
       companyName: "Empresa B",
+      country: "BR",
       role: "installer",
     },
   ],
@@ -81,5 +85,17 @@ describe("helpers de membresía", () => {
         memberships: multiCompanyUser.memberships,
       }),
     ).toBe(false);
+  });
+
+  it("deriva la zona operativa del país y prioriza el idioma en multicuenta", () => {
+    expect(operationalTimezone(multiCompanyUser)).toBe(
+      "America/Argentina/Buenos_Aires",
+    );
+    expect(
+      operationalTimezone({ ...multiCompanyUser, locale: "pt" }),
+    ).toBe("America/Sao_Paulo");
+    expect(
+      operationalTimezone({ ...multiCompanyUser, locale: "pt", memberships: [] }),
+    ).toBe("America/Sao_Paulo");
   });
 });

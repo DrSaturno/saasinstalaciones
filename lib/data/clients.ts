@@ -2,6 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Tables } from "@/types/database";
+import { throwIfDataError } from "@/lib/data/errors";
 
 const PAGE = 1000;
 const ID_BATCH = 200;
@@ -25,7 +26,8 @@ async function fetchAllLocations(
       .range(from, from + PAGE - 1);
     if (clientId) query = query.eq("client_id", clientId);
     const { data, error } = await query;
-    if (error || !data) break;
+    throwIfDataError("clients.locations", error);
+    if (!data) break;
     rows.push(...data);
     if (data.length < PAGE) break;
   }
@@ -52,15 +54,18 @@ export type ClientSummary = {
 export async function fetchClients(
   supabase: SupabaseClient<Database>,
 ): Promise<ClientSummary[]> {
-  const [{ data: clients }, { data: projects }, locations] =
-    await Promise.all([
+  const [clientsResult, projectsResult, locations] = await Promise.all([
       supabase
         .from("clients")
         .select("id, name, tax_id, contact_name, email, phone, address, notes, website, instagram, youtube, tiktok")
         .order("name"),
       supabase.from("projects").select("id, client_id"),
       fetchAllLocations(supabase),
-    ]);
+  ]);
+  throwIfDataError("clients.list", clientsResult.error);
+  throwIfDataError("clients.project_counts", projectsResult.error);
+  const clients = clientsResult.data;
+  const projects = projectsResult.data;
   const projectsByClient = new Map<string, number>();
   const sitesByClient = new Map<string, number>();
   for (const project of projects ?? []) {
@@ -99,13 +104,14 @@ export async function fetchClientDetail(
   supabase: SupabaseClient<Database>,
   clientId: string,
 ) {
-  const { data: client } = await supabase
+  const { data: client, error: clientError } = await supabase
     .from("clients")
     .select("*")
     .eq("id", clientId)
     .single();
+  throwIfDataError("clients.detail", clientError);
   if (!client) return null;
-  const [{ data: projects }, locations] = await Promise.all([
+  const [projectsResult, locations] = await Promise.all([
     supabase
       .from("projects")
       .select("id, name, status")
@@ -113,16 +119,19 @@ export async function fetchClientDetail(
       .order("created_at", { ascending: false }),
     fetchAllLocations(supabase, clientId),
   ]);
+  throwIfDataError("clients.detail_projects", projectsResult.error);
+  const projects = projectsResult.data;
   const locationIds = locations.map((location) => location.id);
   if (!locationIds.length) {
     return { client, projects: projects ?? [], locations: [], orders: [] };
   }
   const sites: { id: string; location_id: string | null }[] = [];
   for (let index = 0; index < locationIds.length; index += ID_BATCH) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("sites")
       .select("id, location_id")
       .in("location_id", locationIds.slice(index, index + ID_BATCH));
+    throwIfDataError("clients.detail_sites", error);
     sites.push(...(data ?? []));
   }
   const locationBySite = new Map(
@@ -141,11 +150,12 @@ export async function fetchClientDetail(
     finalized_at: string | null;
   }[] = [];
   for (let index = 0; index < siteIds.length; index += ID_BATCH) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("work_orders")
       .select("id, site_id, order_number, title, status, scheduled_date, finalized_at")
       .in("site_id", siteIds.slice(index, index + ID_BATCH))
       .order("created_at", { ascending: false });
+    throwIfDataError("clients.detail_orders", error);
     orders.push(...(data ?? []));
   }
   return {

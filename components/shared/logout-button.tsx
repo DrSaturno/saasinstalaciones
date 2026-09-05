@@ -5,7 +5,13 @@ import { logoutAction } from "@/lib/actions/session";
 import { clearOfflineSession } from "@/lib/offline/session-storage";
 import { Button } from "@/components/ui/button";
 
-export function LogoutButton({ label }: { label: string }) {
+export function LogoutButton({
+  label,
+  className,
+}: {
+  label: string;
+  className?: string;
+}) {
   const [pending, startTransition] = useTransition();
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -19,7 +25,13 @@ export function LogoutButton({ label }: { label: string }) {
 
   return (
     <form action={logoutAction} onSubmit={submit}>
-      <Button type="submit" variant="ghost" size="sm" disabled={pending}>
+      <Button
+        type="submit"
+        variant="ghost"
+        size="sm"
+        className={className}
+        disabled={pending}
+      >
         {label}
       </Button>
     </form>

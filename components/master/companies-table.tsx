@@ -142,12 +142,20 @@ export function CompaniesTable() {
                       variant="outline"
                       size="sm"
                       disabled={toggleStatus.isPending}
-                      onClick={() =>
+                      onClick={() => {
+                        const nextStatus =
+                          company.status === "active" ? "suspended" : "active";
+                        if (
+                          nextStatus === "suspended" &&
+                          !window.confirm(t("suspendConfirm", { name: company.name }))
+                        ) {
+                          return;
+                        }
                         toggleStatus.mutate({
                           id: company.id,
-                          status: company.status === "active" ? "suspended" : "active",
-                        })
-                      }
+                          status: nextStatus,
+                        });
+                      }}
                     >
                       {company.status === "active" ? t("suspend") : t("reactivate")}
                     </Button>

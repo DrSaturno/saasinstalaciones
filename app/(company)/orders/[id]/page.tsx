@@ -40,6 +40,7 @@ import { ORDER_EVIDENCE_KINDS, type EvidenceKind } from "@/lib/domain/order-evid
 import type { OrderStatus } from "@/types/database";
 import { canOperateCompany, getCurrentUser } from "@/lib/auth";
 import { BackLink } from "@/components/shared/back-link";
+import { throwIfDataError } from "@/lib/data/errors";
 
 export default async function OrderDetailPage({
   params,
@@ -67,21 +68,22 @@ export default async function OrderDetailPage({
 
   const supabase = await createClient();
 
-  const { data: order } = await supabase
+  const { data: order, error: orderError } = await supabase
     .from("work_orders")
     .select(
       "id, order_number, title, description, status, scheduled_date, scheduled_end_date, priority, indoor, requires_freight, freight_details, logistics_notes, amount, installer_amount, currency, company_id, assigned_installer_id, created_at, project_id, site_id",
     )
     .eq("id", id)
     .single();
+  throwIfDataError("order.detail", orderError);
   if (!order) notFound();
 
   const [
-    { data: site },
-    { data: project },
-    { data: rating },
-    { data: incidents },
-    { data: conditionRows },
+    siteResult,
+    projectResult,
+    ratingResult,
+    incidentsResult,
+    conditionsResult,
     roster,
     evidence,
     schedule,
@@ -114,6 +116,16 @@ export default async function OrderDetailPage({
     fetchOrderEvidence(supabase, id, { query: evidenceQuery, kind: evidenceKind }),
     fetchOrderSchedule(supabase, id),
   ]);
+  throwIfDataError("order.site", siteResult.error);
+  throwIfDataError("order.project", projectResult.error);
+  throwIfDataError("order.rating", ratingResult.error);
+  throwIfDataError("order.incidents", incidentsResult.error);
+  throwIfDataError("order.conditions", conditionsResult.error);
+  const site = siteResult.data;
+  const project = projectResult.data;
+  const rating = ratingResult.data;
+  const incidents = incidentsResult.data;
+  const conditionRows = conditionsResult.data;
 
   const amount =
     order.amount === null
@@ -392,6 +404,7 @@ export default async function OrderDetailPage({
             <ReviewDeliveryDialog orderId={order.id} status={order.status as OrderStatus} />
             <OrderActions
               orderId={order.id}
+              orderNumber={order.order_number}
               status={order.status as OrderStatus}
               installerId={order.assigned_installer_id}
               scheduledDate={order.scheduled_date}

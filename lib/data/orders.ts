@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getTranslations } from "next-intl/server";
 import { fetchActiveCompanyRoleMemberships } from "@/lib/data/company-membership-roles";
 import type { Database, OrderStatus } from "@/types/database";
+import { throwIfDataError } from "@/lib/data/errors";
 
 export type OrderRow = {
   id: string;
@@ -94,7 +95,8 @@ export async function fetchAllOrders(
     if (filter?.projectId) query = query.eq("project_id", filter.projectId);
 
     const { data, error } = await query.overrideTypes<RawOrder[]>();
-    if (error || !data) break;
+    throwIfDataError("orders.list", error);
+    if (!data) break;
     raw.push(...data);
     if (data.length < PAGE) break;
   }
@@ -105,10 +107,11 @@ export async function fetchAllOrders(
   ] as string[];
   const installerNames = new Map<string, string>();
   if (ids.length > 0) {
-    const { data: profiles } = await supabase
+    const { data: profiles, error } = await supabase
       .from("profiles")
       .select("id, full_name")
       .in("id", ids);
+    throwIfDataError("orders.installer_names", error);
     for (const p of profiles ?? []) installerNames.set(p.id, p.full_name);
   }
 
@@ -141,7 +144,7 @@ export async function fetchActiveRoster(
   const ids = [...new Set(roster.map((membership) => membership.userId))];
   if (ids.length === 0) return [];
 
-  const [{ data: profiles }, { data: installers }, { data: rates }] =
+  const [profilesResult, installersResult, ratesResult] =
     await Promise.all([
       supabase.from("profiles").select("id, full_name").in("id", ids),
       supabase
@@ -155,6 +158,12 @@ export async function fetchActiveRoster(
         .select("installer_id, default_installer_rate")
         .in("installer_id", ids),
     ]);
+  throwIfDataError("orders.roster_profiles", profilesResult.error);
+  throwIfDataError("orders.roster_installers", installersResult.error);
+  throwIfDataError("orders.roster_rates", ratesResult.error);
+  const profiles = profilesResult.data;
+  const installers = installersResult.data;
+  const rates = ratesResult.data;
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
   const installerById = new Map((installers ?? []).map((i) => [i.id, i]));
   const rateById = new Map(

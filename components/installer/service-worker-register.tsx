@@ -12,11 +12,19 @@ export function ServiceWorkerRegister({ userId }: { userId: string }) {
     let cancelled = false;
     let listeningForLoad = false;
 
-    const register = () => {
+    const register = async () => {
       if (cancelled) return;
-      navigator.serviceWorker.register("/sw.js").catch(() => {
+      try {
+        const registration = await navigator.serviceWorker.register("/sw.js");
+        await navigator.serviceWorker.ready;
+        const worker = navigator.serviceWorker.controller ?? registration.active;
+        worker?.postMessage({
+          type: "cache-current-route",
+          url: window.location.href,
+        });
+      } catch {
         /* sin SW la app sigue funcionando y la cola Dexie conserva los cambios */
-      });
+      }
     };
 
     const initialize = async () => {
@@ -25,7 +33,7 @@ export function ServiceWorkerRegister({ userId }: { userId: string }) {
       if (process.env.NODE_ENV !== "production") return;
 
       if (document.readyState === "complete") {
-        register();
+        void register();
       } else {
         listeningForLoad = true;
         window.addEventListener("load", register, { once: true });

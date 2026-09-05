@@ -26,7 +26,9 @@ export function PendingInvitations({
     toast.success(t("copied"));
   };
 
-  const cancel = (id: string) => {
+  const cancel = (id: string, email: string) => {
+    if (!window.confirm(t("cancelConfirm", { email }))) return;
+
     startTransition(async () => {
       const res = await cancelInvitation(id);
       if (res.error) toast.error(res.error);
@@ -75,7 +77,7 @@ export function PendingInvitations({
                 variant="ghost"
                 size="sm"
                 disabled={pending}
-                onClick={() => cancel(inv.id)}
+                onClick={() => cancel(inv.id, inv.email)}
               >
                 {t("cancel")}
               </Button>

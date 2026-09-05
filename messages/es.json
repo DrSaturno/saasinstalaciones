@@ -1335,6 +1335,9 @@
     "transitioned": "Orden → {status}",
     "assigned": "Instalador asignado",
     "unassignedToast": "Asignación quitada",
+    "assignConfirm": "¿Asignar a {installer} a la orden {order}? Va a recibir acceso al trabajo y sus novedades.",
+    "unassignConfirm": "¿Quitar a {installer} de la orden {order}? La orden va a quedar sin responsable.",
+    "cancelConfirm": "¿Cancelar la orden {order}? El trabajo dejará de estar activo.",
     "schedule": "Programación",
     "startDate": "Fecha de inicio",
     "endDate": "Fecha de finalización",
@@ -1423,6 +1426,7 @@
     "copy": "Copiar link",
     "copied": "Link copiado",
     "cancel": "Cancelar",
+    "cancelConfirm": "¿Cancelar la invitación enviada a {email}? El enlace dejará de funcionar.",
     "cancelled": "Invitación cancelada",
     "roles": {
       "installer": "Instalador",
@@ -1431,6 +1435,7 @@
   },
   "Roster": {
     "removed": "{name} salió del equipo",
+    "removeConfirm": "¿Quitar a {name} del equipo? Ya no podrá acceder a las órdenes de esta empresa.",
     "reactivated": "{name} reactivado",
     "empty": "Todavía no tenés instaladores en tu equipo. Invitá al primero.",
     "reactivate": "Reactivar",
@@ -1689,7 +1694,24 @@
     "notSent": "{count} sin enviar",
     "keepWorking": "seguí trabajando",
     "syncing": "Sincronizando…",
-    "pending": "{count, plural, =1 {# avance por sincronizar} other {# avances por sincronizar}}"
+    "pending": "{count, plural, =1 {# avance por sincronizar} other {# avances por sincronizar}}",
+    "blocked": "{count, plural, =1 {# cambio necesita tu atención} other {# cambios necesitan tu atención}}",
+    "review": "Revisar",
+    "issuesTitle": "Cambios que no pudieron sincronizarse",
+    "issuesDescription": "La información sigue guardada en este dispositivo. Abrí la orden para revisar su estado, reintentá o descartá el cambio si ya no corresponde.",
+    "rejectedItem": "El servidor rechazó este cambio y no se volverá a enviar automáticamente.",
+    "reason": "Motivo: {reason}",
+    "retryingItem": "Falló {count} veces y sigue pendiente.",
+    "openTask": "Abrir orden",
+    "retry": "Reintentar",
+    "discard": "Descartar",
+    "discardConfirm": "¿Descartar este cambio local? La información pendiente no se enviará y no se puede recuperar.",
+    "kinds": {
+      "update": "Avance de orden",
+      "transition": "Cambio de estado",
+      "chat": "Mensaje",
+      "chat_read": "Confirmación de lectura"
+    }
   },
   "Availability": {
     "absenceOnlyHelp": "Estás disponible. Si vas a faltar, cargá abajo las fechas y el motivo: la empresa tiene que aprobar la ausencia para que se bloquee tu agenda.",
@@ -1786,6 +1808,7 @@
     "suspended": "Suspendida",
     "suspend": "Suspender",
     "reactivate": "Reactivar",
+    "suspendConfirm": "¿Suspender a {name}? Sus usuarios perderán el acceso hasta que la reactives.",
     "suspendedToast": "Empresa suspendida",
     "reactivatedToast": "Empresa reactivada"
   },
@@ -1847,6 +1870,7 @@
     "archive": "Archivar",
     "unarchive": "Recuperar",
     "dismiss": "Descartar",
+    "dismissConfirm": "¿Descartar “{title}”? No vas a poder recuperarla.",
     "archiveNeedsRead": "Abrila primero: lo pendiente queda a la vista.",
     "moreAvailable": "Hay más notificaciones anteriores.",
     "pushUnavailable": "Las alertas push no están disponibles en este dispositivo.",
@@ -2448,6 +2472,7 @@
     "continue": "Continuar",
     "setupTitle": "Activá la verificación en dos pasos",
     "setupRequiredHint": "Tu cuenta maneja datos sensibles, así que este paso es obligatorio para entrar.",
+    "recoveryHint": "¿No tenés acceso a tu autenticador? Salí y entrá con otra cuenta, o pedile ayuda al administrador de tu organización.",
     "setupOptionalHint": "Sumá una capa extra de seguridad a tu cuenta. Es opcional.",
     "verifyTitle": "Verificación en dos pasos",
     "settingsTitle": "Verificación en dos pasos",

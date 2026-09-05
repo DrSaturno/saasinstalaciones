@@ -1,9 +1,9 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { logEvent } from "@/lib/observability";
 import type { EvidenceItem, EvidenceKind } from "@/lib/domain/order-evidence";
 import type { Database } from "@/types/database";
+import { throwIfDataError } from "@/lib/data/errors";
 
 export type EvidenceFilters = {
   query?: string;
@@ -38,13 +38,7 @@ export async function fetchOrderEvidence(
     p_kinds: sqlKinds,
   });
 
-  if (error) {
-    logEvent("error", "order_evidence.fetch_failed", {
-      orderId,
-      code: error.code ?? null,
-      message: error.message,
-    });
-  }
+  throwIfDataError("order.evidence", error);
 
   let items: EvidenceItem[] = (data ?? []).map((row) => ({
     id: row.id,
@@ -88,9 +82,10 @@ async function signEvidencePaths(
   ];
   if (paths.length === 0) return new Map();
 
-  const { data: signed } = await supabase.storage
+  const { data: signed, error } = await supabase.storage
     .from("evidence")
     .createSignedUrls(paths, 60 * 30);
+  throwIfDataError("order.evidence_signed_urls", error);
 
   return new Map(
     (signed ?? []).flatMap((entry) =>
@@ -108,6 +103,10 @@ async function fetchAuthorNames(
   ];
   if (ids.length === 0) return new Map();
 
-  const { data } = await supabase.from("profiles").select("id, full_name").in("id", ids);
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name")
+    .in("id", ids);
+  throwIfDataError("order.evidence_authors", error);
   return new Map((data ?? []).map((profile) => [profile.id, profile.full_name]));
 }
