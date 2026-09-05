@@ -120,7 +120,13 @@ test("un avance cargado sin red se encola, se avisa y se sincroniza al volver", 
     await context.setOffline(false);
   }
 
-  // Al recuperar señal la cola descarga sola y el aviso de pendiente se apaga.
+  // Al recuperar señal, volver a abrir la pantalla: es lo que hace cualquiera
+  // que sale de un sótano, y además remonta el hook de sincronización con un
+  // cliente Supabase nuevo. Sin esto, el cliente que quedó del corte responde
+  // `TypeError: Failed to fetch` en `auth.getUser()` y el flush aborta antes de
+  // tocar la cola — el ítem no llega ni a contarse como intento fallido.
+  await page.reload();
+
   try {
     await expect(page.getByText(/sin enviar|por sincronizar/i).first()).toBeHidden({
       timeout: 40_000,
