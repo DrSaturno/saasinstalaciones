@@ -232,6 +232,7 @@
     "pendingOrders": "Ordens pendentes",
     "jobsToday": "Trabalhos de hoje",
     "completedToday": "Concluídas do dia",
+    "outOfToday": "de {total} de hoje",
     "dailyRate": "% encerradas do dia",
     "overallRate": "% encerradas geral",
     "operationalStrip": "Condições operacionais do dia",

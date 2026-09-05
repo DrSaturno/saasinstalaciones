@@ -6,6 +6,8 @@ import {
   fetchOrderFormProjects,
 } from "@/lib/data/order-form";
 import { CreateOrderDialog } from "@/components/company/create-order-dialog";
+import { PageContainer } from "@/components/shared/page-container";
+import { PageHeader } from "@/components/shared/page-header";
 import { OrdersTable } from "@/components/company/orders-table";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -21,17 +23,22 @@ export default async function OrdersPage() {
   ]);
 
   return (
-    <div className="mx-auto w-full max-w-[1480px]">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{t("title")}</h1>
-          <p className="mt-1 text-muted-foreground">{t("description")}</p>
-        </div>
-        <CreateOrderDialog projects={projects} roster={roster} currency={currency} canManageFinance={user?.role === "company_manager"} />
-      </div>
-      <div className="mt-8">
+    <PageContainer>
+      <PageHeader
+        title={t("title")}
+        description={t("description")}
+        action={
+          <CreateOrderDialog
+            projects={projects}
+            roster={roster}
+            currency={currency}
+            canManageFinance={user?.role === "company_manager"}
+          />
+        }
+      />
+      <div className="mt-6">
         <OrdersTable orders={orders} showAmounts={user?.role === "company_manager"} />
       </div>
-    </div>
+    </PageContainer>
   );
 }

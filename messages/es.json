@@ -232,6 +232,7 @@
     "pendingOrders": "Órdenes pendientes",
     "jobsToday": "Trabajos de hoy",
     "completedToday": "Completadas del día",
+    "outOfToday": "de {total} de hoy",
     "dailyRate": "% cerradas del día",
     "overallRate": "% cerradas general",
     "operationalStrip": "Condiciones operativas del día",

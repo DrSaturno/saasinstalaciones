@@ -270,7 +270,7 @@ export function TaskActions({
   // técnicamente correcto y prácticamente un estorbo. La secuencia se guía.
   if (status === "planificada") {
     return (
-      <Button onClick={depart} disabled={pending} className="w-full" size="lg">
+      <Button onClick={depart} disabled={pending} size="field">
         {pending ? t("departing") : t("depart")}
       </Button>
     );
@@ -287,7 +287,7 @@ export function TaskActions({
           rows={2}
         />
         <FilePicker files={files} onChange={setFiles} disabled={pending} />
-        <Button onClick={arrive} disabled={pending} className="w-full" size="lg">
+        <Button onClick={arrive} disabled={pending} size="field">
           {pending ? t("arriving") : t("arrive")}
         </Button>
       </div>
@@ -296,7 +296,7 @@ export function TaskActions({
 
   if (status === "en_sitio") {
     return (
-      <Button onClick={start} disabled={pending} className="w-full" size="lg">
+      <Button onClick={start} disabled={pending} size="field">
         {pending ? t("starting") : t("start")}
       </Button>
     );
@@ -336,7 +336,7 @@ export function TaskActions({
             alcanza le dice a alguien qué hacer; un error después de apretar,
             sólo que se equivocó. */}
         <div className="flex flex-col gap-1">
-          <Button onClick={finish} disabled={pending || !readiness.ready} size="lg">
+          <Button onClick={finish} disabled={pending || !readiness.ready} size="field">
             {pending ? t("sending") : t("markDone")}
           </Button>
           <p className={`text-xs ${readiness.ready ? "text-muted-foreground" : "text-[var(--warning)]"}`}>

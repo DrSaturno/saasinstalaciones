@@ -26,7 +26,10 @@ export function AcceptOrderButton({ orderId }: { orderId: string }) {
     });
 
   return (
-    <Button size="sm" onClick={accept} disabled={pending}>
+    // Tamaño de campo, igual que el resto del flujo: es la PRIMERA acción que
+    // toca el instalador en la calle, y quedaba en 28px mientras las que le
+    // siguen ya eran de 48. Se detectó mirando la pantalla a 375px.
+    <Button size="field" onClick={accept} disabled={pending}>
       <Check className="size-3.5" aria-hidden="true" />
       {pending ? t("accepting") : t("accept")}
     </Button>

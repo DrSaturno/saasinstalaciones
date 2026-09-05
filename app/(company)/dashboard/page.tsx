@@ -27,6 +27,8 @@ import { CreateBroadcastDialog } from "@/components/company/create-broadcast-dia
 import { CreateOrderDialog } from "@/components/company/create-order-dialog";
 import { fetchBroadcastBoard } from "@/lib/data/broadcasts";
 import { DashboardOrderAction } from "@/components/company/dashboard-order-actions";
+import { PageContainer } from "@/components/shared/page-container";
+import { PageHeader } from "@/components/shared/page-header";
 import { fetchClients } from "@/lib/data/clients";
 import { fetchCoordinators } from "@/lib/data/team";
 import { fetchActiveRoster, fetchAllOrders } from "@/lib/data/orders";
@@ -58,12 +60,13 @@ export default async function CompanyDashboard() {
   const forecasts = await fetchZoneForecasts(overview.weatherZones);
 
   return (
-    <main className="mx-auto max-w-[1480px] space-y-6">
-      <header>
-        <p className="font-mono text-xs font-semibold uppercase tracking-[0.18em] text-primary">{t("eyebrow")}</p>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t("description")}</p>
-      </header>
+    <PageContainer asChild>
+      <main className="space-y-6">
+        <PageHeader
+          eyebrow={t("eyebrow")}
+          title={t("title")}
+          description={t("description")}
+        />
 
       <DashboardQuickActions
         newProject={
@@ -134,6 +137,7 @@ export default async function CompanyDashboard() {
         <DashboardPulse alerts={overview.alerts} forecasts={forecasts} weatherZones={overview.weatherZones} roster={roster} />
         <DashboardOperations forecasts={forecasts} calendarEmail={calendar?.google_email ?? null} calendarConfigured={googleCalendarConfigured()} />
       </DashboardSection>
-    </main>
+      </main>
+    </PageContainer>
   );
 }

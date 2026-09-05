@@ -6,6 +6,7 @@ import { FieldSettingsForm } from "@/components/company/field-settings-form";
 import { TwoFactorSettings } from "@/components/security/two-factor-settings";
 import { createClient } from "@/lib/supabase/server";
 import { fetchTwoFactorStatus, mfaRequiredFor } from "@/lib/data/two-factor";
+import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function SettingsPage() {
@@ -23,10 +24,7 @@ export default async function SettingsPage() {
 
   return (
     <main className="mx-auto max-w-3xl">
-      <header>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t("description")}</p>
-      </header>
+      <PageHeader title={t("title")} description={t("description")} />
 
       <div className="mt-8 grid gap-4">
         <Card>

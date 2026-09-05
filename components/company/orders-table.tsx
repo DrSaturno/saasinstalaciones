@@ -81,7 +81,7 @@ export function OrdersTable({
         {STATUS_ORDER.filter((status) => counts[status] > 0).map((status) => <button key={status} onClick={() => setStatusFilter(statusFilter === status ? "all" : status)} className={`rounded-full border px-3 py-1 text-xs transition-colors ${statusFilter === status ? "border-primary" : "bg-card hover:border-primary/40"}`} style={statusFilter === status ? { backgroundColor: ORDER_STATUS[status].bg, color: ORDER_STATUS[status].fg } : undefined}>{statusT(ORDER_STATUS[status].key)} <span className="font-mono">{counts[status]}</span></button>)}
       </div>
 
-      <div className="mt-4 grid gap-3 rounded-xl border bg-card p-3 lg:grid-cols-[minmax(220px,1fr)_repeat(3,auto)]">
+      <div className="mt-4 grid gap-3 rounded-lg border border-border bg-surface-sunken p-3 lg:grid-cols-[minmax(220px,1fr)_repeat(3,auto)]">
         <Input placeholder={t("search")} value={search} onChange={(event) => setSearch(event.target.value)} />
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           {zones.length ? <select value={zoneFilter} onChange={(event) => setZoneFilter(event.target.value)} className={selectClass}><option value="all">{t("allZones")}</option>{zones.map((zone) => <option key={zone} value={zone}>{zone}</option>)}</select> : null}
@@ -92,12 +92,12 @@ export function OrdersTable({
         <span className="self-center font-mono text-xs text-muted-foreground">{t("resultCount", { filtered: filtered.length, total: orders.length })}</span>
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-xl border bg-card">
-        <div className={`grid min-w-[940px] gap-4 border-b bg-muted/30 px-4 py-2 text-xs font-medium text-muted-foreground ${showAmounts ? "grid-cols-[110px_1fr_1fr_130px_110px_120px_130px]" : "grid-cols-[110px_1fr_1fr_150px_120px_130px]"}`}><span>{t("number")}</span><span>{t("titleSite")}</span><span>{t("project")}</span><span>{t("installer")}</span><span>{t("date")}</span>{showAmounts ? <span>{t("amount")}</span> : null}<span>{t("status")}</span></div>
+      <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-card">
+        <div className={`grid min-w-[940px] gap-4 sticky top-0 z-10 border-b border-border-strong bg-surface-sunken px-4 py-2.5 text-caption text-muted-foreground ${showAmounts ? "grid-cols-[110px_1fr_1fr_130px_110px_120px_130px]" : "grid-cols-[110px_1fr_1fr_150px_120px_130px]"}`}><span>{t("number")}</span><span>{t("titleSite")}</span><span>{t("project")}</span><span>{t("installer")}</span><span>{t("date")}</span>{showAmounts ? <span>{t("amount")}</span> : null}<span>{t("status")}</span></div>
         {filtered.length === 0 ? <p className="py-16 text-center text-sm text-muted-foreground">{orders.length === 0 ? t("empty") : t("noMatch")}</p> : (
           <div ref={scrollRef} className="max-h-[600px] min-w-[1060px] overflow-auto"><div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>{virtualizer.getVirtualItems().map((virtualRow) => {
             const order = filtered[virtualRow.index];
-            return <div key={order.id} onClick={() => router.push(`/orders/${order.id}`)} className={`absolute inset-x-0 grid cursor-pointer items-center gap-4 border-b px-4 text-sm transition-colors hover:bg-muted/40 ${showAmounts ? "grid-cols-[110px_1fr_1fr_130px_110px_120px_130px]" : "grid-cols-[110px_1fr_1fr_150px_120px_130px]"}`} style={{ height: virtualRow.size, transform: `translateY(${virtualRow.start}px)` }}>
+            return <div key={order.id} onClick={() => router.push(`/orders/${order.id}`)} className={`absolute inset-x-0 grid cursor-pointer items-center gap-4 border-b px-4 text-sm transition-colors hover:bg-surface-subtle ${showAmounts ? "grid-cols-[110px_1fr_1fr_130px_110px_120px_130px]" : "grid-cols-[110px_1fr_1fr_150px_120px_130px]"}`} style={{ height: virtualRow.size, transform: `translateY(${virtualRow.start}px)` }}>
               <span className="font-mono text-xs">{order.order_number}</span>
               <div className="min-w-0"><p className="truncate font-medium">{order.title}</p><p className="truncate text-xs text-muted-foreground">{order.site_name}{order.site_city ? ` · ${order.site_city}` : ""}</p></div>
               <div className="min-w-0"><p className="truncate text-muted-foreground">{order.project_name}</p><p className="truncate font-mono text-xs text-muted-foreground">{order.site_zone || "—"}</p></div>
