@@ -4,7 +4,7 @@
 **Alcance:** pre-producción.
 
 > **Estado de remediación (Bloque A — P1):** SEC-01, SEC-02 y SEC-03
-> **CORREGIDOS** en `supabase/migrations/20260908000005_rpc_execute_hardening.sql`,
+> **CORREGIDOS** en `supabase/migrations/20260904123451_rpc_execute_hardening.sql`,
 > aplicados a Demo y verificados remotamente (los cuatro ataques confirmados
 > ahora dan `401 permission denied`; el camino autenticado sigue intacto; pgTAP
 > `rpc_execute_hardening` 12/12). La misma migración cierra un BOLA adicional
@@ -18,7 +18,7 @@
 > dialectos de `.xlsx` es la que el importador necesita. Misma API, sin cambio
 > de código; `pnpm audit --audit-level=high` ya no lista `xlsx`.
 >
-> **SEC-05 y SEC-09 CORREGIDOS** — `supabase/migrations/20260908000006_storage_hardening.sql`
+> **SEC-05 y SEC-09 CORREGIDOS** — `supabase/migrations/20260904124849_storage_hardening.sql`
 > fija `allowed_mime_types` + `file_size_limit` en los buckets. `avatars`
 > (público) queda restringido a imágenes de trama: verificado
 > empíricamente en Demo con una sesión real — subir `image/svg+xml` da

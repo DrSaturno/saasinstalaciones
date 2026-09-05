@@ -375,7 +375,7 @@ Dependencia: R1. Tamaño: XL.
   write path de la app sincroniza, pero eso depende de que todo camino futuro se
   acuerde de hacerlo —importaciones, SQL directo, backfills, código nuevo—. El
   plan ya declara que «`sites` queda como proyección necesaria para OTs/rutas»;
-  `20260813000001_sites_projection_sync.sql` hace que efectivamente lo sea:
+  `20260813211139_sites_projection_sync.sql` hace que efectivamente lo sea:
   un trigger deriva la identidad del site desde su ficha canónica y otro propaga
   al revés cuando se edita la ficha. Escribir identidad divergente sobre `sites`
   ya no prospera.
@@ -411,7 +411,7 @@ Dependencia: R1. Tamaño: XL.
 - [x] **R2-IMP-02** — Parser/preflight sin escritura con preview y conteos esperadas/encontradas/válidas/incompletas/duplicadas. `lib/domain/site-import.ts` concentra el análisis como función pura y `analyzeSiteImport()` lo expone sin escribir nada; el diálogo pasó a dos pasos (revisar → confirmar) y muestra informados/encontrados/a importar/diferencia, con el aviso del caso de la minuta (50 vs 47). 18 tests unitarios en `site-import.test.ts`. El servidor reparsea el archivo original al confirmar: nunca acepta filas armadas por el cliente.
 - [x] **R2-IMP-03** — Confirmación idempotente por `import_id`, upsert canónico y reporte descargable por fila. Se agregó deduplicación por referencia externa dentro de la planilla y contra el proyecto; la confirmación busca además la referencia normalizada en `locations`: si ya existe para el cliente, asocia esa identidad sin sobrescribirla; si no, crea la ficha canónica y su proyección. Reimportar al mismo proyecto no duplica.
 
-  **Completado el 13-08-2026 con `20260813000002_site_import_batches.sql`.**
+  **Completado el 13-08-2026 con `20260813222554_site_import_batches.sql`.**
 
   > **El agujero que faltaba tapar no era el que decía el título.** El dedupe por
   > referencia ya protegía a las filas CON código. Las que no lo traen generaban
