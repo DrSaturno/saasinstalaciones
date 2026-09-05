@@ -155,7 +155,7 @@ el gerente y el coordinador; el embed `projects(name)` volvía `null` para
 cualquier otro instalador, aunque ya podía leer la orden, el punto y la
 actividad de ese mismo trabajo — la columna "Proyecto" de su agenda quedaba
 vacía. Cerrado con una policy nueva, acotada a la propia asignación
-(`20260906000004_projects_installer_assigned_read.sql`), mismo principio que
+(`20260903192646_projects_installer_assigned_read.sql`), mismo principio que
 `work_activities_authorized_read`: quien tiene una asignación puede leer lo
 directamente relacionado a ella.
 

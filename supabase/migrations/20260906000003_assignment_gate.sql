@@ -19,6 +19,22 @@
 -- cuando dos empresas asignan al mismo tiempo es la agenda de una persona, no
 -- una fila de `work_orders` — bloquear la orden no evita nada si son dos
 -- órdenes distintas.
+--
+-- **Por qué este archivo tiene que seguir a `20260906000000_set_activity_
+-- schedule.sql` — no lo muevas.** Acá abajo hay un
+-- `drop function if exists set_activity_schedule(6 args)` seguido de un
+-- `create` de la versión de 7. Si este archivo corre ANTES de que
+-- `set_activity_schedule.sql` cree la de 6, el drop es un no-op y las dos
+-- versiones terminan coexistiendo — Postgres no puede elegir cuál llamar con
+-- argumentos sin tipar («function ... is not unique») y las pgTAP que llaman
+-- a la función fallan. Pasó de verdad: una reconciliación de timestamps de
+-- migraciones (OPS, 05-09-2026) reordenó este archivo confiando ciegamente en
+-- el timestamp que quedó en la tabla de control de producción, y ese
+-- timestamp NO reflejaba el orden real de aplicación para este par — se
+-- detectó porque CI corrió las pgTAP en el orden nuevo y explotó. La
+-- producción real, verificada por consulta directa, sólo tiene la versión de
+-- 7 argumentos: la única forma de llegar ahí es que la de 6 haya existido
+-- (fue creada) y luego se haya borrado, es decir, este archivo DESPUÉS.
 
 -- ---------------------------------------------------------------------------
 -- El gate
