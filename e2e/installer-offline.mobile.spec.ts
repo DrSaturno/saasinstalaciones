@@ -70,6 +70,17 @@ test("una pantalla de campo ya visitada vuelve a abrir sin red", async ({ page, 
 });
 
 test("un avance cargado sin red se encola, se avisa y se sincroniza al volver", async ({ page, context }) => {
+  // El motor de sincronización reporta cada fallo por `logEvent`, que termina
+  // en la consola del navegador. Sin capturarla, un ítem que no entra se ve
+  // sólo como «sigue pendiente» y no dice por qué.
+  const consoleLines: string[] = [];
+  page.on("console", (message) => {
+    const text = message.text();
+    if (/sync|outbox|offline|error|warn/i.test(text)) {
+      consoleLines.push(`[${message.type()}] ${text}`.slice(0, 500));
+    }
+  });
+
   await page.goto("/home");
   await waitForServiceWorker(page);
 
@@ -110,8 +121,26 @@ test("un avance cargado sin red se encola, se avisa y se sincroniza al volver", 
   }
 
   // Al recuperar señal la cola descarga sola y el aviso de pendiente se apaga.
-  await expect(
-    page.getByText(/sin enviar|por sincronizar/i).first(),
-    "el avance encolado no se sincronizó al recuperar la señal",
-  ).toBeHidden({ timeout: 40_000 });
+  try {
+    await expect(page.getByText(/sin enviar|por sincronizar/i).first()).toBeHidden({
+      timeout: 40_000,
+    });
+  } catch (error) {
+    // Antes de fallar, dejar dicho POR QUÉ no entró: el motivo que muestra la
+    // propia bandeja de conflictos y lo que registró el motor de sync.
+    const review = page.getByRole("button", { name: /revisar/i });
+    let reason = "(la bandeja de conflictos no apareció)";
+    if (await review.isVisible().catch(() => false)) {
+      await review.click();
+      reason = (await page.getByRole("dialog").innerText().catch(() => "")) || reason;
+    }
+    throw new Error(
+      [
+        "el avance encolado no se sincronizó al recuperar la señal",
+        `Bandeja: ${reason.replace(/\s+/g, " ").slice(0, 400)}`,
+        `Consola: ${consoleLines.slice(-8).join(" | ") || "(sin registros)"}`,
+        String(error).slice(0, 200),
+      ].join("\n"),
+    );
+  }
 });
