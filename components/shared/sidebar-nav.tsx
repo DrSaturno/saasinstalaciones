@@ -19,6 +19,7 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { NavIcon, NavItem } from "@/types/navigation";
 import { useTranslations } from "next-intl";
@@ -61,12 +62,11 @@ export function SidebarNav({
           pathname === item.href ||
           (item.href !== "/dashboard" && pathname.startsWith(`${item.href}/`));
 
-        return (
+        const link = (
           <Link
             key={item.href}
             href={item.href}
             onClick={onNavigate}
-            title={collapsed ? item.label : undefined}
             aria-current={active ? "page" : undefined}
             className={cn(
               // El ítem activo se marca con fondo sólido y una barra a la
@@ -79,10 +79,23 @@ export function SidebarNav({
             )}
           >
             <Icon className="size-5 shrink-0" />
+            {/* Colapsado, el nombre sigue en el DOM para el lector: se oculta a
+                la vista, no a la tecnología asistiva. */}
             <span className={cn("truncate", collapsed && "sr-only")}>
               {item.label}
             </span>
           </Link>
+        );
+
+        // Con el menú colapsado el ícono queda solo, y ahí el nombre hace
+        // falta. El `title` nativo que había acá no servía: no aparece con
+        // foco de teclado y es inalcanzable en touch.
+        if (!collapsed) return link;
+        return (
+          <Tooltip key={item.href}>
+            <TooltipTrigger asChild>{link}</TooltipTrigger>
+            <TooltipContent side="right">{item.label}</TooltipContent>
+          </Tooltip>
         );
       })}
     </nav>
