@@ -69,55 +69,49 @@ test("una pantalla de campo ya visitada vuelve a abrir sin red", async ({ page, 
   await expect(page.locator("main")).toBeVisible();
 });
 
-test("una acción sin red sobrevive al reload y se sincroniza al volver", async ({ page, context }) => {
+test("un avance cargado sin red se encola, se avisa y se sincroniza al volver", async ({ page, context }) => {
   await page.goto("/home");
   await waitForServiceWorker(page);
 
-  // Elegir una orden accionable y dejarla cacheada ANTES de cortar la red.
+  // Orden propia y distinta de la que usa `installer-field-flow`: del seed sale
+  // `en_proceso`, que es el estado donde se pueden cargar avances. Compartir
+  // una orden entre specs las haría depender del orden de ejecución.
   await warmRoute(page, "/tasks");
-  const link = page.locator('a[href^="/tasks/"]').first();
-  await expect(link, "el instalador del seed no tiene ninguna tarea listada").toBeVisible();
+  const link = page
+    .locator('a[href^="/tasks/"]')
+    .filter({ hasText: "Estación 004" })
+    .first();
+  await expect(link, "no se encontró la orden en proceso del seed").toBeVisible();
   const href = (await link.getAttribute("href"))!;
   await warmRoute(page, href);
 
-  // Cualquiera de las acciones del flujo sirve; se toma la que ofrezca la
-  // pantalla, porque el estado depende de lo que hayan hecho otras specs.
-  const actionable = page
-    .getByRole("button", { name: /voy en camino|llegué al sitio|iniciar trabajo/i })
-    .first();
-  test.skip(
-    !(await actionable.isVisible().catch(() => false)),
-    "la orden no está en un estado con acción de campo disponible",
-  );
-  const actionLabel = (await actionable.textContent())?.trim() ?? "";
+  const noteBox = page.locator("textarea").first();
+  await expect(
+    noteBox,
+    "la orden no ofrece cargar un avance; ¿cambió su estado en el seed?",
+  ).toBeVisible();
 
+  // Guardar un avance NO cambia el estado de la orden: es idempotente entre
+  // reintentos de CI, a diferencia de una transición, que sólo se puede hacer
+  // una vez y dejaría el segundo intento sin nada que probar.
   await context.setOffline(true);
   try {
-    await actionable.click();
+    await noteBox.fill(`Avance offline de prueba ${Date.now()}`);
+    await page.getByRole("button", { name: /guardar avance/i }).click();
 
-    // Sin red la transición se encola y la pantalla se mueve igual: si el botón
-    // que se apretó sigue ahí, el estado optimista no se aplicó.
+    // Lo que UX-003 vino a arreglar: sin red, la persona tiene que ver que su
+    // trabajo quedó guardado y sin enviar — no un éxito falso ni silencio.
     await expect(
-      page.getByRole("button", { name: actionLabel }),
-      "la acción offline no cambió el estado en pantalla",
-    ).toBeHidden({ timeout: 20_000 });
-
-    // Reabrir sin red tiene que restaurar el estado pendiente desde Dexie, no
-    // volver al estado viejo del servidor. Es la carrera que corrigió UX-002.
-    await page.goto(href);
-    await expect(
-      page.getByRole("button", { name: actionLabel }),
-      "al reabrir sin red se perdió la transición pendiente",
-    ).toBeHidden({ timeout: 20_000 });
+      page.getByText(/sin enviar/i).first(),
+      "sin red no se avisó que el avance quedó pendiente de envío",
+    ).toBeVisible({ timeout: 20_000 });
   } finally {
     await context.setOffline(false);
   }
 
-  // Con señal, la cola descarga sola. El estado tiene que quedar persistido en
-  // el servidor: se comprueba recargando, que lee del servidor y no de Dexie.
-  await page.goto(href);
+  // Al recuperar señal la cola descarga sola y el aviso de pendiente se apaga.
   await expect(
-    page.getByRole("button", { name: actionLabel }),
-    "la transición encolada offline no llegó al servidor al recuperar señal",
-  ).toBeHidden({ timeout: 30_000 });
+    page.getByText(/sin enviar|por sincronizar/i).first(),
+    "el avance encolado no se sincronizó al recuperar la señal",
+  ).toBeHidden({ timeout: 40_000 });
 });

@@ -34,6 +34,9 @@ const STEPS = [
   { action: /iniciar trabajo/i, next: /marcar terminado/i, state: "en_proceso" },
 ] as const;
 
+/** Cualquiera de las acciones de campo, para leer en qué paso está la orden. */
+const ANY_STEP = /voy en camino|llegué al sitio|iniciar trabajo/i;
+
 async function openOrder(page: Page): Promise<string> {
   await page.goto("/tasks");
   const link = page.locator(`a[href^="/tasks/"]`).filter({ hasText: ORDER_SITE }).first();
@@ -64,11 +67,26 @@ test("la orden sigue accesible y avanza de estado durante todo el trabajo", asyn
     await expect(accept).toBeHidden({ timeout: 15_000 });
   }
 
-  let advanced = 0;
-  for (const step of STEPS) {
-    const button = page.getByRole("button", { name: step.action });
-    if (!(await button.isVisible().catch(() => false))) continue;
+  // Aceptar dispara un `router.refresh()`: la acción de campo aparece recién
+  // cuando ese refresh termina. Preguntar por su visibilidad en el instante
+  // siguiente al click daba "no hay nada que hacer" y el test se declaraba
+  // exitoso sin ejecutar una sola transición — sólo el reintento de CI lo
+  // salvaba, porque encontraba la orden ya aceptada. Se espera de verdad.
+  await expect(
+    page.getByRole("button", { name: ANY_STEP }).first(),
+    "tras aceptar la orden no apareció ninguna acción de campo",
+  ).toBeVisible({ timeout: 20_000 });
 
+  let advanced = 0;
+  for (let i = 0; i < STEPS.length; i++) {
+    const current = page.getByRole("button", { name: ANY_STEP }).first();
+    if (!(await current.isVisible().catch(() => false))) break;
+
+    const label = ((await current.textContent()) ?? "").trim();
+    const step = STEPS.find((candidate) => candidate.action.test(label));
+    if (!step) break;
+
+    const button = page.getByRole("button", { name: step.action });
     await button.click();
 
     // La transición pasa por la cola offline: la UI se mueve de forma optimista
