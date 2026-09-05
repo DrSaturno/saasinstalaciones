@@ -13,8 +13,14 @@ function Card({
       data-slot="card"
       data-size={size}
       className={cn(
-        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-2xl border border-border/70 bg-card py-(--card-spacing) text-sm text-card-foreground shadow-premium [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-2xl *:[img:last-child]:rounded-b-2xl",
-        interactive && "transition-all duration-300 hover:-translate-y-0.5 hover:shadow-premium-hover",
+        // La tarjeta se define por SUPERFICIE + BORDE, no por sombra. Antes
+        // llevaba `shadow-premium` siempre, y una sombra que tienen todos deja
+        // de significar "esto está por encima". La sombra quedó para lo que de
+        // verdad flota (overlays, modales) y para el hover de lo clickeable.
+        // Radio 10px: es el que declara AGENTS.md; `rounded-2xl` daba 18px.
+        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-lg border border-border bg-card py-(--card-spacing) text-sm text-card-foreground [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-lg *:[img:last-child]:rounded-b-lg",
+        interactive &&
+          "transition-[box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-border-strong hover:shadow-hover",
         className
       )}
       {...props}
@@ -27,7 +33,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-header"
       className={cn(
-        "group/card-header @container/card-header grid auto-rows-min items-start gap-1 rounded-t-2xl px-(--card-spacing) has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-(--card-spacing)",
+        "group/card-header @container/card-header grid auto-rows-min items-start gap-1 rounded-t-lg px-(--card-spacing) has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-(--card-spacing)",
         className
       )}
       {...props}
@@ -86,7 +92,7 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-footer"
       className={cn(
-        "flex items-center rounded-b-2xl border-t bg-muted/50 p-(--card-spacing)",
+        "flex items-center rounded-b-lg border-t bg-muted/50 p-(--card-spacing)",
         className
       )}
       {...props}

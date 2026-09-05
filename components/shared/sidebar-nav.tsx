@@ -69,14 +69,16 @@ export function SidebarNav({
             title={collapsed ? item.label : undefined}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "group flex h-10 items-center gap-3 rounded-xl px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              // El ítem activo se marca con fondo sólido y una barra a la
+              // izquierda: dos señales, no sólo color, y legible al sol.
+              "group relative flex h-10 items-center gap-3 rounded-lg px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
               active
-                ? "bg-primary-soft/70 font-medium text-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                ? "bg-sidebar-primary font-medium text-sidebar-primary-foreground before:absolute before:inset-y-1 before:left-0 before:w-[3px] before:rounded-full before:bg-white/80"
+                : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
               collapsed && "justify-center px-0",
             )}
           >
-            <Icon className={cn("size-4 shrink-0", active && "text-primary")} />
+            <Icon className="size-5 shrink-0" />
             <span className={cn("truncate", collapsed && "sr-only")}>
               {item.label}
             </span>
