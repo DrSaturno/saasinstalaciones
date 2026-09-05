@@ -7,11 +7,12 @@ import {
   parseNotificationFilter,
 } from "@/lib/domain/notifications";
 import { NotificationInboxList } from "@/components/notifications/notification-inbox-list";
+import { Pagination } from "@/components/shared/pagination";
 
 export default async function NotificationsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string }>;
+  searchParams: Promise<{ filter?: string; page?: string }>;
 }) {
   const [t, supabase, query] = await Promise.all([
     getTranslations("Notifications"),
@@ -21,7 +22,20 @@ export default async function NotificationsPage({
   // El filtro vive en la URL y no en estado de cliente: así el enlace es
   // compartible y sobrevive a la recarga.
   const filter = parseNotificationFilter(query.filter);
-  const { items, hasMore } = await fetchNotificationPage(supabase, filter);
+  // La página también vive en la URL, por el mismo motivo que el filtro. Se
+  // sanea acá: un `?page=-3` o `?page=abc` no puede llegar al `.range()`.
+  const parsedPage = Number.parseInt(query.page ?? "0", 10);
+  const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 0;
+  const { items, hasMore } = await fetchNotificationPage(supabase, filter, page);
+
+  // Saltar de página no puede perder el filtro activo.
+  const hrefForPage = (target: number) => {
+    const params = new URLSearchParams();
+    if (filter !== "pending") params.set("filter", filter);
+    if (target > 0) params.set("page", String(target));
+    const qs = params.toString();
+    return qs ? `/notifications?${qs}` : "/notifications";
+  };
 
   return (
     <div className="mx-auto w-full max-w-3xl">
@@ -51,9 +65,17 @@ export default async function NotificationsPage({
         <NotificationInboxList items={items} filter={filter} />
       </div>
 
-      {hasMore ? (
-        <p className="mt-4 text-center text-xs text-muted-foreground">{t("moreAvailable")}</p>
-      ) : null}
+      <Pagination
+        className="mt-4"
+        page={page}
+        hasMore={hasMore}
+        buildHref={hrefForPage}
+        labels={{
+          previous: t("previousPage"),
+          next: t("nextPage"),
+          current: t("pageNumber", { page: page + 1 }),
+        }}
+      />
     </div>
   );
 }
