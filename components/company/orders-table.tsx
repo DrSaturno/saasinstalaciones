@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { DataGrid, DataGridCell, DataGridHeader, DataGridRow } from "@/components/shared/data-grid";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ORDER_STATUS } from "@/lib/domain/status";
 import { Input } from "@/components/ui/input";
@@ -22,9 +23,9 @@ export function OrdersTable({
   showAmounts?: boolean;
 }) {
   const t = useTranslations("OrdersTable");
+  const ordersT = useTranslations("Orders");
   const statusT = useTranslations("Status");
   const format = useFormatter();
-  const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all");
   const [installerFilter, setInstallerFilter] = useState("all");
@@ -33,6 +34,16 @@ export function OrdersTable({
   const [dateTo, setDateTo] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("newest");
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Encabezado y filas comparten columnas y plantilla: si se declaran por
+  // separado, dejan de alinear en cuanto alguien toca una sola columna.
+  const columns = [
+    t("number"), t("titleSite"), t("project"), t("installer"), t("date"),
+    ...(showAmounts ? [t("amount")] : []), t("status"),
+  ];
+  const template = showAmounts
+    ? "110px 1fr 1fr 130px 110px 120px 130px"
+    : "110px 1fr 1fr 150px 120px 130px";
 
   const installers = useMemo(() => {
     const map = new Map<string, string>();
@@ -92,21 +103,97 @@ export function OrdersTable({
         <span className="self-center font-mono text-xs text-muted-foreground">{t("resultCount", { filtered: filtered.length, total: orders.length })}</span>
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-card">
-        <div className={`grid min-w-[940px] gap-4 sticky top-0 z-10 border-b border-border-strong bg-surface-sunken px-4 py-2.5 text-caption font-medium text-muted-foreground ${showAmounts ? "grid-cols-[110px_1fr_1fr_130px_110px_120px_130px]" : "grid-cols-[110px_1fr_1fr_150px_120px_130px]"}`}><span>{t("number")}</span><span>{t("titleSite")}</span><span>{t("project")}</span><span>{t("installer")}</span><span>{t("date")}</span>{showAmounts ? <span>{t("amount")}</span> : null}<span>{t("status")}</span></div>
-        {filtered.length === 0 ? <p className="py-16 text-center text-sm text-muted-foreground">{orders.length === 0 ? t("empty") : t("noMatch")}</p> : (
-          <div ref={scrollRef} className="max-h-[600px] min-w-[1060px] overflow-auto"><div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>{virtualizer.getVirtualItems().map((virtualRow) => {
-            const order = filtered[virtualRow.index];
-            return <div key={order.id} onClick={() => router.push(`/orders/${order.id}`)} className={`absolute inset-x-0 grid cursor-pointer items-center gap-4 border-b px-4 text-sm transition-colors hover:bg-surface-subtle ${showAmounts ? "grid-cols-[110px_1fr_1fr_130px_110px_120px_130px]" : "grid-cols-[110px_1fr_1fr_150px_120px_130px]"}`} style={{ height: virtualRow.size, transform: `translateY(${virtualRow.start}px)` }}>
-              <span className="font-mono text-xs">{order.order_number}</span>
-              <div className="min-w-0"><p className="truncate font-medium">{order.title}</p><p className="truncate text-xs text-muted-foreground">{order.site_name}{order.site_city ? ` · ${order.site_city}` : ""}</p></div>
-              <div className="min-w-0"><p className="truncate text-muted-foreground">{order.project_name}</p><p className="truncate font-mono text-xs text-muted-foreground">{order.site_zone || "—"}</p></div>
-              <span className="truncate text-muted-foreground">{order.installer_name ?? <span className="text-xs italic opacity-60">{t("unassigned")}</span>}</span>
-              <span className="font-mono text-xs text-muted-foreground">{order.scheduled_date ? format.dateTime(new Date(`${order.scheduled_date}T12:00:00`), { day: "2-digit", month: "2-digit" }) : "—"}</span>
-              {showAmounts ? <span className="font-mono text-xs">{order.amount === null ? "—" : format.number(Number(order.amount), { style: "currency", currency: order.currency, maximumFractionDigits: 0 })}</span> : null}
-              <StatusBadge status={order.status} kind="order" />
-            </div>;
-          })}</div></div>
+      <div className="mt-4 rounded-lg border border-border bg-card">
+        {filtered.length === 0 ? (
+          <p className="py-16 text-center text-sm text-muted-foreground">
+            {orders.length === 0 ? t("empty") : t("noMatch")}
+          </p>
+        ) : (
+          <>
+            {/* Escritorio: grilla accesible. Debajo de `md` no se renderiza —
+                a 375 px una tabla de 7 columnas sólo puede verse de a pedazos. */}
+            <div className="hidden md:block">
+              <div className="overflow-x-auto">
+                <DataGrid
+                  label={ordersT("title")}
+                  rowCount={filtered.length}
+                  colCount={showAmounts ? 7 : 6}
+                  className="min-w-[940px]"
+                >
+                  <DataGridHeader columns={columns} template={template} />
+                  <div ref={scrollRef} className="max-h-[600px] overflow-auto">
+                    <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
+                      {virtualizer.getVirtualItems().map((virtualRow) => {
+                        const order = filtered[virtualRow.index];
+                        return (
+                          <DataGridRow
+                            key={order.id}
+                            href={`/orders/${order.id}`}
+                            rowIndex={virtualRow.index}
+                            template={template}
+                            className="absolute inset-x-0"
+                            style={{ height: virtualRow.size, transform: `translateY(${virtualRow.start}px)` }}
+                          >
+                            <DataGridCell colIndex={1} className="font-mono text-caption">{order.order_number}</DataGridCell>
+                            <DataGridCell colIndex={2}>
+                              <p className="truncate font-medium">{order.title}</p>
+                              <p className="truncate text-caption text-muted-foreground">{order.site_name}{order.site_city ? ` · ${order.site_city}` : ""}</p>
+                            </DataGridCell>
+                            <DataGridCell colIndex={3}>
+                              <p className="truncate text-muted-foreground">{order.project_name}</p>
+                              <p className="truncate font-mono text-caption text-muted-foreground">{order.site_zone || "—"}</p>
+                            </DataGridCell>
+                            <DataGridCell colIndex={4} className="truncate text-muted-foreground">
+                              {order.installer_name ?? <span className="text-caption italic opacity-60">{t("unassigned")}</span>}
+                            </DataGridCell>
+                            <DataGridCell colIndex={5} className="font-mono text-caption text-muted-foreground">
+                              {order.scheduled_date ? format.dateTime(new Date(`${order.scheduled_date}T12:00:00`), { day: "2-digit", month: "2-digit" }) : "—"}
+                            </DataGridCell>
+                            {showAmounts ? (
+                              <DataGridCell colIndex={6} className="font-mono text-caption">
+                                {order.amount === null ? "—" : format.number(Number(order.amount), { style: "currency", currency: order.currency, maximumFractionDigits: 0 })}
+                              </DataGridCell>
+                            ) : null}
+                            <DataGridCell colIndex={showAmounts ? 7 : 6}>
+                              <StatusBadge status={order.status} kind="order" />
+                            </DataGridCell>
+                          </DataGridRow>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </DataGrid>
+              </div>
+            </div>
+
+            {/* Móvil: la misma información como lista de enlaces reales. Sin
+                scroll horizontal y navegable con teclado por ser <a>. */}
+            <ul className="divide-y divide-border md:hidden">
+              {filtered.map((order) => (
+                <li key={order.id}>
+                  <Link href={`/orders/${order.id}`} className="flex flex-col gap-1 px-4 py-3 transition-colors hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-caption text-muted-foreground">{order.order_number}</span>
+                      <StatusBadge status={order.status} kind="order" />
+                    </div>
+                    <p className="font-medium">{order.title}</p>
+                    <p className="text-caption text-muted-foreground">
+                      {order.site_name}{order.site_city ? ` · ${order.site_city}` : ""}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-x-3 text-caption text-muted-foreground">
+                      <span>{order.installer_name ?? t("unassigned")}</span>
+                      {order.scheduled_date ? (
+                        <span className="font-mono">{format.dateTime(new Date(`${order.scheduled_date}T12:00:00`), { day: "2-digit", month: "2-digit" })}</span>
+                      ) : null}
+                      {showAmounts && order.amount !== null ? (
+                        <span className="font-mono">{format.number(Number(order.amount), { style: "currency", currency: order.currency, maximumFractionDigits: 0 })}</span>
+                      ) : null}
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </div>
     </div>
