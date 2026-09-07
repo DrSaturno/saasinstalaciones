@@ -73,4 +73,20 @@ describe("offline session storage", () => {
     expect(runtime.cacheStorage?.delete).toHaveBeenCalledTimes(2);
     expect(values.has(OFFLINE_OWNER_KEY)).toBe(false);
   });
+
+  it("conserva el propietario si la base rechaza borrar trabajo pendiente", async () => {
+    const { runtime, values } = runtimeFor("user-a");
+    vi.mocked(runtime.clearDatabase).mockRejectedValue(new Error("offline_work_pending"));
+    await expect(clearOfflineSession(runtime)).resolves.toBe(false);
+    expect(values.get(OFFLINE_OWNER_KEY)).toBe("user-a");
+    await expect(prepareOfflineStorageForUser("user-a", runtime)).resolves.toBe(true);
+    expect(runtime.clearDatabase).toHaveBeenCalledOnce();
+  });
+
+  it("no concede los datos a otra cuenta si una limpieza falla", async () => {
+    const { runtime, values } = runtimeFor("user-a");
+    vi.mocked(runtime.clearDatabase).mockRejectedValue(new Error("storage_unavailable"));
+    await expect(prepareOfflineStorageForUser("user-b", runtime)).resolves.toBe(false);
+    expect(values.get(OFFLINE_OWNER_KEY)).toBe("user-a");
+  });
 });

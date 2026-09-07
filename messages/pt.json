@@ -2486,5 +2486,14 @@
     "enable": "Ativar",
     "disable": "Desativar",
     "disabled": "Verificação em duas etapas desativada"
+  },
+  "OfflineLogout": {
+    "title": "Você tem trabalho não enviado",
+    "description": "Há {operations} alterações e {photos} fotos neste dispositivo. Sincronize antes de sair ou escolha descartá-las.",
+    "stillPending": "Ainda há dados pendentes. Verifique a conexão e os conflitos de sincronização.",
+    "checkFailed": "Não foi possível verificar ou limpar o armazenamento local. Sua sessão continua aberta.",
+    "stay": "Continuar trabalhando",
+    "sync": "Sincronizar e sair",
+    "discard": "Descartar pendências e sair"
   }
 }
