@@ -75,14 +75,25 @@ db.version(2).stores({
 });
 
 /** Borra todo dato autenticado que la PWA mantiene en IndexedDB. */
-export async function clearOfflineDatabase(): Promise<void> {
+export async function clearOfflineDatabase(discardPending = false): Promise<void> {
   await db.transaction("rw", db.outbox, db.photos, db.tasks, async () => {
+    if (!discardPending && ((await db.outbox.count()) > 0 || (await db.photos.count()) > 0)) {
+      throw new Error("offline_work_pending");
+    }
     await Promise.all([
       db.outbox.clear(),
       db.photos.clear(),
       db.tasks.clear(),
     ]);
   });
+}
+
+/** Includes blocked operations and photos that have not yet joined the outbox. */
+export async function pendingOfflineWork(): Promise<{ operations: number; photos: number }> {
+  return db.transaction("r", db.outbox, db.photos, async () => ({
+    operations: await db.outbox.count(),
+    photos: await db.photos.count(),
+  }));
 }
 
 export { db };

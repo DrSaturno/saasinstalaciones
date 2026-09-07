@@ -25,7 +25,9 @@ function browserRuntime(): OfflineStorageRuntime {
     storage,
     cacheStorage:
       typeof globalThis.caches === "undefined" ? null : globalThis.caches,
-    clearDatabase: clearOfflineDatabase,
+    // A different account must never inherit the previous account's storage.
+    // Logout replaces this with guarded cleanup unless discard was explicit.
+    clearDatabase: () => clearOfflineDatabase(true),
     notifyServiceWorker: () => {
       if (typeof navigator === "undefined") return;
       navigator.serviceWorker?.controller?.postMessage("clear-cache");
@@ -55,7 +57,7 @@ async function clearData(
   }
 
   let ownerCleared = true;
-  if (removeOwner) {
+  if (removeOwner && cleanupResults.every((result) => result.status === "fulfilled")) {
     try {
       runtime.storage?.removeItem(OFFLINE_OWNER_KEY);
       runtime.storage?.removeItem(LEGACY_OWNER_KEY);
@@ -121,12 +123,16 @@ export function prepareOfflineStorageForUser(
 /** Limpieza previa al cierre de sesión. Siempre intenta todos los almacenes. */
 export function clearOfflineSession(
   runtime?: OfflineStorageRuntime,
+  discardPending = false,
 ): Promise<boolean> {
   if (runtime) return clearData(runtime, true);
 
+  const logoutRuntime = browserRuntime();
+  logoutRuntime.clearDatabase = () => clearOfflineDatabase(discardPending);
+
   browserOperation = browserOperation.then(
-    () => clearData(browserRuntime(), true),
-    () => clearData(browserRuntime(), true),
+    () => clearData(logoutRuntime, true),
+    () => clearData(logoutRuntime, true),
   );
   return browserOperation;
 }

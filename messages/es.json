@@ -2486,5 +2486,14 @@
     "enable": "Activar",
     "disable": "Desactivar",
     "disabled": "Verificación en dos pasos desactivada"
+  },
+  "OfflineLogout": {
+    "title": "Tenés trabajo sin enviar",
+    "description": "Quedan {operations} cambios y {photos} fotos en este dispositivo. Sincronizalos antes de salir o elegí descartarlos.",
+    "stillPending": "Todavía quedan datos pendientes. Revisá la conexión y los conflictos de sincronización.",
+    "checkFailed": "No se pudo comprobar o limpiar el almacenamiento local. Tu sesión sigue abierta.",
+    "stay": "Seguir trabajando",
+    "sync": "Sincronizar y salir",
+    "discard": "Descartar pendientes y salir"
   }
 }
