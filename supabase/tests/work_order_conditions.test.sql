@@ -20,7 +20,7 @@ insert into public.companies (id, name, country, order_prefix) values
   ('f1000000-0000-0000-0000-000000000001', 'Empresa Condiciones', 'AR', 'ECO'),
   ('f1000000-0000-0000-0000-000000000002', 'Empresa Ajena', 'AR', 'EAJ');
 
-insert into auth.users (id, email, raw_user_meta_data) values
+insert into auth.users (id, email, raw_app_meta_data) values
   ('f1000000-0000-0000-0000-000000000011', 'gerente.cond@test.dev',
    '{"role":"company_manager","company_id":"f1000000-0000-0000-0000-000000000001"}'::jsonb),
   ('f1000000-0000-0000-0000-000000000012', 'instalador.cond@test.dev',

@@ -87,7 +87,7 @@ insert into auth.users (
   'c2000000-0000-0000-0000-000000000010',
   'authenticated', 'authenticated', 'manager-canonical@test.invalid',
   extensions.crypt('x', extensions.gen_salt('bf')), now(),
-  '{"provider":"email","providers":["email"]}',
+  '{"provider":"email","providers":["email"]}'::jsonb || '{"role":"company_manager","company_id":"c2000000-0000-0000-0000-000000000001","full_name":"Manager Canonical"}'::jsonb,
   '{"role":"company_manager","company_id":"c2000000-0000-0000-0000-000000000001","full_name":"Manager Canonical"}',
   now(), now(), '', '', '', '', '', '', '', ''
 ), (
@@ -95,7 +95,7 @@ insert into auth.users (
   'c2000000-0000-0000-0000-000000000011',
   'authenticated', 'authenticated', 'coordinator-canonical@test.invalid',
   extensions.crypt('x', extensions.gen_salt('bf')), now(),
-  '{"provider":"email","providers":["email"]}',
+  '{"provider":"email","providers":["email"]}'::jsonb || '{"role":"installer","full_name":"Coordinator Canonical"}'::jsonb,
   '{"role":"installer","full_name":"Coordinator Canonical"}',
   now(), now(), '', '', '', '', '', '', '', ''
 ), (
@@ -103,7 +103,7 @@ insert into auth.users (
   'c2000000-0000-0000-0000-000000000012',
   'authenticated', 'authenticated', 'installer-canonical@test.invalid',
   extensions.crypt('x', extensions.gen_salt('bf')), now(),
-  '{"provider":"email","providers":["email"]}',
+  '{"provider":"email","providers":["email"]}'::jsonb || '{"role":"installer","full_name":"Installer Canonical"}'::jsonb,
   '{"role":"installer","full_name":"Installer Canonical"}',
   now(), now(), '', '', '', '', '', '', '', ''
 );

@@ -42,7 +42,7 @@ insert into auth.users (
   'b1000000-0000-0000-0000-000000000010',
   'authenticated', 'authenticated', 'manager-dual@test.invalid',
   extensions.crypt('x', extensions.gen_salt('bf')), now(),
-  '{"provider":"email","providers":["email"]}',
+  '{"provider":"email","providers":["email"]}'::jsonb || '{"role":"company_manager","company_id":"b1000000-0000-0000-0000-000000000001","full_name":"Manager Dual"}'::jsonb,
   '{"role":"company_manager","company_id":"b1000000-0000-0000-0000-000000000001","full_name":"Manager Dual"}',
   now(), now(), '', '', '', '', '', '', '', ''
 ), (
@@ -50,7 +50,7 @@ insert into auth.users (
   'b1000000-0000-0000-0000-000000000011',
   'authenticated', 'authenticated', 'dual@test.invalid',
   extensions.crypt('x', extensions.gen_salt('bf')), now(),
-  '{"provider":"email","providers":["email"]}',
+  '{"provider":"email","providers":["email"]}'::jsonb || '{"role":"installer","full_name":"Persona Dual"}'::jsonb,
   '{"role":"installer","full_name":"Persona Dual"}',
   now(), now(), '', '', '', '', '', '', '', ''
 );
@@ -76,7 +76,7 @@ insert into auth.users (
   'b1000000-0000-0000-0000-000000000012',
   'authenticated', 'authenticated', 'installer-team@test.invalid',
   extensions.crypt('x', extensions.gen_salt('bf')), now(),
-  '{"provider":"email","providers":["email"]}',
+  '{"provider":"email","providers":["email"]}'::jsonb || '{"role":"installer","full_name":"Team installer"}'::jsonb,
   '{"role":"installer","full_name":"Team installer"}',
   now(), now(), '', '', '', '', '', '', '', ''
 );

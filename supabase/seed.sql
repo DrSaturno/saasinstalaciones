@@ -71,7 +71,7 @@ insert into auth.users (
 select
   '00000000-0000-0000-0000-000000000000', d.id, 'authenticated', 'authenticated',
   d.email, extensions.crypt('InstalaPro2026!', extensions.gen_salt('bf')),
-  now(), '{"provider":"email","providers":["email"]}', d.meta, now(), now(),
+  now(), '{"provider":"email","providers":["email"]}'::jsonb || d.meta, d.meta, now(), now(),
   '', '', '', '', '', '', '', ''
 from (values
   ('a0000000-0000-0000-0000-000000000001'::uuid, 'admin@instalapro.dev',

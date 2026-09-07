@@ -33,7 +33,7 @@ insert into auth.users (
   'e5000000-0000-0000-0000-000000000010',
   'authenticated', 'authenticated', 'manager-sap@test.invalid',
   extensions.crypt('x', extensions.gen_salt('bf')), now(),
-  '{"provider":"email","providers":["email"]}',
+  '{"provider":"email","providers":["email"]}'::jsonb || '{"role":"company_manager","company_id":"e5000000-0000-0000-0000-000000000001","full_name":"Manager SAP"}'::jsonb,
   '{"role":"company_manager","company_id":"e5000000-0000-0000-0000-000000000001","full_name":"Manager SAP"}',
   now(), now(), '', '', '', '', '', '', '', ''
 ), (
@@ -41,7 +41,7 @@ insert into auth.users (
   'e5000000-0000-0000-0000-000000000011',
   'authenticated', 'authenticated', 'dual-sap@test.invalid',
   extensions.crypt('x', extensions.gen_salt('bf')), now(),
-  '{"provider":"email","providers":["email"]}',
+  '{"provider":"email","providers":["email"]}'::jsonb || '{"role":"installer","full_name":"Coordinador Instalador"}'::jsonb,
   '{"role":"installer","full_name":"Coordinador Instalador"}',
   now(), now(), '', '', '', '', '', '', '', ''
 );

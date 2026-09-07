@@ -21,7 +21,7 @@ select plan(10);
 insert into public.companies (id, name, country, order_prefix)
 values ('d4000000-0000-0000-0000-000000000001', 'Empresa Campo', 'AR', 'ECA');
 
-insert into auth.users (id, email, raw_user_meta_data) values
+insert into auth.users (id, email, raw_app_meta_data) values
   ('d4000000-0000-0000-0000-000000000011', 'asignado.eca@test.dev',
    '{"role":"installer"}'::jsonb),
   ('d4000000-0000-0000-0000-000000000012', 'ajeno.eca@test.dev',

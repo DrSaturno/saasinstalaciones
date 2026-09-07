@@ -69,7 +69,7 @@ select has_column(
 insert into public.companies (id, name, country, order_prefix)
 values ('d1000000-0000-0000-0000-000000000001', 'Empresa Confiable', 'AR', 'ECO');
 
-insert into auth.users (id, email, raw_user_meta_data) values
+insert into auth.users (id, email, raw_app_meta_data) values
   ('d1000000-0000-0000-0000-000000000011', 'gerente.rel@test.dev',
    '{"role":"company_manager","company_id":"d1000000-0000-0000-0000-000000000001"}'::jsonb),
   ('d1000000-0000-0000-0000-000000000012', 'instalador.rel@test.dev',

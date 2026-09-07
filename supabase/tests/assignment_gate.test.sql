@@ -23,7 +23,7 @@ select plan(16);
 insert into public.companies (id, name, country, order_prefix)
 values ('f7000000-0000-0000-0000-000000000001', 'Empresa Gate', 'AR', 'EGT');
 
-insert into auth.users (id, email, raw_user_meta_data) values
+insert into auth.users (id, email, raw_app_meta_data) values
   ('f7000000-0000-0000-0000-000000000011', 'gerente.gt@test.dev',
    '{"role":"company_manager","company_id":"f7000000-0000-0000-0000-000000000001"}'::jsonb),
   ('f7000000-0000-0000-0000-000000000012', 'instalador.gt@test.dev',

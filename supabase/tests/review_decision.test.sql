@@ -19,7 +19,7 @@ select plan(5);
 insert into public.companies (id, name, country, order_prefix)
 values ('d8000000-0000-0000-0000-000000000001', 'Empresa Revisión', 'AR', 'ERV');
 
-insert into auth.users (id, email, raw_user_meta_data) values
+insert into auth.users (id, email, raw_app_meta_data) values
   ('d8000000-0000-0000-0000-000000000011', 'rv.inst@test.dev',
    '{"role":"installer"}'::jsonb),
   ('d8000000-0000-0000-0000-000000000012', 'rv.ger@test.dev',

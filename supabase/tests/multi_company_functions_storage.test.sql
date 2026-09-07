@@ -251,7 +251,7 @@ order by n;
 insert into public.companies (id, name, country, order_prefix)
 values ('f1000000-0000-0000-0000-000000000001', 'Empresa F', 'AR', 'EFA');
 
-insert into auth.users (id, email, raw_user_meta_data) values
+insert into auth.users (id, email, raw_app_meta_data) values
   ('f1000000-0000-0000-0000-000000000011', 'gerente.f@test.dev',
    '{"role":"company_manager","company_id":"f1000000-0000-0000-0000-000000000001"}'::jsonb),
   ('f1000000-0000-0000-0000-000000000012', 'instalador.f@test.dev', '{"role":"installer"}'::jsonb),

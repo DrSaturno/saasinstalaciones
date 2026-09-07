@@ -33,7 +33,7 @@ insert into public.companies (id, name, country, order_prefix) values
   ('c4000000-0000-0000-0000-000000000001', 'Empresa F4', 'AR', 'EF4'),
   ('c4000000-0000-0000-0000-000000000002', 'Empresa Vecina F4', 'AR', 'EV4');
 
-insert into auth.users (id, email, raw_user_meta_data) values
+insert into auth.users (id, email, raw_app_meta_data) values
   ('c4000000-0000-0000-0000-000000000011', 'gerente.f4@test.dev',
    '{"role":"company_manager","company_id":"c4000000-0000-0000-0000-000000000001"}'::jsonb),
   ('c4000000-0000-0000-0000-000000000014', 'gerente.vecina@test.dev',

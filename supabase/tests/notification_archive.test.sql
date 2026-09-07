@@ -15,7 +15,7 @@ select plan(6);
 insert into public.companies (id, name, country, order_prefix)
 values ('c9000000-0000-0000-0000-000000000001', 'Empresa Avisos', 'AR', 'EAV');
 
-insert into auth.users (id, email, raw_user_meta_data) values
+insert into auth.users (id, email, raw_app_meta_data) values
   ('c9000000-0000-0000-0000-000000000011', 'uno.eav@test.dev',
    '{"role":"installer"}'::jsonb),
   ('c9000000-0000-0000-0000-000000000012', 'dos.eav@test.dev',

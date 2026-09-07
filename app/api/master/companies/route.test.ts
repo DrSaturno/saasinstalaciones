@@ -34,7 +34,18 @@ const companyDeleteEq = vi.fn();
 const companyDelete = vi.fn(() => ({ eq: companyDeleteEq }));
 const generateLink = vi.fn();
 const deleteUser = vi.fn();
+const profileSingle = vi.fn();
+const profileQuery = {
+  eq: vi.fn().mockReturnThis(),
+  is: vi.fn().mockReturnThis(),
+  select: vi.fn().mockReturnThis(),
+  single: profileSingle,
+};
+const profileUpdate = vi.fn(() => profileQuery);
+const installerDeleteEq = vi.fn();
 const from = vi.fn((table: string) => {
+  if (table === "profiles") return { update: profileUpdate };
+  if (table === "installers") return { delete: () => ({ eq: installerDeleteEq }) };
   if (table !== "companies") throw new Error(`Unexpected table: ${table}`);
   return { insert: companyInsert, delete: companyDelete };
 });
@@ -64,6 +75,8 @@ beforeEach(() => {
   companySingle.mockResolvedValue({ data: COMPANY, error: null });
   companyDeleteEq.mockResolvedValue({ error: null });
   deleteUser.mockResolvedValue({ data: null, error: null });
+  profileSingle.mockResolvedValue({ data: { id: USER_ID }, error: null });
+  installerDeleteEq.mockResolvedValue({ error: null });
   generateLink.mockResolvedValue({
     data: {
       user: { id: USER_ID },
@@ -86,8 +99,6 @@ describe("alta master con activación", () => {
       email: "manager@example.com",
       options: {
         data: {
-          role: "company_manager",
-          company_id: COMPANY.id,
           full_name: "Ada Manager",
           locale: "es",
         },
@@ -96,6 +107,11 @@ describe("alta master con activación", () => {
     });
     expect(body.invitation).toEqual({ status: "sent" });
     expect(JSON.stringify(body)).not.toContain(TOKEN_HASH);
+    expect(profileUpdate).toHaveBeenCalledWith({ role: "company_manager", company_id: COMPANY.id });
+    expect(profileQuery.eq).toHaveBeenCalledWith("id", USER_ID);
+    expect(profileQuery.eq).toHaveBeenCalledWith("role", "installer");
+    expect(profileQuery.is).toHaveBeenCalledWith("company_id", null);
+    expect(profileSingle.mock.invocationCallOrder[0]).toBeLessThan(sendManagerActivationEmail.mock.invocationCallOrder[0]);
   });
 
   it("devuelve el link una sola vez cuando Resend no está configurado", async () => {
@@ -136,5 +152,22 @@ describe("alta master con activación", () => {
     expect(response.status).toBe(500);
     expect(companyDeleteEq).toHaveBeenCalledWith("id", COMPANY.id);
     expect(sendManagerActivationEmail).not.toHaveBeenCalled();
+  });
+
+  it("no entrega la invitación si no pudo provisionar el rol y la empresa", async () => {
+    profileSingle.mockResolvedValue({ data: null, error: { code: "42501" } });
+    const response = await POST(request());
+    expect(response.status).toBe(500);
+    expect(sendManagerActivationEmail).not.toHaveBeenCalled();
+    expect(deleteUser).toHaveBeenCalledWith(USER_ID);
+    expect(companyDeleteEq).toHaveBeenCalledWith("id", COMPANY.id);
+  });
+
+  it("compensa el alta si no puede retirar el perfil de instalador temporal", async () => {
+    installerDeleteEq.mockResolvedValue({ error: { code: "23503" } });
+    const response = await POST(request());
+    expect(response.status).toBe(500);
+    expect(sendManagerActivationEmail).not.toHaveBeenCalled();
+    expect(deleteUser).toHaveBeenCalledWith(USER_ID);
   });
 });
