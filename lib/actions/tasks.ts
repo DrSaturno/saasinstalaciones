@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser, isInstallerArea } from "@/lib/auth";
+import { isInstallerArea } from "@/lib/auth";
+import { getAuthorizedUser } from "@/lib/auth-authorized";
 import {
   completionReadiness,
   DEFAULT_MIN_COMPLETION_PHOTOS,
@@ -19,7 +20,7 @@ import { requestPushDelivery } from "@/lib/push/events";
 import type { OrderUpdateType } from "@/types/database";
 
 async function requireInstaller() {
-  const user = await getCurrentUser();
+  const user = await getAuthorizedUser();
   if (!user || !isInstallerArea(user)) {
     throw new Error("Acceso denegado");
   }

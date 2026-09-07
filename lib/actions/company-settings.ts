@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
-import { canOperateCompany, getCurrentUser } from "@/lib/auth";
+import { canOperateCompany } from "@/lib/auth";
+import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { createClient } from "@/lib/supabase/server";
 
 export type CompanySettingsState = { error: string | null; ok?: boolean };
@@ -33,7 +34,7 @@ export async function updateCompanyFieldSettings(
   if (!parsed.success) return { error: t("invalidData") };
 
   try {
-    const [user, supabase] = await Promise.all([getCurrentUser(), createClient()]);
+    const [user, supabase] = await Promise.all([getAuthorizedUser(), createClient()]);
     // Sólo gerencia: el mínimo de evidencia es política de la empresa, no una
     // preferencia de quien coordina un proyecto.
     if (!user || user.role !== "company_manager" || !user.companyId) {

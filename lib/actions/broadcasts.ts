@@ -2,13 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
-import {
-  canOperateCompany,
-  getCurrentUser,
+import { canOperateCompany,
   isCoordinatorSomewhere,
   isInstallerArea,
-  type CurrentUser,
-} from "@/lib/auth";
+  type CurrentUser } from "@/lib/auth";
+import { getAuthorizedUser } from "@/lib/auth-authorized";
 import {
   applicationSchema,
   createBroadcastSchema,
@@ -26,7 +24,7 @@ export type BroadcastActionState = { error: string | null; ok?: boolean };
 
 async function requireOperator() {
   const [user, supabase] = await Promise.all([
-    getCurrentUser(),
+    getAuthorizedUser(),
     createClient(),
   ]);
   if (
@@ -62,7 +60,7 @@ async function requireOperatorForBroadcast(broadcastId: string) {
 }
 
 async function requireInstaller() {
-  const user = await getCurrentUser();
+  const user = await getAuthorizedUser();
   if (!user || !isInstallerArea(user)) throw new Error("Acceso denegado");
   return { user, supabase: await createClient() };
 }

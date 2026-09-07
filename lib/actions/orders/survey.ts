@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
-import { getCurrentUser } from "@/lib/auth";
+import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionState } from "./types";
 
@@ -54,7 +54,7 @@ export async function decideSurveySubmission(input: {
   if (!parsed.success) return { error: t("invalidData") };
 
   try {
-    const user = await getCurrentUser();
+    const user = await getAuthorizedUser();
     if (!user) return { error: t("accessDenied") };
 
     const supabase = await createClient();
@@ -95,7 +95,7 @@ export async function submitSurvey(input: {
   if (!parsed.success) return { error: t("invalidData") };
 
   try {
-    const user = await getCurrentUser();
+    const user = await getAuthorizedUser();
     if (!user) return { error: t("accessDenied") };
 
     const supabase = await createClient();
@@ -140,7 +140,7 @@ export async function waivePrerequisite(input: {
   if (!parsed.success) return { error: t("invalidData") };
 
   try {
-    const user = await getCurrentUser();
+    const user = await getAuthorizedUser();
     if (!user) return { error: t("accessDenied") };
 
     const supabase = await createClient();

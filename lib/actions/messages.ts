@@ -2,7 +2,8 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { canOperateCompany, getCurrentUser } from "@/lib/auth";
+import { canOperateCompany } from "@/lib/auth";
+import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { createClient } from "@/lib/supabase/server";
 
 const attachmentSchema = z.object({
@@ -22,7 +23,7 @@ export async function sendCompanyMessage(input: z.input<typeof schema>) {
   const parsed = schema.safeParse(input);
   if (!parsed.success) return { error: "Mensaje inválido" };
   const [user, supabase] = await Promise.all([
-    getCurrentUser(),
+    getAuthorizedUser(),
     createClient(),
   ]);
   if (!user) return { error: "Acceso denegado" };
@@ -72,7 +73,7 @@ export async function markMessagesRead(messageIds: string[]) {
   const parsed = z.array(z.string().uuid()).max(300).safeParse(messageIds);
   if (!parsed.success || parsed.data.length === 0) return { error: null };
 
-  const user = await getCurrentUser();
+  const user = await getAuthorizedUser();
   if (!user) return { error: "not_authenticated" };
   const supabase = await createClient();
 

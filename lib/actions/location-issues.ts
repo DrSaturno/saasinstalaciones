@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getTranslations } from "next-intl/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -35,7 +35,7 @@ export async function resolveLocationIssue(
   });
   if (!parsed.success) return { error: t("locationIssueNoteRequired") };
 
-  const user = await getCurrentUser();
+  const user = await getAuthorizedUser();
   if (!user?.companyId || user.role !== "company_manager") {
     return { error: t("accessDenied") };
   }

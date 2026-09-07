@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
-import { getCurrentUser } from "@/lib/auth";
+import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { createClient } from "@/lib/supabase/server";
 
 const subscriptionSchema = z.object({
@@ -15,7 +15,7 @@ const subscriptionSchema = z.object({
 });
 
 async function requireUser() {
-  const user = await getCurrentUser();
+  const user = await getAuthorizedUser();
   if (!user) throw new Error("Acceso denegado");
   return { user, supabase: await createClient() };
 }

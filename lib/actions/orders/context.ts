@@ -1,10 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import {
   canOperateCompany,
-  getCurrentUser,
   isCoordinatorSomewhere,
   type CurrentUser,
 } from "@/lib/auth";
+import { getAuthorizedUser } from "@/lib/auth-authorized";
 
 /**
  * Guardas compartidas por los casos de uso de órdenes.
@@ -16,7 +16,7 @@ import {
 
 export async function requireOperator() {
   const [user, supabase] = await Promise.all([
-    getCurrentUser(),
+    getAuthorizedUser(),
     createClient(),
   ]);
   if (

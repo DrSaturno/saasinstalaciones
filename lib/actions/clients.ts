@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getTranslations } from "next-intl/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { createClient } from "@/lib/supabase/server";
 
 const schema = z.object({
@@ -45,7 +45,7 @@ export async function saveClient(
     tiktok: formData.get("tiktok") ?? "",
   });
   if (!parsed.success) return { error: t("invalidData") };
-  const user = await getCurrentUser();
+  const user = await getAuthorizedUser();
   if (
     !user?.companyId ||
     // Sólo el gerente: la agenda de clientes es gestión de empresa.

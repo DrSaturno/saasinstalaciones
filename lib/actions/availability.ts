@@ -6,13 +6,14 @@ import { z } from "zod";
 import { databaseIdSchema } from "@/lib/domain/order-intake";
 import { unavailabilitySchema, weeklyAvailabilitySchema, type WeeklyAvailabilityInput } from "@/lib/domain/availability";
 import { hasActiveCompanyRole } from "@/lib/data/company-membership-roles";
-import { getCurrentUser, isInstallerArea } from "@/lib/auth";
+import { isInstallerArea } from "@/lib/auth";
+import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { createClient } from "@/lib/supabase/server";
 
 type Result = { error: string | null; ok?: boolean; id?: string };
 
 async function requireInstaller(companyId: string) {
-  const user = await getCurrentUser();
+  const user = await getAuthorizedUser();
   if (!user || !isInstallerArea(user)) throw new Error("Acceso denegado");
   const supabase = await createClient();
   const canInstall = await hasActiveCompanyRole(
@@ -73,7 +74,7 @@ export async function saveCoverage(
   }
 
   try {
-    const user = await getCurrentUser();
+    const user = await getAuthorizedUser();
     if (!user || !isInstallerArea(user)) return { error: t("accessDenied") };
     const supabase = await createClient();
     const { error } = await supabase
@@ -108,7 +109,7 @@ export async function setAvailabilityEnabled(enabled: boolean): Promise<Result> 
   const t = await getTranslations("Errors");
   if (!enabled) return { error: t("useUnavailabilityFlow") };
   try {
-    const user = await getCurrentUser();
+    const user = await getAuthorizedUser();
     if (!user || !isInstallerArea(user)) return { error: t("accessDenied") };
     const supabase = await createClient();
     const { error } = await supabase.from("installers").update({ available: enabled }).eq("id", user.id);
@@ -169,7 +170,7 @@ export async function reviewUnavailability(
   const t = await getTranslations("Errors");
   if (!databaseIdSchema.safeParse(id).success) return { error: t("invalidData") };
   try {
-    const user = await getCurrentUser();
+    const user = await getAuthorizedUser();
     if (
       !user ||
       // Sólo el gerente aprueba o rechaza ausencias.

@@ -2,14 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { ratingInputSchema } from "@/lib/domain/ratings";
 import { createClient } from "@/lib/supabase/server";
 
 export type RatingActionState = { error: string | null; ok?: boolean };
 
 async function requireManager() {
-  const user = await getCurrentUser();
+  const user = await getAuthorizedUser();
   if (
     !user ||
     user.role !== "company_manager" ||

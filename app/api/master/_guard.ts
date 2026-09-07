@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchTwoFactorStatus, twoFactorGate } from "@/lib/data/two-factor";
 
 /**
  * Verifica que quien llama sea platform_admin ANTES de entregar el cliente
@@ -36,6 +37,14 @@ export async function requirePlatformAdmin(): Promise<
     return {
       error: NextResponse.json({ error: t("accessDenied") }, { status: 403 }),
     };
+  }
+
+  try {
+    if (twoFactorGate(await fetchTwoFactorStatus(supabase), profile.role)) {
+      return { error: NextResponse.json({ error: t("accessDenied") }, { status: 403 }) };
+    }
+  } catch {
+    return { error: NextResponse.json({ error: t("unexpected") }, { status: 503 }) };
   }
 
   return { admin: createAdminClient(), userId: user.id };
