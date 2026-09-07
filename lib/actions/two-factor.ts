@@ -8,10 +8,11 @@ import { clientIp, enforceRateLimit } from "@/lib/security/rate-limit";
 /**
  * Verificación en dos pasos (TOTP) — SEC-13 de la auditoría.
  *
- * Obligatoria para platform_admin y company_manager (el enforcement vive en los
- * layouts de esas áreas), opcional para instaladores. Toda la maquinaria de
- * TOTP la provee Supabase Auth (`auth.mfa.*`); acá sólo se envuelve con Zod,
- * rate limiting sobre los códigos y mensajes traducidos.
+ * El enrolamiento es opt-in. Quien lo activa debe verificar el segundo factor
+ * en las páginas protegidas y en las acciones de negocio. Estos comandos de
+ * enrolamiento/verificación usan Auth directamente para permitir completar
+ * el paso pendiente. Supabase provee TOTP; acá se agregan Zod, rate limiting
+ * sobre los códigos y mensajes traducidos.
  */
 
 export type EnrollState =

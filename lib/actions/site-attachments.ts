@@ -3,14 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { databaseIdSchema, orderAttachmentRegistrationSchema, type OrderAttachmentRegistration } from "@/lib/domain/order-intake";
-import { getCurrentUser } from "@/lib/auth";
+import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { createClient } from "@/lib/supabase/server";
 import type { TablesInsert } from "@/types/database";
 
 type Result = { error: string | null; ok?: boolean };
 
 async function context(siteId: string) {
-  const user = await getCurrentUser();
+  const user = await getAuthorizedUser();
   if (!user || user.role !== "company_manager" || !user.companyId) throw new Error("access");
   const supabase = await createClient();
   const { data: site } = await supabase.from("sites").select("id, project_id, location_id").eq("id", siteId).eq("company_id", user.companyId).single();

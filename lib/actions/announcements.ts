@@ -4,7 +4,7 @@ import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
-import { getCurrentUser } from "@/lib/auth";
+import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { sendAnnouncementEmail } from "@/lib/email/announcements";
 import { requestPushDelivery } from "@/lib/push/events";
 import { createClient } from "@/lib/supabase/server";
@@ -79,7 +79,7 @@ export async function publishAnnouncement(
   if (!parsed.success) return { error: t("invalidData") };
 
   try {
-    const user = await getCurrentUser();
+    const user = await getAuthorizedUser();
     if (
       !user ||
       // Sólo el gerente: los anuncios son comunicación de empresa.
@@ -144,7 +144,7 @@ export async function previewAnnouncementAudience(
   const parsed = audienceSchema.safeParse(audience);
   if (!parsed.success) return { count: null };
 
-  const user = await getCurrentUser();
+  const user = await getAuthorizedUser();
   if (!user || user.role !== "company_manager") return { count: null };
 
   const supabase = await createClient();
@@ -158,7 +158,7 @@ type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
 async function deliverEmails(
   supabase: SupabaseServerClient,
-  user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>,
+  user: NonNullable<Awaited<ReturnType<typeof getAuthorizedUser>>>,
   announcementId: string,
   input: z.infer<typeof schema>,
 ) {

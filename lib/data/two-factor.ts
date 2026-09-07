@@ -17,7 +17,10 @@ export type TwoFactorStatus = {
 export async function fetchTwoFactorStatus(
   supabase: SupabaseClient<Database>,
 ): Promise<TwoFactorStatus> {
-  const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (error || !data || !data.currentLevel || !data.nextLevel) {
+    throw new Error("mfa_status_unavailable");
+  }
   const current = data?.currentLevel ?? null;
   const next = data?.nextLevel ?? null;
 

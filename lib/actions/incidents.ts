@@ -3,11 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
-import {
-  canOperateCompany,
-  getCurrentUser,
-  isCoordinatorSomewhere,
-} from "@/lib/auth";
+import { canOperateCompany,
+  isCoordinatorSomewhere } from "@/lib/auth";
+import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { createClient } from "@/lib/supabase/server";
 
 const incidentSchema = z.object({
@@ -37,7 +35,7 @@ export type IncidentActionState = { error: string | null; ok?: boolean };
  */
 async function requireOperatorForOrder(orderId: string) {
   const [user, supabase] = await Promise.all([
-    getCurrentUser(),
+    getAuthorizedUser(),
     createClient(),
   ]);
   if (!user) throw new Error("access");

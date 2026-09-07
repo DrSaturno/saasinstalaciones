@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getAuthorizedUser } from "@/lib/auth-authorized";
 import {
   invitationUrl,
   sendInvitationEmail,
@@ -14,7 +14,7 @@ import { INTL_LOCALE } from "@/i18n/config";
 import type { MembershipRole, RosterStatus } from "@/types/database";
 
 async function requireManager() {
-  const user = await getCurrentUser();
+  const user = await getAuthorizedUser();
   if (!user || user.role !== "company_manager" || !user.companyId) {
     throw new Error("Acceso denegado");
   }

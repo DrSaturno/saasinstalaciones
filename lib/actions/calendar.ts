@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { googleCalendarConfigured } from "@/lib/google-calendar/config";
 import { syncCompanyCalendar } from "@/lib/google-calendar/sync";
 import { createClient } from "@/lib/supabase/server";
@@ -12,7 +12,7 @@ type Result = { error: string | null; ok?: boolean; synced?: number; removed?: n
 export async function syncGoogleCalendar(): Promise<Result> {
   const t = await getTranslations("Errors");
   try {
-    const user = await getCurrentUser();
+    const user = await getAuthorizedUser();
     if (!user || user.role !== "company_manager" || !googleCalendarConfigured()) return { error: t("accessDenied") };
     const result = await syncCompanyCalendar(await createClient(), user.id);
     revalidatePath("/dashboard");
@@ -23,7 +23,7 @@ export async function syncGoogleCalendar(): Promise<Result> {
 export async function disconnectGoogleCalendar(): Promise<Result> {
   const t = await getTranslations("Errors");
   try {
-    const user = await getCurrentUser();
+    const user = await getAuthorizedUser();
     if (!user || user.role !== "company_manager") return { error: t("accessDenied") };
     const supabase = await createClient();
     const { error } = await supabase.from("calendar_connections").delete().eq("user_id", user.id);

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { GOOGLE_OAUTH_STATE_COOKIE, applicationOrigin, encryptGoogleToken, googleOAuthClient } from "@/lib/google-calendar/config";
 import { createClient } from "@/lib/supabase/server";
 import { EXTERNAL_TIMEOUT_MS } from "@/lib/http/timeout";
 
 export async function GET(request: NextRequest) {
   const target = (result: string) => NextResponse.redirect(`${applicationOrigin()}/dashboard?calendar=${result}`);
-  const user = await getCurrentUser();
+  const user = await getAuthorizedUser();
   const code = request.nextUrl.searchParams.get("code");
   const state = request.nextUrl.searchParams.get("state");
   if (!user || user.role !== "company_manager" || !user.companyId || !code || !state || state !== request.cookies.get(GOOGLE_OAUTH_STATE_COOKIE)?.value) return target("error");

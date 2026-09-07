@@ -3,7 +3,8 @@
 import { z } from "zod";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser, isInstallerArea } from "@/lib/auth";
+import { isInstallerArea } from "@/lib/auth";
+import { getAuthorizedUser } from "@/lib/auth-authorized";
 
 const tokenSchema = z.string().uuid("Link inválido");
 
@@ -18,7 +19,7 @@ export async function acceptInvitation(token: string): Promise<AcceptState> {
   const parsed = tokenSchema.safeParse(token);
   if (!parsed.success) return { error: t("invalidInvitation") };
 
-  const user = await getCurrentUser();
+  const user = await getAuthorizedUser();
   if (!user) return { error: t("loginRequired") };
   if (!isInstallerArea(user)) {
     return { error: t("installerOnlyInvitation") };

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
-import { getCurrentUser } from "@/lib/auth";
+import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { createClient } from "@/lib/supabase/server";
 
 const schema = z
@@ -50,9 +50,7 @@ export async function changePassword(
   }
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthorizedUser();
   if (!user?.email) return { error: t("notAuthenticated") };
 
   // 1. Verificar la contraseña actual (reautenticación).
@@ -93,7 +91,7 @@ export async function saveAvatar(path: string | null): Promise<PasswordState> {
   if (!parsed.success) return { error: t("invalidData") };
 
   try {
-    const user = await getCurrentUser();
+    const user = await getAuthorizedUser();
     if (!user) return { error: t("accessDenied") };
 
     // Defensa en profundidad: la ruta tiene que estar en la carpeta propia.

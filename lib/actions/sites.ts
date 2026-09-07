@@ -4,14 +4,14 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { attachCanonicalLocations } from "@/lib/actions/canonical-locations";
-import { getCurrentUser } from "@/lib/auth";
+import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { siteInputSchema } from "@/lib/domain/sites";
 import { createClient } from "@/lib/supabase/server";
 
 export type SiteActionState = { error: string | null; ok?: boolean; id?: string };
 
 async function requireManager() {
-  const user = await getCurrentUser();
+  const user = await getAuthorizedUser();
   if (
     !user ||
     // Sólo el gerente: las locaciones son gestión de empresa.

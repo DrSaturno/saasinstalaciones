@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser, isInstallerArea } from "@/lib/auth";
+import { isInstallerArea } from "@/lib/auth";
+import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { fetchActiveCompanyRoleMemberships } from "@/lib/data/company-membership-roles";
 
 export type Result = { error: string | null; ok?: boolean };
@@ -50,7 +51,7 @@ async function ownCompanyId(
 }
 
 async function requireInstaller() {
-  const user = await getCurrentUser();
+  const user = await getAuthorizedUser();
   if (!user || !isInstallerArea(user)) {
     throw new Error("Acceso denegado");
   }
