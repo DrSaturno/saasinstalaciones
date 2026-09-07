@@ -54,7 +54,7 @@ select is(
 insert into public.companies (id, name, country, order_prefix)
 values ('c1000000-0000-0000-0000-000000000001', 'Empresa Bolsa', 'AR', 'EBO');
 
-insert into auth.users (id, email, raw_user_meta_data) values
+insert into auth.users (id, email, raw_app_meta_data) values
   ('c1000000-0000-0000-0000-000000000011', 'gerente.bolsa@test.dev',
    '{"role":"company_manager","company_id":"c1000000-0000-0000-0000-000000000001"}'::jsonb),
   ('c1000000-0000-0000-0000-000000000012', 'externo.bolsa@test.dev',

@@ -173,8 +173,6 @@ export async function POST(request: NextRequest) {
       email: managerEmail,
       options: {
         data: {
-          role: "company_manager",
-          company_id: company.id,
           full_name: managerName,
           locale,
         },
@@ -195,6 +193,27 @@ export async function POST(request: NextRequest) {
       { error: t("createCompany") },
       { status: 500 },
     );
+  }
+
+  // The signup trigger ignores user-controlled role metadata. Elevation is a
+  // separate, tenant-scoped admin write, completed before delivering the link.
+  const { data: provisioned, error: provisionError } = await admin
+    .from("profiles")
+    .update({ role: "company_manager", company_id: company.id })
+    .eq("id", invitation.user.id)
+    .eq("role", "installer")
+    .is("company_id", null)
+    .select("id")
+    .single();
+  if (provisionError || !provisioned) {
+    await rollbackOnboarding(invitation.user.id);
+    return NextResponse.json({ error: t("createCompany") }, { status: 500 });
+  }
+  const { error: installerCleanupError } = await admin
+    .from("installers").delete().eq("id", invitation.user.id);
+  if (installerCleanupError) {
+    await rollbackOnboarding(invitation.user.id);
+    return NextResponse.json({ error: t("createCompany") }, { status: 500 });
   }
 
   const activationUrl = managerActivationUrl(

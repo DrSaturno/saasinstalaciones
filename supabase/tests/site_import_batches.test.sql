@@ -52,7 +52,7 @@ insert into public.companies (id, name, country, order_prefix) values
 -- metadatos del usuario. Insertarlo aparte choca con la clave primaria, y
 -- corregirlo después tampoco se puede, porque `prevent_privilege_change`
 -- bloquea tocar `role`/`company_id` fuera del tablero maestro.
-insert into auth.users (id, email, raw_user_meta_data) values
+insert into auth.users (id, email, raw_app_meta_data) values
   (
     'b1000000-0000-0000-0000-000000000011', 'gerente.a.import@test.dev',
     '{"role":"company_manager","company_id":"b1000000-0000-0000-0000-000000000001"}'::jsonb

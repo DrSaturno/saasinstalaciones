@@ -20,7 +20,7 @@ insert into public.companies (id, name, country, order_prefix) values
   ('ca000000-0000-0000-0000-000000000001', 'Empresa Comunicados', 'AR', 'ECO'),
   ('ca000000-0000-0000-0000-000000000002', 'Empresa Ajena', 'AR', 'EAJ');
 
-insert into auth.users (id, email, raw_user_meta_data) values
+insert into auth.users (id, email, raw_app_meta_data) values
   ('ca000000-0000-0000-0000-000000000011', 'gerente.eco@test.dev',
    '{"role":"company_manager","company_id":"ca000000-0000-0000-0000-000000000001"}'::jsonb),
   -- Buenos Aires, disponible.

@@ -44,14 +44,14 @@ insert into auth.users (
   '00000000-0000-0000-0000-000000000000',
   'aaaaaaaa-0000-0000-0000-0000000000f1', 'authenticated', 'authenticated',
   'test-p@fuga-cruzada.invalid', extensions.crypt('x', extensions.gen_salt('bf')),
-  now(), '{"provider":"email","providers":["email"]}',
+  now(), '{"provider":"email","providers":["email"]}'::jsonb || '{"role":"installer","full_name":"Test P"}'::jsonb,
   '{"role":"installer","full_name":"Test P"}', now(), now(),
   '', '', '', '', '', '', '', ''
 ), (
   '00000000-0000-0000-0000-000000000000',
   'aaaaaaaa-0000-0000-0000-0000000000f2', 'authenticated', 'authenticated',
   'test-q@fuga-cruzada.invalid', extensions.crypt('x', extensions.gen_salt('bf')),
-  now(), '{"provider":"email","providers":["email"]}',
+  now(), '{"provider":"email","providers":["email"]}'::jsonb || '{"role":"installer","full_name":"Test Q"}'::jsonb,
   '{"role":"installer","full_name":"Test Q"}', now(), now(),
   '', '', '', '', '', '', '', ''
 );

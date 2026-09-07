@@ -19,7 +19,7 @@ select plan(6);
 insert into public.companies (id, name, country, order_prefix, min_completion_photos)
 values ('d5000000-0000-0000-0000-000000000001', 'Empresa Evidencia', 'AR', 'EEV', 3);
 
-insert into auth.users (id, email, raw_user_meta_data)
+insert into auth.users (id, email, raw_app_meta_data)
 values ('d5000000-0000-0000-0000-000000000011', 'ev.inst@test.dev',
         '{"role":"installer"}'::jsonb);
 

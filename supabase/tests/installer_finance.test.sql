@@ -54,7 +54,7 @@ insert into public.companies (id, name, country, order_prefix) values
 -- El perfil lo crea `handle_new_user` desde los metadatos; insertarlo aparte
 -- choca con la clave primaria y corregirlo después lo bloquea
 -- `prevent_privilege_change`.
-insert into auth.users (id, email, raw_user_meta_data) values
+insert into auth.users (id, email, raw_app_meta_data) values
   ('d1000000-0000-0000-0000-000000000011', 'gerente.a@test.dev',
    '{"role":"company_manager","company_id":"d1000000-0000-0000-0000-000000000001"}'::jsonb),
   ('d1000000-0000-0000-0000-000000000012', 'gerente.b@test.dev',

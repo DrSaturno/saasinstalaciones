@@ -46,7 +46,7 @@ insert into public.companies (id, name, country, order_prefix) values
   ('e1000000-0000-0000-0000-000000000001', 'Empresa A', 'AR', 'EVA'),
   ('e1000000-0000-0000-0000-000000000002', 'Empresa B', 'AR', 'EVB');
 
-insert into auth.users (id, email, raw_user_meta_data) values
+insert into auth.users (id, email, raw_app_meta_data) values
   ('e1000000-0000-0000-0000-000000000011', 'gerente.a@evidence.test',
    '{"role":"company_manager","company_id":"e1000000-0000-0000-0000-000000000001"}'::jsonb),
   ('e1000000-0000-0000-0000-000000000012', 'gerente.b@evidence.test',

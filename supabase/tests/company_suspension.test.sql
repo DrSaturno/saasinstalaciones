@@ -20,14 +20,14 @@ insert into auth.users (
   '00000000-0000-0000-0000-000000000000',
   'bbbbbbbb-0000-0000-0000-0000000000f1', 'authenticated', 'authenticated',
   'manager@suspension.invalid', extensions.crypt('x', extensions.gen_salt('bf')),
-  now(), '{"provider":"email","providers":["email"]}',
+  now(), '{"provider":"email","providers":["email"]}'::jsonb || '{"role":"company_manager","company_id":"bbbbbbbb-0000-0000-0000-00000000000a","full_name":"Manager suspendido"}'::jsonb,
   '{"role":"company_manager","company_id":"bbbbbbbb-0000-0000-0000-00000000000a","full_name":"Manager suspendido"}',
   now(), now(), '', '', '', '', '', '', '', ''
 ), (
   '00000000-0000-0000-0000-000000000000',
   'bbbbbbbb-0000-0000-0000-0000000000f2', 'authenticated', 'authenticated',
   'field@suspension.invalid', extensions.crypt('x', extensions.gen_salt('bf')),
-  now(), '{"provider":"email","providers":["email"]}',
+  now(), '{"provider":"email","providers":["email"]}'::jsonb || '{"role":"installer","full_name":"Campo multiempresa"}'::jsonb,
   '{"role":"installer","full_name":"Campo multiempresa"}',
   now(), now(), '', '', '', '', '', '', '', ''
 );

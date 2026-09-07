@@ -22,7 +22,7 @@ select plan(8);
 insert into public.companies (id, name, country, order_prefix)
 values ('f5000000-0000-0000-0000-000000000001', 'Empresa Disponibilidad', 'AR', 'EDS');
 
-insert into auth.users (id, email, raw_user_meta_data) values
+insert into auth.users (id, email, raw_app_meta_data) values
   ('f5000000-0000-0000-0000-000000000011', 'gerente.ds@test.dev',
    '{"role":"company_manager","company_id":"f5000000-0000-0000-0000-000000000001"}'::jsonb),
   ('f5000000-0000-0000-0000-000000000012', 'instalador.ds@test.dev',

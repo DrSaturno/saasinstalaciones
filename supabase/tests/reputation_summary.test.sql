@@ -21,7 +21,7 @@ insert into public.companies (id, name, country, order_prefix) values
   ('f3000000-0000-0000-0000-000000000001', 'Empresa Calculo', 'AR', 'ECA'),
   ('f3000000-0000-0000-0000-000000000002', 'Empresa Que Evalua', 'AR', 'EQE');
 
-insert into auth.users (id, email, raw_user_meta_data) values
+insert into auth.users (id, email, raw_app_meta_data) values
   ('f3000000-0000-0000-0000-000000000011', 'gerente.calc@test.dev',
    '{"role":"company_manager","company_id":"f3000000-0000-0000-0000-000000000001"}'::jsonb),
   ('f3000000-0000-0000-0000-000000000012', 'instalador.calc@test.dev',
