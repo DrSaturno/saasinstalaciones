@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ArrowRight, CircleDollarSign, TrendingUp } from "lucide-react";
+import { ArrowRight, CircleDollarSign, TrendingDown, TrendingUp } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { DashboardOverview } from "@/lib/data/dashboard";
+import { Metric } from "@/components/shared/metric";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function DashboardFinancePulse({ finances }: { finances: DashboardOverview["finances"] }) {
@@ -21,24 +22,34 @@ export function DashboardFinancePulse({ finances }: { finances: DashboardOvervie
       </CardHeader>
       <CardContent>
         {finances.length === 0 ? <p className="py-4 text-sm text-muted-foreground">{t("emptyFinance")}</p> : (
-          <div className="grid gap-4 lg:grid-cols-2">
-            {finances.map((row) => (
-              <div key={row.currency} className="rounded-xl border p-4">
-                <div className="flex items-center justify-between"><p className="font-mono text-xs font-semibold">{row.currency}</p>{row.growth !== null ? <span className={`flex items-center gap-1 font-mono text-xs ${row.growth >= 0 ? "text-success" : "text-destructive"}`}><TrendingUp className="size-3" aria-hidden="true" />{row.growth >= 0 ? "+" : ""}{row.growth}%</span> : null}</div>
-                <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-                  <Value label={t("contracted")} value={format.number(row.contracted, { style: "currency", currency: row.currency, maximumFractionDigits: 0 })} />
-                  <Value label={t("realized")} value={format.number(row.completed, { style: "currency", currency: row.currency, maximumFractionDigits: 0 })} />
-                  <Value label={t("financialPending")} value={format.number(row.pending, { style: "currency", currency: row.currency, maximumFractionDigits: 0 })} />
-                  <Value label={t("projectedClose")} value={format.number(row.projectedMonth, { style: "currency", currency: row.currency, maximumFractionDigits: 0 })} />
-                </div>
-              </div>
-            ))}
+          <div className="flex flex-col gap-6">
+            {finances.map((row) => {
+              const money = (value: number) =>
+                format.number(value, { style: "currency", currency: row.currency, maximumFractionDigits: 0 });
+              const Trend = row.growth !== null && row.growth < 0 ? TrendingDown : TrendingUp;
+              return (
+                <section key={row.currency} className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-mono text-label font-semibold">{row.currency}</h3>
+                    {row.growth !== null ? (
+                      <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-caption font-medium ${row.growth >= 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
+                        <Trend className="size-3" aria-hidden="true" />
+                        {row.growth >= 0 ? "+" : ""}{row.growth}%
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <Metric label={t("contracted")} value={money(row.contracted)} />
+                    <Metric label={t("realized")} value={money(row.completed)} />
+                    <Metric label={t("financialPending")} value={money(row.pending)} />
+                    <Metric label={t("projectedClose")} value={money(row.projectedMonth)} />
+                  </div>
+                </section>
+              );
+            })}
           </div>
         )}
       </CardContent>
     </Card>
   );
-}
-function Value({ label, value }: { label: string; value: string }) {
-  return <div><p className="font-mono text-sm font-semibold">{value}</p><p className="mt-1 text-caption text-muted-foreground">{label}</p></div>;
 }

@@ -14,7 +14,13 @@ import { Textarea } from "@/components/ui/textarea";
 
 const initial: ClientActionState = { error: null };
 
-export function ClientDialog({ client }: { client?: ClientSummary }) {
+export function ClientDialog({
+  client,
+  trigger,
+}: {
+  client?: ClientSummary;
+  trigger?: React.ReactNode;
+}) {
   const t = useTranslations("Clients");
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -46,9 +52,11 @@ export function ClientDialog({ client }: { client?: ClientSummary }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant={client ? "outline" : "default"}>
-          {client ? t("edit") : t("new")}
-        </Button>
+        {trigger ?? (
+          <Button variant={client ? "outline" : "default"}>
+            {client ? t("edit") : t("new")}
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-xl">
         <DialogHeader><DialogTitle>{client ? t("editTitle") : t("newTitle")}</DialogTitle></DialogHeader>

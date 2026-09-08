@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CalendarRange, Gauge, TimerReset, Users } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { DashboardOverview } from "@/lib/data/dashboard";
+import { Metric } from "@/components/shared/metric";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 /** Ventanas de la agenda. Los datos siempre traen 15; acá se recorta. */
@@ -75,8 +76,11 @@ export function DashboardCapacity({
 }: Pick<DashboardOverview, "capacity" | "coordination" | "sla">) {
   const t = useTranslations("Dashboard");
 
+  // Cada número es una tarjeta propia. Antes eran pares etiqueta/valor sueltos
+  // dentro de una grilla, y a esa densidad los siete del SLA se leían como un
+  // bloque de texto en vez de como siete indicadores distintos.
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+    <div className="grid gap-4 xl:grid-cols-2">
       <Card>
         <CardHeader className="border-b"><div className="flex items-center gap-2"><Gauge className="size-4 text-primary" aria-hidden="true" /><CardTitle>{t("capacityTitle")}</CardTitle></div></CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -84,11 +88,11 @@ export function DashboardCapacity({
               únicos a los que se les puede asignar una orden. */}
           <div>
             <p className="mb-2 text-caption font-medium uppercase tracking-wide text-muted-foreground">{t("capacityInstallers")}</p>
-            <div className="grid grid-cols-2 gap-4">
-              <Data label={t("availableToday")} value={`${capacity.availableToday}/${capacity.total}`} />
-              <Data label={t("weeklyAssignments")} value={capacity.weeklyAssignments} />
-              <Data label={t("freeSlots")} value={capacity.freeSlots} />
-              <Data label={t("overloadedDays")} value={capacity.overloadedDays} danger={capacity.overloadedDays > 0} />
+            <div className="grid grid-cols-2 gap-3">
+              <Metric label={t("availableToday")} value={`${capacity.availableToday}/${capacity.total}`} />
+              <Metric label={t("weeklyAssignments")} value={capacity.weeklyAssignments} />
+              <Metric label={t("freeSlots")} value={capacity.freeSlots} />
+              <Metric label={t("overloadedDays")} value={capacity.overloadedDays} tone={capacity.overloadedDays > 0 ? "danger" : "neutral"} />
             </div>
           </div>
           {/* Coordinación: se mide por cobertura de proyectos, no por jornadas. */}
@@ -97,37 +101,29 @@ export function DashboardCapacity({
               <Users className="size-3" aria-hidden="true" />
               {t("capacityCoordinators")}
             </p>
-            <div className="grid grid-cols-2 gap-4">
-              <Data label={t("coordinatorsActive")} value={`${coordination.withProjects}/${coordination.total}`} />
-              <Data label={t("coordinatedProjects")} value={coordination.projects} />
+            <div className="grid grid-cols-2 gap-3">
+              <Metric label={t("coordinatorsActive")} value={`${coordination.withProjects}/${coordination.total}`} />
+              <Metric label={t("coordinatedProjects")} value={coordination.projects} />
             </div>
           </div>
         </CardContent>
       </Card>
       <Card>
         <CardHeader className="border-b"><div className="flex items-center gap-2"><TimerReset className="size-4 text-primary" aria-hidden="true" /><CardTitle>{t("slaTitle")}</CardTitle></div></CardHeader>
-        <CardContent className="grid grid-cols-2 gap-4">
-          <Data label={t("onTimeRate")} value={`${sla.onTimeRate}%`} />
-          <Data label={t("averageAssignment")} value={t("hoursValue", { value: sla.averageAssignmentHours })} />
-          <Data label={t("averageCompletion")} value={t("daysValue", { value: sla.averageCompletionDays })} />
-          <Data label={t("averageDelay")} value={t("daysValue", { value: sla.averageDelayDays })} danger={sla.averageDelayDays > 0} />
-          <Data label={t("rescheduled")} value={sla.rescheduled} />
-          <div>
-            <p className="font-mono text-lg font-semibold">{sla.completionChange === null ? t("newComparison") : `${sla.completionChange >= 0 ? "+" : ""}${sla.completionChange}%`}</p>
-            <p className="text-caption text-muted-foreground">{t("monthComparison")}</p>
-          </div>
-          <Data label={t("cancelledLabel")} value={sla.cancelled} danger={sla.cancelled > 0} />
+        <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <Metric label={t("onTimeRate")} value={`${sla.onTimeRate}%`} />
+          <Metric label={t("averageAssignment")} value={t("hoursValue", { value: sla.averageAssignmentHours })} />
+          <Metric label={t("averageCompletion")} value={t("daysValue", { value: sla.averageCompletionDays })} />
+          <Metric label={t("averageDelay")} value={t("daysValue", { value: sla.averageDelayDays })} tone={sla.averageDelayDays > 0 ? "danger" : "neutral"} />
+          <Metric label={t("rescheduled")} value={sla.rescheduled} />
+          <Metric label={t("cancelledLabel")} value={sla.cancelled} tone={sla.cancelled > 0 ? "danger" : "neutral"} />
+          <Metric
+            label={t("monthComparison")}
+            value={sla.completionChange === null ? t("newComparison") : `${sla.completionChange >= 0 ? "+" : ""}${sla.completionChange}%`}
+            className="col-span-2 sm:col-span-3"
+          />
         </CardContent>
       </Card>
-    </div>
-  );
-}
-
-function Data({ label, value, danger = false }: { label: string; value: string | number; danger?: boolean }) {
-  return (
-    <div>
-      <p className={`font-mono text-lg font-semibold ${danger ? "text-destructive" : ""}`}>{value}</p>
-      <p className="text-caption leading-tight text-muted-foreground">{label}</p>
     </div>
   );
 }

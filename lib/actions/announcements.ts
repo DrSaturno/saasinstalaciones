@@ -11,14 +11,13 @@ import { createClient } from "@/lib/supabase/server";
 import { INTL_LOCALE } from "@/i18n/config";
 
 /**
- * El público ya no es un tipo + una referencia, sino criterios que se
- * combinan (AND). "Buenos Aires + disponibles" es un público válido; con el
- * modelo anterior había que elegir uno de los dos.
+ * El público es un solo criterio: todo el equipo, una provincia o un proyecto.
+ * La forma sigue siendo de listas porque así la lee `announcement_audience`,
+ * pero la UI manda como mucho un valor en una sola de las dos.
  */
 const audienceSchema = z.object({
   zones: z.array(z.string().trim().min(1).max(120)).max(30).default([]),
   projectIds: z.array(z.string().uuid()).max(30).default([]),
-  availableOnly: z.boolean().default(false),
 });
 
 export type AnnouncementAudience = z.infer<typeof audienceSchema>;
@@ -36,7 +35,6 @@ function readAudience(formData: FormData): unknown {
     projectIds: formData
       .getAll("projectIds")
       .filter((value): value is string => typeof value === "string"),
-    availableOnly: formData.get("availableOnly") === "on",
   };
 }
 
