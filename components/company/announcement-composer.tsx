@@ -69,11 +69,12 @@ function ComposerForm({
   projects: { id: string; name: string }[];
   history: PublishedAnnouncement[];
 }) {
-  // Los criterios se combinan (AND): elegir provincias y "sólo disponibles"
-  // achica el público, no lo reemplaza.
-  const [selectedZones, setSelectedZones] = useState<string[]>([]);
-  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
-  const [availableOnly, setAvailableOnly] = useState(false);
+  // Un solo criterio por anuncio: o va a todo el equipo, o a una provincia, o a
+  // un proyecto. Combinarlos obligaba a razonar sobre intersecciones para
+  // mandar un aviso.
+  const [audienceType, setAudienceType] = useState<"all" | "zone" | "project">("all");
+  const [zone, setZone] = useState<string>(zones[0] ?? "");
+  const [projectId, setProjectId] = useState<string>(projects[0]?.id ?? "");
   const [preview, setPreview] = useState<number | null>(null);
   const [previewing, startPreview] = useTransition();
 
@@ -82,16 +83,12 @@ function ComposerForm({
   useEffect(() => {
     startPreview(async () => {
       const { count } = await previewAnnouncementAudience({
-        zones: selectedZones,
-        projectIds: selectedProjects,
-        availableOnly,
+        zones: audienceType === "zone" && zone ? [zone] : [],
+        projectIds: audienceType === "project" && projectId ? [projectId] : [],
       });
       setPreview(count);
     });
-  }, [selectedZones, selectedProjects, availableOnly]);
-
-  const toggle = (list: string[], value: string) =>
-    list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
+  }, [audienceType, zone, projectId]);
 
   return (
     <Card>
@@ -151,48 +148,55 @@ function ComposerForm({
               </select>
             </div>
 
-            <fieldset className="flex flex-col gap-2">
-              <legend className="text-sm font-medium">{t("audienceLabel")}</legend>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="announcement-audience">{t("audienceLabel")}</Label>
+              <select
+                id="announcement-audience"
+                value={audienceType}
+                onChange={(event) => setAudienceType(event.target.value as typeof audienceType)}
+                className={selectClass}
+                disabled={pending}
+              >
+                <option value="all">{t("audienceAll")}</option>
+                {/* Sin provincias (o sin proyectos) el criterio no se ofrece: el
+                    select quedaría vacío, no se enviaría ningún valor y el
+                    anuncio se iría a TODO el equipo diciendo que va a una sola
+                    provincia. */}
+                {zones.length ? <option value="zone">{t("audienceZone")}</option> : null}
+                {projects.length ? <option value="project">{t("audienceProject")}</option> : null}
+              </select>
               <p className="text-caption text-muted-foreground">{t("audienceHelp")}</p>
+            </div>
 
-              {zones.length ? (
-                <div className="mt-1 flex flex-wrap gap-1.5">
-                  {zones.map((zone) => (
-                    <label
-                      key={zone}
-                      className={`cursor-pointer rounded-full border px-2.5 py-1 text-xs transition-colors ${
-                        selectedZones.includes(zone)
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "bg-card hover:border-primary/40"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        name="zones"
-                        value={zone}
-                        checked={selectedZones.includes(zone)}
-                        onChange={() => setSelectedZones((list) => toggle(list, zone))}
-                        className="sr-only size-4 accent-primary"
-                        disabled={pending}
-                      />
-                      {zone}
-                    </label>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-caption text-muted-foreground">{t("noZones")}</p>
-              )}
-
-              {projects.length ? (
+            {audienceType === "zone" ? (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="announcement-zone">{t("zoneLabel")}</Label>
                 <select
-                  multiple
+                  id="announcement-zone"
+                  name="zones"
+                  value={zone}
+                  onChange={(event) => setZone(event.target.value)}
+                  className={selectClass}
+                  disabled={pending}
+                >
+                  {zones.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+
+            {audienceType === "project" ? (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="announcement-project">{t("projectLabel")}</Label>
+                <select
+                  id="announcement-project"
                   name="projectIds"
-                  aria-label={t("projectLabel")}
-                  value={selectedProjects}
-                  onChange={(event) =>
-                    setSelectedProjects([...event.target.selectedOptions].map((option) => option.value))
-                  }
-                  className="mt-1 min-h-20 w-full rounded-lg border border-input bg-transparent px-2 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={projectId}
+                  onChange={(event) => setProjectId(event.target.value)}
+                  className={selectClass}
                   disabled={pending}
                 >
                   {projects.map((project) => (
@@ -201,20 +205,8 @@ function ComposerForm({
                     </option>
                   ))}
                 </select>
-              ) : null}
-
-              <label className="mt-1 flex items-center gap-2 text-xs">
-                <input
-                  type="checkbox"
-                  name="availableOnly"
-                  checked={availableOnly}
-                  onChange={(event) => setAvailableOnly(event.target.checked)}
-                  className="size-4 accent-primary"
-                  disabled={pending}
-                />
-                {t("availableOnly")}
-              </label>
-            </fieldset>
+              </div>
+            ) : null}
 
             {/* El conteo sale de la misma consulta que el envío: si dice 3, se
                 le manda a 3. Cero se avisa fuerte — antes publicar a nadie era

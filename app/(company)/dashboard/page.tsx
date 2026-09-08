@@ -29,6 +29,7 @@ import { fetchBroadcastBoard } from "@/lib/data/broadcasts";
 import { DashboardOrderAction } from "@/components/company/dashboard-order-actions";
 import { PageContainer } from "@/components/shared/page-container";
 import { PageHeader } from "@/components/shared/page-header";
+import { ClientDialog } from "@/components/company/client-dialog";
 import { fetchClients } from "@/lib/data/clients";
 import { fetchCoordinators } from "@/lib/data/team";
 import { fetchActiveRoster, fetchAllOrders } from "@/lib/data/orders";
@@ -68,7 +69,14 @@ export default async function CompanyDashboard() {
           description={t("description")}
         />
 
+      <DashboardSection title={t("sections.generalTitle")} description={t("sections.generalDescription")}>
+        <DashboardMetrics metrics={overview.metrics} />
+      </DashboardSection>
+
       <DashboardQuickActions
+        newClient={
+          <ClientDialog trigger={<Button variant="outline">{t("quickActions.newClient")}</Button>} />
+        }
         newProject={
           <CreateProjectDialog
             clients={clients.map(({ id, name }) => ({ id, name }))}
@@ -102,6 +110,13 @@ export default async function CompanyDashboard() {
         myJobs={<DashboardJobsPeek broadcasts={board.broadcasts.filter((broadcast) => broadcast.status === "open")} />}
         applications={<DashboardApplicationsPeek broadcasts={board.broadcasts} />}
       />
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(300px,0.85fr)]">
+        <DashboardAgenda agenda={overview.agenda} />
+        <DashboardTodayOrders orders={overview.todayOrders} />
+      </section>
+
+      <DashboardOperations forecasts={forecasts} calendarEmail={calendar?.google_email ?? null} calendarConfigured={googleCalendarConfigured()} />
+
       {/* Las zonas salen del roster, no de dónde hay obra: el fan-out matchea
           contra `installers.zones`, así que ofrecer provincias sin gente era
           ofrecer publicar a cero personas. */}
@@ -111,31 +126,20 @@ export default async function CompanyDashboard() {
         history={announcements}
       />
 
-      <DashboardSection title={t("sections.generalTitle")} description={t("sections.generalDescription")}>
-        <DashboardMetrics metrics={overview.metrics} />
-        <DashboardQuality quality={overview.quality} incidents={overview.incidents} />
-        <DashboardFinancePulse finances={overview.finances} />
-      </DashboardSection>
-
-      <DashboardSection title={t("sections.performanceTitle")} description={t("sections.performanceDescription")}>
-        <section className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)]">
-          <DashboardProjects projects={overview.projects} />
-          <DashboardCapacity capacity={overview.capacity} coordination={overview.coordination} sla={overview.sla} />
-        </section>
-        <DashboardInsights regions={overview.regions} installers={overview.installers} country={country} />
-      </DashboardSection>
-
-      <DashboardSection title={t("sections.regionalTitle")} description={t("sections.regionalDescription")}>
-        <section className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(300px,0.85fr)]">
-          <DashboardAgenda agenda={overview.agenda} />
-          <DashboardTodayOrders orders={overview.todayOrders} />
-        </section>
-        <DashboardMap sites={overview.mapSites} availableInstallers={overview.capacity.availableToday} />
-      </DashboardSection>
+      <DashboardMap sites={overview.mapSites} availableInstallers={overview.capacity.availableToday} />
 
       <DashboardSection title={t("sections.alertsTitle")} description={t("sections.alertsDescription")}>
         <DashboardPulse alerts={overview.alerts} forecasts={forecasts} weatherZones={overview.weatherZones} roster={roster} />
-        <DashboardOperations forecasts={forecasts} calendarEmail={calendar?.google_email ?? null} calendarConfigured={googleCalendarConfigured()} />
+      </DashboardSection>
+
+      <DashboardQuality quality={overview.quality} incidents={overview.incidents} />
+
+      <DashboardFinancePulse finances={overview.finances} />
+
+      <DashboardSection title={t("sections.performanceTitle")} description={t("sections.performanceDescription")}>
+        <DashboardProjects projects={overview.projects} />
+        <DashboardCapacity capacity={overview.capacity} coordination={overview.coordination} sla={overview.sla} />
+        <DashboardInsights regions={overview.regions} installers={overview.installers} country={country} />
       </DashboardSection>
       </main>
     </PageContainer>

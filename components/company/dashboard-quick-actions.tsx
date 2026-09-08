@@ -1,8 +1,9 @@
-import { ArrowUpRight, CalendarSync, ClipboardList, FolderPlus, Inbox, Megaphone, Plus, RadioTower, Search, UsersRound } from "lucide-react";
+import { ArrowUpRight, CalendarSync, ClipboardList, FolderPlus, Inbox, Megaphone, Plus, RadioTower, Search, UserPlus, UsersRound } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export async function DashboardQuickActions({
+  newClient,
   newProject,
   urgentOrder,
   assignPending,
@@ -13,6 +14,7 @@ export async function DashboardQuickActions({
   myJobs,
   applications,
 }: {
+  newClient: React.ReactNode;
   newProject: React.ReactNode;
   urgentOrder: React.ReactNode;
   assignPending: React.ReactNode;
@@ -24,7 +26,11 @@ export async function DashboardQuickActions({
   applications: React.ReactNode;
 }) {
   const t = await getTranslations("Dashboard");
+  // El cliente va primero porque es el primer paso real del flujo: sin cliente
+  // no se puede crear un proyecto, y antes había que salir del tablero a
+  // buscarlo al módulo de clientes.
   const actions = [
+    { key: "newClient", icon: UserPlus, node: newClient },
     { key: "newProject", icon: FolderPlus, node: newProject },
     { key: "urgentOrder", icon: Plus, node: urgentOrder },
     { key: "assignPending", icon: UsersRound, node: assignPending },
