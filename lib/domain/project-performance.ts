@@ -37,7 +37,8 @@ export type ProjectPerformance = {
   /** Cuánto del presupuesto se realizó; `null` si no hay presupuesto cargado. */
   budgetUsedPct: number | null;
   orders: { total: number; done: number; open: number; delayed: number };
-  installers: number;
+  /** Quiénes tienen órdenes vivas en el proyecto, sin repetir. */
+  installerIds: string[];
   incidents: { total: number; open: number; critical: number };
   /** `true` cuando no hay ningún costo cargado: sin eso no hay margen que mostrar. */
   costMissing: boolean;
@@ -81,9 +82,9 @@ export function buildProjectPerformance(
       order.scheduledEndDate < today,
   ).length;
 
-  const installers = new Set(
-    live.map((order) => order.installerId).filter((id): id is string => id !== null),
-  ).size;
+  const installerIds = [
+    ...new Set(live.map((order) => order.installerId).filter((id): id is string => id !== null)),
+  ];
 
   return {
     currency: project.currency,
@@ -100,7 +101,7 @@ export function buildProjectPerformance(
       open: live.length - done.length,
       delayed,
     },
-    installers,
+    installerIds,
     incidents: {
       total: incidents.length,
       open: incidents.filter((incident) => incident.status === "open").length,

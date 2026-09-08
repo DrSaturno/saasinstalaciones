@@ -75,7 +75,7 @@ describe("buildProjectPerformance", () => {
       [],
       HOY,
     );
-    expect(result.installers).toBe(2);
+    expect(result.installerIds).toEqual(["i1", "i2"]);
   });
 
   it("ignora las canceladas en todo", () => {

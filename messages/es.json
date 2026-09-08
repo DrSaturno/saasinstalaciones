@@ -548,6 +548,12 @@
   "ProjectDetail": {
     "coordinatorLabel": "Coordinador",
     "noCoordinator": "sin asignar",
+    "installersLabel": "Instaladores",
+    "noInstallers": "sin instaladores asignados",
+    "moreInstallers": "+{count} más",
+    "unnamedInstaller": "Instalador",
+    "delayedOrders": "Órdenes retrasadas",
+    "openIncidents": "Incidencias abiertas",
     "back": "Proyectos",
     "completed": "{done} de {total} finalizados",
     "contracted": "Instalaciones contratadas",
@@ -2162,16 +2168,7 @@
     "margin": "{value}% margen",
     "costMissing": "Falta cargar el costo de los instaladores en las órdenes. Sin ese dato no se puede calcular la ganancia real del proyecto.",
     "budgetVsReal": "Realizado sobre presupuesto",
-    "committedCost": "Comprometido con instaladores: {value}",
-    "executionTitle": "Ejecución",
-    "executionDescription": "Cómo viene el trabajo en la calle.",
-    "ordersDone": "Terminadas",
-    "ordersOpen": "En curso",
-    "ordersDelayed": "Retrasadas",
-    "installersInvolved": "Instaladores",
-    "openIncidents": "Incidencias abiertas",
-    "ofTotalIncidents": "de {total}",
-    "criticalIncidents": "{count, plural, =1 {# crítica} other {# críticas}}"
+    "committedCost": "Comprometido con instaladores: {value}"
   },
   "RescheduleResponse": {
     "title": "Tu trabajo fue reprogramado",

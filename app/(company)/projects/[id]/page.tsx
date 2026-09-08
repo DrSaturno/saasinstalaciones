@@ -88,6 +88,23 @@ export default async function ProjectDetailPage({
   // aparte y podían discrepar.
   const amount = format.number(performance.budget, { style: "currency", currency: project.currency });
 
+  // Los nombres salen de `profiles` y no del roster activo: alguien que ya no
+  // está en la empresa igual hizo el trabajo que figura acá y tiene que
+  // aparecer.
+  const installerProfiles = performance.installerIds.length
+    ? ((
+        await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", performance.installerIds)
+      ).data ?? [])
+    : [];
+  const projectInstallers = installerProfiles
+    .map((profile) => ({ id: profile.id, name: profile.full_name ?? t("unnamedInstaller") }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const VISIBLE_INSTALLERS = 6;
+  const hiddenInstallers = projectInstallers.slice(VISIBLE_INSTALLERS);
+
   return (
     <div className="mx-auto w-full max-w-[1480px]">
       <BackLink href="/projects" label={t("back")} />
@@ -123,6 +140,36 @@ export default async function ProjectDetailPage({
               )}
             </span>
           </p>
+          {/* Fila propia y con wrap: en mobile los nombres bajan uno debajo del
+              otro en vez de superponerse con el coordinador. */}
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5">
+            <span className="text-caption font-medium uppercase tracking-wide text-muted-foreground">
+              {t("installersLabel")}
+            </span>
+            {projectInstallers.length === 0 ? (
+              <span className="text-sm italic text-muted-foreground">{t("noInstallers")}</span>
+            ) : (
+              <>
+                {projectInstallers.slice(0, VISIBLE_INSTALLERS).map((installer) => (
+                  <Link
+                    key={installer.id}
+                    href={`/team/${installer.id}`}
+                    className="max-w-[15rem] truncate rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors hover:border-primary/40 hover:text-primary"
+                  >
+                    {installer.name}
+                  </Link>
+                ))}
+                {hiddenInstallers.length > 0 ? (
+                  <span
+                    className="rounded-full border border-dashed px-2.5 py-0.5 text-xs text-muted-foreground"
+                    title={hiddenInstallers.map((installer) => installer.name).join(", ")}
+                  >
+                    {t("moreInstallers", { count: hiddenInstallers.length })}
+                  </span>
+                ) : null}
+              </>
+            )}
+          </div>
           {project.description ? <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground">{project.description}</p> : null}
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
@@ -151,14 +198,28 @@ export default async function ProjectDetailPage({
         </div>
       </div>
 
-      <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-5">
+      {/* Retrasadas e incidencias vivían en el panel de «Ejecución», que se
+          quitó por repetir terminadas y en curso. Estas dos no se repetían en
+          ningún lado, y son las que avisan que algo se está complicando. */}
+      <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-7">
         {[
           { label: t("contracted"), value: project.planned_installations },
           { label: t("loaded"), value: activeSites.length },
           { label: t("completedSites"), value: completedSites },
           { label: t("openOrders"), value: Math.max(0, totalOrders - completedOrders) },
+          { label: t("delayedOrders"), value: performance.orders.delayed, alert: performance.orders.delayed > 0 ? ("danger" as const) : null },
+          { label: t("openIncidents"), value: performance.incidents.open, alert: performance.incidents.open > 0 ? ("warning" as const) : null },
           { label: t("projectValue"), value: amount },
-        ].map((metric) => <Card key={metric.label}><CardContent className="pt-5"><p className="font-mono text-xl font-semibold">{metric.value}</p><p className="mt-1 text-xs text-muted-foreground">{metric.label}</p></CardContent></Card>)}
+        ].map((metric) => (
+          <Card key={metric.label}>
+            <CardContent className="pt-5">
+              <p className={`font-mono text-xl font-semibold ${metric.alert === "danger" ? "text-destructive" : metric.alert === "warning" ? "text-warning" : ""}`}>
+                {metric.value}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">{metric.label}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       <Card className="mt-4">
