@@ -117,6 +117,15 @@ export default async function CompanyDashboard() {
 
       <DashboardOperations forecasts={forecasts} calendarEmail={calendar?.google_email ?? null} calendarConfigured={googleCalendarConfigured()} calendarId={calendar?.calendar_id ?? null} />
 
+      {/* Clima, alertas y mapa quedan juntos y en ese orden: los tres
+          responden a la misma pregunta —qué puede complicar el trabajo de hoy
+          y dónde—, y las alertas de clima nacen del pronóstico de arriba. */}
+      <DashboardSection title={t("sections.alertsTitle")} description={t("sections.alertsDescription")}>
+        <DashboardPulse alerts={overview.alerts} forecasts={forecasts} weatherZones={overview.weatherZones} roster={roster} />
+      </DashboardSection>
+
+      <DashboardMap sites={overview.mapSites} availableInstallers={overview.capacity.availableToday} />
+
       {/* Las zonas salen del roster, no de dónde hay obra: el fan-out matchea
           contra `installers.zones`, así que ofrecer provincias sin gente era
           ofrecer publicar a cero personas. */}
@@ -125,12 +134,6 @@ export default async function CompanyDashboard() {
         projects={projects.map(({ id, name }) => ({ id, name }))}
         history={announcements}
       />
-
-      <DashboardMap sites={overview.mapSites} availableInstallers={overview.capacity.availableToday} />
-
-      <DashboardSection title={t("sections.alertsTitle")} description={t("sections.alertsDescription")}>
-        <DashboardPulse alerts={overview.alerts} forecasts={forecasts} weatherZones={overview.weatherZones} roster={roster} />
-      </DashboardSection>
 
       <DashboardQuality quality={overview.quality} incidents={overview.incidents} />
 
