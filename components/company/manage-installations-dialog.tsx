@@ -6,38 +6,22 @@ import { useTranslations } from "next-intl";
 import { Minus, Plus, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { updatePlannedInstallations } from "@/lib/actions/sites";
-import { CreateSiteDialog } from "@/components/company/create-site-dialog";
-import { CreateOrdersDialog } from "@/components/company/create-orders-dialog";
-import { ImportSitesDialog } from "@/components/company/import-sites-dialog";
-import { ReuseSitesDialog } from "@/components/company/reuse-sites-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import type { Country, OrderCurrency } from "@/types/database";
 
-type RosterOption = { id: string; name: string };
-
+/**
+ * Sólo el alcance contratado: cuántas instalaciones se vendieron y cuántas
+ * van cargadas. Cargar locaciones y generar órdenes vive en el tablero del
+ * proyecto (`ProjectSitesActions`), donde se ve sin abrir nada.
+ */
 export function ManageInstallationsDialog({
   projectId,
-  country,
-  zones,
   planned,
   activeCount,
-  archivedCount,
-  roster,
-  currency,
-  canManageFinance,
-  perInstallation,
 }: {
   projectId: string;
-  country: Country;
-  zones: string[];
   planned: number;
   activeCount: number;
-  archivedCount: number;
-  roster: RosterOption[];
-  currency: OrderCurrency;
-  canManageFinance: boolean;
-  perInstallation: boolean;
 }) {
   const t = useTranslations("ManageSites");
   const router = useRouter();
@@ -79,43 +63,6 @@ export function ManageInstallationsDialog({
               <span className="min-w-12 text-center font-mono text-lg">{quantity}</span>
               <Button type="button" size="icon-sm" variant="outline" onClick={() => saveQuantity(quantity + 1)} disabled={pending} aria-label={t("addOne")}><Plus /></Button>
             </div>
-          </div>
-        </section>
-
-        <section className="rounded-xl border p-4">
-          <h3 className="text-sm font-semibold">{t("actionsTitle")}</h3>
-          <p className="mb-4 text-xs text-muted-foreground">{t("actionsDescription", { archived: archivedCount })}</p>
-          <div className="flex flex-wrap gap-2">
-            <CreateSiteDialog projectId={projectId} country={country} zones={zones} />
-            {/* Antes vivía adentro del diálogo de importar, donde para
-                descubrirla había que abrir la importación primero: el orden
-                inverso al que pide el flujo (descargar → completar →
-                importar). Ahora está al mismo nivel que Importar y Exportar. */}
-            <Button type="button" variant="outline" asChild>
-              <a href="/api/site-template" download>
-                {t("template")}
-              </a>
-            </Button>
-            <ImportSitesDialog projectId={projectId} />
-            {/* Exportar cierra el ida y vuelta con importar: bajás la planilla,
-                la corregís en Excel y la volvés a subir sin duplicar nada. Se
-                oculta sin locaciones, donde daría un archivo vacío. */}
-            {activeCount > 0 && (
-              <Button type="button" variant="outline" asChild>
-                <a href={`/api/projects/${projectId}/sites/export`} download>
-                  {t("export")}
-                </a>
-              </Button>
-            )}
-            <ReuseSitesDialog projectId={projectId} />
-            <CreateOrdersDialog
-            projectId={projectId}
-            siteCount={activeCount}
-            roster={roster}
-            currency={currency}
-            canManageFinance={canManageFinance}
-            perInstallation={perInstallation}
-          />
           </div>
         </section>
       </DialogContent>

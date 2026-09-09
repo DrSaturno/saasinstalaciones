@@ -16,6 +16,7 @@ import { fetchCoordinators } from "@/lib/data/team";
 import { fetchActiveRoster } from "@/lib/data/orders";
 import { BackLink } from "@/components/shared/back-link";
 import { ProjectPerformancePanel } from "@/components/company/project-performance-panel";
+import { ProjectSitesActions } from "@/components/company/project-sites-actions";
 import { buildProjectPerformance } from "@/lib/domain/project-performance";
 
 export default async function ProjectDetailPage({
@@ -59,8 +60,9 @@ export default async function ProjectDetailPage({
     : null;
 
   const activeSites = sites.filter((site) => !site.archived_at);
-  const archivedCount = sites.length - activeSites.length;
   const completedSites = activeSites.filter((site) => site.order_count > 0 && site.progress === 100).length;
+  // Lo que crearía «Generar órdenes»: una por cada locación que aún no tiene.
+  const sitesWithoutOrders = activeSites.filter((site) => site.order_count === 0).length;
   const totalOrders = activeSites.reduce((sum, site) => sum + site.order_count, 0);
   const completedOrders = activeSites.reduce((sum, site) => sum + site.completed_count, 0);
   const progress = totalOrders ? Math.round((completedOrders / totalOrders) * 100) : 0;
@@ -185,15 +187,8 @@ export default async function ProjectDetailPage({
           <ArchiveProjectButton projectId={project.id} archived={Boolean(project.archived_at)} name={project.name} />
           <ManageInstallationsDialog
             projectId={project.id}
-            country={project.country}
-            zones={project.zones}
             planned={project.planned_installations}
             activeCount={activeSites.length}
-            archivedCount={archivedCount}
-            roster={roster.map(({ id: rosterId, name }) => ({ id: rosterId, name }))}
-            currency={project.currency}
-            canManageFinance
-            perInstallation={project.billing_mode === "per_installation"}
           />
         </div>
       </div>
@@ -231,6 +226,20 @@ export default async function ProjectDetailPage({
 
       <div className="mt-4">
         <ProjectPerformancePanel performance={performance} />
+      </div>
+
+      <div className="mt-4">
+        <ProjectSitesActions
+          projectId={project.id}
+          country={project.country}
+          zones={project.zones}
+          activeCount={activeSites.length}
+          pendingOrders={sitesWithoutOrders}
+          roster={roster.map(({ id: rosterId, name }) => ({ id: rosterId, name }))}
+          currency={project.currency}
+          canManageFinance
+          perInstallation={project.billing_mode === "per_installation"}
+        />
       </div>
 
       <div className="mt-9">

@@ -569,7 +569,7 @@
   "ManageSites": {
     "trigger": "Adm. instalaciones",
     "title": "Administrar instalaciones",
-    "description": "Ajustá el alcance contratado, cargá locaciones y generá las órdenes del proyecto.",
+    "description": "Ajustá cuántas instalaciones te contrataron y mirá cuántas llevás cargadas.",
     "contracted": "Contratadas",
     "loaded": "Cargadas",
     "remaining": "Por cargar",
@@ -577,11 +577,22 @@
     "adjustDescription": "Modificala cuando el cliente suma o quita puestos.",
     "subtract": "Quitar una instalación contratada",
     "addOne": "Sumar una instalación contratada",
-    "quantityUpdated": "Cantidad contratada actualizada",
-    "actionsTitle": "Carga y órdenes",
-    "actionsDescription": "Hay {archived} locaciones archivadas. Podés agregar una ficha individual, importar un CSV o generar órdenes.",
+    "quantityUpdated": "Cantidad contratada actualizada"
+  },
+  "SitesActions": {
+    "title": "Locaciones y órdenes",
+    "description": "Cargá las locaciones del proyecto y después generá una orden de trabajo por cada una, todas con la misma fecha, prioridad e instalador.",
+    "loadTitle": "Cargá las locaciones",
+    "loadDescription": "De a una, trayéndolas de otro proyecto, o todas juntas desde una planilla.",
+    "bulkTitle": "Carga masiva por Excel",
+    "bulkDescription": "Descargá la plantilla, completala con todas las locaciones y subila de una vez.",
     "template": "Descargar plantilla",
-    "export": "Exportar a Excel"
+    "export": "Exportar a Excel",
+    "ordersTitle": "Generá las órdenes",
+    "ordersDescription": "Se crea una orden por cada locación que todavía no tenga, todas con los mismos datos. Las que ya tienen orden se saltean.",
+    "pendingOrders": "locaciones esperan su orden",
+    "allCovered": "Todas las locaciones ya tienen su orden.",
+    "noSites": "Todavía no cargaste locaciones."
   },
   "SiteForm": {
     "add": "Agregar instalación",
