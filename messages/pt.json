@@ -245,6 +245,7 @@
     "calendarTitle": "Google Calendar",
     "calendarDescription": "Sincronização em um só sentido: o Se Instala publica as ordens programadas no calendário do responsável.",
     "calendarPending": "Conexão pendente de configuração",
+    "openCalendar": "Abrir o calendário no Google",
     "connected": "Conectado",
     "notConnected": "Sem conexão",
     "calendarNeedsConfig": "Faltam as credenciais do Google no ambiente do servidor.",
@@ -858,6 +859,12 @@
     "installerSignature": "Assinatura do instalador",
     "clientSignature": "Assinatura e nome do cliente",
     "download": "Baixar PDF"
+  },
+  "Calendar": {
+    "addToGoogle": "Agendar no Google",
+    "sendToCompany": "Enviar ao calendário da empresa",
+    "sending": "Enviando…",
+    "sentToCompany": "A ordem já está no calendário da empresa"
   },
   "OrderDetail": {
     "openPhoto": "Abrir a foto",

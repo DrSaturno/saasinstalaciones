@@ -32,6 +32,9 @@ import { OrderEvidencePanel } from "@/components/shared/order-evidence-panel";
 import { OrderEvidenceCompose } from "@/components/shared/order-evidence-compose";
 import { EditOrderDialog } from "@/components/company/edit-order-dialog";
 import { OrderPdfButton } from "@/components/shared/order-pdf-button";
+import { CalendarizeOrderButton } from "@/components/shared/calendarize-order-button";
+import { SendOrderToCalendarButton } from "@/components/company/send-order-to-calendar-button";
+import { applicationOrigin } from "@/lib/app-origin";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { StatusStepper } from "@/components/shared/status-stepper";
 import { Button } from "@/components/ui/button";
@@ -88,6 +91,7 @@ export default async function OrderDetailPage({
     roster,
     evidence,
     schedule,
+    calendarResult,
   ] = await Promise.all([
     supabase
       .from("sites")
@@ -116,7 +120,9 @@ export default async function OrderDetailPage({
     fetchActiveRoster(supabase),
     fetchOrderEvidence(supabase, id, { query: evidenceQuery, kind: evidenceKind }),
     fetchOrderSchedule(supabase, id),
+    supabase.from("calendar_connections").select("id").limit(1).maybeSingle(),
   ]);
+  const calendarConnected = Boolean(calendarResult.data);
   throwIfDataError("order.site", siteResult.error);
   throwIfDataError("order.project", projectResult.error);
   throwIfDataError("order.rating", ratingResult.error);
@@ -186,6 +192,20 @@ export default async function OrderDetailPage({
         </div>
         <div className="flex flex-wrap items-start gap-2">
         <OrderPdfButton orderId={order.id} size="default" />
+        <CalendarizeOrderButton
+          orderNumber={order.order_number}
+          title={order.title}
+          scheduledDate={order.scheduled_date}
+          scheduledEndDate={order.scheduled_end_date}
+          description={order.description}
+          location={[site?.name, site?.address, site?.city, site?.state].filter(Boolean).join(", ")}
+          orderUrl={`${applicationOrigin()}/orders/${order.id}`}
+        />
+        {/* Sólo con la conexión armada y con fecha: sin cualquiera de las dos
+            el botón no puede hacer nada. */}
+        {calendarConnected && order.scheduled_date ? (
+          <SendOrderToCalendarButton orderId={order.id} />
+        ) : null}
         <EditOrderDialog
           orderId={order.id}
           currency={order.currency}

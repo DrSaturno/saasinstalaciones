@@ -3,15 +3,13 @@ import "server-only";
 import type { OAuth2Client } from "google-auth-library";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { applicationOrigin, decryptGoogleToken, encryptGoogleToken, googleOAuthClient } from "@/lib/google-calendar/config";
+import { exclusiveEndDate } from "@/lib/google-calendar/event-link";
 import { EXTERNAL_TIMEOUT_MS } from "@/lib/http/timeout";
 import type { Database, OrderStatus } from "@/types/database";
 
 type Connection = Database["public"]["Tables"]["calendar_connections"]["Row"];
 type CalendarOrder = { id: string; order_number: string; title: string; description: string; status: OrderStatus; scheduled_date: string | null; scheduled_end_date: string | null; project_id: string; site_id: string };
 
-function dayAfter(value: string) {
-  const date = new Date(`${value}T12:00:00Z`); date.setUTCDate(date.getUTCDate() + 1); return date.toISOString().slice(0, 10);
-}
 
 async function authorizedClient(supabase: SupabaseClient<Database>, connection: Connection) {
   const client = googleOAuthClient();
@@ -29,7 +27,7 @@ function eventBody(order: CalendarOrder, projectName: string, site: { name: stri
     description: [projectName, order.description, `${applicationOrigin()}/orders/${order.id}`].filter(Boolean).join("\n\n"),
     location: [site.name, site.address, site.city, site.state].filter(Boolean).join(", "),
     start: { date: order.scheduled_date },
-    end: { date: dayAfter(end) },
+    end: { date: exclusiveEndDate(end) },
     extendedProperties: { private: { instalaProOrderId: order.id } },
   };
 }
@@ -44,8 +42,47 @@ async function upsertEvent(client: OAuth2Client, calendarId: string, eventId: st
   return response.data.id;
 }
 
-export async function syncCompanyCalendar(supabase: SupabaseClient<Database>, userId: string) {
-  const { data: connection } = await supabase.from("calendar_connections").select("*").eq("user_id", userId).single();
+/**
+ * Manda UNA orden al calendario de la empresa.
+ *
+ * Existe porque sincronizar todo para reflejar un cambio puntual es caro y
+ * lento: con cientos de órdenes, mover una fecha significaba reescribir el
+ * calendario entero. Comparte el `upsertEvent` con la sincronización completa,
+ * así que el evento que produce es idéntico.
+ */
+export async function syncOrderToCalendar(
+  supabase: SupabaseClient<Database>,
+  companyId: string,
+  orderId: string,
+): Promise<{ synced: boolean; reason?: "not_connected" | "not_found" | "no_date" }> {
+  const { data: connection } = await supabase.from("calendar_connections").select("*").eq("company_id", companyId).maybeSingle();
+  if (!connection) return { synced: false, reason: "not_connected" };
+
+  const { data: order } = await supabase
+    .from("work_orders")
+    .select("id, order_number, title, description, status, scheduled_date, scheduled_end_date, project_id, site_id")
+    .eq("id", orderId)
+    .maybeSingle<CalendarOrder>();
+  if (!order) return { synced: false, reason: "not_found" };
+  if (!order.scheduled_date) return { synced: false, reason: "no_date" };
+
+  const [{ data: site }, { data: project }, { data: mapping }] = await Promise.all([
+    supabase.from("sites").select("id, name, address, city, state").eq("id", order.site_id).maybeSingle(),
+    supabase.from("projects").select("name").eq("id", order.project_id).maybeSingle(),
+    supabase.from("calendar_order_events").select("id, google_event_id").eq("connection_id", connection.id).eq("order_id", order.id).maybeSingle(),
+  ]);
+  if (!site) return { synced: false, reason: "not_found" };
+
+  const client = await authorizedClient(supabase, connection);
+  const googleEventId = await upsertEvent(client, connection.calendar_id, mapping?.google_event_id ?? null, eventBody(order, project?.name ?? "Se Instala", site));
+  await supabase.from("calendar_order_events").upsert({ company_id: connection.company_id, connection_id: connection.id, order_id: order.id, google_event_id: googleEventId, last_synced_at: new Date().toISOString() }, { onConflict: "connection_id,order_id" });
+  return { synced: true };
+}
+
+export async function syncCompanyCalendar(supabase: SupabaseClient<Database>, companyId: string) {
+  // Por empresa, no por usuario: la conexión la puede haber armado otro
+  // gerente y el calendario es el mismo para todos (DEC-GCAL-06).
+  const { data: connection } = await supabase.from("calendar_connections").select("*").eq("company_id", companyId).maybeSingle();
   if (!connection) return { synced: 0, removed: 0 };
   const client = await authorizedClient(supabase, connection);
   const [{ data: orders }, { data: mappings }] = await Promise.all([

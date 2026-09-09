@@ -42,7 +42,7 @@ export default async function CompanyDashboard() {
   ]);
   const [{ data: company }, { data: calendar }] = await Promise.all([
     supabase.from("companies").select("country").limit(1).maybeSingle(),
-    supabase.from("calendar_connections").select("google_email").limit(1).maybeSingle(),
+    supabase.from("calendar_connections").select("google_email, calendar_id").limit(1).maybeSingle(),
   ]);
   const country = (company?.country ?? "AR") as Country;
   const [overview, clients, coordinators, roster, orders, projects, currency, board, announcements, rosterZones] =
@@ -115,7 +115,7 @@ export default async function CompanyDashboard() {
         <DashboardTodayOrders orders={overview.todayOrders} />
       </section>
 
-      <DashboardOperations forecasts={forecasts} calendarEmail={calendar?.google_email ?? null} calendarConfigured={googleCalendarConfigured()} />
+      <DashboardOperations forecasts={forecasts} calendarEmail={calendar?.google_email ?? null} calendarConfigured={googleCalendarConfigured()} calendarId={calendar?.calendar_id ?? null} />
 
       {/* Las zonas salen del roster, no de dónde hay obra: el fan-out matchea
           contra `installers.zones`, así que ofrecer provincias sin gente era

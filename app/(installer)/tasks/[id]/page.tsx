@@ -21,6 +21,8 @@ import { TaskEvidenceCompose } from "@/components/installer/task-evidence-compos
 import { OrderEvidencePanel } from "@/components/shared/order-evidence-panel";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { OrderPdfButton } from "@/components/shared/order-pdf-button";
+import { CalendarizeOrderButton } from "@/components/shared/calendarize-order-button";
+import { applicationOrigin } from "@/lib/app-origin";
 import { Card, CardContent } from "@/components/ui/card";
 import { ORDER_EVIDENCE_KINDS, type EvidenceKind } from "@/lib/domain/order-evidence";
 import type { OrderStatus } from "@/types/database";
@@ -307,6 +309,21 @@ export default async function TaskDetailPage({
             minPhotos={minPhotos ?? 3}
             photoCount={photoCount ?? 0}
           />
+          {/* Debajo de la acción del momento —aceptar, salir, llegar— y no
+              dentro de ella: agendar sirve en cualquier etapa, no sólo al
+              aceptar, y no es la acción principal de ninguna. */}
+          <div className="mt-3">
+            <CalendarizeOrderButton
+              orderNumber={order.order_number}
+              title={order.title}
+              scheduledDate={order.scheduled_date}
+              scheduledEndDate={order.scheduled_end_date}
+              description={order.description}
+              location={[site?.name, site?.address, site?.city, site?.state].filter(Boolean).join(", ")}
+              orderUrl={`${applicationOrigin()}/tasks/${order.id}`}
+              size="field"
+            />
+          </div>
         </CardContent>
       </Card>
 
