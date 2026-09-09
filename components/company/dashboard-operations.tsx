@@ -1,11 +1,12 @@
-import { CalendarClock, CloudSun, CloudSunRain, Wind } from "lucide-react";
+import { CalendarClock, CloudSun, CloudSunRain, ExternalLink, Wind } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { googleCalendarUrl } from "@/lib/google-calendar/event-link";
 import type { ZoneForecast } from "@/lib/weather/forecast";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarControls } from "@/components/company/calendar-controls";
 
-export function DashboardOperations({ forecasts, calendarEmail, calendarConfigured }: { forecasts: ZoneForecast[]; calendarEmail: string | null; calendarConfigured: boolean }) {
+export function DashboardOperations({ forecasts, calendarEmail, calendarConfigured, calendarId }: { forecasts: ZoneForecast[]; calendarEmail: string | null; calendarConfigured: boolean; calendarId: string | null }) {
   const t = useTranslations("Dashboard");
 
   return (
@@ -35,6 +36,19 @@ export function DashboardOperations({ forecasts, calendarEmail, calendarConfigur
           <Badge variant={calendarEmail ? "default" : "outline"}>{calendarEmail ? t("connected") : t("notConnected")}</Badge>
           <p className="mt-3 text-sm font-medium">{calendarEmail ?? t("calendarPending")}</p>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t("calendarDescription")}</p>
+          {/* El calendario que la app creó, no el primario: sin este link hay
+              que ir a buscarlo entre los calendarios de la cuenta. */}
+          {calendarEmail && calendarId ? (
+            <a
+              href={googleCalendarUrl(calendarId)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+            >
+              <ExternalLink className="size-3.5" aria-hidden="true" />
+              {t("openCalendar")}
+            </a>
+          ) : null}
           <CalendarControls configured={calendarConfigured} connected={Boolean(calendarEmail)} />
         </CardContent>
       </Card>

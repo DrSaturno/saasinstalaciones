@@ -12,7 +12,7 @@
 .backHome:focus-visible,
 .forgotPassword:focus-visible,
 .passwordToggle:focus-visible {
-  border-radius: 8px;
+  border-radius: 0;
   outline: 3px solid rgb(37 151 208 / 26%);
   outline-offset: 3px;
 }
@@ -33,7 +33,7 @@
   min-width: 0;
   overflow: hidden;
   padding: clamp(58px, 5.2vw, 98px) clamp(48px, 4.7vw, 88px);
-  border-radius: 30px 0 0 30px;
+  border-radius: 0;
   background: #061831;
 }
 
@@ -121,7 +121,7 @@
   gap: 14px;
   padding: 18px 22px;
   border: 1px solid rgb(37 151 208 / 15%);
-  border-radius: 15px;
+  border-radius: 0;
   background: rgb(255 255 255 / 96%);
   color: #172638;
   font-size: clamp(0.78rem, 1vw, 1rem);
@@ -144,7 +144,7 @@
   align-items: flex-start;
   justify-content: center;
   padding: clamp(78px, 12vh, 114px) clamp(58px, 6vw, 116px) 64px;
-  border-radius: 30px;
+  border-radius: 0;
   background: #fff;
 }
 
@@ -194,7 +194,7 @@
 .input {
   height: 68px;
   border-color: #dfe6ec;
-  border-radius: 13px;
+  border-radius: 0;
   background: #fbfdff;
   padding-inline: 20px;
   color: var(--login-ink);
@@ -252,7 +252,7 @@
   height: 46px;
   place-items: center;
   border: 0;
-  border-radius: 9px;
+  border-radius: 0;
   background: transparent;
   color: #7d8894;
   cursor: pointer;
@@ -277,7 +277,7 @@
   margin: -4px 0 0;
   padding: 11px 13px;
   border: 1px solid rgb(211 47 47 / 14%);
-  border-radius: 10px;
+  border-radius: 0;
   background: rgb(211 47 47 / 5%);
   color: #aa2929;
   font-size: 0.8rem;
@@ -295,7 +295,7 @@
   height: 72px;
   margin-top: 6px;
   gap: 14px;
-  border-radius: 13px;
+  border-radius: 0;
   background: var(--login-blue);
   font-size: clamp(1rem, 1.15vw, 1.2rem);
   font-weight: 700;
@@ -390,7 +390,7 @@
     order: 2;
     margin: 0 0 18px;
     padding: 44px 26px;
-    border-radius: 0 0 26px 26px;
+    border-radius: 0;
   }
 
   .canvasImage {

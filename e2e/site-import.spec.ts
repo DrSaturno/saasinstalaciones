@@ -57,13 +57,12 @@ function planilla(prefijo: string): Buffer {
  * limpia todo) o porque ninguna fila resultó importable. Volcar lo que quedó en
  * pantalla convierte un rojo mudo en un diagnóstico.
  *
- * `allInnerTexts` y no `innerText`: el diálogo de importación está ANIDADO
- * dentro del de administrar instalaciones, así que con los dos abiertos el
- * selector matchea dos elementos y `innerText` explota por modo estricto. Esa
- * excepción caía en el catch y el diagnóstico informaba «sin diálogo en
- * pantalla» justo cuando había dos — mandando la investigación para el lado
- * contrario. También se vuelca el nombre real de los botones del diálogo:
- * el fallo que esto destapó era que el botón existía pero decía otra cosa.
+ * `allInnerTexts` y no `innerText`: el volcado tiene que sobrevivir a que haya
+ * más de un diálogo en pantalla. `innerText` explota por modo estricto en ese
+ * caso, la excepción caía en el catch, y el diagnóstico informaba «sin diálogo
+ * en pantalla» justo cuando había varios — mandando la investigación para el
+ * lado contrario. También se vuelca el nombre real de los botones: el fallo
+ * que esto destapó era que el botón existía pero decía otra cosa.
  */
 async function esperarRevision(page: Page, boton: Locator) {
   try {
@@ -106,7 +105,6 @@ test.describe("gerente", () => {
 
     const importar = async () => {
       await page.goto(`/projects/${PROYECTO_SEED}`);
-      await page.getByRole("button", { name: /Adm\. instalaciones/i }).click();
       await page
         .getByRole("button", { name: /Importar locaciones/i })
         .first()
@@ -158,7 +156,6 @@ test.describe("gerente", () => {
     // Segunda pasada con el MISMO archivo: el análisis ya no ofrece ninguna
     // fila, porque las referencias figuran como cargadas en el proyecto.
     await page.goto(`/projects/${PROYECTO_SEED}`);
-    await page.getByRole("button", { name: /Adm\. instalaciones/i }).click();
     await page
       .getByRole("button", { name: /Importar locaciones/i })
       .first()
@@ -200,7 +197,6 @@ test.describe("gerente", () => {
 
     const confirmar = async () => {
       await page.goto(`/projects/${PROYECTO_SEED}`);
-      await page.getByRole("button", { name: /Adm\. instalaciones/i }).click();
       await page
         .getByRole("button", { name: /Importar locaciones/i })
         .first()

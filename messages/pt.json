@@ -245,6 +245,7 @@
     "calendarTitle": "Google Calendar",
     "calendarDescription": "Sincronização em um só sentido: o Se Instala publica as ordens programadas no calendário do responsável.",
     "calendarPending": "Conexão pendente de configuração",
+    "openCalendar": "Abrir o calendário no Google",
     "connected": "Conectado",
     "notConnected": "Sem conexão",
     "calendarNeedsConfig": "Faltam as credenciais do Google no ambiente do servidor.",
@@ -548,6 +549,12 @@
   "ProjectDetail": {
     "coordinatorLabel": "Coordenador",
     "noCoordinator": "não atribuído",
+    "installersLabel": "Instaladores",
+    "noInstallers": "sem instaladores atribuídos",
+    "moreInstallers": "+{count} mais",
+    "unnamedInstaller": "Instalador",
+    "delayedOrders": "Ordens atrasadas",
+    "openIncidents": "Incidências abertas",
     "back": "Projetos",
     "completed": "{done} de {total} concluídos",
     "contracted": "Instalações contratadas",
@@ -563,7 +570,7 @@
   "ManageSites": {
     "trigger": "Adm. instalações",
     "title": "Administrar instalações",
-    "description": "Ajuste o escopo contratado, cadastre locais e gere as ordens do projeto.",
+    "description": "Ajuste quantas instalações foram contratadas e veja quantas já estão cadastradas.",
     "contracted": "Contratadas",
     "loaded": "Cadastradas",
     "remaining": "A cadastrar",
@@ -571,11 +578,22 @@
     "adjustDescription": "Altere quando o cliente adicionar ou remover pontos.",
     "subtract": "Remover uma instalação contratada",
     "addOne": "Adicionar uma instalação contratada",
-    "quantityUpdated": "Quantidade contratada atualizada",
-    "actionsTitle": "Cadastro e ordens",
-    "actionsDescription": "Há {archived} locais arquivados. Você pode adicionar uma ficha, importar CSV ou gerar ordens.",
+    "quantityUpdated": "Quantidade contratada atualizada"
+  },
+  "SitesActions": {
+    "title": "Locais e ordens",
+    "description": "Cadastre os locais do projeto e depois gere uma ordem de serviço para cada um, todas com a mesma data, prioridade e instalador.",
+    "loadTitle": "Cadastre os locais",
+    "loadDescription": "Um a um, trazendo de outro projeto, ou todos juntos a partir de uma planilha.",
+    "bulkTitle": "Cadastro em massa por Excel",
+    "bulkDescription": "Baixe o modelo, preencha com todos os locais e envie de uma só vez.",
     "template": "Baixar modelo",
-    "export": "Exportar para Excel"
+    "export": "Exportar para Excel",
+    "ordersTitle": "Gere as ordens",
+    "ordersDescription": "É criada uma ordem para cada local que ainda não tenha, todas com os mesmos dados. Os que já têm ordem são ignorados.",
+    "pendingOrders": "locais aguardam sua ordem",
+    "allCovered": "Todos os locais já têm sua ordem.",
+    "noSites": "Você ainda não cadastrou locais."
   },
   "SiteForm": {
     "add": "Adicionar instalação",
@@ -841,6 +859,12 @@
     "installerSignature": "Assinatura do instalador",
     "clientSignature": "Assinatura e nome do cliente",
     "download": "Baixar PDF"
+  },
+  "Calendar": {
+    "addToGoogle": "Agendar no Google",
+    "sendToCompany": "Enviar ao calendário da empresa",
+    "sending": "Enviando…",
+    "sentToCompany": "A ordem já está no calendário da empresa"
   },
   "OrderDetail": {
     "openPhoto": "Abrir a foto",
@@ -2162,16 +2186,7 @@
     "margin": "{value}% de margem",
     "costMissing": "Falta informar o custo dos instaladores nas ordens. Sem esse dado não é possível calcular o lucro real do projeto.",
     "budgetVsReal": "Realizado sobre o orçamento",
-    "committedCost": "Comprometido com instaladores: {value}",
-    "executionTitle": "Execução",
-    "executionDescription": "Como está o trabalho em campo.",
-    "ordersDone": "Concluídas",
-    "ordersOpen": "Em andamento",
-    "ordersDelayed": "Atrasadas",
-    "installersInvolved": "Instaladores",
-    "openIncidents": "Incidências abertas",
-    "ofTotalIncidents": "de {total}",
-    "criticalIncidents": "{count, plural, =1 {# crítica} other {# críticas}}"
+    "committedCost": "Comprometido com instaladores: {value}"
   },
   "RescheduleResponse": {
     "title": "Seu trabalho foi reagendado",
