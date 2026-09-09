@@ -6,6 +6,7 @@ import {
   isInstallerArea,
   ROLE_HOME,
 } from "@/lib/auth";
+import { installerNav } from "@/lib/navigation";
 import { AppShell } from "@/components/shared/app-shell";
 import { SyncIndicator } from "@/components/installer/sync-indicator";
 import { ServiceWorkerRegister } from "@/components/installer/service-worker-register";
@@ -23,19 +24,7 @@ export default async function InstallerLayout({
   if (!isInstallerArea(user)) {
     redirect(ROLE_HOME[user.role]);
   }
-  const nav = [
-    { href: "/home", label: t("home"), icon: "dashboard" as const },
-    { href: "/tasks", label: t("tasks"), icon: "tasks" as const },
-    { href: "/schedule", label: t("agenda"), icon: "agenda" as const },
-    ...(isCoordinatorSomewhere(user)
-      ? [{ href: "/coordination", label: t("coordination"), icon: "orders" as const }]
-      : []),
-    { href: "/route", label: t("route"), icon: "route" as const },
-    { href: "/jobs", label: t("jobs"), icon: "jobs" as const },
-    { href: "/earnings", label: t("earnings"), icon: "finance" as const },
-    { href: "/messages", label: t("messages"), icon: "messages" as const },
-    { href: "/profile", label: t("profile"), icon: "profile" as const },
-  ];
+  const nav = installerNav(t, { isCoordinator: isCoordinatorSomewhere(user) });
 
   return (
     <AppShell
