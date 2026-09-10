@@ -4,8 +4,13 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 // CSP (SEC-07 de la auditoría). Pasa de Report-Only —que no bloqueaba ni
 // reportaba nada— a ENFORCING. Los allowlists reflejan lo que la app carga de
-// verdad: scripts sólo propios, conexiones e imágenes sólo a Supabase, el único
-// iframe es Google Maps.
+// verdad: scripts propios más Google Maps, conexiones e imágenes a Supabase y
+// a Maps, y iframes sólo de Google Maps (la ficha de locación embebe uno).
+//
+// ⚠️ Al agregar cualquier recurso externo nuevo —un script, una fuente, un
+// endpoint— hay que sumarlo acá o el navegador lo bloquea en silencio: el
+// build pasa, los tests pasan, y el fallo aparece recién en la consola del
+// navegador en producción.
 //
 // Se conserva `'unsafe-inline'` en script y style: Next inyecta scripts inline
 // (bootstrap + payload RSC) y Radix/Tailwind estilos inline; quitarlos exige
@@ -23,11 +28,16 @@ const contentSecurityPolicy = [
   "form-action 'self'",
   "frame-ancestors 'none'",
   "object-src 'none'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://*.supabase.co https://*.supabase.net",
-  "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.supabase.net wss://*.supabase.net",
+  // Los dominios de Google Maps son para el mapa operativo del tablero. La API
+  // de Maps no se conforma con `script-src`: carga sus propios scripts desde
+  // `maps.gstatic.com`, los mosaicos como imágenes, una hoja de estilos de
+  // Roboto desde `fonts.googleapis.com`, y consulta datos por `connect-src`.
+  // Faltando cualquiera de esas, el mapa queda gris sin decir por qué.
+  `script-src 'self' 'unsafe-inline' https://maps.googleapis.com https://maps.gstatic.com${isDev ? " 'unsafe-eval'" : ""}`,
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "img-src 'self' data: blob: https://*.supabase.co https://*.supabase.net https://maps.googleapis.com https://maps.gstatic.com https://*.googleusercontent.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.supabase.net wss://*.supabase.net https://maps.googleapis.com",
   "frame-src https://www.google.com",
   "worker-src 'self' blob:",
   "manifest-src 'self'",

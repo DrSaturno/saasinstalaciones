@@ -26,6 +26,12 @@
   la lista lateral, el link "Abrir en Google Maps" y el estado vacío
   (`emptyMap`) tal como están.
 
+## Fase 1b — CSP (descubierto en producción)
+
+- [x] **MAPA-CSP-01** — Sumar los dominios de Google Maps a la CSP de
+  `next.config.ts`: `script-src`, `img-src`, `style-src`, `font-src` y
+  `connect-src`. Sin esto el navegador bloquea el script y el mapa no carga.
+
 ## Fase 2 — Cierre
 
 - [x] **MAPA-QA-01** — `type-check`, `lint`, `test`, `build`.
@@ -54,5 +60,21 @@
 - Lint atrapó un bug real antes de commitear: mutar un ref durante el render
   (`onSelectRef.current = onSelect`) viola la regla nueva de React sobre refs,
   aunque no dispara re-render. Movido a un `useEffect`.
-- **Sin verificar en navegador todavía**: no hay `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
-  cargada en ningún entorno. Es lo primero que hay que destrabar.
+- Con la API key ya cargada en Producción, la primera prueba en navegador
+  destapó que la **CSP bloqueaba el script de Google Maps**. Corregido en
+  `MAPA-CSP-01`.
+
+### Lo que ninguna validación local podía atrapar
+
+`type-check`, `lint`, `test` y `build` pasaban en verde con el mapa
+completamente roto: la CSP es una **cabecera HTTP**, así que el bloqueo ocurre
+en el navegador, no al compilar. Al agregar cualquier recurso externo —script,
+fuente, endpoint— hay que tocar `next.config.ts` en el mismo cambio.
+
+### Un error de consola que NO era de la app
+
+En la misma pantalla apareció un segundo bloqueo de CSP, por una hoja de
+estilos de `fonts.googleapis.com` con la familia Inter. Verificado que **no
+sale de acá**: el HTML de producción tiene cero referencias a `googleapis`, y
+`next/font/google` auto-hospeda las fuentes. Viene de una extensión del
+navegador. Anotado para que el próximo no lo persiga.
