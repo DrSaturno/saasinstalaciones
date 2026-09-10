@@ -21,6 +21,7 @@ import { fetchDashboardOverview } from "@/lib/data/dashboard";
 import { createClient } from "@/lib/supabase/server";
 import { fetchZoneForecasts } from "@/lib/weather/forecast";
 import { googleCalendarConfigured } from "@/lib/google-calendar/config";
+import { googleMapsConfigured } from "@/lib/google-maps/config";
 import type { Country } from "@/types/database";
 import { CreateProjectDialog } from "@/components/company/create-project-dialog";
 import { CreateBroadcastDialog } from "@/components/company/create-broadcast-dialog";
@@ -124,7 +125,7 @@ export default async function CompanyDashboard() {
         <DashboardPulse alerts={overview.alerts} forecasts={forecasts} weatherZones={overview.weatherZones} roster={roster} />
       </DashboardSection>
 
-      <DashboardMap sites={overview.mapSites} availableInstallers={overview.capacity.availableToday} />
+      <DashboardMap sites={overview.mapSites} availableInstallers={overview.capacity.availableToday} mapsConfigured={googleMapsConfigured()} />
 
       {/* Las zonas salen del roster, no de dónde hay obra: el fan-out matchea
           contra `installers.zones`, así que ofrecer provincias sin gente era

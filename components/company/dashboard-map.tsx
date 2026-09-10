@@ -1,19 +1,30 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { ExternalLink, MapPinned } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { DashboardOverview } from "@/lib/data/dashboard";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { OperationalMap } from "@/components/company/operational-map";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export function DashboardMap({ sites, availableInstallers }: { sites: DashboardOverview["mapSites"]; availableInstallers: number }) {
+export function DashboardMap({
+  sites,
+  availableInstallers,
+  mapsConfigured,
+}: {
+  sites: DashboardOverview["mapSites"];
+  availableInstallers: number;
+  mapsConfigured: boolean;
+}) {
   const t = useTranslations("Dashboard");
   const [selectedId, setSelectedId] = useState(sites[0]?.orderId ?? "");
   const selected = sites.find((item) => item.orderId === selectedId) ?? sites[0];
+  // El botón "Abrir en Google Maps" sigue apuntando a UN lugar a propósito —es
+  // la orden elegida en la lista, no el circuito entero—, así que conserva su
+  // lógica anterior en vez de heredar la del mapa embebido.
   const query = selected ? selected.lat !== null && selected.lng !== null ? `${selected.lat},${selected.lng}` : selected.address || selected.siteName : "";
-  const embed = useMemo(() => query ? `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed` : "", [query]);
   const mapsUrl = query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : "https://maps.google.com";
 
   return (
@@ -38,7 +49,13 @@ export function DashboardMap({ sites, availableInstallers }: { sites: DashboardO
           ))}
         </div>
         <div className="relative min-h-80 bg-muted">
-          {embed ? <iframe key={embed} title={t("mapTitle")} src={embed} className="absolute inset-0 size-full border-0" loading="lazy" referrerPolicy="no-referrer-when-downgrade" /> : null}
+          {mapsConfigured ? (
+            <OperationalMap sites={sites} selectedId={selectedId} onSelect={setSelectedId} />
+          ) : (
+            <p className="flex size-full items-center justify-center p-6 text-center text-xs text-muted-foreground">
+              {t("mapNotConfigured")}
+            </p>
+          )}
           {selected ? <Link href={`/orders/${selected.orderId}`} className="absolute bottom-3 left-3 rounded-lg border bg-background/95 px-3 py-2 text-xs font-medium shadow-sm backdrop-blur-sm hover:bg-background">{t("viewSelectedOrder")}</Link> : null}
         </div>
       </CardContent>}

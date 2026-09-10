@@ -72,6 +72,7 @@ Estilo: claro y aireado, bordes sutiles en vez de sombras, radius 10-14px, chips
 | RESEND_API_KEY | Emails de invitación |
 | RESEND_FROM_EMAIL | Remitente Resend de un dominio verificado |
 | APP_URL | Origen público usado en links de invitación por email |
+| NEXT_PUBLIC_GOOGLE_MAPS_API_KEY | Mapa operativo del tablero (Maps JavaScript API). Restringida por dominio en Google Cloud |
 
 ## Reglas No Negociables
 
