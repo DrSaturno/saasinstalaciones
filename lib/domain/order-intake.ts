@@ -134,6 +134,16 @@ export const orderEditSchema = z.object(orderFields).superRefine(checkOrderField
 export const orderBatchSchema = z
   .object({
     status: z.enum(ORDER_INITIAL_STATUSES).default("pendiente"),
+    /**
+     * Locaciones elegidas a mano. Vacío = el alcance se deduce («las que
+     * todavía no tienen orden»), que es el alta normal. Ver DEC-LOTE-01.
+     */
+    siteIds: z.array(z.string().uuid()).max(5000).default([]),
+    /**
+     * Identifica el envío. Con el índice único `(batch_id, site_id)`, reenviar
+     * la misma confirmación no crea las órdenes dos veces.
+     */
+    batchId: z.string().uuid().or(z.literal("")).default(""),
     ...orderFields,
   })
   .superRefine(checkOrderFields);

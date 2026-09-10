@@ -1210,7 +1210,17 @@
     "batchNotificationTitle": "Novas ordens atribuídas",
     "batchNotificationBody": "{count, plural, =1 {Você recebeu # nova ordem} other {Você recebeu # novas ordens}}",
     "batchInstallerAmountHelp": "O mesmo custo se aplica a todas as ordens do lote.",
-    "createdWithAssignmentWarnings": "{created, plural, =1 {# ordem criada} other {# ordens criadas}}, mas {warnings, plural, =1 {# não pôde ser atribuída ao instalador pedido} other {# não puderam ser atribuídas ao instalador pedido}} — agenda ocupada, ausência ou outro compromisso."
+    "createdWithAssignmentWarnings": "{created, plural, =1 {# ordem criada} other {# ordens criadas}}, mas {warnings, plural, =1 {# não pôde ser atribuída ao instalador pedido} other {# não puderam ser atribuídas ao instalador pedido}} — agenda ocupada, ausência ou outro compromisso.",
+    "sectionWhereTitle": "Onde",
+    "sectionWhereDescription": "Escolha os locais onde a ordem será gerada.",
+    "searchSites": "Buscar por nome ou cidade",
+    "selectAll": "Todos",
+    "noSitesMatch": "Nenhum local corresponde à busca.",
+    "alreadyHasOrder": "Já tem ordem",
+    "selectedCount": "{count} de {total} locais selecionados",
+    "willCreate": "{count, plural, =0 {Nenhuma ordem selecionada} one {Será criada # ordem} other {Serão criadas # ordens}}",
+    "willRevisit": "{count, plural, one {# recai sobre um local que já tinha ordem} other {# recaem sobre locais que já tinham ordem}}",
+    "batchAlreadyCreated": "Este lote já havia sido gerado. Nenhuma ordem duplicada foi criada."
   },
   "CreateOrder": {
     "trigger": "Nova ordem",

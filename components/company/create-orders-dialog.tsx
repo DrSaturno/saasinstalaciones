@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { OrderFormSection } from "@/components/company/order-form-section";
+import { OrderBatchSitePicker, type BatchSite } from "@/components/company/order-batch-site-picker";
 import {
   Dialog,
   DialogClose,
@@ -41,6 +42,7 @@ const selectClass =
 export function CreateOrdersDialog({
   projectId,
   siteCount,
+  sites,
   roster,
   currency,
   canManageFinance,
@@ -48,6 +50,7 @@ export function CreateOrdersDialog({
 }: {
   projectId: string;
   siteCount: number;
+  sites: BatchSite[];
   roster: RosterOption[];
   currency: OrderCurrency;
   canManageFinance: boolean;
@@ -60,14 +63,30 @@ export function CreateOrdersDialog({
   const [requiresFreight, setRequiresFreight] = useState(false);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
+  // Arranca con las que todavía no tienen orden: es el caso normal, y deja la
+  // segunda vuelta a un click de «Todas» sin imponerla.
+  const [selected, setSelected] = useState<Set<string>>(
+    () => new Set(sites.filter((site) => !site.hasOrder).map((site) => site.id)),
+  );
+  const revisits = sites.filter((site) => site.hasOrder && selected.has(site.id)).length;
 
   const amountEnabled = canManageFinance && perInstallation;
 
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    // El id del lote se genera acá, no en el servidor: si este mismo envío
+    // llega dos veces —doble clic, reintento de red, dos pestañas—, el índice
+    // único de la base lo rechaza y no se crean las órdenes por duplicado.
+    formData.set("batchId", crypto.randomUUID());
     startTransition(async () => {
       const res = await createOrdersForProject(projectId, formData);
+      if (res.alreadyCreated) {
+        toast.info(t("batchAlreadyCreated"));
+        setOpen(false);
+        router.refresh();
+        return;
+      }
       if (res.error) {
         toast.error(res.error);
         return;
@@ -108,8 +127,21 @@ export function CreateOrdersDialog({
           <div className="grid gap-5">
             <OrderFormSection
               number="01"
+              title={t("sectionWhereTitle")}
+              description={t("sectionWhereDescription")}
+            >
+              <OrderBatchSitePicker
+                sites={sites}
+                selected={selected}
+                onChange={setSelected}
+                disabled={pending}
+              />
+            </OrderFormSection>
+
+            <OrderFormSection
+              number="02"
               title={t("sectionWhatTitle")}
-              description={t("sectionWhatDescription", { count: siteCount })}
+              description={t("sectionWhatDescription", { count: selected.size })}
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="grid gap-2">
@@ -146,7 +178,7 @@ export function CreateOrdersDialog({
             </OrderFormSection>
 
             <OrderFormSection
-              number="02"
+              number="03"
               title={orderT("sections.schedule.title")}
               description={orderT("sections.schedule.description")}
             >
@@ -175,7 +207,7 @@ export function CreateOrdersDialog({
             </OrderFormSection>
 
             <OrderFormSection
-              number="03"
+              number="04"
               title={orderT("sections.operation.title")}
               description={t("sectionOperationDescription")}
             >
@@ -214,7 +246,7 @@ export function CreateOrdersDialog({
 
             {canManageFinance ? (
               <OrderFormSection
-                number="04"
+                number="05"
                 title={orderT("sections.budget.title")}
                 description={t("sectionBudgetDescription")}
               >
@@ -268,13 +300,21 @@ export function CreateOrdersDialog({
           </div>
         </form>
 
-        <div className="flex items-center justify-between gap-3 border-t px-5 py-4">
-          <p className="text-sm text-muted-foreground">{t("siteCount", { count: siteCount })}</p>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t px-5 py-4">
+          {/* El total solo no alcanza: «200 órdenes» se ve igual terminando de
+              cargar un proyecto que mandando a rehacer 200 locales. El
+              desglose de revisitas es lo que separa esos dos casos. */}
+          <div className="min-w-0">
+            <p className="text-sm font-medium">{t("willCreate", { count: selected.size })}</p>
+            {revisits > 0 ? (
+              <p className="mt-0.5 text-xs text-warning">{t("willRevisit", { count: revisits })}</p>
+            ) : null}
+          </div>
           <div className="flex gap-2">
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={pending}>{orderT("cancel")}</Button>
             </DialogClose>
-            <Button type="submit" form="create-orders" disabled={pending}>
+            <Button type="submit" form="create-orders" disabled={pending || selected.size === 0}>
               {pending ? t("generating") : t("trigger")}
             </Button>
           </div>

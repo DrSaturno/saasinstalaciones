@@ -235,6 +235,12 @@ export default async function ProjectDetailPage({
           zones={project.zones}
           activeCount={activeSites.length}
           pendingOrders={sitesWithoutOrders}
+          sites={activeSites.map((site) => ({
+            id: site.id,
+            name: site.name,
+            city: site.city,
+            hasOrder: site.order_count > 0,
+          }))}
           roster={roster.map(({ id: rosterId, name }) => ({ id: rosterId, name }))}
           currency={project.currency}
           canManageFinance

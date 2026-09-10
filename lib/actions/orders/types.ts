@@ -51,4 +51,12 @@ export type BulkResult = {
   skipped: number;
   /** Cuántas de las `created` no consiguieron asignarse: el gate las bloqueó. */
   assignmentWarnings?: number;
+  /**
+   * Cuántas de las `created` caen sobre locaciones que YA tenían una orden
+   * viva. Es lo que distingue terminar de cargar un proyecto de mandar a
+   * rehacer 200 locales.
+   */
+  revisits?: number;
+  /** El lote ya se había procesado: este envío era un reintento. */
+  alreadyCreated?: boolean;
 };

@@ -1,6 +1,7 @@
 import { MapPinned } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { CreateOrdersDialog } from "@/components/company/create-orders-dialog";
+import type { BatchSite } from "@/components/company/order-batch-site-picker";
 import { CreateSiteDialog } from "@/components/company/create-site-dialog";
 import { ImportSitesDialog } from "@/components/company/import-sites-dialog";
 import { OrderFormSection } from "@/components/company/order-form-section";
@@ -24,6 +25,7 @@ export async function ProjectSitesActions({
   zones,
   activeCount,
   pendingOrders,
+  sites,
   roster,
   currency,
   canManageFinance,
@@ -35,6 +37,7 @@ export async function ProjectSitesActions({
   activeCount: number;
   /** Locaciones activas que todavía no tienen orden: lo que crearía el paso 2. */
   pendingOrders: number;
+  sites: BatchSite[];
   roster: { id: string; name: string }[];
   currency: OrderCurrency;
   canManageFinance: boolean;
@@ -99,6 +102,7 @@ export async function ProjectSitesActions({
             <CreateOrdersDialog
               projectId={projectId}
               siteCount={activeCount}
+              sites={sites}
               roster={roster}
               currency={currency}
               canManageFinance={canManageFinance}

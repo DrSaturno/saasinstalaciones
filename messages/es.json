@@ -1210,7 +1210,17 @@
     "batchNotificationTitle": "Nuevas órdenes asignadas",
     "batchNotificationBody": "{count, plural, =1 {Te asignaron # orden nueva} other {Te asignaron # órdenes nuevas}}",
     "batchInstallerAmountHelp": "Se aplica el mismo costo a todas las órdenes del lote.",
-    "createdWithAssignmentWarnings": "{created, plural, =1 {# orden creada} other {# órdenes creadas}}, pero {warnings, plural, =1 {# no se pudo asignar al instalador pedido} other {# no se pudieron asignar al instalador pedido}} — agenda ocupada, ausencia o algún otro compromiso."
+    "createdWithAssignmentWarnings": "{created, plural, =1 {# orden creada} other {# órdenes creadas}}, pero {warnings, plural, =1 {# no se pudo asignar al instalador pedido} other {# no se pudieron asignar al instalador pedido}} — agenda ocupada, ausencia o algún otro compromiso.",
+    "sectionWhereTitle": "Dónde",
+    "sectionWhereDescription": "Elegí las locaciones donde se va a generar la orden.",
+    "searchSites": "Buscar por nombre o ciudad",
+    "selectAll": "Todas",
+    "noSitesMatch": "Ninguna locación coincide con la búsqueda.",
+    "alreadyHasOrder": "Ya tiene orden",
+    "selectedCount": "{count} de {total} locaciones seleccionadas",
+    "willCreate": "{count, plural, =0 {Ninguna orden seleccionada} one {Se va a crear # orden} other {Se van a crear # órdenes}}",
+    "willRevisit": "{count, plural, one {# cae sobre una locación que ya tenía orden} other {# caen sobre locaciones que ya tenían orden}}",
+    "batchAlreadyCreated": "Este lote ya se había generado. No se crearon órdenes repetidas."
   },
   "CreateOrder": {
     "trigger": "Nueva orden",

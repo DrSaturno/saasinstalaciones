@@ -3884,6 +3884,7 @@ export type Database = {
           amount: number | null
           assigned_at: string | null
           assigned_installer_id: string | null
+          batch_id: string | null
           company_id: string
           created_at: string
           created_by: string | null
@@ -3918,6 +3919,7 @@ export type Database = {
           amount?: number | null
           assigned_at?: string | null
           assigned_installer_id?: string | null
+          batch_id?: string | null
           company_id: string
           created_at?: string
           created_by?: string | null
@@ -3952,6 +3954,7 @@ export type Database = {
           amount?: number | null
           assigned_at?: string | null
           assigned_installer_id?: string | null
+          batch_id?: string | null
           company_id?: string
           created_at?: string
           created_by?: string | null

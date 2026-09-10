@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { orderBatchSchema } from "@/lib/domain/order-intake";
+import { resolveBatchScope } from "@/lib/domain/order-batch";
 import { hasActiveCompanyRole } from "@/lib/data/company-membership-roles";
 import { createCorrelationId, logEvent } from "@/lib/observability";
 import { activitiesFor } from "@/lib/domain/activity-kind";
@@ -48,6 +49,8 @@ export async function createOrdersForProject(
     amount: formData.get("amount") ?? "",
     installerAmount: formData.get("installerAmount") ?? "",
     installerId: formData.get("installerId") ?? "",
+    siteIds: formData.getAll("siteIds").filter((v): v is string => typeof v === "string"),
+    batchId: formData.get("batchId") ?? "",
   });
   if (!parsed.success) {
     return { error: t("invalidData"), created: 0, skipped: 0 };
@@ -144,7 +147,7 @@ export async function createOrdersForProject(
     if (data.length < 1000) break;
   }
 
-  // Puntos que YA tienen una orden no cancelada: los salteamos.
+  // Puntos que YA tienen una orden no cancelada.
   const withOrders = new Set<string>();
   for (let from = 0; ; from += 1000) {
     const { data, error } = await supabase
@@ -158,8 +161,11 @@ export async function createOrdersForProject(
     if (data.length < 1000) break;
   }
 
-  const toCreate = siteIds.filter((id) => !withOrders.has(id));
-  const skipped = siteIds.length - toCreate.length;
+  const { toCreate, skipped, revisits } = resolveBatchScope({
+    projectSiteIds: siteIds,
+    sitesWithOrders: withOrders,
+    requestedSiteIds: parsed.data.siteIds,
+  });
 
   const rows: TablesInsert<"work_orders">[] = toCreate.map((siteId) => ({
     company_id: companyId,
@@ -186,6 +192,9 @@ export async function createOrdersForProject(
     installer_amount:
       user.role === "company_manager" ? parsed.data.installerAmount : null,
     currency: project.currency,
+    // Marca el lote: el índice único (batch_id, site_id) hace que reenviar la
+    // misma confirmación no cree las órdenes dos veces (DEC-LOTE-02).
+    batch_id: parsed.data.batchId || null,
     // El instalador NO va en el insert: el trigger de la base lo exige por
     // el gate (AG-R3), y hace falta que la actividad de cada orden exista
     // primero para poder evaluarle agenda. Se asigna orden por orden, más
@@ -204,6 +213,19 @@ export async function createOrdersForProject(
       .insert(batch)
       .select("id");
     if (error) {
+      // 23505 con este lote significa que la MISMA confirmación ya se procesó
+      // —doble clic, reintento de red, dos pestañas—. Las órdenes existen: no
+      // es un fallo, es la protección funcionando. Se corta en silencio en vez
+      // de mostrar un error por algo que salió bien la primera vez.
+      if (error.code === "23505" && parsed.data.batchId) {
+        logEvent("info", "orders.bulk_create.duplicate_batch", {
+          correlation_id: correlationId,
+          company_id: companyId,
+          project_id: projectId,
+          batch_id: parsed.data.batchId,
+        });
+        return { error: null, created, skipped, revisits, alreadyCreated: created === 0 };
+      }
       // Un lote que corta a la mitad deja el proyecto con órdenes parciales:
       // hay que poder saber cuántas entraron sin recontar a mano.
       logEvent("error", "orders.bulk_create.failed", {
@@ -284,6 +306,7 @@ export async function createOrdersForProject(
     error: null,
     created,
     skipped,
+    revisits,
     assignmentWarnings: assignmentWarnings > 0 ? assignmentWarnings : undefined,
   };
 }
