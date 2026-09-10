@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { useGoogleMapsScript } from "@/lib/google-maps/use-google-maps-script";
 import type { DashboardOverview } from "@/lib/data/dashboard";
 
@@ -35,6 +36,11 @@ export function OperationalMap({
   selectedId: string;
   onSelect: (orderId: string) => void;
 }) {
+  const t = useTranslations("Dashboard");
+  // El hook es el único dueño de "¿Maps quedó usable?": valida que el
+  // constructor exista antes de decir que cargó. Los try/catch de abajo son
+  // sólo un cortafuegos para que un fallo del script de Google no propague y
+  // tumbe el tablero entero —ya pasó una vez—.
   const { loaded, error } = useGoogleMapsScript();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -54,15 +60,24 @@ export function OperationalMap({
   );
 
   // Crea el mapa una sola vez.
+  //
+  // Todo lo que toca la API de Google va envuelto: es código de terceros que
+  // corre en el navegador, y un fallo suyo NO puede tumbar el tablero entero.
+  // Ya pasó una vez —`google.maps.Map is not a constructor` reventó la página
+  // completa y dejó al gerente sin nada, por un mapa—.
   useEffect(() => {
     if (!loaded || !containerRef.current || mapRef.current) return;
-    mapRef.current = new google.maps.Map(containerRef.current, {
-      center: { lat: -34.6, lng: -58.4 },
-      zoom: 5,
-      streetViewControl: false,
-      mapTypeControl: false,
-      fullscreenControl: false,
-    });
+    try {
+      mapRef.current = new google.maps.Map(containerRef.current, {
+        center: { lat: -34.6, lng: -58.4 },
+        zoom: 5,
+        streetViewControl: false,
+        mapTypeControl: false,
+        fullscreenControl: false,
+      });
+    } catch {
+      // Cortafuegos: el mapa queda incompleto, el tablero sigue en pie.
+    }
   }, [loaded]);
 
   // Reconstruye los marcadores cuando cambia el CONJUNTO de locaciones (no en
@@ -71,57 +86,65 @@ export function OperationalMap({
     const map = mapRef.current;
     if (!map) return;
 
-    for (const marker of markersRef.current.values()) marker.setMap(null);
-    markersRef.current = new Map();
+    try {
+      for (const marker of markersRef.current.values()) marker.setMap(null);
+      markersRef.current = new Map();
 
-    if (withCoords.length === 0) return;
+      if (withCoords.length === 0) return;
 
-    const bounds = new google.maps.LatLngBounds();
-    for (const site of withCoords) {
-      const position = { lat: site.lat, lng: site.lng };
-      bounds.extend(position);
-      const marker = new google.maps.Marker({
-        map,
-        position,
-        title: `${site.number} · ${site.siteName}`,
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          fillColor: STATUS_COLOR[site.status] ?? "#868c98",
-          fillOpacity: 1,
-          strokeColor: "#ffffff",
-          strokeWeight: 2,
-          scale: 9,
-        },
-      });
-      marker.addListener("click", () => onSelectRef.current(site.orderId));
-      markersRef.current.set(site.orderId, marker);
-    }
+      const bounds = new google.maps.LatLngBounds();
+      for (const site of withCoords) {
+        const position = { lat: site.lat, lng: site.lng };
+        bounds.extend(position);
+        const marker = new google.maps.Marker({
+          map,
+          position,
+          title: `${site.number} · ${site.siteName}`,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: STATUS_COLOR[site.status] ?? "#868c98",
+            fillOpacity: 1,
+            strokeColor: "#ffffff",
+            strokeWeight: 2,
+            scale: 9,
+          },
+        });
+        marker.addListener("click", () => onSelectRef.current(site.orderId));
+        markersRef.current.set(site.orderId, marker);
+      }
 
-    // Un solo pin no tiene "encuadre": `fitBounds` lo dejaría pegado al borde
-    // con zoom exagerado. Se centra con un zoom fijo y razonable en cambio.
-    if (withCoords.length === 1) {
-      map.setCenter({ lat: withCoords[0].lat, lng: withCoords[0].lng });
-      map.setZoom(14);
-    } else {
-      map.fitBounds(bounds, 48);
+      // Un solo pin no tiene "encuadre": `fitBounds` lo dejaría pegado al borde
+      // con zoom exagerado. Se centra con un zoom fijo y razonable en cambio.
+      if (withCoords.length === 1) {
+        map.setCenter({ lat: withCoords[0].lat, lng: withCoords[0].lng });
+        map.setZoom(14);
+      } else {
+        map.fitBounds(bounds, 48);
+      }
+    } catch {
+      // Cortafuegos: el mapa queda incompleto, el tablero sigue en pie.
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `withCoords` se recalcula cada render; comparar por ids evita reconstruir sin necesidad.
   }, [loaded, withCoords.map((s) => s.orderId).join(",")]);
 
   // Resalta el pin seleccionado sin tocar el resto.
   useEffect(() => {
-    for (const [orderId, marker] of markersRef.current) {
-      marker.setZIndex(orderId === selectedId ? 10 : 1);
-      marker.setAnimation(orderId === selectedId ? google.maps.Animation.DROP : null);
+    try {
+      for (const [orderId, marker] of markersRef.current) {
+        marker.setZIndex(orderId === selectedId ? 10 : 1);
+        marker.setAnimation(orderId === selectedId ? google.maps.Animation.DROP : null);
+      }
+      const position = markersRef.current.get(selectedId)?.getPosition();
+      if (position && mapRef.current) mapRef.current.panTo(position);
+    } catch {
+      // Cortafuegos: el mapa queda incompleto, el tablero sigue en pie.
     }
-    const selectedMarker = markersRef.current.get(selectedId);
-    if (selectedMarker && mapRef.current) mapRef.current.panTo(selectedMarker.getPosition()!);
   }, [selectedId]);
 
   if (error) {
     return (
       <div className="flex size-full items-center justify-center p-6 text-center text-sm text-muted-foreground">
-        No se pudo cargar el mapa. Probá de nuevo en un momento.
+        {t("mapLoadFailed")}
       </div>
     );
   }

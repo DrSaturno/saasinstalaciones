@@ -15,10 +15,29 @@ const SCRIPT_ID = "google-maps-js-api";
 // puede volver a pedirlo cada vez ni pisar una carga en curso.
 let loadPromise: Promise<void> | null = null;
 
+/**
+ * Con `loading=async`, el script que baja es sólo un cargador: cuando dispara
+ * `onload`, `google.maps.Map` TODAVÍA NO EXISTE y construirlo revienta con
+ * "is not a constructor". Hay que pedir explícitamente cada librería y
+ * esperarla. Eso es lo que hace `importLibrary`.
+ */
+async function waitForLibraries(): Promise<void> {
+  await Promise.all([
+    google.maps.importLibrary("maps"),
+    google.maps.importLibrary("marker"),
+  ]);
+  // Comprobar el constructor y no sólo que la promesa resolvió: si por lo que
+  // sea no quedó disponible, es preferible fallar acá —el bloque muestra su
+  // aviso— que dejar que el componente lo llame y reviente la página entera.
+  if (typeof google.maps.Map !== "function") {
+    throw new Error("Google Maps cargó sin el constructor de Map");
+  }
+}
+
 function loadScript(): Promise<void> {
   if (loadPromise) return loadPromise;
-  loadPromise = new Promise((resolve, reject) => {
-    if (window.google?.maps) {
+  loadPromise = new Promise<void>((resolve, reject) => {
+    if (typeof window.google?.maps?.importLibrary === "function") {
       resolve();
       return;
     }
@@ -30,12 +49,13 @@ function loadScript(): Promise<void> {
     }
     const script = document.createElement("script");
     script.id = SCRIPT_ID;
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(googleMapsApiKey())}&loading=async`;
+    // `libraries` las precarga; `importLibrary` de abajo resuelve enseguida.
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(googleMapsApiKey())}&loading=async&libraries=maps,marker`;
     script.async = true;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error("No se pudo cargar Google Maps"));
     document.head.appendChild(script);
-  });
+  }).then(waitForLibraries);
   return loadPromise;
 }
 

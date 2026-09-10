@@ -368,6 +368,7 @@
     "viewSelectedOrder": "Ver orden seleccionada",
     "emptyMap": "No hay trabajos próximos con ubicación para mostrar.",
     "mapNotConfigured": "Falta configurar el mapa. Cargá la clave de Google Maps en el servidor.",
+    "mapLoadFailed": "No se pudo cargar el mapa. El resto del tablero funciona normalmente.",
     "financePulseTitle": "Rentabilidad y proyección",
     "financePulseDescription": "Importes activos y proyección del cierre mensual, sin mezclar monedas.",
     "viewFinance": "Ver finanzas",
