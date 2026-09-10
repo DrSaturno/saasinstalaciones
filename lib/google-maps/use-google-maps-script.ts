@@ -8,9 +8,9 @@ declare global {
     google?: typeof google;
     /**
      * Callback que Google invoca para errores de autenticación —clave
-     * inválida, dominio no autorizado, facturación no habilitada— que NO
-     * siempre rechazan la promesa de `importLibrary`. Es el único gancho
-     * oficial para enterarse de esa clase de falla.
+     * inválida, dominio no autorizado, facturación no habilitada—. Es el
+     * único gancho oficial para enterarse de esa clase de falla; sin él
+     * quedan completamente mudas.
      * https://developers.google.com/maps/documentation/javascript/events#auth-errors
      */
     gm_authFailure?: () => void;
@@ -18,60 +18,58 @@ declare global {
 }
 
 const SCRIPT_ID = "google-maps-js-api";
+const CALLBACK_NAME = "__seInstalaGoogleMapsReady";
 // Un solo script para toda la sesión de navegación: montar y desmontar el
 // mapa varias veces (cambiar de pestaña y volver, revalidar la página) no
 // puede volver a pedirlo cada vez ni pisar una carga en curso.
 let loadPromise: Promise<void> | null = null;
 
 /**
- * Con `loading=async`, el script que baja es sólo un cargador: cuando dispara
- * `onload`, `google.maps.Map` TODAVÍA NO EXISTE y construirlo revienta con
- * "is not a constructor". Hay que pedir explícitamente cada librería y
- * esperarla. Eso es lo que hace `importLibrary`.
+ * `?loading=async` + `google.maps.importLibrary` es el patrón nuevo de
+ * Google, pero `importLibrary` sólo queda definido si se implementa su
+ * "bootstrap loader" completo (un wrapper que hay que declarar ANTES de
+ * pedir el script). Pedir el script por URL sola —lo que hacía la versión
+ * anterior— nunca lo define: revienta con "importLibrary is not a function"
+ * siempre, con cualquier clave, en cualquier proyecto.
+ *
+ * Como el mapa sólo usa objetos clásicos (`Marker`, no `AdvancedMarker` —
+ * DEC-MAPA-02), no hace falta nada de eso: el parámetro `callback` clásico,
+ * que existe hace más de una década, garantiza que TODO esté listo cuando se
+ * ejecuta, sin el wrapper adicional.
  */
-async function waitForLibraries(): Promise<void> {
-  await Promise.all([
-    google.maps.importLibrary("maps"),
-    google.maps.importLibrary("marker"),
-  ]);
-  // Comprobar el constructor y no sólo que la promesa resolvió: si por lo que
-  // sea no quedó disponible, es preferible fallar acá —el bloque muestra su
-  // aviso— que dejar que el componente lo llame y reviente la página entera.
-  if (typeof google.maps.Map !== "function") {
-    throw new Error("Google Maps cargó sin el constructor de Map");
-  }
-}
-
 function loadScript(): Promise<void> {
   if (loadPromise) return loadPromise;
   loadPromise = new Promise<void>((resolve, reject) => {
-    // Clave inválida, dominio no autorizado o facturación sin habilitar no
-    // siempre rechazan una promesa: Google los reporta por este callback
-    // global. Sin engancharlo, esa clase de error queda completamente muda —
-    // ni consola, ni catch, nada.
+    if (typeof window.google?.maps?.Map === "function") {
+      resolve();
+      return;
+    }
+
     window.gm_authFailure = () => {
       reject(new Error("Google rechazó la clave: revisar restricciones de dominio, API habilitada o facturación en Google Cloud."));
     };
 
-    if (typeof window.google?.maps?.importLibrary === "function") {
-      resolve();
-      return;
-    }
     const existing = document.getElementById(SCRIPT_ID);
     if (existing) {
-      existing.addEventListener("load", () => resolve());
-      existing.addEventListener("error", () => reject(new Error("No se pudo cargar el script de Google Maps (bloqueado o sin red).")));
+      // El script ya se pidió (remount en la misma sesión): esperar a que su
+      // callback original termine de poblar `google.maps`.
+      const check = () => {
+        if (typeof window.google?.maps?.Map === "function") resolve();
+        else setTimeout(check, 50);
+      };
+      check();
       return;
     }
+
+    (window as unknown as Record<string, () => void>)[CALLBACK_NAME] = () => resolve();
+
     const script = document.createElement("script");
     script.id = SCRIPT_ID;
-    // `libraries` las precarga; `importLibrary` de abajo resuelve enseguida.
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(googleMapsApiKey())}&loading=async&libraries=maps,marker`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(googleMapsApiKey())}&callback=${CALLBACK_NAME}`;
     script.async = true;
-    script.onload = () => resolve();
     script.onerror = () => reject(new Error("No se pudo cargar el script de Google Maps (bloqueado o sin red)."));
     document.head.appendChild(script);
-  }).then(waitForLibraries);
+  });
   return loadPromise;
 }
 
@@ -86,9 +84,6 @@ export function useGoogleMapsScript(): { loaded: boolean; error: boolean } {
     loadScript()
       .then(() => { if (!cancelled) setLoaded(true); })
       .catch((err: unknown) => {
-        // Antes se descartaba el motivo real acá mismo: el bloque mostraba
-        // "no se pudo cargar" y la consola quedaba muda, como si la falla no
-        // hubiera dejado ningún rastro. Ahora queda logueado.
         console.error("[OperationalMap] Google Maps no cargó:", err);
         if (!cancelled) setError(true);
       });

@@ -12,6 +12,19 @@ dependencia para esto sería la abstracción prematura que las reglas del
 proyecto piden evitar. El costo es escribir el loader del script e integrarlo
 con React a mano; es chico y queda en un solo hook.
 
+## DEC-MAPA-06 — `callback` clásico, no `importLibrary`
+
+La primera versión pedía el script con `?loading=async` y llamaba a
+`google.maps.importLibrary("maps")`. Reventaba siempre, con cualquier clave:
+`importLibrary` sólo queda definido si se implementa el "bootstrap loader"
+completo que Google documenta —un wrapper que hay que declarar ANTES de pedir
+el script—; pedirlo por URL sola nunca lo define.
+
+Se reemplaza por el parámetro `callback` clásico (`?callback=nombreDeFuncion`),
+que existe hace más de una década: Google invoca esa función recién cuando
+`google.maps.*` está completamente listo. No hace falta el wrapper de
+`importLibrary` porque, por `DEC-MAPA-02`, el mapa sólo usa objetos clásicos.
+
 ## DEC-MAPA-02 — Marcador clásico, no `AdvancedMarker`
 
 Se usa `google.maps.Marker`, no la API nueva de marcadores avanzados.
