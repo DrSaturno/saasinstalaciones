@@ -22,9 +22,9 @@
 
 - [x] **RLS-QA-01** — Test pgTAP: ninguna política de `public` llama directo a
   `auth.uid()`, `auth_role()` ni `auth_company()`. → RLS-R3.1, DEC-RLS-05
-- [ ] **RLS-QA-02** — Los pgTAP de RLS existentes pasan **sin modificarse**.
+- [x] **RLS-QA-02** — Los pgTAP de RLS existentes pasan **sin modificarse**.
   → AC-RLS-C
-- [ ] **RLS-QA-03** — `type-check`, `lint`, `test`, `build`.
+- [x] **RLS-QA-03** — `type-check`, `lint`, `test`, `build`.
 
 ## Fuera de alcance, a propósito
 
@@ -64,6 +64,11 @@ sana da 0 detecciones; rompiendo una política a propósito
 (`work_orders_installer_read`) da 1. Un assert que no puede fallar no es un
 test, así que se verificó que este sí puede. La rotura deliberada se revirtió
 sola: iba dentro de una transacción que termina en `raise exception`.
+
+**CI en verde en los tres jobs**, incluido pgTAP: el test nuevo pasa y los de
+RLS que ya existían pasan **sin modificarse**. Ese era el criterio de
+`AC-RLS-C` — si alguno hubiera necesitado ablandarse, la migración habría
+cambiado permisos.
 
 **Lo que NO se pudo medir:** la mejora en milisegundos. Sin Docker no hay forma
 de correr un `explain analyze` comparativo, y con 60 órdenes en Producción la
