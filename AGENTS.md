@@ -73,6 +73,16 @@ Estilo: claro y aireado, bordes sutiles en vez de sombras, radius 10-14px, chips
 | RESEND_FROM_EMAIL | Remitente Resend de un dominio verificado |
 | APP_URL | Origen público usado en links de invitación por email |
 | NEXT_PUBLIC_GOOGLE_MAPS_API_KEY | Mapa operativo del tablero (Maps JavaScript API). Restringida por dominio en Google Cloud |
+| GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET | OAuth de Google Calendar. Sin las dos, `googleCalendarConfigured()` da false y la integración queda apagada en silencio |
+| GOOGLE_TOKEN_ENCRYPTION_KEY | 32 bytes en hex o base64. Cifra los tokens de Calendar en la base (AES-256-GCM) |
+| UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN | Rate limiting distribuido. **Sin esto el limitador degrada a no-op y no hay freno de fuerza bruta**: verificar en `/api/health` (`checks.redis`) |
+| KV_REST_API_URL / KV_REST_API_TOKEN | Los mismos, con los nombres que inyecta la integración de Upstash en Vercel. Se usan si faltan los `UPSTASH_*` |
+| VERCEL_PROJECT_PRODUCTION_URL | La pone Vercel. Respaldo de `APP_URL` para resolver el origen público |
+| VERCEL_DEPLOYMENT_ID | La pone Vercel. Identifica el despliegue para que Next detecte el desfasaje de versiones |
+
+La tabla estaba incompleta hasta la auditoría del 11-09-2026: faltaban las
+siete de arriba. Levantar un entorno siguiendo la lista vieja dejaba Google
+Calendar **y el limitador de tasa** apagados sin que nada lo avisara.
 
 ## Reglas No Negociables
 
