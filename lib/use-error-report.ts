@@ -21,6 +21,43 @@ import { useEffect, useRef } from "react";
  * Nunca lanza: un fallo al reportar no puede empeorar una pantalla que ya está
  * en estado de error.
  */
+/** Clases de fallo reconocibles sin mirar el texto del error. */
+export type ClientErrorKind = "chunk_load" | "network" | "other";
+
+/**
+ * Clasifica el crash en un conjunto CERRADO de valores.
+ *
+ * Existe porque el digest no alcanza para los errores que nacen en el
+ * navegador: ahí Next no genera ninguno y el informe llega como
+ * "TypeError / digest none", que no distingue un chunk que no bajó de un bug
+ * de render. La diferencia importa —el primero se arregla en el service
+ * worker, el segundo en el componente— y hasta ahora había que adivinarla.
+ *
+ * Se manda la ETIQUETA, nunca el mensaje: al ser un enum fijo, no hay forma
+ * de que arrastre datos de quien lo produjo, que es la razón por la que el
+ * mensaje sigue sin viajar (ver `app/api/client-errors/route.ts`).
+ */
+export function classifyClientError(error: Error): ClientErrorKind {
+  const text = `${error.name}: ${error.message}`.toLowerCase();
+  if (
+    error.name === "ChunkLoadError" ||
+    text.includes("dynamically imported module") ||
+    text.includes("importing a module script failed") ||
+    text.includes("loading chunk")
+  ) {
+    return "chunk_load";
+  }
+  if (
+    text.includes("failed to fetch") ||
+    text.includes("networkerror") ||
+    text.includes("load failed") ||
+    text.includes("network request failed")
+  ) {
+    return "network";
+  }
+  return "other";
+}
+
 export function useErrorReport(
   error: (Error & { digest?: string }) | undefined,
   boundary: "route" | "global",
@@ -38,6 +75,7 @@ export function useErrorReport(
         body: JSON.stringify({
           digest: error.digest,
           name: error.name,
+          kind: classifyClientError(error),
           path: typeof window === "undefined" ? undefined : window.location.pathname,
           boundary,
         }),

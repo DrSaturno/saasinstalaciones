@@ -17,6 +17,11 @@ import { clientIp, enforceRateLimit } from "@/lib/security/rate-limit";
  * lado servidor, ya escribió ahí el error completo con su stack, y este valor
  * es lo que permite encontrarlo. Con el digest y la ruta se llega al error real.
  *
+ * Se registra también una **etiqueta de clase** (`kind`), elegida de una lista
+ * cerrada por el propio boundary. Es lo que separa un chunk que no llegó de un
+ * bug de render: los dos llegan como "TypeError sin digest" y se arreglan en
+ * lugares distintos.
+ *
  * NO se registra el mensaje del error. Un mensaje de cliente puede arrastrar
  * datos de quien lo produjo (contenido de un formulario, un nombre, un fragmento
  * de URL firmada), y este endpoint es público. El digest da la misma capacidad
@@ -32,6 +37,9 @@ import { clientIp, enforceRateLimit } from "@/lib/security/rate-limit";
 const reportSchema = z.object({
   digest: z.string().trim().max(120).optional(),
   name: z.string().trim().max(80).optional(),
+  // Enum cerrado, no texto libre: distingue "el chunk no bajó" de "el
+  // componente explotó" sin abrir la puerta a que viaje el mensaje del error.
+  kind: z.enum(["chunk_load", "network", "other"]).optional(),
   path: z.string().trim().max(300).optional(),
   boundary: z.enum(["route", "global"]),
 });
@@ -59,6 +67,7 @@ export async function POST(request: Request) {
   logEvent("error", "client.crash", {
     digest: parsed.data.digest ?? "none",
     error_name: parsed.data.name ?? "unknown",
+    kind: parsed.data.kind ?? "unknown",
     path: parsed.data.path ?? "unknown",
     boundary: parsed.data.boundary,
   });

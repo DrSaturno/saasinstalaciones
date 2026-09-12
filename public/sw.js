@@ -13,7 +13,7 @@
  *  - Todo lo demás (incluido Supabase, otro origen): pasa directo a la red. Las
  *    mutaciones offline las maneja la cola en Dexie, no el SW.
  */
-const VERSION = "v6";
+const VERSION = "v7";
 
 const STATIC_CACHE = `static-${VERSION}`;
 const FIELD_CACHE = `field-${VERSION}`;
@@ -64,41 +64,88 @@ self.addEventListener("message", (event) => {
         .then(async (response) => {
           if (!response.ok) return;
           const cache = await caches.open(FIELD_CACHE);
-          await cache.put(url.href, response.clone());
+          // Este fetch trae el documento, no el payload RSC: se guarda con la
+          // clave del documento para que no se sirva en lugar del otro.
+          await cache.put(cacheKey(url.href, "doc"), response.clone());
         })
         .catch(() => undefined),
     );
   }
 });
 
+/*
+ * Una pantalla viaja en DOS representaciones distintas: el documento HTML de
+ * la carga inicial y el payload RSC que el router pide al navegar dentro de la
+ * app. Comparten URL, así que compartir clave de caché hace que una se sirva
+ * en lugar de la otra: el router recibe HTML donde espera un stream y la
+ * navegación muere con un TypeError que se arregla solo al recargar. Por eso
+ * la clave lleva la representación adentro.
+ *
+ * De paso se saca `_rsc`, que Next regenera en cada navegación: dejándolo, la
+ * entrada guardada nunca vuelve a encontrarse.
+ */
+function isRscRequest(request) {
+  if (request.headers && request.headers.get("RSC") === "1") return true;
+  return new URL(request.url).searchParams.has("_rsc");
+}
+
+function cacheKey(url, kind) {
+  const target = new URL(url);
+  target.searchParams.delete("_rsc");
+  target.hash = "";
+  target.searchParams.set("__sw", kind);
+  return target.href;
+}
+
+function requestKey(request) {
+  return cacheKey(request.url, isRscRequest(request) ? "rsc" : "doc");
+}
+
+/*
+ * `ignoreVary` va de la mano de la clave propia: Next responde estas rutas con
+ * `Vary: RSC, ...`, y al buscar por una URL construida a mano el navegador no
+ * tiene esas cabeceras para comparar y nunca acertaría. La distinción que el
+ * `Vary` protege ya está resuelta en la clave.
+ */
+const MATCH = { ignoreVary: true };
+
 async function staleWhileRevalidate(request, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
-  const network = fetch(request)
-    .then((res) => {
-      if (res.ok) cache.put(request, res.clone());
-      return res;
-    })
-    .catch(() => cached);
-  return cached || network;
+  if (cached) {
+    // La respuesta ya salió; la revalidación corre atrás y su fallo no importa.
+    fetch(request)
+      .then((res) => {
+        if (res.ok) cache.put(request, res.clone());
+      })
+      .catch(() => undefined);
+    return cached;
+  }
+
+  // Sin copia local no hay nada que servir: se devuelve la respuesta real, aun
+  // si falla. Antes este camino terminaba resolviendo en `undefined`, y un
+  // `respondWith` que no recibe una Response convierte un tropezón de red en
+  // un error duro del chunk. Con módulos que aún no se abrieron en la sesión
+  // —que es justo lo que pasa al saltar de una sección a otra— eso rompe la
+  // pantalla entera en vez de reintentar.
+  const response = await fetch(request);
+  if (response.ok) cache.put(request, response.clone());
+  return response;
 }
 
 async function networkFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
+  const key = requestKey(request);
   try {
     const response = await fetch(request);
-    if (response.ok) await cache.put(request, response.clone());
+    if (response.ok) await cache.put(key, response.clone());
     return response;
-  } catch {
-    const exact = await cache.match(request);
-    if (exact) return exact;
-
-    // Next agrega un parámetro efímero a los requests RSC. El pathname sigue
-    // identificando la misma pantalla visitada y es un fallback mejor que una
-    // navegación rota cuando no hay señal.
-    const byPath = await cache.match(request, { ignoreSearch: true });
-    if (byPath) return byPath;
-    throw new Error("offline_route_not_cached");
+  } catch (error) {
+    const cached = await cache.match(key, MATCH);
+    if (cached) return cached;
+    // Sin copia de ESTA representación, el error de red se propaga tal cual.
+    // Devolver la otra sería darle al router algo que no sabe leer.
+    throw error;
   }
 }
 
