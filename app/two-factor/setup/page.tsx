@@ -12,10 +12,12 @@ export default async function TwoFactorSetupPage() {
 
   const supabase = await createClient();
   const status = await fetchTwoFactorStatus(supabase);
-  // Ya cumple: nada que enrolar. Si tiene factor pero falta el código, ese es
-  // el paso de verificar, no el de enrolar.
-  if (status.satisfied) redirect(ROLE_HOME[user.role]);
-  if (status.mustStepUp) redirect("/two-factor/verify");
+  if (status.resolved) {
+    // Ya cumple: nada que enrolar. Si tiene factor pero falta el código, ese es
+    // el paso de verificar, no el de enrolar.
+    if (status.satisfied) redirect(ROLE_HOME[user.role]);
+    if (status.mustStepUp) redirect("/two-factor/verify");
+  }
 
   const required = mfaRequiredFor(user.role);
 

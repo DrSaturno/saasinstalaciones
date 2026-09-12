@@ -114,5 +114,10 @@ export async function setNewPassword(
     return { error: t("operation") };
   }
 
+  // Recuperar la contraseña es, casi siempre, recuperar una cuenta. Si alguien
+  // más tenía una sesión abierta, el reset no la tocaba y el atacante seguía
+  // adentro después de que la víctima creyera haber cerrado el problema.
+  await supabase.auth.signOut({ scope: "others" });
+
   return { error: null, ok: true };
 }

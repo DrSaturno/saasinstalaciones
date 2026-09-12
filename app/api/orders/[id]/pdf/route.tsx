@@ -3,6 +3,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { fetchLocationRequirements } from "@/lib/data/location-detail";
 import { OrderDocument, type OrderPdfData } from "@/lib/pdf/order-document";
 import type { OrderPriority, OrderStatus, OrderUpdateType } from "@/types/database";
@@ -37,6 +38,18 @@ export async function GET(
 
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  // Límite por usuario, mismo criterio que la exportación de locaciones:
+  // `renderToBuffer` arma el PDF entero en memoria y es caro en CPU, así que
+  // sin freno esta ruta es un botón para quemar tiempo de función en bucle.
+  // 60 por hora cubre de sobra imprimir una jornada de órdenes.
+  const gate = await enforceRateLimit("order_pdf", user.id, 60, 3600);
+  if (!gate.allowed) {
+    return NextResponse.json(
+      { error: "rate_limited" },
+      { status: 429, headers: { "Retry-After": String(gate.retryAfterSeconds) } },
+    );
+  }
 
   const supabase = await createClient();
   const { data: order } = await supabase

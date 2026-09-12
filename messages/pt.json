@@ -2510,7 +2510,8 @@
     "settingsOffOptional": "Desativada. Você pode ativá-la para proteger mais a sua conta.",
     "enable": "Ativar",
     "disable": "Desativar",
-    "disabled": "Verificação em duas etapas desativada"
+    "disabled": "Verificação em duas etapas desativada",
+    "disableNeedsStepUp": "Para desativar a verificação em duas etapas, digite seu código primeiro."
   },
   "OfflineLogout": {
     "title": "Você tem trabalho não enviado",

@@ -5,6 +5,7 @@ const status = (over: Partial<TwoFactorStatus> = {}): TwoFactorStatus => ({
   enrolled: false,
   satisfied: false,
   mustStepUp: false,
+  resolved: true,
   ...over,
 });
 
@@ -38,6 +39,17 @@ describe("twoFactorGate", () => {
   it("sin factor, nadie queda forzado a enrolarse", () => {
     for (const role of ROLES) {
       expect(twoFactorGate(status(), role)).toBeNull();
+    }
+  });
+
+  it("si Auth no contesta, no expulsa a quien no tiene MFA obligatoria", () => {
+    // El estado sin resolver NO es "no tiene segundo factor". Tratarlo como tal
+    // es lo que rompía: la función lanzaba y el área entera del gerente se caía
+    // con "Algo salió mal" por un hipó de Auth. Con MFA opcional —que es el
+    // estado de hoy— lo correcto es dejar pasar: los datos siguen acotados por
+    // RLS y la capa de abajo vuelve a comprobar.
+    for (const role of ROLES) {
+      expect(twoFactorGate(status({ resolved: false }), role)).toBeNull();
     }
   });
 });
