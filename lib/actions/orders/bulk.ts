@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { orderBatchSchema } from "@/lib/domain/order-intake";
-import { resolveBatchScope } from "@/lib/domain/order-batch";
+import { ordersToFinish, resolveBatchScope } from "@/lib/domain/order-batch";
 import { hasActiveCompanyRole } from "@/lib/data/company-membership-roles";
 import { createCorrelationId, logEvent } from "@/lib/observability";
 import { activitiesFor } from "@/lib/domain/activity-kind";
@@ -256,15 +256,10 @@ export async function createOrdersForProject(
     for (const order of insertedOrders ?? []) toFinish.push(order.id);
   }
 
-  // Órdenes de ESTE lote que quedaron sin actividad: o las acaba de crear el
-  // bucle de arriba, o las dejó a medias un intento anterior que se cortó.
-  //
-  // Sin esta pasada el estado parcial era permanente: el índice único por lote
-  // y el filtro de "puntos que ya tienen orden" hacen que un reintento saltee
-  // justamente las órdenes rotas, y una orden sin actividad de ejecución no
-  // aparece en la agenda ni en la proyección. Se acota al `batch_id` a
-  // propósito — reparar cualquier orden sin actividad tocaría también las
-  // anteriores a que las actividades existieran, con el tipo de ESTE pedido.
+  // Órdenes de ESTE lote que todavía no están terminadas: o las acaba de crear
+  // el bucle de arriba, o las dejó a medias un intento anterior que se cortó.
+  // El criterio vive en `ordersToFinish`, que explica por qué y está testeado.
+  let toProcess = toFinish;
   if (parsed.data.batchId) {
     const { data: unfinished } = await supabase
       .from("work_orders")
@@ -272,12 +267,13 @@ export async function createOrdersForProject(
       .eq("project_id", projectId)
       .eq("batch_id", parsed.data.batchId)
       .overrideTypes<{ id: string; work_activities: { id: string }[] }[]>();
-    const known = new Set(toFinish);
-    for (const order of unfinished ?? []) {
-      if (order.work_activities.length === 0 && !known.has(order.id)) {
-        toFinish.push(order.id);
-      }
-    }
+    toProcess = ordersToFinish({
+      insertedIds: toFinish,
+      batchOrders: (unfinished ?? []).map((order) => ({
+        id: order.id,
+        activityCount: order.work_activities.length,
+      })),
+    });
   }
 
   // Actividades, horario y —recién con las dos cosas ya existiendo— asignación,
@@ -288,7 +284,7 @@ export async function createOrdersForProject(
   // `create_order_activities` es idempotente (devuelve `created: false` si la
   // orden ya las tiene), así que repetir esta pasada sobre una orden terminada
   // no hace nada. Eso es lo que vuelve reanudable al alta masiva.
-  for (const orderId of toFinish) {
+  for (const orderId of toProcess) {
     await supabase.rpc("create_order_activities", {
       p_order_id: orderId,
       p_include_survey: includeSurvey,

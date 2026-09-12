@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveBatchScope } from "@/lib/domain/order-batch";
+import { ordersToFinish, resolveBatchScope } from "@/lib/domain/order-batch";
 
 const proyecto = ["s1", "s2", "s3", "s4"];
 
@@ -67,5 +67,78 @@ describe("resolveBatchScope", () => {
       requestedSiteIds: ["ajena-1", "ajena-2"],
     });
     expect(scope.toCreate).toEqual([]);
+  });
+});
+
+describe("ordersToFinish", () => {
+  it("procesa lo que acaba de insertar", () => {
+    expect(
+      ordersToFinish({
+        insertedIds: ["o1", "o2"],
+        batchOrders: [
+          { id: "o1", activityCount: 0 },
+          { id: "o2", activityCount: 0 },
+        ],
+      }),
+    ).toEqual(["o1", "o2"]);
+  });
+
+  it("recupera las que dejó a medias un intento anterior", () => {
+    // El caso que importa: el bucle se cortó por tiempo, `o1` y `o2` quedaron
+    // sin actividad, y el reintento no inserta nada porque el índice único del
+    // lote lo frena. Antes esas dos quedaban rotas para siempre.
+    expect(
+      ordersToFinish({
+        insertedIds: [],
+        batchOrders: [
+          { id: "o1", activityCount: 0 },
+          { id: "o2", activityCount: 0 },
+          { id: "o3", activityCount: 1 },
+        ],
+      }),
+    ).toEqual(["o1", "o2"]);
+  });
+
+  it("no vuelve a tocar las que ya están terminadas", () => {
+    expect(
+      ordersToFinish({
+        insertedIds: [],
+        batchOrders: [
+          { id: "o1", activityCount: 1 },
+          { id: "o2", activityCount: 2 },
+        ],
+      }),
+    ).toEqual([]);
+  });
+
+  it("no repite una orden que está en las dos listas", () => {
+    // La consulta del lote devuelve también las recién insertadas, y todavía
+    // sin actividad. Procesarlas dos veces sería pedirle a la compuerta de
+    // asignación el mismo trabajo de nuevo, contando un aviso de más.
+    expect(
+      ordersToFinish({
+        insertedIds: ["o1"],
+        batchOrders: [{ id: "o1", activityCount: 0 }],
+      }),
+    ).toEqual(["o1"]);
+  });
+
+  it("tolera ids repetidos en lo insertado", () => {
+    expect(
+      ordersToFinish({ insertedIds: ["o1", "o1"], batchOrders: [] }),
+    ).toEqual(["o1"]);
+  });
+
+  it("mezcla lo nuevo con lo reparado, sin perder el orden", () => {
+    expect(
+      ordersToFinish({
+        insertedIds: ["o3"],
+        batchOrders: [
+          { id: "o1", activityCount: 0 },
+          { id: "o2", activityCount: 1 },
+          { id: "o3", activityCount: 0 },
+        ],
+      }),
+    ).toEqual(["o3", "o1"]);
   });
 });

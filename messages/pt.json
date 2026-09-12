@@ -2511,7 +2511,8 @@
     "enable": "Ativar",
     "disable": "Desativar",
     "disabled": "Verificação em duas etapas desativada",
-    "disableNeedsStepUp": "Para desativar a verificação em duas etapas, digite seu código primeiro."
+    "disableNeedsStepUp": "Para desativar a verificação em duas etapas, digite seu código primeiro.",
+    "alreadyEnrolled": "Você já tem a verificação em duas etapas ativada. Para usar outro aplicativo, desative-a primeiro."
   },
   "OfflineLogout": {
     "title": "Você tem trabalho não enviado",

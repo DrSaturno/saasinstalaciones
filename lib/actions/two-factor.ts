@@ -35,6 +35,17 @@ export async function startTotpEnrollment(): Promise<EnrollState> {
   if (!userData.user) return { ok: false, error: t("notAuthenticated") };
 
   const { data: factors } = await supabase.auth.mfa.listFactors();
+
+  // Con un factor YA verificado, enrolar otro deja la cuenta con dos TOTP.
+  // A partir de ahí `verifyTotpChallenge` y `disableTotp` toman `totp[0]`, que
+  // es cualquiera de los dos: el código de la app puede no verificar, y apagar
+  // la verificación puede quitar sólo uno y dejar la otra puesta. Para cambiar
+  // de aplicación hay que apagarla primero —y eso ahora exige AAL2—, que es
+  // justamente la secuencia que corresponde.
+  if ((factors?.totp ?? []).some((factor) => factor.status === "verified")) {
+    return { ok: false, error: t("alreadyEnrolled") };
+  }
+
   for (const factor of factors?.all ?? []) {
     if (factor.factor_type === "totp" && factor.status === "unverified") {
       await supabase.auth.mfa.unenroll({ factorId: factor.id });

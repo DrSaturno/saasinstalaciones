@@ -6,6 +6,7 @@ const {
   getUser,
   listFactors,
   unenroll,
+  enroll,
   challengeAndVerify,
   fetchTwoFactorStatus,
   enforceRateLimit,
@@ -14,6 +15,7 @@ const {
   getUser: vi.fn(),
   listFactors: vi.fn(),
   unenroll: vi.fn(),
+  enroll: vi.fn(),
   challengeAndVerify: vi.fn(),
   fetchTwoFactorStatus: vi.fn(),
   enforceRateLimit: vi.fn(),
@@ -26,13 +28,17 @@ vi.mock("next-intl/server", () => ({
 }));
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
-    auth: { getUser, mfa: { listFactors, unenroll, challengeAndVerify } },
+    auth: { getUser, mfa: { listFactors, unenroll, enroll, challengeAndVerify } },
   }),
 }));
 vi.mock("@/lib/data/two-factor", () => ({ fetchTwoFactorStatus }));
 vi.mock("@/lib/security/rate-limit", () => ({ enforceRateLimit, clientIp }));
 
-import { disableTotp, verifyTotpChallenge } from "@/lib/actions/two-factor";
+import {
+  disableTotp,
+  startTotpEnrollment,
+  verifyTotpChallenge,
+} from "@/lib/actions/two-factor";
 
 const status = (over = {}) => ({
   enrolled: true,
@@ -45,7 +51,13 @@ const status = (over = {}) => ({
 beforeEach(() => {
   vi.resetAllMocks();
   getUser.mockResolvedValue({ data: { user: { id: "user-a" } } });
-  listFactors.mockResolvedValue({ data: { totp: [{ id: "factor-a" }] } });
+  listFactors.mockResolvedValue({
+    data: { totp: [{ id: "factor-a", status: "verified" }], all: [] },
+  });
+  enroll.mockResolvedValue({
+    data: { id: "factor-b", totp: { qr_code: "qr", secret: "s3cr3t" } },
+    error: null,
+  });
   unenroll.mockResolvedValue({ error: null });
   challengeAndVerify.mockResolvedValue({ error: null });
   fetchTwoFactorStatus.mockResolvedValue(status());
@@ -108,5 +120,36 @@ describe("verificar el código del segundo factor", () => {
     });
     expect(enforceRateLimit).not.toHaveBeenCalled();
     expect(challengeAndVerify).not.toHaveBeenCalled();
+  });
+});
+
+describe("enrolar la verificación en dos pasos", () => {
+  it("no enrola un segundo TOTP sobre uno ya verificado", async () => {
+    // Con dos factores, `verifyTotpChallenge` y `disableTotp` toman `totp[0]`,
+    // que es cualquiera de los dos: el código de la app puede no verificar, y
+    // apagar la verificación puede quitar sólo uno. Para cambiar de aplicación
+    // hay que apagarla primero, y eso exige AAL2.
+    expect(await startTotpEnrollment()).toEqual({
+      ok: false,
+      error: "alreadyEnrolled",
+    });
+    expect(enroll).not.toHaveBeenCalled();
+  });
+
+  it("limpia lo que quedó a medias y enrola", async () => {
+    listFactors.mockResolvedValue({
+      data: {
+        totp: [{ id: "factor-viejo", status: "unverified" }],
+        all: [{ id: "factor-viejo", factor_type: "totp", status: "unverified" }],
+      },
+    });
+    const result = await startTotpEnrollment();
+    expect(unenroll).toHaveBeenCalledWith({ factorId: "factor-viejo" });
+    expect(result).toEqual({
+      ok: true,
+      factorId: "factor-b",
+      qrCode: "qr",
+      secret: "s3cr3t",
+    });
   });
 });

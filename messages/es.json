@@ -2511,7 +2511,8 @@
     "enable": "Activar",
     "disable": "Desactivar",
     "disabled": "Verificación en dos pasos desactivada",
-    "disableNeedsStepUp": "Para apagar la verificación en dos pasos tenés que ingresar tu código primero."
+    "disableNeedsStepUp": "Para apagar la verificación en dos pasos tenés que ingresar tu código primero.",
+    "alreadyEnrolled": "Ya tenés la verificación en dos pasos activada. Para usar otra aplicación, apagala primero."
   },
   "OfflineLogout": {
     "title": "Tenés trabajo sin enviar",
