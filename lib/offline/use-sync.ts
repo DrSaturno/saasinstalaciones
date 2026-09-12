@@ -117,6 +117,10 @@ export function useSync(userId: string) {
     async (id: string) => {
       await discardOutboxItem(id);
       await refresh();
+      // Descartar también cambia la cola, y hay pantallas que leen de ella para
+      // saber qué mostrar: la ficha de la orden deja de avisar del rechazo recién
+      // cuando se entera de que ese ítem ya no está.
+      window.dispatchEvent(new Event("instalapro:sync-settled"));
     },
     [refresh],
   );

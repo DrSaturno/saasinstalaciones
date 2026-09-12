@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { enqueue, latestPendingTransition } from "@/lib/offline/sync";
+import { enqueue, orderTransitionQueue } from "@/lib/offline/sync";
 import { notifyQueued } from "@/lib/offline/use-sync";
 import { prepareOfflineStorageForUser } from "@/lib/offline/session-storage";
 import { AcceptOrderButton } from "@/components/installer/accept-order-button";
@@ -52,8 +52,35 @@ export function TaskActions({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [status, setStatus] = useState<OrderStatus>(initialStatus);
+  const [rejected, setRejected] = useState(false);
   const [note, setNote] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+
+  /**
+   * Etapa que puso esta pantalla y que el servidor todavía no devolvió.
+   *
+   * Existe por una carrera real: la cola se vacía ANTES de que llegue la
+   * respuesta de `router.refresh()`, así que en ese hueco `initialStatus`
+   * sigue siendo la foto anterior al envío. Sin esta marca, la reconciliación
+   * la tomaba por verdad y la orden retrocedía sola de etapa —se avisaba "voy
+   * en camino" y el botón volvía a decir "voy en camino"— hasta que un
+   * segundo render la empujaba de nuevo hacia adelante.
+   */
+  const optimistic = useRef<OrderStatus | null>(null);
+
+  const applyOptimistic = (next: OrderStatus) => {
+    optimistic.current = next;
+    setRejected(false);
+    setStatus(next);
+  };
+
+  // Props nuevas: el servidor ya habló y su foto reemplaza a la optimista.
+  // Va en su propio efecto, atado SÓLO al estado que llega del servidor: el de
+  // abajo se re-suscribe por otros motivos, y limpiar ahí borraría la marca sin
+  // que nadie hubiera dicho nada nuevo sobre la orden.
+  useEffect(() => {
+    optimistic.current = null;
+  }, [initialStatus]);
 
   useEffect(() => {
     let active = true;
@@ -66,8 +93,29 @@ export function TaskActions({
           return;
         }
 
-        const queuedStatus = await latestPendingTransition(orderId);
-        if (active) setStatus(queuedStatus ?? initialStatus);
+        const { queued, rejected: refused } = await orderTransitionQueue(orderId);
+        if (!active) return;
+
+        if (queued) {
+          setRejected(false);
+          setStatus(queued);
+          return;
+        }
+
+        // Rechazo definitivo (la orden cambió por otro lado, el gerente la
+        // movió primero): acá sí manda el servidor, y hay que decirlo. Antes
+        // el retroceso era mudo y desde el teléfono parecía un error de la app.
+        if (refused) {
+          optimistic.current = null;
+          setRejected(true);
+          setStatus(initialStatus);
+          return;
+        }
+
+        // Cola vacía y sin rechazos: lo que se encoló entró. Se conserva la
+        // etapa aplicada hasta que lleguen props nuevas.
+        setRejected(false);
+        setStatus(optimistic.current ?? initialStatus);
       })();
     };
 
@@ -121,7 +169,7 @@ export function TaskActions({
         orderId,
         toStatus: "en_camino",
       });
-      setStatus("en_camino");
+      applyOptimistic("en_camino");
       done(t("departed"));
     });
   };
@@ -159,7 +207,7 @@ export function TaskActions({
         orderId,
         toStatus: "en_sitio",
       });
-      setStatus("en_sitio");
+      applyOptimistic("en_sitio");
       done(t("arrived"));
     });
   };
@@ -189,7 +237,7 @@ export function TaskActions({
         orderId,
         toStatus: "en_proceso",
       });
-      setStatus("en_proceso");
+      applyOptimistic("en_proceso");
       done(t("started"));
     });
   };
@@ -238,131 +286,149 @@ export function TaskActions({
         orderId,
         toStatus: "en_revision",
       });
-      setStatus("en_revision");
+      applyOptimistic("en_revision");
       done(t("sentReview"));
     });
   };
 
-  // Aceptar va ANTES de mirar el estado puntual: una orden recién asignada
-  // suele estar "pendiente" o "en relevamiento", no "planificada". Atarlo a un
-  // solo estado dejaba sin botón justo el caso más común — entrar desde la
-  // notificación a una orden que todavía no se confirmó.
-  //
-  // Es además precondición de arrancar, y la valida el trigger de la base: sin
-  // este corte, "Iniciar" encolaba una transición condenada a fallar, con la
-  // orden ya movida en pantalla y el ítem reintentando en silencio en la cola.
-  //
-  // Se limita a los estados PREVIOS al arranque a propósito: las órdenes que ya
-  // estaban en proceso antes de que existiera la confirmación tienen el campo
-  // vacío, y pedirles aceptar ahora las dejaría sin poder terminarse.
-  if (!acceptedAt && BEFORE_START.includes(status)) {
-    return (
-      <div className="flex flex-col gap-3">
-        <p className="text-sm text-muted-foreground">{t("acceptFirst")}</p>
-        <AcceptOrderButton orderId={orderId} />
-      </div>
-    );
-  }
+  const renderAction = () => {
+    // Aceptar va ANTES de mirar el estado puntual: una orden recién asignada
+    // suele estar "pendiente" o "en relevamiento", no "planificada". Atarlo a un
+    // solo estado dejaba sin botón justo el caso más común — entrar desde la
+    // notificación a una orden que todavía no se confirmó.
+    //
+    // Es además precondición de arrancar, y la valida el trigger de la base: sin
+    // este corte, "Iniciar" encolaba una transición condenada a fallar, con la
+    // orden ya movida en pantalla y el ítem reintentando en silencio en la cola.
+    //
+    // Se limita a los estados PREVIOS al arranque a propósito: las órdenes que ya
+    // estaban en proceso antes de que existiera la confirmación tienen el campo
+    // vacío, y pedirles aceptar ahora las dejaría sin poder terminarse.
+    if (!acceptedAt && BEFORE_START.includes(status)) {
+      return (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-muted-foreground">{t("acceptFirst")}</p>
+          <AcceptOrderButton orderId={orderId} />
+        </div>
+      );
+    }
 
-  // Una acción por etapa. La base acepta los atajos —se puede ir de
-  // `planificada` derecho a `en_proceso`—, pero la pantalla es un teléfono al
-  // sol y con guantes puestos: ofrecer las tres salidas posibles sería
-  // técnicamente correcto y prácticamente un estorbo. La secuencia se guía.
-  if (status === "planificada") {
-    return (
-      <Button onClick={depart} disabled={pending} size="field">
-        {pending ? t("departing") : t("depart")}
-      </Button>
-    );
-  }
-
-  if (status === "en_camino") {
-    return (
-      <div className="flex flex-col gap-4">
-        <p className="text-sm text-muted-foreground">{t("arrivalPhotosHint")}</p>
-        <Textarea
-          placeholder={t("arrivalNotePlaceholder")}
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          rows={2}
-        />
-        <FilePicker files={files} onChange={setFiles} disabled={pending} />
-        <Button onClick={arrive} disabled={pending} size="field">
-          {pending ? t("arriving") : t("arrive")}
+    // Una acción por etapa. La base acepta los atajos —se puede ir de
+    // `planificada` derecho a `en_proceso`—, pero la pantalla es un teléfono al
+    // sol y con guantes puestos: ofrecer las tres salidas posibles sería
+    // técnicamente correcto y prácticamente un estorbo. La secuencia se guía.
+    if (status === "planificada") {
+      return (
+        <Button onClick={depart} disabled={pending} size="field">
+          {pending ? t("departing") : t("depart")}
         </Button>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (status === "en_sitio") {
-    return (
-      <Button onClick={start} disabled={pending} size="field">
-        {pending ? t("starting") : t("start")}
-      </Button>
-    );
-  }
-
-  if (status === "en_proceso") {
-    const readiness = completionReadiness(photoCount, minPhotos, files.length);
-    return (
-      <div className="flex flex-col gap-4">
-        <Textarea
-          placeholder={t("notePlaceholder")}
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          rows={3}
-        />
-        <FilePicker files={files} onChange={setFiles} disabled={pending} />
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => saveProgress("progress")}
-            disabled={pending}
-            className="flex-1"
-          >
-            {t("saveProgress")}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => saveProgress("blocker")}
-            disabled={pending}
-            className="flex-1"
-          >
-            {t("reportBlocker")}
+    if (status === "en_camino") {
+      return (
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-muted-foreground">{t("arrivalPhotosHint")}</p>
+          <Textarea
+            placeholder={t("arrivalNotePlaceholder")}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={2}
+          />
+          <FilePicker files={files} onChange={setFiles} disabled={pending} />
+          <Button onClick={arrive} disabled={pending} size="field">
+            {pending ? t("arriving") : t("arrive")}
           </Button>
         </div>
-        {/* El conteo se ve ANTES de apretar, y suma las fotos que están por
-            adjuntarse en este mismo cierre. Un botón que se habilita cuando
-            alcanza le dice a alguien qué hacer; un error después de apretar,
-            sólo que se equivocó. */}
-        <div className="flex flex-col gap-1">
-          <Button onClick={finish} disabled={pending || !readiness.ready} size="field">
-            {pending ? t("sending") : t("markDone")}
-          </Button>
-          <p className={`text-xs ${readiness.ready ? "text-muted-foreground" : "text-[var(--warning)]"}`}>
-            {readiness.ready
-              ? t("photoProgress", { photos: readiness.photos, required: readiness.required })
-              : t("missingPhotos", { missing: readiness.missing, required: readiness.required })}
-          </p>
-        </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (status === "en_revision") {
+    if (status === "en_sitio") {
+      return (
+        <Button onClick={start} disabled={pending} size="field">
+          {pending ? t("starting") : t("start")}
+        </Button>
+      );
+    }
+
+    if (status === "en_proceso") {
+      const readiness = completionReadiness(photoCount, minPhotos, files.length);
+      return (
+        <div className="flex flex-col gap-4">
+          <Textarea
+            placeholder={t("notePlaceholder")}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={3}
+          />
+          <FilePicker files={files} onChange={setFiles} disabled={pending} />
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => saveProgress("progress")}
+              disabled={pending}
+              className="flex-1"
+            >
+              {t("saveProgress")}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => saveProgress("blocker")}
+              disabled={pending}
+              className="flex-1"
+            >
+              {t("reportBlocker")}
+            </Button>
+          </div>
+          {/* El conteo se ve ANTES de apretar, y suma las fotos que están por
+              adjuntarse en este mismo cierre. Un botón que se habilita cuando
+              alcanza le dice a alguien qué hacer; un error después de apretar,
+              sólo que se equivocó. */}
+          <div className="flex flex-col gap-1">
+            <Button onClick={finish} disabled={pending || !readiness.ready} size="field">
+              {pending ? t("sending") : t("markDone")}
+            </Button>
+            <p className={`text-xs ${readiness.ready ? "text-muted-foreground" : "text-[var(--warning)]"}`}>
+              {readiness.ready
+                ? t("photoProgress", { photos: readiness.photos, required: readiness.required })
+                : t("missingPhotos", { missing: readiness.missing, required: readiness.required })}
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    if (status === "en_revision") {
+      return (
+        <p className="text-sm text-muted-foreground">
+          {t("underReview")}
+        </p>
+      );
+    }
+
     return (
       <p className="text-sm text-muted-foreground">
-        {t("underReview")}
+        {status === "finalizada"
+          ? t("completed")
+          : t("notReady")}
       </p>
     );
-  }
+  };
 
+  // El rechazo va ARRIBA de la acción: es la explicación de por qué la etapa
+  // volvió atrás, y sin ella el retroceso se lee como una falla de la app.
   return (
-    <p className="text-sm text-muted-foreground">
-      {status === "finalizada"
-        ? t("completed")
-        : t("notReady")}
-    </p>
+    <div className="flex flex-col gap-3">
+      {rejected ? (
+        <p
+          role="alert"
+          className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive"
+        >
+          {t("transitionRejected")}
+        </p>
+      ) : null}
+      {renderAction()}
+    </div>
   );
 }
 

@@ -1724,7 +1724,8 @@
     "arrivalNotePlaceholder": "¿Cómo encontraste el lugar? (opcional)",
     "arrivalPhotosHint": "Si querés, sacá fotos del estado inicial. No son obligatorias.",
     "missingPhotos": "{missing, plural, =1 {Falta # foto} other {Faltan # fotos}} para poder cerrar (el mínimo es {required}).",
-    "photoProgress": "{photos} de {required} fotos"
+    "photoProgress": "{photos} de {required} fotos",
+    "transitionRejected": "El tablero de la empresa movió esta orden mientras la actualizabas, así que tu cambio no se aplicó. Revisá en qué etapa quedó y volvé a marcarla."
   },
   "SyncIndicator": {
     "offline": "Sin conexión",

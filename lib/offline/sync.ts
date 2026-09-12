@@ -73,20 +73,38 @@ export async function discardOutboxItem(id: string): Promise<void> {
   });
 }
 
-/** Último estado optimista aún pendiente para una orden reabierta sin señal. */
-export async function latestPendingTransition(
+export type OrderTransitionQueue = {
+  /** Último destino encolado que todavía está en camino al servidor. */
+  queued: OutboxItem["toStatus"] | null;
+  /** Último destino que el servidor rechazó de forma definitiva. */
+  rejected: OutboxItem["toStatus"] | null;
+};
+
+/**
+ * Qué sabe la cola sobre una orden: lo que falta enviar y lo que se rechazó.
+ *
+ * Las dos cosas van juntas porque la pantalla del instalador necesita
+ * distinguirlas. "Todavía no salió" significa que el estado optimista sigue
+ * siendo la mejor verdad disponible y hay que conservarlo; "salió y lo
+ * rechazaron" significa lo contrario —volver a lo que dice el servidor— y
+ * además obliga a decir por qué. Devolver sólo lo pendiente, como antes,
+ * hacía que los dos casos se vieran igual: la etapa retrocedía sola y sin
+ * explicación.
+ */
+export async function orderTransitionQueue(
   orderId: string,
-): Promise<OutboxItem["toStatus"] | null> {
+): Promise<OrderTransitionQueue> {
   const transitions = await db.outbox
     .where("orderId")
     .equals(orderId)
-    .filter(
-      (item) =>
-        item.kind === "transition" && !item.blocked && Boolean(item.toStatus),
-    )
+    .filter((item) => item.kind === "transition" && Boolean(item.toStatus))
     .toArray();
   transitions.sort((a, b) => b.createdAt - a.createdAt);
-  return transitions[0]?.toStatus ?? null;
+
+  return {
+    queued: transitions.find((item) => !item.blocked)?.toStatus ?? null,
+    rejected: transitions.find((item) => item.blocked)?.toStatus ?? null,
+  };
 }
 
 let flushing = false;
