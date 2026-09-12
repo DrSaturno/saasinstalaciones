@@ -52,13 +52,22 @@ jobs:
       - name: Production build
         run: pnpm build
 
-      # Informativo, no bloqueante (OPS-20). La auditoría de seguridad dejó 6
-      # vulnerabilidades high aceptadas como residuales: son DoS de tiempo de
-      # build en transitivas de `next`/`exceljs`, sin exploit en esta app, y
-      # forzarlas con overrides saltaba de versión mayor y rompía el framework.
-      # Hacerlo bloqueante dejaría el CI permanentemente en rojo y se volvería
-      # ruido que nadie mira. Queda visible para detectar lo que SÍ es nuevo.
-      - name: Dependency audit (informativo)
+      # Dos pasos, a propósito.
+      #
+      # `critical` BLOQUEA. La auditoría del 11-09-2026 encontró que el proyecto
+      # llevaba dos RCE no autenticados de `next` (AVIF en la API de imágenes, y
+      # hosts Windows) mientras este job seguía en verde: era informativo entero
+      # y su comentario declaraba 6 high residuales cuando el informe real ya
+      # marcaba 17 high y 2 critical. La nota vieja tapaba la deriva.
+      #
+      # `high` sigue informativo: son DoS de tiempo de build en transitivas de
+      # `next`/`exceljs`, sin exploit en esta app, y forzarlas con overrides
+      # salta de versión mayor. Hacerlo bloqueante dejaría el CI en rojo
+      # permanente y se volvería ruido que nadie mira.
+      - name: Dependency audit (critical bloquea)
+        run: pnpm audit --audit-level=critical
+
+      - name: Dependency audit (high, informativo)
         continue-on-error: true
         run: pnpm audit --audit-level=high
 
