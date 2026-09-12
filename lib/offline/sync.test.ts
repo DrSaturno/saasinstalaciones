@@ -58,7 +58,7 @@ vi.mock("@/lib/offline/db", () => ({ db: state.db }));
 
 import {
   discardOutboxItem,
-  latestPendingTransition,
+  orderTransitionQueue,
   queueSnapshot,
   retryOutboxItem,
 } from "@/lib/offline/sync";
@@ -145,7 +145,7 @@ describe("offline queue recovery", () => {
     expect(state.items).toHaveLength(0);
   });
 
-  it("recupera el último estado optimista no bloqueado", async () => {
+  it("separa el último estado optimista del último rechazo", async () => {
     state.items.push(
       {
         id: "first",
@@ -174,6 +174,20 @@ describe("offline queue recovery", () => {
       },
     );
 
-    await expect(latestPendingTransition("order-1")).resolves.toBe("en_sitio");
+    // Las dos cosas viajan juntas a propósito: la ficha de la orden conserva
+    // lo encolado y, por separado, avisa del rechazo. Devolver sólo lo primero
+    // hacía que un rechazo se viera igual que "ya se envió" y la etapa
+    // retrocediera en pantalla sin explicación.
+    await expect(orderTransitionQueue("order-1")).resolves.toEqual({
+      queued: "en_sitio",
+      rejected: "en_proceso",
+    });
+  });
+
+  it("no reporta rechazo cuando la cola se vacía sin conflictos", async () => {
+    await expect(orderTransitionQueue("order-1")).resolves.toEqual({
+      queued: null,
+      rejected: null,
+    });
   });
 });
