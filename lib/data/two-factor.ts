@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { logEvent } from "@/lib/observability";
 import type { Database, UserRole } from "@/types/database";
 
 /**
@@ -12,24 +13,69 @@ export type TwoFactorStatus = {
   enrolled: boolean;
   satisfied: boolean;
   mustStepUp: boolean;
+  /**
+   * `false` cuando Auth no pudo decir en qué nivel está la sesión.
+   *
+   * Antes esta función lanzaba en ese caso, y de sus nueve llamadores sólo uno
+   * —`app/api/master/_guard.ts`— lo envolvía. Los demás dejaban propagar: un
+   * hipó de Auth tumbaba el ÁREA ENTERA del gerente con "Algo salió mal", y en
+   * el login lanzaba DESPUÉS de que `signInWithPassword` ya había escrito las
+   * cookies, con lo que la persona veía un fallo estando de hecho autenticada.
+   *
+   * Es el modo de falla que `proxy.ts` evita a propósito y documenta (OPS-14):
+   * ante una caída de infraestructura, la respuesta correcta no es expulsar ni
+   * romper la pantalla. Por eso ahora el estado viaja como dato y cada llamador
+   * decide, en vez de una excepción que casi nadie atrapaba.
+   */
+  resolved: boolean;
+};
+
+/** Lo que se sabe cuando Auth no contesta: nada. */
+const UNRESOLVED: TwoFactorStatus = {
+  enrolled: false,
+  satisfied: false,
+  mustStepUp: false,
+  resolved: false,
 };
 
 export async function fetchTwoFactorStatus(
   supabase: SupabaseClient<Database>,
 ): Promise<TwoFactorStatus> {
-  const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (error || !data || !data.currentLevel || !data.nextLevel) {
-    throw new Error("mfa_status_unavailable");
+  let data: Awaited<
+    ReturnType<typeof supabase.auth.mfa.getAuthenticatorAssuranceLevel>
+  >["data"] = null;
+  try {
+    const result = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (result.error) {
+      logEvent("error", "two_factor.status_unavailable", {
+        reason: result.error.name,
+      });
+      return UNRESOLVED;
+    }
+    data = result.data;
+  } catch (error) {
+    logEvent("error", "two_factor.status_unavailable", {
+      reason: error instanceof Error ? error.name : "unknown",
+    });
+    return UNRESOLVED;
   }
-  const current = data?.currentLevel ?? null;
-  const next = data?.nextLevel ?? null;
+
+  // Sin sesión resoluble, supabase-js devuelve los dos niveles en null y SIN
+  // error. Eso no es "no tiene segundo factor": es "no sé".
+  if (!data?.currentLevel || !data.nextLevel) {
+    logEvent("error", "two_factor.status_unavailable", { reason: "no_session" });
+    return UNRESOLVED;
+  }
+
+  const current = data.currentLevel;
+  const next = data.nextLevel;
 
   // `nextLevel === 'aal2'` es la señal de que existe un factor verificado
   // (Supabase sólo eleva el objetivo cuando hay con qué). `currentLevel` dice
   // si la sesión ya lo cumplió.
   const enrolled = next === "aal2";
   const satisfied = current === "aal2";
-  return { enrolled, satisfied, mustStepUp: enrolled && !satisfied };
+  return { enrolled, satisfied, mustStepUp: enrolled && !satisfied, resolved: true };
 }
 
 /**
@@ -65,6 +111,12 @@ export function twoFactorGate(
   status: TwoFactorStatus,
   role: UserRole,
 ): "/two-factor/verify" | "/two-factor/setup" | null {
+  // Estado desconocido: se decide por el rol, no por la ausencia de datos.
+  // A quien tiene MFA obligatoria se lo manda a verificar —fallar cerrado es
+  // lo correcto ahí—; al resto se lo deja pasar, porque para ellos el segundo
+  // factor es opcional y bloquearlos convertiría una falla de Auth en una
+  // expulsión. Los datos siguen acotados por RLS en los dos casos.
+  if (!status.resolved) return mfaRequiredFor(role) ? "/two-factor/verify" : null;
   if (status.satisfied) return null;
   if (status.mustStepUp) return "/two-factor/verify";
   if (mfaRequiredFor(role)) return "/two-factor/setup";

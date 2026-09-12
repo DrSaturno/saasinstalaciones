@@ -12,9 +12,14 @@ export default async function TwoFactorVerifyPage() {
 
   const supabase = await createClient();
   const status = await fetchTwoFactorStatus(supabase);
-  // Ya subió a AAL2: a su área. Sin factor todavía: primero hay que enrolar.
-  if (status.satisfied) redirect(ROLE_HOME[user.role]);
-  if (!status.enrolled) redirect("/two-factor/setup");
+  // Sin estado no se decide nada: se ofrece el código igual. `status.enrolled`
+  // vale `false` cuando Auth no contestó, y tomarlo por "no tiene factor"
+  // mandaría a enrolar a alguien que ya lo tiene.
+  if (status.resolved) {
+    // Ya subió a AAL2: a su área. Sin factor todavía: primero hay que enrolar.
+    if (status.satisfied) redirect(ROLE_HOME[user.role]);
+    if (!status.enrolled) redirect("/two-factor/setup");
+  }
 
   return (
     <Card>

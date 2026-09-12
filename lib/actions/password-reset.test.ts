@@ -11,10 +11,11 @@ vi.mock("next-intl/server", () => ({
 const resetPasswordForEmail = vi.fn();
 const getUser = vi.fn();
 const updateUser = vi.fn();
+const signOut = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
-    auth: { resetPasswordForEmail, getUser, updateUser },
+    auth: { resetPasswordForEmail, getUser, updateUser, signOut },
   }),
 }));
 

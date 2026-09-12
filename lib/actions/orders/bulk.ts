@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { orderBatchSchema } from "@/lib/domain/order-intake";
-import { resolveBatchScope } from "@/lib/domain/order-batch";
+import { ordersToFinish, resolveBatchScope } from "@/lib/domain/order-batch";
 import { hasActiveCompanyRole } from "@/lib/data/company-membership-roles";
 import { createCorrelationId, logEvent } from "@/lib/observability";
 import { activitiesFor } from "@/lib/domain/activity-kind";
@@ -206,6 +206,9 @@ export async function createOrdersForProject(
 
   let created = 0;
   let assignmentWarnings = 0;
+  let duplicateBatch = false;
+  const toFinish: string[] = [];
+
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
     const batch = rows.slice(i, i + BATCH_SIZE);
     const { data: insertedOrders, error } = await supabase
@@ -215,8 +218,14 @@ export async function createOrdersForProject(
     if (error) {
       // 23505 con este lote significa que la MISMA confirmación ya se procesó
       // —doble clic, reintento de red, dos pestañas—. Las órdenes existen: no
-      // es un fallo, es la protección funcionando. Se corta en silencio en vez
-      // de mostrar un error por algo que salió bien la primera vez.
+      // es un fallo, es la protección funcionando.
+      //
+      // Antes esto cortaba acá mismo. Pero "las órdenes existen" no es lo
+      // mismo que "están terminadas": si el intento anterior se cortó a mitad
+      // del bucle de abajo —lo que pasa con proyectos grandes, ver más abajo—,
+      // quedaron órdenes sin actividad. Salir en este punto las condenaba,
+      // porque el siguiente intento también entra por acá. Se sigue hasta la
+      // pasada de reparación.
       if (error.code === "23505" && parsed.data.batchId) {
         logEvent("info", "orders.bulk_create.duplicate_batch", {
           correlation_id: correlationId,
@@ -224,7 +233,8 @@ export async function createOrdersForProject(
           project_id: projectId,
           batch_id: parsed.data.batchId,
         });
-        return { error: null, created, skipped, revisits, alreadyCreated: created === 0 };
+        duplicateBatch = true;
+        break;
       }
       // Un lote que corta a la mitad deja el proyecto con órdenes parciales:
       // hay que poder saber cuántas entraron sin recontar a mano.
@@ -242,35 +252,62 @@ export async function createOrdersForProject(
         skipped,
       };
     }
-    created += batch.length;
+    created += insertedOrders?.length ?? 0;
+    for (const order of insertedOrders ?? []) toFinish.push(order.id);
+  }
 
-    // Actividades, horario y —recién con las dos cosas ya existiendo—
-    // asignación, orden por orden. Secuencial y no en paralelo a propósito:
-    // el lock del gate es por instalador, así que N asignaciones simultáneas
-    // a la misma persona sólo agregarían contención sin ganar nada; una
-    // orden que falla acá queda creada sin esos pasos, recuperable editándola
-    // — mismo criterio que el alta individual.
-    for (const order of insertedOrders ?? []) {
-      await supabase.rpc("create_order_activities", {
-        p_order_id: order.id,
-        p_include_survey: includeSurvey,
-        p_include_execution: includeExecution,
+  // Órdenes de ESTE lote que todavía no están terminadas: o las acaba de crear
+  // el bucle de arriba, o las dejó a medias un intento anterior que se cortó.
+  // El criterio vive en `ordersToFinish`, que explica por qué y está testeado.
+  let toProcess = toFinish;
+  if (parsed.data.batchId) {
+    const { data: unfinished } = await supabase
+      .from("work_orders")
+      .select("id, work_activities(id)")
+      .eq("project_id", projectId)
+      .eq("batch_id", parsed.data.batchId)
+      .overrideTypes<{ id: string; work_activities: { id: string }[] }[]>();
+    toProcess = ordersToFinish({
+      insertedIds: toFinish,
+      batchOrders: (unfinished ?? []).map((order) => ({
+        id: order.id,
+        activityCount: order.work_activities.length,
+      })),
+    });
+  }
+
+  // Actividades, horario y —recién con las dos cosas ya existiendo— asignación,
+  // orden por orden. Secuencial y no en paralelo a propósito: el lock del gate
+  // es por instalador, así que N asignaciones simultáneas a la misma persona
+  // sólo agregarían contención sin ganar nada.
+  //
+  // `create_order_activities` es idempotente (devuelve `created: false` si la
+  // orden ya las tiene), así que repetir esta pasada sobre una orden terminada
+  // no hace nada. Eso es lo que vuelve reanudable al alta masiva.
+  for (const orderId of toProcess) {
+    await supabase.rpc("create_order_activities", {
+      p_order_id: orderId,
+      p_include_survey: includeSurvey,
+      p_include_execution: includeExecution,
+    });
+    await syncActivitySchedule(supabase, orderId, {
+      date: parsed.data.scheduledDate,
+      startTime: parsed.data.scheduledStartTime,
+      endTime: parsed.data.scheduledEndTime,
+      durationMinutes: parsed.data.estimatedDurationMinutes,
+    });
+    if (parsed.data.installerId) {
+      const gateResult = await assignInstallerThroughGate(supabase, {
+        orderId,
+        installerId: parsed.data.installerId,
+        operationId: crypto.randomUUID(),
       });
-      await syncActivitySchedule(supabase, order.id, {
-        date: parsed.data.scheduledDate,
-        startTime: parsed.data.scheduledStartTime,
-        endTime: parsed.data.scheduledEndTime,
-        durationMinutes: parsed.data.estimatedDurationMinutes,
-      });
-      if (parsed.data.installerId) {
-        const gateResult = await assignInstallerThroughGate(supabase, {
-          orderId: order.id,
-          installerId: parsed.data.installerId,
-          operationId: crypto.randomUUID(),
-        });
-        if (!gateResult.available) assignmentWarnings += 1;
-      }
+      if (!gateResult.available) assignmentWarnings += 1;
     }
+  }
+
+  if (duplicateBatch) {
+    return { error: null, created, skipped, revisits, alreadyCreated: created === 0 };
   }
 
   const assigned = created - assignmentWarnings;

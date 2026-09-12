@@ -39,12 +39,14 @@ export async function requirePlatformAdmin(): Promise<
     };
   }
 
-  try {
-    if (twoFactorGate(await fetchTwoFactorStatus(supabase), profile.role)) {
-      return { error: NextResponse.json({ error: t("accessDenied") }, { status: 403 }) };
-    }
-  } catch {
+  // Una API sí puede ser honesta y devolver 503: no hay pantalla que romper.
+  // El service_role no se entrega sin saber en qué nivel está la sesión.
+  const twoFactor = await fetchTwoFactorStatus(supabase);
+  if (!twoFactor.resolved) {
     return { error: NextResponse.json({ error: t("unexpected") }, { status: 503 }) };
+  }
+  if (twoFactorGate(twoFactor, profile.role)) {
+    return { error: NextResponse.json({ error: t("accessDenied") }, { status: 403 }) };
   }
 
   return { admin: createAdminClient(), userId: user.id };

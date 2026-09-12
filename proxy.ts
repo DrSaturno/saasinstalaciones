@@ -17,13 +17,41 @@ const ROLE_HOME: Record<UserRole, string> = {
  * La coordinación es una membresía por empresa dentro del área instalador,
  * no un rol global adicional.
  */
-const ROLE_AREAS: Record<UserRole, readonly string[]> = {
+export const ROLE_AREAS: Record<UserRole, readonly string[]> = {
   platform_admin: ["/master"],
-  company_manager: ["/dashboard"],
+  // La lista del gerente declaraba SÓLO `/dashboard`. Como el corte de abajo
+  // es "está en el área de alguien pero no en la suya", todo el resto de su
+  // área —órdenes, proyectos, clientes, equipo, finanzas— no estaba en el área
+  // de nadie y el proxy no redirigía a quien entrara desde otro rol. No era un
+  // agujero (cada layout vuelve a comprobar el rol), pero la defensa en
+  // profundidad que este archivo dice dar no estaba donde se creía.
+  company_manager: [
+    "/dashboard",
+    "/projects",
+    "/orders",
+    "/clients",
+    "/team",
+    "/broadcasts",
+    "/finance",
+    "/agenda",
+    "/settings",
+    "/locations",
+  ],
   // `/earnings` y no `/finance`: esa ruta ya es del área empresa, y dos áreas
   // no pueden resolver a la misma. Además dice mejor lo que es para quien la
   // usa — son sus ingresos, no las finanzas de una empresa.
-  installer: ["/home", "/tasks", "/route", "/jobs", "/earnings", "/profile", "/coordination"],
+  //
+  // `/schedule` faltaba y es de campo, como el resto de esta lista.
+  installer: [
+    "/home",
+    "/tasks",
+    "/route",
+    "/jobs",
+    "/earnings",
+    "/profile",
+    "/coordination",
+    "/schedule",
+  ],
 };
 
 const ALL_AREAS = Object.values(ROLE_AREAS).flat();

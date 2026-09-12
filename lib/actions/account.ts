@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { createClient } from "@/lib/supabase/server";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 
 const schema = z
   .object({
@@ -53,7 +54,19 @@ export async function changePassword(
   const user = await getAuthorizedUser();
   if (!user?.email) return { error: t("notAuthenticated") };
 
+  // El paso 1 comprueba una contraseña, así que este formulario es un oráculo:
+  // quien tenga una sesión puede probar claves de a una sin límite. El freno de
+  // `login` no lo cubre —es otro cubo y va por IP—, así que va uno propio,
+  // atado a la persona porque acá ya se sabe quién es.
+  const gate = await enforceRateLimit("password_change", user.id, 8, 300);
+  if (!gate.allowed) return { error: t("tooManyAttempts") };
+
   // 1. Verificar la contraseña actual (reautenticación).
+  //
+  // `signInWithPassword` abre una sesión NUEVA, así que quien tenga verificación
+  // en dos pasos vuelve a AAL1 y va a tener que ingresar su código en la próxima
+  // navegación. Es el comportamiento correcto para un cambio de credencial, no
+  // un efecto a corregir.
   const { error: signInError } = await supabase.auth.signInWithPassword({
     email: user.email,
     password: parsed.data.currentPassword,
@@ -70,6 +83,13 @@ export async function changePassword(
     if (code === "same_password") return { error: t("samePassword") };
     return { error: t("operation") };
   }
+
+  // 3. Echar al resto de las sesiones.
+  //
+  // Cambiar la contraseña no revocaba nada: si la cuenta estaba comprometida,
+  // la sesión del atacante sobrevivía al cambio — justo en el momento en que la
+  // persona cree haber recuperado el control. `others` conserva la de acá.
+  await supabase.auth.signOut({ scope: "others" });
 
   return { error: null, ok: true };
 }

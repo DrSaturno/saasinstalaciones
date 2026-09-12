@@ -154,11 +154,33 @@ Deno.serve(async (request) => {
 
   webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);
   let delivered = 0;
+
+  // `push_sent_at` se marcaba al final y para TODO el lote, mirara o no si la
+  // entrega funcionó. Un 5xx transitorio del servicio de push dejaba la
+  // notificación marcada como enviada y nunca se reintentaba; y si la función
+  // se cortaba antes de ese update, la siguiente invocación reenviaba todo lo
+  // ya entregado. Se marca por notificación, y sólo lo que quedó resuelto.
+  const settled: string[] = [];
+
   for (const notification of notifications) {
     const targets = (subscriptions ?? []).filter((item) => item.user_id === notification.user_id);
-    for (const target of targets) {
+    const usable = targets.filter((target) => {
       const keys = target.keys as { p256dh?: string; auth?: string };
-      if (!keys.p256dh || !keys.auth) continue;
+      return Boolean(keys.p256dh && keys.auth);
+    });
+
+    // Sin destino al que mandar no hay nada pendiente: dejarla sin marcar la
+    // haría reintentar para siempre por alguien que no tiene push activado.
+    if (usable.length === 0) {
+      settled.push(notification.id);
+      continue;
+    }
+
+    let anyDelivered = false;
+    let anyRetryable = false;
+
+    for (const target of usable) {
+      const keys = target.keys as { p256dh: string; auth: string };
       try {
         await webpush.sendNotification(
           { endpoint: target.endpoint, keys: { p256dh: keys.p256dh, auth: keys.auth } },
@@ -170,20 +192,30 @@ Deno.serve(async (request) => {
           }),
         );
         delivered++;
+        anyDelivered = true;
       } catch (error) {
         const status = (error as { statusCode?: number }).statusCode;
         if (status === 404 || status === 410) {
+          // Suscripción muerta: se limpia y NO cuenta como fallo reintentable.
           await admin.from("push_subscriptions").delete().eq("user_id", target.user_id).eq("endpoint", target.endpoint);
+          continue;
         }
+        anyRetryable = true;
       }
     }
+
+    // Se cierra si llegó a alguien, o si no quedó ningún fallo que reintentar
+    // (todas las suscripciones estaban muertas y ya se borraron).
+    if (anyDelivered || !anyRetryable) settled.push(notification.id);
   }
 
-  await admin
-    .from("notifications")
-    .update({ push_sent_at: new Date().toISOString() })
-    .in("id", notifications.map((item) => item.id));
-  return response({ delivered });
+  if (settled.length) {
+    await admin
+      .from("notifications")
+      .update({ push_sent_at: new Date().toISOString() })
+      .in("id", settled);
+  }
+  return response({ delivered, pending: notifications.length - settled.length });
 });
 
 function notificationFilter(input: Input): { type: string; data: Record<string, string> } {

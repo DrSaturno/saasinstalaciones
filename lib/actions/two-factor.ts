@@ -3,6 +3,7 @@
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { fetchTwoFactorStatus } from "@/lib/data/two-factor";
 import { clientIp, enforceRateLimit } from "@/lib/security/rate-limit";
 
 /**
@@ -34,6 +35,17 @@ export async function startTotpEnrollment(): Promise<EnrollState> {
   if (!userData.user) return { ok: false, error: t("notAuthenticated") };
 
   const { data: factors } = await supabase.auth.mfa.listFactors();
+
+  // Con un factor YA verificado, enrolar otro deja la cuenta con dos TOTP.
+  // A partir de ahí `verifyTotpChallenge` y `disableTotp` toman `totp[0]`, que
+  // es cualquiera de los dos: el código de la app puede no verificar, y apagar
+  // la verificación puede quitar sólo uno y dejar la otra puesta. Para cambiar
+  // de aplicación hay que apagarla primero —y eso ahora exige AAL2—, que es
+  // justamente la secuencia que corresponde.
+  if ((factors?.totp ?? []).some((factor) => factor.status === "verified")) {
+    return { ok: false, error: t("alreadyEnrolled") };
+  }
+
   for (const factor of factors?.all ?? []) {
     if (factor.factor_type === "totp" && factor.status === "unverified") {
       await supabase.auth.mfa.unenroll({ factorId: factor.id });
@@ -101,10 +113,16 @@ export async function verifyTotpChallenge(input: {
   const parsed = z.object({ code: z.string().trim().regex(/^\d{6}$/) }).safeParse(input);
   if (!parsed.success) return { ok: false, error: t("badCode") };
 
-  const gate = await enforceRateLimit("mfa_verify", await clientIp(), 10, 300);
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { ok: false, error: t("notAuthenticated") };
+
+  // Por usuario y no por IP: acá ya se sabe quién es. Atarlo a la IP dejaba a
+  // una oficina entera detrás de un NAT compartiendo diez intentos, y a la vez
+  // le regalaba el límite a quien tuviera varias direcciones.
+  const gate = await enforceRateLimit("mfa_verify", userData.user.id, 10, 300);
   if (!gate.allowed) return { ok: false, error: t("tooManyCodes") };
 
-  const supabase = await createClient();
   const { data: factors } = await supabase.auth.mfa.listFactors();
   const totp = factors?.totp?.[0];
   if (!totp) return { ok: false, error: t("noFactor") };
@@ -118,14 +136,34 @@ export async function verifyTotpChallenge(input: {
 }
 
 /**
- * Da de baja la verificación en dos pasos. Sólo se ofrece a quien puede
- * apagarla — los roles con MFA obligatoria no ven este botón (lo corta la UI);
- * si aun así llega acá, Supabase la deja apagar, pero el layout la va a exigir
- * de nuevo en la próxima navegación, así que no hay forma de quedar sin ella.
+ * Da de baja la verificación en dos pasos.
+ *
+ * **Exige la sesión en AAL2.** Antes esto se apoyaba en que "Supabase la deja
+ * apagar" y en que el layout la volvería a pedir — una suposición sobre el
+ * comportamiento del proveedor que este repo no verifica en ningún test. Si esa
+ * suposición fuera falsa, cualquiera con una sesión AAL1 (una cookie robada,
+ * una sesión vieja de antes del enrolamiento) podía apagarle el segundo factor
+ * a otra persona y anular la protección para siempre. Apagar una defensa tiene
+ * que exigir haberla pasado; el chequeo es barato y vale en los dos escenarios.
  */
 export async function disableTotp(): Promise<VerifyState> {
   const t = await getTranslations("TwoFactor");
   const supabase = await createClient();
+
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { ok: false, error: t("notAuthenticated") };
+
+  // Mismo cubo que la verificación: sin freno, esto es un botón para machacar.
+  const gate = await enforceRateLimit("mfa_verify", userData.user.id, 10, 300);
+  if (!gate.allowed) return { ok: false, error: t("tooManyCodes") };
+
+  const status = await fetchTwoFactorStatus(supabase);
+  // Sin poder confirmar el nivel de la sesión NO se apaga nada: ante la duda,
+  // la protección se queda puesta.
+  if (!status.resolved || !status.satisfied) {
+    return { ok: false, error: t("disableNeedsStepUp") };
+  }
+
   const { data: factors } = await supabase.auth.mfa.listFactors();
   const totp = factors?.totp?.[0];
   if (!totp) return { ok: true };

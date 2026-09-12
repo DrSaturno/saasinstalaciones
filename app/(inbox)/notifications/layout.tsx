@@ -6,6 +6,7 @@ import {
   isInstallerArea,
 } from "@/lib/auth";
 import { companyNav, installerNav, needsLocationReview } from "@/lib/navigation";
+import { fetchTwoFactorStatus, twoFactorGate } from "@/lib/data/two-factor";
 import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "@/components/shared/app-shell";
 
@@ -27,10 +28,15 @@ export default async function InboxLayout({ children }: { children: React.ReactN
   const companyMode = user.role === "company_manager";
   if (!companyMode && !isInstallerArea(user)) redirect("/");
 
+  // Ídem Mensajería: pantalla compartida, mismo gate que el área de cada uno.
+  const supabase = await createClient();
+  const twoFactor = twoFactorGate(await fetchTwoFactorStatus(supabase), user.role);
+  if (twoFactor) redirect(twoFactor);
+
   // Ídem Mensajería: la bandeja es una pantalla compartida, pero el menú tiene
   // que ser el del área de quien entra.
   const nav = companyMode
-    ? companyNav(t, { needsLocationReview: await needsLocationReview(await createClient()) })
+    ? companyNav(t, { needsLocationReview: await needsLocationReview(supabase) })
     : installerNav(t, { isCoordinator: isCoordinatorSomewhere(user) });
 
   return (

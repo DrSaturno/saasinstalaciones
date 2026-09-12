@@ -39,3 +39,46 @@ export function resolveBatchScope({
     revisits: toCreate.filter((id) => sitesWithOrders.has(id)).length,
   };
 }
+
+/**
+ * Qué órdenes del lote todavía necesitan el post-proceso.
+ *
+ * Después de insertar, el alta masiva le da a cada orden su actividad, su
+ * horario y —si corresponde— su instalador. Ese bucle puede cortarse: es
+ * trabajo O(n) con viajes secuenciales a la base y hay un límite de tiempo.
+ *
+ * Lo que dejaba un corte era permanente. Las órdenes insertadas quedaban SIN
+ * actividad de ejecución —invisibles para la agenda y la proyección— y el
+ * reintento no las reparaba: el índice único por lote hace que el insert falle
+ * con 23505, y el filtro de «puntos que ya tienen orden» las saltea igual.
+ *
+ * Por eso el post-proceso no se calcula sobre «lo que acabo de insertar» sino
+ * sobre «lo de este lote que todavía no está terminado». Como la RPC de
+ * actividades es idempotente, repetirla sobre una orden completa no hace nada,
+ * y el alta masiva se vuelve reanudable: reintentar avanza.
+ *
+ * Se acota al lote a propósito. Reparar cualquier orden sin actividad tocaría
+ * también las anteriores a que las actividades existieran, y les pondría el
+ * tipo de actividad de ESTE pedido, que no tiene por qué ser el suyo.
+ */
+export function ordersToFinish({
+  insertedIds,
+  batchOrders,
+}: {
+  /** Las que insertó esta corrida. */
+  insertedIds: string[];
+  /** Todas las del `batch_id`, con sus actividades (vacío = quedó a medias). */
+  batchOrders: { id: string; activityCount: number }[];
+}): string[] {
+  const finish = [...new Set(insertedIds)];
+  const known = new Set(finish);
+
+  for (const order of batchOrders) {
+    if (order.activityCount === 0 && !known.has(order.id)) {
+      finish.push(order.id);
+      known.add(order.id);
+    }
+  }
+
+  return finish;
+}

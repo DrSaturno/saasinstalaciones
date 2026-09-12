@@ -30,9 +30,14 @@ describe("action authorization", () => {
     expect(await getAuthorizedUser()).toEqual(user);
   });
 
-  it.each([{ data: null, error: { message: "unavailable" } }, { data: null, error: null }, { data: { currentLevel: null, nextLevel: null }, error: null }])("fails closed if MFA cannot be checked", async (result) => {
+  // La garantía no cambia —una acción no se ejecuta con el estado de seguridad
+  // en duda—, cambia cómo se expresa. Antes se dejaba propagar una excepción de
+  // `fetchTwoFactorStatus`, y esa misma excepción llegaba a los layouts de
+  // página y tumbaba el área entera del gerente por un hipó de Auth. Ahora la
+  // denegación es `null`, que es como todos los llamadores ya la leen.
+  it.each([{ data: null, error: { message: "unavailable", name: "AuthApiError" } }, { data: null, error: null }, { data: { currentLevel: null, nextLevel: null }, error: null }])("fails closed if MFA cannot be checked", async (result) => {
     getCurrentUser.mockResolvedValue(user);
     assurance.mockResolvedValue(result);
-    await expect(getAuthorizedUser()).rejects.toThrow("mfa_status_unavailable");
+    expect(await getAuthorizedUser()).toBeNull();
   });
 });
