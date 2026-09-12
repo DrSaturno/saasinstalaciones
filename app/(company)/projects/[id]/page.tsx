@@ -19,6 +19,23 @@ import { ProjectPerformancePanel } from "@/components/company/project-performanc
 import { ProjectSitesActions } from "@/components/company/project-sites-actions";
 import { buildProjectPerformance } from "@/lib/domain/project-performance";
 
+/**
+ * El alta masiva de órdenes vive en esta ruta, y es trabajo O(n) con viajes
+ * secuenciales a la base: por cada orden creada van la RPC de actividades, la
+ * sincronización de agenda y —si hay instalador— la compuerta de asignación.
+ * Con el proyecto insignia del blueprint (~2000 puntos) eso son miles de
+ * viajes, y sin este valor regía el límite por defecto de la plataforma, que es
+ * de segundos: la acción se cortaba a mitad del lote.
+ *
+ * 60 s es el techo del plan Hobby y es válido también en Pro, así que no ata el
+ * despliegue a un plan. No alcanza para 2000 órdenes de una: para eso la acción
+ * ahora es REANUDABLE —`create_order_activities` es idempotente y la pasada de
+ * reparación recupera lo que quedó a medias—, de modo que reintentar avanza en
+ * vez de condenar las órdenes incompletas. El alta en segundo plano queda como
+ * el paso siguiente.
+ */
+export const maxDuration = 60;
+
 export default async function ProjectDetailPage({
   params,
   searchParams,
