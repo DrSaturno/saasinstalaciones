@@ -201,13 +201,26 @@ export async function setRosterStatus(
     const { supabase, companyId } = await requireManager();
 
     // Al quitar del equipo, liberamos sus órdenes NO terminadas para reasignar.
+    //
+    // Va ANTES que la baja del roster a propósito: si se hiciera al revés y
+    // esto fallara, quedaría alguien fuera de la empresa con órdenes todavía
+    // asignadas, y la RLS `work_orders_installer_read` es
+    // `assigned_installer_id = auth.uid()` — seguiría leyendo trabajo de un
+    // equipo del que ya no forma parte. En este orden, un fallo deja a la
+    // persona adentro y sin órdenes: visible y reversible reasignando.
+    //
+    // El error se comprueba. Antes se descartaba, y una baja que no liberaba
+    // nada devolvía éxito igual.
     if (status === "removed") {
-      await supabase
+      const { error: releaseError } = await supabase
         .from("work_orders")
         .update({ assigned_installer_id: null })
         .eq("company_id", companyId)
         .eq("assigned_installer_id", installerId)
         .not("status", "in", "(finalizada,cancelada)");
+      // Se corta antes de tocar el roster: así no cambia nada y reintentar
+      // vuelve a empezar desde un estado limpio.
+      if (releaseError) return { error: releaseError.message };
     }
 
     const { error } = await supabase

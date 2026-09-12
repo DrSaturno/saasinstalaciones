@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { logEvent } from "@/lib/observability";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import {
@@ -85,7 +86,18 @@ export async function reviewOrderDelivery(input: {
     // La traza del punto 24: qué se decidió, quién, desde y hacia dónde. El
     // motivo va en la nota porque es lo que el instalador tiene que leer para
     // saber qué corregir.
-    await supabase.from("order_updates").insert({
+    // Si el rastro NO entra, el estado ya se movió igual. No se devuelve error
+    // —sería mentirle a quien ve el cambio aplicado, y provocaría el segundo
+    // clic— pero tampoco puede pasar en silencio: de este insert cuelga el
+    // trigger `notify_review_decision`, así que sin él el instalador NUNCA se
+    // entera de que la empresa movió su orden. Eso es exactamente la clase de
+    // desincronización entre tableros que se reportó desde el campo.
+    //
+    // Lo atómico de verdad es hacerlo en una RPC, como `set_order_payment_status`,
+    // que existe por este mismo motivo ("la columna y su historial tienen que
+    // moverse juntos o no moverse"). Queda anotado: acá al menos deja rastro en
+    // observabilidad en vez de desaparecer.
+    const { error: traceError } = await supabase.from("order_updates").insert({
       id: crypto.randomUUID(),
       order_id: orderId,
       company_id: companyId,
@@ -97,6 +109,15 @@ export async function reviewOrderDelivery(input: {
         ? reviewT(`note.${decision}`, { reason: reason.trim() })
         : reviewT("note.approve"),
     });
+    if (traceError) {
+      logEvent("error", "order.review.trace_failed", {
+        order_id: orderId,
+        company_id: companyId,
+        from_status: order.status,
+        to_status: toStatus,
+        database_code: traceError.code ?? null,
+      });
+    }
 
     revalidatePath("/orders");
     revalidatePath(`/orders/${orderId}`);
