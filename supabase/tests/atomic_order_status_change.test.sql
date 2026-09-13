@@ -9,7 +9,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(9);
+select plan(10);
 
 insert into public.companies (id, name, country, order_prefix)
 values ('e1000000-0000-0000-0000-000000000001', 'Empresa Atómica', 'AR', 'EAT');
