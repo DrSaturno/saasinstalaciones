@@ -105,9 +105,14 @@ test("un avance cargado sin red se encola, se avisa y se sincroniza al volver", 
   // Guardar un avance NO cambia el estado de la orden: es idempotente entre
   // reintentos de CI, a diferencia de una transición, que sólo se puede hacer
   // una vez y dejaría el segundo intento sin nada que probar.
+  //
+  // El texto es único: es lo que después se busca en la ficha para probar que
+  // el avance llegó de verdad, sin confundirlo con el de otra corrida.
+  const nota = `Avance offline de prueba ${Date.now()}`;
+
   await context.setOffline(true);
   try {
-    await noteBox.fill(`Avance offline de prueba ${Date.now()}`);
+    await noteBox.fill(nota);
     await page.getByRole("button", { name: /guardar avance/i }).click();
 
     // Lo que UX-003 vino a arreglar: sin red, la persona tiene que ver que su
@@ -149,4 +154,18 @@ test("un avance cargado sin red se encola, se avisa y se sincroniza al volver", 
       ].join("\n"),
     );
   }
+
+  // Que el cartel desaparezca sólo dice que la cola quedó VACÍA, y hay más de
+  // una forma de vaciarla: `prepareOfflineStorageForUser` la descarta entera
+  // cuando no puede verificar de quién es el almacenamiento. Sin esta
+  // comprobación el test daba verde igual si el avance se perdía en el camino
+  // — que es justo el desenlace que no puede pasar en campo.
+  //
+  // Lo que prueba que existe es encontrarlo en la orden después de recargar:
+  // eso sólo puede venir de la base.
+  await page.reload();
+  await expect(
+    page.getByText(nota),
+    "la cola se vació pero el avance no llegó a la orden",
+  ).toBeVisible({ timeout: 20_000 });
 });
