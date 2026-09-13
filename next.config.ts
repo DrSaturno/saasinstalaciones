@@ -22,6 +22,36 @@ import createNextIntlPlugin from "next-intl/plugin";
 // `'unsafe-eval'` SÓLO en desarrollo: React lo usa para el HMR y los stacks de
 // error; en producción ni Next ni React lo necesitan, así que se saca.
 const isDev = process.env.NODE_ENV !== "production";
+
+/**
+ * El origen de Supabase que esta instalación usa DE VERDAD.
+ *
+ * La lista de abajo tenía `https://*.supabase.co` a mano, que cubre el dominio
+ * por defecto de Supabase y nada más. Un Supabase autoalojado, con dominio
+ * propio, o el local de desarrollo y CI (`http://127.0.0.1:54321`) quedaban
+ * fuera: el navegador bloquea la conexión y la falla llega como
+ * `TypeError: Failed to fetch`, sin mensaje que explique nada.
+ *
+ * Eso ya estaba pasando en CI. El único test que ejercita Supabase DESDE EL
+ * NAVEGADOR es el de la cola offline —el resto de la aplicación lee y escribe
+ * desde el servidor, donde la CSP no aplica—, y por eso era el único que lo
+ * sufría. Descubierto persiguiendo por qué ese test fallaba.
+ *
+ * Derivarlo de la variable que la aplicación ya usa no afloja nada: es
+ * exactamente el mismo origen al que el cliente se conecta. El comodín se
+ * conserva para no depender de que la variable esté presente en build.
+ */
+const supabaseOrigins = (() => {
+  const configured = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  if (!configured) return [];
+  try {
+    const { origin } = new URL(configured);
+    // El websocket de Realtime va al mismo host con esquema ws/wss.
+    return [origin, origin.replace(/^http/, "ws")];
+  } catch {
+    return [];
+  }
+})();
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -37,7 +67,13 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https://*.supabase.co https://*.supabase.net https://maps.googleapis.com https://maps.gstatic.com https://*.googleusercontent.com",
   "font-src 'self' data: https://fonts.gstatic.com",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.supabase.net wss://*.supabase.net https://maps.googleapis.com",
+  [
+    "connect-src 'self'",
+    ...supabaseOrigins,
+    "https://*.supabase.co wss://*.supabase.co",
+    "https://*.supabase.net wss://*.supabase.net",
+    "https://maps.googleapis.com",
+  ].join(" "),
   "frame-src https://www.google.com",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
