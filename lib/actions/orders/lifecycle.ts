@@ -66,53 +66,38 @@ export async function transitionOrder(
     }
     if (block) return { error: t(block) };
 
-    const { error } = await supabase
-      .from("work_orders")
-      .update({ status: toStatus })
-      .eq("id", orderId)
-      .eq("company_id", companyId);
-    if (error) return { error: error.message };
-
-    // Rastro en el historial (order_updates). id generado en server acá:
-    // esta acción no es de área installer, no necesita idempotencia offline.
+    // El estado y su rastro se mueven JUNTOS, en una sola transacción.
     //
-    // `from_status`/`to_status` son la traza real (FLD-R2.1). La nota en prosa
-    // se sigue escribiendo porque hay historial viejo que sólo tiene eso, pero
-    // ya no es la fuente: era una frase traducida al idioma de quien ejecutó
-    // el cambio, y reconstruir el historial obligaba a parsearla.
-    // Si el rastro NO entra, el estado ya se movió igual. No se devuelve error
-    // —sería mentirle a quien ve el cambio aplicado, y provocaría el segundo
-    // clic— pero tampoco puede pasar en silencio: de este insert cuelga el
-    // trigger `notify_review_decision`, así que sin él el instalador NUNCA se
-    // entera de que la empresa movió su orden. Eso es exactamente la clase de
-    // desincronización entre tableros que se reportó desde el campo.
-    //
-    // Lo atómico de verdad es hacerlo en una RPC, como `set_order_payment_status`,
-    // que existe por este mismo motivo ("la columna y su historial tienen que
-    // moverse juntos o no moverse"). Queda anotado: acá al menos deja rastro en
-    // observabilidad en vez de desaparecer.
-    const { error: traceError } = await supabase.from("order_updates").insert({
-      id: crypto.randomUUID(),
-      order_id: orderId,
-      company_id: companyId,
-      type: "system",
-      from_status: order.status,
-      to_status: toStatus,
-      note: note?.trim()
+    // Antes eran dos escrituras sueltas y el error de la segunda se descartaba:
+    // el estado quedaba movido sin registro, y de ese insert cuelga el trigger
+    // `notify_review_decision`, así que el instalador nunca se enteraba de que
+    // la empresa movió su orden. `from_status`/`to_status` son la traza real
+    // (FLD-R2.1); la nota en prosa se sigue escribiendo porque hay historial
+    // viejo que sólo tiene eso, pero ya no es la fuente.
+    const { error } = await supabase.rpc("apply_order_status_change", {
+      p_order_id: orderId,
+      p_to_status: toStatus,
+      p_note: note?.trim()
         ? t("systemStatusChangeNote", {
             status: statusT(`order.${toStatus}`),
             note: note.trim(),
           })
         : t("systemStatusChange", { status: statusT(`order.${toStatus}`) }),
+      p_expected_status: order.status,
     });
-    if (traceError) {
-      logEvent("error", "order.transition.trace_failed", {
+    if (error) {
+      logEvent("error", "order.transition.failed", {
         order_id: orderId,
         company_id: companyId,
         from_status: order.status,
         to_status: toStatus,
-        database_code: traceError.code ?? null,
+        database_code: error.code ?? null,
       });
+      // `55000` es el compare-and-set: alguien movió la orden entre que se leyó
+      // y se escribió. Merece su propio mensaje — reintentar sirve, y decirle
+      // "error inesperado" invita a apretar de nuevo sin mirar qué cambió.
+      if (error.code === "55000") return { error: t("orderChangedMeanwhile") };
+      return { error: error.message };
     }
 
     revalidatePath("/orders");
