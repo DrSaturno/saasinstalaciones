@@ -10,8 +10,14 @@ import { logEvent } from "@/lib/observability";
  * falla que más duele (y el que hoy se manifiesta como un deslogueo masivo).
  *
  * Por eso comprueba las dependencias de verdad:
- *  - Supabase: alcanza la raíz de PostgREST. No consulta ninguna tabla, así que
- *    no depende del esquema ni de la RLS — sólo de que el servicio conteste.
+ *  - Supabase: alcanza `/auth/v1/health` (GoTrue). No consulta ninguna tabla,
+ *    así que no depende del esquema ni de la RLS — sólo de que el servicio
+ *    conteste. Antes pegaba a la raíz de PostgREST (`/rest/v1/`), pero en este
+ *    proyecto esa ruta exige `service_role` y devuelve 401 para el anon key —
+ *    daba "down" con la base andando perfecto (verificado en producción el
+ *    11-09-2026: PostgREST servía tablas reales con 200 mientras esta sonda
+ *    decía `down`). GoTrue expone un endpoint de salud público hecho para
+ *    esto, que sólo pide el `apikey` de la cabecera.
  *  - Redis: sólo si está configurado. Que falte no es una falla: el limitador
  *    degrada a no-op a propósito.
  *
@@ -48,7 +54,7 @@ async function checkSupabase(): Promise<CheckResult> {
   if (!url || !key) return { status: "not_configured", duration_ms: 0 };
 
   return timed(async () => {
-    const response = await fetch(`${url}/rest/v1/`, {
+    const response = await fetch(`${url}/auth/v1/health`, {
       headers: { apikey: key },
       signal: AbortSignal.timeout(TIMEOUT_MS),
       cache: "no-store",
