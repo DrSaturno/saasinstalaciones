@@ -4225,6 +4225,29 @@ export type Database = {
         Args: { p_company_id: string }
         Returns: boolean
       }
+      apply_order_status_change: {
+        Args: {
+          p_attribute_caller?: boolean
+          p_expected_status?: string
+          p_note: string
+          p_order_id: string
+          p_to_status: string
+        }
+        Returns: undefined
+      }
+      finish_order_batch: {
+        Args: {
+          p_date?: string
+          p_duration_minutes?: number
+          p_end_time?: string
+          p_include_execution?: boolean
+          p_include_survey?: boolean
+          p_installer_id?: string
+          p_order_ids: string[]
+          p_start_time?: string
+        }
+        Returns: Json
+      }
       create_order_activities: {
         Args: {
           p_include_execution?: boolean
