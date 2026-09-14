@@ -10,6 +10,7 @@ import { installerNav } from "@/lib/navigation";
 import { AppShell } from "@/components/shared/app-shell";
 import { SyncIndicator } from "@/components/installer/sync-indicator";
 import { ServiceWorkerRegister } from "@/components/installer/service-worker-register";
+import { InstallPwaHint } from "@/components/installer/install-pwa-hint";
 
 export default async function InstallerLayout({
   children,
@@ -35,6 +36,7 @@ export default async function InstallerLayout({
       showNotifications
     >
       <ServiceWorkerRegister userId={user.id} />
+      <InstallPwaHint />
       <SyncIndicator userId={user.id} />
       {children}
     </AppShell>

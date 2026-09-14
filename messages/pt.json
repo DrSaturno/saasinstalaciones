@@ -1727,6 +1727,18 @@
     "photoProgress": "{photos} de {required} fotos",
     "transitionRejected": "O painel da empresa moveu esta ordem enquanto você a atualizava, então sua mudança não foi aplicada. Confira em que etapa ela ficou e marque de novo."
   },
+  "InstallPwa": {
+    "banner": "Instale este app no seu celular: você entra mais rápido e pode continuar trabalhando sem sinal.",
+    "install": "Instalar",
+    "dismiss": "Fechar",
+    "iosTitle": "Como instalar no iPhone",
+    "iosDescription": "O Safari não instala sozinho: são quatro passos, uma única vez.",
+    "iosStep1": "Abra seinstala.com.ar no Safari (não funciona pelo Chrome no iPhone).",
+    "iosStep2": "Toque no ícone de Compartilhar, embaixo no centro da tela",
+    "iosStep3": "Deslize para baixo e escolha «Adicionar à Tela de Início».",
+    "iosStep4": "Confirme no canto superior direito.",
+    "gotIt": "Entendi"
+  },
   "SyncIndicator": {
     "offline": "Sem conexão",
     "notSent": "{count} não enviados",
