@@ -73,50 +73,37 @@ export async function reviewOrderDelivery(input: {
     }
 
     const toStatus = reviewTargetStatus(decision);
-    const { error } = await supabase
-      .from("work_orders")
-      .update({ status: toStatus })
-      .eq("id", orderId)
-      .eq("company_id", companyId)
-      // Compare-and-set: si otra persona ya resolvió esta entrega entre que se
-      // leyó y se escribe, esta decisión no pisa la suya.
-      .eq("status", order.status);
-    if (error) return { error: error.message };
 
-    // La traza del punto 24: qué se decidió, quién, desde y hacia dónde. El
-    // motivo va en la nota porque es lo que el instalador tiene que leer para
-    // saber qué corregir.
-    // Si el rastro NO entra, el estado ya se movió igual. No se devuelve error
-    // —sería mentirle a quien ve el cambio aplicado, y provocaría el segundo
-    // clic— pero tampoco puede pasar en silencio: de este insert cuelga el
-    // trigger `notify_review_decision`, así que sin él el instalador NUNCA se
-    // entera de que la empresa movió su orden. Eso es exactamente la clase de
-    // desincronización entre tableros que se reportó desde el campo.
+    // La decisión y su traza se mueven JUNTAS, en una sola transacción.
     //
-    // Lo atómico de verdad es hacerlo en una RPC, como `set_order_payment_status`,
-    // que existe por este mismo motivo ("la columna y su historial tienen que
-    // moverse juntos o no moverse"). Queda anotado: acá al menos deja rastro en
-    // observabilidad en vez de desaparecer.
-    const { error: traceError } = await supabase.from("order_updates").insert({
-      id: crypto.randomUUID(),
-      order_id: orderId,
-      company_id: companyId,
-      created_by: user.id,
-      type: "system",
-      from_status: order.status,
-      to_status: toStatus,
-      note: reviewNeedsReason(decision)
+    // `p_expected_status` es el compare-and-set: si otra persona ya resolvió
+    // esta entrega entre que se leyó y se escribe, esta decisión no pisa la
+    // suya. `p_attribute_caller` firma el rastro con quien decidió, que es lo
+    // que hace que `notify_review_decision` no le avise a alguien de su propia
+    // acción cuando coordina y ejecuta la misma orden.
+    //
+    // Antes eran dos escrituras sueltas y el error de la segunda se descartaba,
+    // así que una decisión podía quedar aplicada sin que el instalador se
+    // enterara nunca — el aviso cuelga de ese insert.
+    const { error } = await supabase.rpc("apply_order_status_change", {
+      p_order_id: orderId,
+      p_to_status: toStatus,
+      p_note: reviewNeedsReason(decision)
         ? reviewT(`note.${decision}`, { reason: reason.trim() })
         : reviewT("note.approve"),
+      p_expected_status: order.status,
+      p_attribute_caller: true,
     });
-    if (traceError) {
-      logEvent("error", "order.review.trace_failed", {
+    if (error) {
+      logEvent("error", "order.review.failed", {
         order_id: orderId,
         company_id: companyId,
         from_status: order.status,
         to_status: toStatus,
-        database_code: traceError.code ?? null,
+        database_code: error.code ?? null,
       });
+      if (error.code === "55000") return { error: t("orderChangedMeanwhile") };
+      return { error: error.message };
     }
 
     revalidatePath("/orders");

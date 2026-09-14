@@ -2088,7 +2088,8 @@
     "assignmentTravelConflict": "El tiempo entre este trabajo y el siguiente compromiso del instalador es insuficiente.",
     "assignmentActivityClosed": "Esta orden ya está cerrada; no se le puede asignar un instalador.",
     "invalidMinPhotos": "El mínimo de fotos tiene que estar entre 0 y 20.",
-    "tooManyAttempts": "Demasiados intentos. Esperá unos minutos y volvé a probar."
+    "tooManyAttempts": "Demasiados intentos. Esperá unos minutos y volvé a probar.",
+    "orderChangedMeanwhile": "Alguien movió esta orden mientras la actualizabas. Revisá en qué estado quedó y volvé a intentarlo."
   },
   "Coordination": {
     "title": "Coordinación",

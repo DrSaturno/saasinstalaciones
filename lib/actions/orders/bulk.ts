@@ -8,12 +8,21 @@ import { hasActiveCompanyRole } from "@/lib/data/company-membership-roles";
 import { createCorrelationId, logEvent } from "@/lib/observability";
 import { activitiesFor } from "@/lib/domain/activity-kind";
 import type { TablesInsert } from "@/types/database";
-import { assignInstallerThroughGate } from "./assignment-gate";
-import { syncActivitySchedule } from "./schedule";
 import { operatedCompany, requireOperator } from "./context";
 import type { BulkResult } from "./types";
 
 const BATCH_SIZE = 500;
+
+/**
+ * Cuántas órdenes termina `finish_order_batch` por llamada.
+ *
+ * El techo no es la red sino el `statement_timeout` que Supabase le pone al rol
+ * `authenticated`: la RPC corre las tres operaciones de cada orden dentro de
+ * una transacción, así que una tanda demasiado grande se pasa y no commitea
+ * nada. Cien deja margen de sobra y baja los viajes de cuatro por orden a uno
+ * cada cien.
+ */
+const FINISH_CHUNK = 100;
 
 /**
  * Crea una orden por cada punto del proyecto que todavía no tenga una orden
@@ -276,34 +285,59 @@ export async function createOrdersForProject(
     });
   }
 
-  // Actividades, horario y —recién con las dos cosas ya existiendo— asignación,
-  // orden por orden. Secuencial y no en paralelo a propósito: el lock del gate
-  // es por instalador, así que N asignaciones simultáneas a la misma persona
-  // sólo agregarían contención sin ganar nada.
+  // Actividades, horario y —recién con las dos cosas ya existiendo— asignación.
   //
-  // `create_order_activities` es idempotente (devuelve `created: false` si la
-  // orden ya las tiene), así que repetir esta pasada sobre una orden terminada
-  // no hace nada. Eso es lo que vuelve reanudable al alta masiva.
-  for (const orderId of toProcess) {
-    await supabase.rpc("create_order_activities", {
-      p_order_id: orderId,
-      p_include_survey: includeSurvey,
-      p_include_execution: includeExecution,
-    });
-    await syncActivitySchedule(supabase, orderId, {
-      date: parsed.data.scheduledDate,
-      startTime: parsed.data.scheduledStartTime,
-      endTime: parsed.data.scheduledEndTime,
-      durationMinutes: parsed.data.estimatedDurationMinutes,
-    });
-    if (parsed.data.installerId) {
-      const gateResult = await assignInstallerThroughGate(supabase, {
-        orderId,
-        installerId: parsed.data.installerId,
-        operationId: crypto.randomUUID(),
+  // El bucle corre DENTRO de la base, no acá. Antes eran cuatro viajes de red
+  // por orden (la RPC de actividades, el select de su actividad de ejecución,
+  // la RPC de horario y la compuerta): con los ~2000 puntos del proyecto
+  // insignia del blueprint son unos 8000 viajes secuenciales, que no entran en
+  // ningún límite de tiempo razonable. `finish_order_batch` hace lo mismo
+  // llamando a esas mismas funciones —no las duplica, las orquesta— y esto
+  // pasa a ser una llamada por tanda.
+  //
+  // En tandas y no todo junto porque Supabase le impone `statement_timeout` al
+  // rol `authenticated`: una transacción única de 2000 órdenes lo pasaría y no
+  // commitearía NADA, que es peor que el problema original. Cada tanda es una
+  // transacción que commitea sola, y si una falla, la pasada de reparación de
+  // arriba recupera lo que quedó a medias en el próximo intento.
+  //
+  // `create_order_activities` es idempotente, así que repetir una tanda sobre
+  // órdenes ya terminadas no hace nada. Eso es lo que vuelve reanudable al alta.
+  for (let i = 0; i < toProcess.length; i += FINISH_CHUNK) {
+    const chunk = toProcess.slice(i, i + FINISH_CHUNK);
+    const { data: result, error: finishError } = await supabase.rpc(
+      "finish_order_batch",
+      {
+        p_order_ids: chunk,
+        p_include_survey: includeSurvey,
+        p_include_execution: includeExecution,
+        p_date: parsed.data.scheduledDate || undefined,
+        p_start_time: parsed.data.scheduledStartTime || undefined,
+        p_end_time: parsed.data.scheduledEndTime || undefined,
+        p_duration_minutes: parsed.data.estimatedDurationMinutes ?? undefined,
+        p_installer_id: parsed.data.installerId || undefined,
+      },
+    );
+
+    if (finishError) {
+      // Las órdenes de esta tanda YA existen: cortar acá las deja sin actividad,
+      // que es justo el estado que la pasada de reparación sabe recuperar. Se
+      // registra con cuántas quedaron pendientes y se sigue con las que faltan,
+      // en vez de abortar el lote entero por una tanda.
+      logEvent("error", "orders.bulk_create.finish_failed", {
+        correlation_id: correlationId,
+        company_id: companyId,
+        project_id: projectId,
+        chunk_size: chunk.length,
+        database_code: finishError.code ?? null,
       });
-      if (!gateResult.available) assignmentWarnings += 1;
+      continue;
     }
+
+    const warnings = Number(
+      (result as { assignment_warnings?: number } | null)?.assignment_warnings ?? 0,
+    );
+    assignmentWarnings += warnings;
   }
 
   if (duplicateBatch) {
