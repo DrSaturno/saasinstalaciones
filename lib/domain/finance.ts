@@ -1,4 +1,4 @@
-import type { BillingMode, OrderCurrency, OrderStatus, PaymentStatus } from "@/types/database";
+import type { BillingMode, OrderCurrency, OrderStatus, PaymentStatus, ProjectStatus } from "@/types/database";
 
 /**
  * Dos plata distintas por orden, y conviene no confundirlas nunca:
@@ -10,7 +10,12 @@ import type { BillingMode, OrderCurrency, OrderStatus, PaymentStatus } from "@/t
  * funciona para los dos lados del producto. Para el instalador contesta «¿me
  * pagaron?», y para la empresa, «¿qué le debo a mi gente?».
  */
-export type FinanceProjectInput = { id: string; name: string; billingMode: BillingMode; contractAmount: number | null; currency: OrderCurrency };
+/**
+ * `status` llega hasta acá porque la deuda con el instalador no se puede
+ * decidir afuera: el fetcher ya no puede descartar borradores en la consulta
+ * sin esconder plata que se debe. Lo decide esta función, sección por sección.
+ */
+export type FinanceProjectInput = { id: string; name: string; status: ProjectStatus; billingMode: BillingMode; contractAmount: number | null; currency: OrderCurrency };
 export type FinanceOrderInput = { id: string; orderNumber: string; title: string; projectId: string; siteId: string; status: OrderStatus; amount: number | null; installerAmount: number | null; paymentStatus: PaymentStatus; currency: OrderCurrency; installerId: string | null; finalizedAt: string | null; scheduledDate: string | null };
 export type FinanceBreakdown = { name: string; currency: OrderCurrency; orders: number; contracted: number; completed: number; pending: number; installerCost: number };
 
@@ -75,6 +80,48 @@ export function buildFinancialOverview(projects: FinanceProjectInput[], orders: 
 
   for (const project of projects) {
     const allProjectOrders = liveOrders.filter((order) => order.projectId === project.id);
+
+    // La deuda con el instalador no caduca con el filtro de período ni depende
+    // de en qué estado esté el proyecto: una orden terminada y sin pagar es
+    // plata que se le debe, aunque el proyecto siga en borrador, esté pausado
+    // o falte mucho para cerrarlo. Cuando el proyecto se cobra entero al
+    // cliente (`billing_mode = 'project'`) esto es lo normal, no la excepción:
+    // los instaladores cobran por trabajo hecho mucho antes de que la empresa
+    // le facture a su cliente.
+    //
+    // Por eso esta pasada va ANTES del recorte por fecha y antes de descartar
+    // borradores, y recorre `allProjectOrders`. Tiene que coincidir con lo que
+    // el instalador ve en «Mis ingresos», que sale de `installer_earnings` y no
+    // sabe nada de períodos ni de estados de proyecto: si acá se filtrara de
+    // más, la empresa no vería —ni podría saldar— una deuda que la otra
+    // persona sí tiene en pantalla. Esa discrepancia se reportó desde el uso.
+    for (const order of allProjectOrders) {
+      if (order.status !== "finalizada" || order.paymentStatus !== "pending") continue;
+      const installerCost = Number(order.installerAmount ?? 0);
+      const installer = order.installerId
+        ? context.installerNames.get(order.installerId) ?? "Instalador"
+        : "Sin asignar";
+      pendingPayments.push({
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        title: order.title,
+        projectName: project.name,
+        installerName: installer,
+        installerCost,
+        currency: project.currency,
+        finalizedAt: order.finalizedAt,
+      });
+      const totals = pendingTotals.get(project.currency) ?? { total: 0, orders: 0 };
+      totals.total += installerCost;
+      totals.orders++;
+      pendingTotals.set(project.currency, totals);
+    }
+
+    // Un borrador todavía no es trabajo comprometido, así que no entra en las
+    // métricas del período. Su deuda ya quedó contada arriba, que es lo único
+    // que se le debe a alguien aunque el proyecto no esté confirmado.
+    if (project.status === "draft") continue;
+
     const projectOrders = allProjectOrders.filter((order) => {
       if (!context.dateFrom && !context.dateTo) return true;
       const date = order.status === "finalizada"
@@ -84,6 +131,7 @@ export function buildFinancialOverview(projects: FinanceProjectInput[], orders: 
       return (!context.dateFrom || date >= context.dateFrom) &&
         (!context.dateTo || date <= context.dateTo);
     });
+
     const contracted = project.billingMode === "project"
       ? allProjectOrders.length
         ? (Number(project.contractAmount ?? 0) / allProjectOrders.length) * projectOrders.length
@@ -112,25 +160,6 @@ export function buildFinancialOverview(projects: FinanceProjectInput[], orders: 
       addBreakdown(zoneMap, `${project.currency}:${zone}`, zone, project.currency, value, realized, installerCost);
       const installer = order.installerId ? context.installerNames.get(order.installerId) ?? "Instalador" : "Sin asignar";
       addBreakdown(installerMap, `${project.currency}:${installer}`, installer, project.currency, value, realized, installerCost);
-
-      // El trabajo se hizo y todavía no se le pagó: es deuda con el instalador.
-      // Se listan sólo las finalizadas — una orden en curso todavía no se debe.
-      if (order.status === "finalizada" && order.paymentStatus === "pending") {
-        pendingPayments.push({
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          title: order.title,
-          projectName: project.name,
-          installerName: installer,
-          installerCost,
-          currency: project.currency,
-          finalizedAt: order.finalizedAt,
-        });
-        const totals = pendingTotals.get(project.currency) ?? { total: 0, orders: 0 };
-        totals.total += installerCost;
-        totals.orders++;
-        pendingTotals.set(project.currency, totals);
-      }
 
       if (realized && order.finalizedAt) {
         const month = order.finalizedAt.slice(0, 7);

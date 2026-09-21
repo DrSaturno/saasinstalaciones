@@ -260,7 +260,7 @@ export async function fetchDashboardOverview(supabase: SupabaseClient<Database>,
   const completionChange = previousCompletions ? Math.round(((currentCompletions - previousCompletions) / previousCompletions) * 100) : currentCompletions ? null : 0;
 
   const finance = buildFinancialOverview(
-    projects.map((item) => ({ id: item.id, name: item.name, billingMode: item.billing_mode, contractAmount: item.contract_amount, currency: item.currency })),
+    projects.map((item) => ({ id: item.id, name: item.name, status: item.status, billingMode: item.billing_mode, contractAmount: item.contract_amount, currency: item.currency })),
     relevantOrders.map((item) => ({ id: item.id, orderNumber: item.order_number, title: item.title, projectId: item.project_id, siteId: item.site_id, status: item.status, amount: item.amount, installerAmount: item.installer_amount, paymentStatus: item.payment_status, currency: item.currency, installerId: item.assigned_installer_id, finalizedAt: item.finalized_at, scheduledDate: item.scheduled_date })),
     { siteZones: new Map(activeSites.map((site) => [site.id, site.zone])), installerNames: profileNames },
   );
