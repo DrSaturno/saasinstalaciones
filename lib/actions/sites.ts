@@ -6,6 +6,7 @@ import { z } from "zod";
 import { attachCanonicalLocations } from "@/lib/actions/canonical-locations";
 import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { siteInputSchema } from "@/lib/domain/sites";
+import { logEvent } from "@/lib/observability";
 import { createClient } from "@/lib/supabase/server";
 
 export type SiteActionState = { error: string | null; ok?: boolean; id?: string };
@@ -117,7 +118,18 @@ export async function createSite(
       })
       .select("id, company_id, client_id, name, address, city, state, zone, country, lat, lng, external_ref, contact_name, contact_phone, contact_email, opening_hours, access_notes, parking_notes, technical_notes, risk_notes, permanent_notes")
       .single();
-    if (error || !location) return { error: t("operation") };
+    if (error || !location) {
+      // Sin esto el motivo real se perdía: el gerente veía el mensaje genérico
+      // y el log no decía nada. Así pasó dos meses sin verse que el alta
+      // manual fallaba para todos con 42501 (RLS). Va el código de Postgres y
+      // no el texto: `logEvent` redacta `message` a propósito, y el código ya
+      // distingue permisos (42501), duplicado (23505) o restricción (23514).
+      logEvent("error", "site.create_failed", {
+        step: "location_insert",
+        pg_code: error?.code ?? "no_row_returned",
+      });
+      return { error: t("operation") };
+    }
 
     const attached = await attachCanonicalLocations(
       supabase,
@@ -126,7 +138,13 @@ export async function createSite(
       userId,
     );
     const siteId = attached.siteIds[0];
-    if (attached.error || !siteId) return { error: t("operation") };
+    if (attached.error || !siteId) {
+      logEvent("error", "site.create_failed", {
+        step: "attach_project",
+        failed: attached.error ? "write_error" : "no_site_id",
+      });
+      return { error: t("operation") };
+    }
     revalidateSitePaths(projectId, siteId);
     revalidatePath(`/locations/${locationId}`);
     return { error: null, ok: true, id: siteId };
