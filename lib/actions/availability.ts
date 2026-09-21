@@ -4,11 +4,12 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { databaseIdSchema } from "@/lib/domain/order-intake";
-import { unavailabilitySchema, weeklyAvailabilitySchema, type WeeklyAvailabilityInput } from "@/lib/domain/availability";
+import { unavailabilitySchema, weeklyAvailabilitySchema, type WeeklyAvailabilityInput, SERVICE_RADIUS_KM, UNAVAILABILITY_REVIEW_NOTE_MAX } from "@/lib/domain/availability";
 import { hasActiveCompanyRole } from "@/lib/data/company-membership-roles";
 import { isInstallerArea } from "@/lib/auth";
 import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { createClient } from "@/lib/supabase/server";
+import { FIELD, LATITUDE, LONGITUDE } from "@/lib/domain/field-rules";
 
 type Result = { error: string | null; ok?: boolean; id?: string };
 
@@ -35,11 +36,13 @@ function revalidateAvailability() {
 
 const coverageSchema = z.object({
   zones: z.array(z.string().trim().min(2).max(80)).max(24),
-  baseAddress: z.string().trim().max(200),
-  baseCity: z.string().trim().max(120),
-  baseLat: z.union([z.literal(""), z.coerce.number().min(-90).max(90)]).transform((v) => (v === "" ? null : v)),
-  baseLng: z.union([z.literal(""), z.coerce.number().min(-180).max(180)]).transform((v) => (v === "" ? null : v)),
-  serviceRadiusKm: z.union([z.literal(""), z.coerce.number().int().min(1).max(3000)]).transform((v) => (v === "" ? null : v)),
+  // Dirección y ciudad con la regla común (`FIELD`): la base del instalador
+  // admitía 200 caracteres de dirección y un local, 300.
+  baseAddress: z.string().trim().max(FIELD.address.max),
+  baseCity: z.string().trim().max(FIELD.city.max),
+  baseLat: z.union([z.literal(""), z.coerce.number().min(LATITUDE.min).max(LATITUDE.max)]).transform((v) => (v === "" ? null : v)),
+  baseLng: z.union([z.literal(""), z.coerce.number().min(LONGITUDE.min).max(LONGITUDE.max)]).transform((v) => (v === "" ? null : v)),
+  serviceRadiusKm: z.union([z.literal(""), z.coerce.number().int().min(SERVICE_RADIUS_KM.min).max(SERVICE_RADIUS_KM.max)]).transform((v) => (v === "" ? null : v)),
 });
 
 export type CoverageState = { error: string | null; ok?: boolean };
@@ -185,7 +188,7 @@ export async function reviewUnavailability(
       .update({
         status: decision,
         reviewed_by: user.id,
-        review_note: note.trim().slice(0, 500),
+        review_note: note.trim().slice(0, UNAVAILABILITY_REVIEW_NOTE_MAX),
         reviewed_at: new Date().toISOString(),
       })
       .eq("id", id)

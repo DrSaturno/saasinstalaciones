@@ -11,6 +11,7 @@ import { ORDER_TRANSITIONS } from "@/lib/domain/transitions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { OrderStatus } from "@/types/database";
+import { SURVEY_NOTE } from "@/lib/domain/field-flow";
 
 /**
  * Acciones del coordinador sobre una orden, desde su ficha.
@@ -90,6 +91,7 @@ export function CoordinationOrderActions({
           <Textarea
             value={note}
             onChange={(event) => setNote(event.target.value)}
+            maxLength={SURVEY_NOTE.max}
             rows={3}
             className="mt-2"
             placeholder={t("surveyPlaceholder")}
@@ -99,7 +101,7 @@ export function CoordinationOrderActions({
             size="sm"
             className="mt-2"
             onClick={saveSurvey}
-            disabled={pending || note.trim().length < 3}
+            disabled={pending || note.trim().length < SURVEY_NOTE.min}
           >
             {t("surveySave")}
           </Button>

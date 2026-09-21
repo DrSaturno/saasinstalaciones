@@ -5,6 +5,7 @@ import { logEvent } from "@/lib/observability";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import {
+  MAX_REASON_LENGTH,
   MIN_REASON_LENGTH,
   reviewDecisionBlock,
   reviewNeedsReason,
@@ -17,7 +18,7 @@ import type { ActionState } from "./types";
 const schema = z.object({
   orderId: z.string().uuid(),
   decision: z.enum(["approve", "request_evidence", "request_changes", "reopen"]),
-  reason: z.string().trim().max(2000).optional().default(""),
+  reason: z.string().trim().max(MAX_REASON_LENGTH).optional().default(""),
 });
 
 /**

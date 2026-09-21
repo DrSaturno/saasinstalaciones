@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { MONEY_MAX } from "@/lib/domain/field-rules";
 import {
   ARGENTINA_ZONES,
   BRAZIL_STATES,
+  PROJECT_LIMITS,
   projectCurrency,
   type ProjectFormDefaults,
 } from "@/lib/domain/projects";
@@ -70,7 +72,7 @@ export function ProjectFormFields({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
           <Label htmlFor="project-name">{t("name")}</Label>
-          <Input id="project-name" name="name" defaultValue={defaults.name} placeholder={t("namePlaceholder")} required disabled={pending} />
+          <Input id="project-name" name="name" defaultValue={defaults.name} placeholder={t("namePlaceholder")} required minLength={PROJECT_LIMITS.name.min} maxLength={PROJECT_LIMITS.name.max} disabled={pending} />
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="project-client">{t("client")}</Label>
@@ -103,7 +105,7 @@ export function ProjectFormFields({
         </div> : <input type="hidden" name="billingMode" value={defaults.billingMode} />}
         <div className="flex flex-col gap-2">
           <Label htmlFor="planned-installations">{t("plannedInstallations")}</Label>
-          <Input id="planned-installations" name="plannedInstallations" type="number" min="0" max="100000" defaultValue={defaults.plannedInstallations} required disabled={pending} />
+          <Input id="planned-installations" name="plannedInstallations" type="number" min={PROJECT_LIMITS.plannedInstallations.min} max={PROJECT_LIMITS.plannedInstallations.max} defaultValue={defaults.plannedInstallations} required disabled={pending} />
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="billing-mode">{t("billingMode")}</Label>
@@ -120,8 +122,8 @@ export function ProjectFormFields({
             id="min-completion-photos"
             name="minCompletionPhotos"
             type="number"
-            min="0"
-            max="20"
+            min={PROJECT_LIMITS.minCompletionPhotos.min}
+            max={PROJECT_LIMITS.minCompletionPhotos.max}
             placeholder={t("minCompletionPhotosPlaceholder")}
             defaultValue={defaults.minCompletionPhotos ?? ""}
             disabled={pending}
@@ -148,7 +150,7 @@ export function ProjectFormFields({
           <Label htmlFor="contract-amount">{t("contractAmount")}</Label>
           <div className="relative">
             <span className="absolute inset-y-0 left-3 flex items-center font-mono text-xs text-muted-foreground">{currency}</span>
-            <Input id="contract-amount" name="contractAmount" type="number" min="0" step="0.01" defaultValue={defaults.contractAmount ?? ""} className="pl-14 font-mono" required disabled={pending} />
+            <Input id="contract-amount" name="contractAmount" type="number" min="0" max={MONEY_MAX} step="0.01" defaultValue={defaults.contractAmount ?? ""} className="pl-14 font-mono" required disabled={pending} />
           </div>
         </div>
       ) : <input type="hidden" name="contractAmount" value={canManageFinance ? "" : (defaults.contractAmount ?? "")} />}
@@ -165,7 +167,7 @@ export function ProjectFormFields({
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="project-description">{t("projectDescription")}</Label>
-        <Textarea id="project-description" name="description" defaultValue={defaults.description} rows={3} disabled={pending} />
+        <Textarea id="project-description" name="description" defaultValue={defaults.description} rows={3} maxLength={PROJECT_LIMITS.description} disabled={pending} />
       </div>
     </>
   );

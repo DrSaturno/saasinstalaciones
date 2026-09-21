@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { canOperateCompany } from "@/lib/auth";
 import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { createClient } from "@/lib/supabase/server";
+import { CHAT_MESSAGE_MAX } from "@/lib/domain/messages";
 
 const attachmentSchema = z.object({
   path: z.string().min(3).max(500),
@@ -14,7 +15,7 @@ const attachmentSchema = z.object({
 const schema = z.object({
   id: z.string().uuid(),
   threadId: z.string().uuid(),
-  body: z.string().trim().max(4000),
+  body: z.string().trim().max(CHAT_MESSAGE_MAX),
   attachments: z.array(attachmentSchema).max(5),
   replyToId: z.string().uuid().nullable().optional(),
 }).refine((value) => value.body.length > 0 || value.attachments.length > 0);

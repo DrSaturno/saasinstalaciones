@@ -15,6 +15,7 @@ import { ORDER_STATUS } from "@/lib/domain/status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { OrderStatus } from "@/types/database";
+import { SURVEY_NOTE } from "@/lib/domain/field-flow";
 
 const STATUS_ORDER = Object.keys(ORDER_STATUS) as OrderStatus[];
 
@@ -302,6 +303,7 @@ function SurveyForm({
       <Textarea
         value={note}
         onChange={(event) => setNote(event.target.value)}
+        maxLength={SURVEY_NOTE.max}
         rows={3}
         className="mt-2"
         placeholder={t("surveyPlaceholder")}
@@ -311,7 +313,7 @@ function SurveyForm({
         size="sm"
         className="mt-2"
         onClick={save}
-        disabled={pending || note.trim().length < 3}
+        disabled={pending || note.trim().length < SURVEY_NOTE.min}
       >
         {t("surveySave")}
       </Button>

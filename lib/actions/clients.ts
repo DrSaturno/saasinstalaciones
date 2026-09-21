@@ -1,27 +1,30 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
+import type { z } from "zod";
 import { getTranslations } from "next-intl/server";
 import { getAuthorizedUser } from "@/lib/auth-authorized";
+import { clientInputSchema } from "@/lib/domain/clients";
+import { invalidFieldMessage } from "@/lib/field-error-message";
 import { createClient } from "@/lib/supabase/server";
 
-const schema = z.object({
-  name: z.string().trim().min(2).max(150),
-  taxId: z.string().trim().max(40),
-  contactName: z.string().trim().max(120),
-  email: z.union([z.literal(""), z.string().email()]),
-  phone: z.string().trim().max(40),
-  address: z.string().trim().max(250),
-  notes: z.string().trim().max(2000),
-  // Texto libre, no URL: la gente escribe "@lamarca" o "instagram.com/lamarca"
-  // indistintamente, y exigir un formato acá haría fallar el alta por una barra
-  // de más. Normalizar a link es problema de la vista.
-  website: z.string().trim().max(200),
-  instagram: z.string().trim().max(100),
-  youtube: z.string().trim().max(100),
-  tiktok: z.string().trim().max(100),
-});
+/** El error de validación con los rótulos del formulario de cliente. */
+async function clientFieldError(error: z.ZodError): Promise<string> {
+  const f = await getTranslations("Clients");
+  return invalidFieldMessage(error, {
+    name: f("name"),
+    taxId: f("taxId"),
+    contactName: f("contact"),
+    email: f("email"),
+    phone: f("phone"),
+    address: f("address"),
+    notes: f("notes"),
+    website: f("website"),
+    instagram: f("instagram"),
+    youtube: f("youtube"),
+    tiktok: f("tiktok"),
+  });
+}
 
 export type ClientActionState = { error: string | null; ok?: boolean };
 
@@ -31,7 +34,7 @@ export async function saveClient(
   formData: FormData,
 ): Promise<ClientActionState> {
   const t = await getTranslations("Errors");
-  const parsed = schema.safeParse({
+  const parsed = clientInputSchema.safeParse({
     name: formData.get("name"),
     taxId: formData.get("taxId") ?? "",
     contactName: formData.get("contactName") ?? "",
@@ -44,7 +47,7 @@ export async function saveClient(
     youtube: formData.get("youtube") ?? "",
     tiktok: formData.get("tiktok") ?? "",
   });
-  if (!parsed.success) return { error: t("invalidData") };
+  if (!parsed.success) return { error: await clientFieldError(parsed.error) };
   const user = await getAuthorizedUser();
   if (
     !user?.companyId ||

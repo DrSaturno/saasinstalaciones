@@ -2011,6 +2011,24 @@
     "fieldSaved": "Pronto, salvo",
     "save": "Salvar"
   },
+  "FieldErrors": {
+    "generic": "Há dados inválidos. Revise o formulário.",
+    "required": "Preencha «{field}».",
+    "tooShort": "«{field}» precisa ter pelo menos {min} caracteres.",
+    "tooLong": "«{field}» não pode passar de {max} caracteres.",
+    "invalidEmail": "«{field}» não é um e-mail válido.",
+    "invalidNumber": "«{field}» precisa ser um número.",
+    "outOfRangeBetween": "«{field}» precisa estar entre {min} e {max}.",
+    "outOfRangeMin": "«{field}» não pode ser menor que {min}.",
+    "outOfRangeMax": "«{field}» não pode ser maior que {max}.",
+    "invalid": "Revise «{field}».",
+    "rules": {
+      "endBeforeStart": "A data de término não pode ser anterior à de início.",
+      "coordinatePair": "Informe latitude e longitude juntas, ou deixe as duas em branco.",
+      "freightDetailsRequired": "Se a ordem exige frete, descreva os detalhes do frete.",
+      "projectOrClient": "Escolha um projeto ou um cliente, não os dois."
+    }
+  },
   "Errors": {
     "membershipMustKeepRole": "A pessoa deve manter pelo menos uma função nesta empresa.",
     "installerRoleOpenOrders": "Não é possível remover instalação enquanto houver ordens abertas atribuídas.",
@@ -2062,6 +2080,11 @@
     "siteHasHistory": "A instalação possui histórico e não pode ser excluída. Arquive-a para conservar os dados.",
     "siteZoneOutsideProject": "A zona «{zone}» não está habilitada no projeto.",
     "siteInvalidCoordinates": "As coordenadas não são válidas.",
+    "siteNameLength": "O nome precisa ter entre {min} e {max} caracteres.",
+    "siteAddressTooLong": "O endereço passa de {max} caracteres.",
+    "siteCityTooLong": "A cidade passa de {max} caracteres.",
+    "siteRefTooLong": "O código passa de {max} caracteres.",
+    "siteZoneTooLong": "A zona ou estado é longa demais.",
     "siteDuplicateInFile": "A referência «{ref}» está repetida na planilha.",
     "siteAlreadyImported": "A referência «{ref}» já estava carregada no projeto.",
     "orderNotAssigned": "Esta ordem não está atribuída a você.",

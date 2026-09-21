@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { reviewOrderDelivery } from "@/lib/actions/orders/review";
 import {
+  MAX_REASON_LENGTH,
   availableDecisions,
   MIN_REASON_LENGTH,
   reviewNeedsReason,
@@ -115,7 +116,7 @@ export function ReviewDeliveryDialog({
             <Textarea
               id="review-reason"
               rows={3}
-              maxLength={2000}
+              maxLength={MAX_REASON_LENGTH}
               placeholder={t("reasonPlaceholder")}
               value={reason}
               onChange={(event) => setReason(event.target.value)}

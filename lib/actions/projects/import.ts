@@ -19,6 +19,7 @@ import {
 import type { TablesInsert } from "@/types/database";
 import { BATCH_SIZE, requireOperator } from "./context";
 import type { ImportPreflight, ImportResult } from "./types";
+import { SITE_LIMITS } from "@/lib/domain/sites";
 
 // ---------------------------------------------------------------------------
 // Importación masiva de puntos
@@ -101,6 +102,8 @@ function describeIssue(t: ErrorTranslator, issue: SiteImportIssue): string {
   switch (issue.code) {
     case "missingName":
       return t("missingName");
+    case "invalidLength":
+      return describeLengthIssue(t, issue.detail);
     case "invalidCoordinates":
       return t("siteInvalidCoordinates");
     case "zoneOutsideProject":
@@ -109,6 +112,26 @@ function describeIssue(t: ErrorTranslator, issue: SiteImportIssue): string {
       return t("siteDuplicateInFile", { ref: issue.detail || "—" });
     case "alreadyImported":
       return t("siteAlreadyImported", { ref: issue.detail || "—" });
+  }
+}
+
+/**
+ * Qué columna se pasó de largo y cuál es el límite. Son los mismos números que
+ * el formulario de un local (`SITE_LIMITS`), para que lo importado se pueda
+ * editar después sin tener que acortarlo.
+ */
+function describeLengthIssue(t: ErrorTranslator, field: string | undefined): string {
+  switch (field) {
+    case "name":
+      return t("siteNameLength", { min: SITE_LIMITS.name.min, max: SITE_LIMITS.name.max });
+    case "address":
+      return t("siteAddressTooLong", { max: SITE_LIMITS.address });
+    case "city":
+      return t("siteCityTooLong", { max: SITE_LIMITS.city });
+    case "externalRef":
+      return t("siteRefTooLong", { max: SITE_LIMITS.externalRef });
+    default:
+      return t("siteZoneTooLong");
   }
 }
 

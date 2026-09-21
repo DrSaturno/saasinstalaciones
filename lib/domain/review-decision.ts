@@ -50,6 +50,9 @@ export function reviewNeedsReason(decision: ReviewDecision): boolean {
 
 export const MIN_REASON_LENGTH = 10;
 
+/** Largo máximo del motivo, compartido con el campo del diálogo de revisión. */
+export const MAX_REASON_LENGTH = 2000;
+
 export type ReviewBlock =
   | "invalidDecisionForStatus"
   | "reasonRequired"

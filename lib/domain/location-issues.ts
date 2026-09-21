@@ -12,6 +12,12 @@
  * por motivos opuestos.
  */
 
+/**
+ * Nota con la que se resuelve o descarta una incidencia. La base la exige de
+ * 10 a 1000 caracteres; el formulario tenía el mínimo pero no el máximo.
+ */
+export const LOCATION_ISSUE_NOTE = { min: 10, max: 1000 } as const;
+
 export type LocationIssueCode =
   | "missing_client"
   | "missing_external_ref"

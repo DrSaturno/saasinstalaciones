@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CityInput } from "@/components/shared/city-input";
-import type { SiteFormDefaults } from "@/lib/domain/sites";
+import { LATITUDE, LONGITUDE } from "@/lib/domain/field-rules";
+import { SITE_LIMITS, type SiteFormDefaults } from "@/lib/domain/sites";
 import type { Country } from "@/types/database";
 import { useTranslations } from "next-intl";
 
@@ -30,15 +31,15 @@ export function SiteFormFields({ defaults = EMPTY, zones, country, pending, city
       <section className="space-y-4 rounded-xl border p-4">
         <h3 className="text-sm font-semibold">{t("identity")}</h3>
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-2"><Label htmlFor="site-name">{t("name")}</Label><Input id="site-name" name="name" defaultValue={defaults.name} required disabled={pending} /></div>
-          <div className="flex flex-col gap-2"><Label htmlFor="site-ref">{t("reference")}</Label><Input id="site-ref" name="externalRef" defaultValue={defaults.externalRef} disabled={pending} /></div>
-          <div className="flex flex-col gap-2 sm:col-span-2"><Label htmlFor="site-address">{t("address")}</Label><Input id="site-address" name="address" defaultValue={defaults.address} disabled={pending} /></div>
+          <div className="flex flex-col gap-2"><Label htmlFor="site-name">{t("name")}</Label><Input id="site-name" name="name" defaultValue={defaults.name} required minLength={SITE_LIMITS.name.min} maxLength={SITE_LIMITS.name.max} disabled={pending} /></div>
+          <div className="flex flex-col gap-2"><Label htmlFor="site-ref">{t("reference")}</Label><Input id="site-ref" name="externalRef" defaultValue={defaults.externalRef} maxLength={SITE_LIMITS.externalRef} disabled={pending} /></div>
+          <div className="flex flex-col gap-2 sm:col-span-2"><Label htmlFor="site-address">{t("address")}</Label><Input id="site-address" name="address" defaultValue={defaults.address} maxLength={SITE_LIMITS.address} disabled={pending} /></div>
           <div className="flex flex-col gap-2"><Label htmlFor="site-zone">{country === "BR" ? t("stateBrazil") : t("province")}</Label><select id="site-zone" name="zone" defaultValue={defaults.zone || zones[0]} className={selectClass} required disabled={pending}>{zones.map((zone) => <option key={zone} value={zone}>{zone}</option>)}</select></div>
           <div className="flex flex-col gap-2"><Label htmlFor="site-city">{t("city")}</Label><CityInput id="site-city" defaultValue={defaults.city} suggestions={citySuggestions} disabled={pending} /></div>
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-2"><Label htmlFor="site-lat">{t("latitude")}</Label><Input id="site-lat" name="lat" type="number" min="-90" max="90" step="any" defaultValue={defaults.lat ?? ""} disabled={pending} /></div>
-          <div className="flex flex-col gap-2"><Label htmlFor="site-lng">{t("longitude")}</Label><Input id="site-lng" name="lng" type="number" min="-180" max="180" step="any" defaultValue={defaults.lng ?? ""} disabled={pending} /></div>
+          <div className="flex flex-col gap-2"><Label htmlFor="site-lat">{t("latitude")}</Label><Input id="site-lat" name="lat" type="number" min={LATITUDE.min} max={LATITUDE.max} step="any" defaultValue={defaults.lat ?? ""} disabled={pending} /></div>
+          <div className="flex flex-col gap-2"><Label htmlFor="site-lng">{t("longitude")}</Label><Input id="site-lng" name="lng" type="number" min={LONGITUDE.min} max={LONGITUDE.max} step="any" defaultValue={defaults.lng ?? ""} disabled={pending} /></div>
         </div>
         <p className="text-xs text-muted-foreground">{t("mapsHelp")}</p>
       </section>
@@ -46,22 +47,22 @@ export function SiteFormFields({ defaults = EMPTY, zones, country, pending, city
       <section className="space-y-4 rounded-xl border p-4">
         <h3 className="text-sm font-semibold">{t("contact")}</h3>
         <div className="grid gap-4 sm:grid-cols-3">
-          <div className="flex flex-col gap-2"><Label htmlFor="site-contact">{t("contactName")}</Label><Input id="site-contact" name="contactName" defaultValue={defaults.contactName} disabled={pending} /></div>
-          <div className="flex flex-col gap-2"><Label htmlFor="site-phone">{t("phone")}</Label><Input id="site-phone" name="contactPhone" defaultValue={defaults.contactPhone} disabled={pending} /></div>
-          <div className="flex flex-col gap-2"><Label htmlFor="site-email">{t("email")}</Label><Input id="site-email" name="contactEmail" type="email" defaultValue={defaults.contactEmail} disabled={pending} /></div>
+          <div className="flex flex-col gap-2"><Label htmlFor="site-contact">{t("contactName")}</Label><Input id="site-contact" name="contactName" defaultValue={defaults.contactName} maxLength={SITE_LIMITS.contactName} disabled={pending} /></div>
+          <div className="flex flex-col gap-2"><Label htmlFor="site-phone">{t("phone")}</Label><Input id="site-phone" name="contactPhone" type="tel" defaultValue={defaults.contactPhone} maxLength={SITE_LIMITS.contactPhone} disabled={pending} /></div>
+          <div className="flex flex-col gap-2"><Label htmlFor="site-email">{t("email")}</Label><Input id="site-email" name="contactEmail" type="email" defaultValue={defaults.contactEmail} maxLength={SITE_LIMITS.contactEmail} disabled={pending} /></div>
         </div>
-        <div className="flex flex-col gap-2"><Label htmlFor="site-hours">{t("openingHours")}</Label><Input id="site-hours" name="openingHours" defaultValue={defaults.openingHours} placeholder={t("openingPlaceholder")} disabled={pending} /></div>
+        <div className="flex flex-col gap-2"><Label htmlFor="site-hours">{t("openingHours")}</Label><Input id="site-hours" name="openingHours" defaultValue={defaults.openingHours} maxLength={SITE_LIMITS.openingHours} placeholder={t("openingPlaceholder")} disabled={pending} /></div>
       </section>
 
       <section className="space-y-4 rounded-xl border p-4">
         <h3 className="text-sm font-semibold">{t("operation")}</h3>
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-2"><Label htmlFor="site-access">{t("access")}</Label><Textarea id="site-access" name="accessNotes" rows={3} defaultValue={defaults.accessNotes} disabled={pending} /></div>
-          <div className="flex flex-col gap-2"><Label htmlFor="site-parking">{t("parking")}</Label><Textarea id="site-parking" name="parkingNotes" rows={3} defaultValue={defaults.parkingNotes} disabled={pending} /></div>
-          <div className="flex flex-col gap-2"><Label htmlFor="site-technical">{t("technical")}</Label><Textarea id="site-technical" name="technicalNotes" rows={3} defaultValue={defaults.technicalNotes} disabled={pending} /></div>
-          <div className="flex flex-col gap-2"><Label htmlFor="site-risks">{t("risks")}</Label><Textarea id="site-risks" name="riskNotes" rows={3} defaultValue={defaults.riskNotes} disabled={pending} /></div>
+          <div className="flex flex-col gap-2"><Label htmlFor="site-access">{t("access")}</Label><Textarea id="site-access" name="accessNotes" rows={3} defaultValue={defaults.accessNotes} maxLength={SITE_LIMITS.accessNotes} disabled={pending} /></div>
+          <div className="flex flex-col gap-2"><Label htmlFor="site-parking">{t("parking")}</Label><Textarea id="site-parking" name="parkingNotes" rows={3} defaultValue={defaults.parkingNotes} maxLength={SITE_LIMITS.parkingNotes} disabled={pending} /></div>
+          <div className="flex flex-col gap-2"><Label htmlFor="site-technical">{t("technical")}</Label><Textarea id="site-technical" name="technicalNotes" rows={3} defaultValue={defaults.technicalNotes} maxLength={SITE_LIMITS.technicalNotes} disabled={pending} /></div>
+          <div className="flex flex-col gap-2"><Label htmlFor="site-risks">{t("risks")}</Label><Textarea id="site-risks" name="riskNotes" rows={3} defaultValue={defaults.riskNotes} maxLength={SITE_LIMITS.riskNotes} disabled={pending} /></div>
         </div>
-        <div className="flex flex-col gap-2"><Label htmlFor="site-notes">{t("permanentNotes")}</Label><Textarea id="site-notes" name="permanentNotes" rows={4} defaultValue={defaults.permanentNotes} disabled={pending} /></div>
+        <div className="flex flex-col gap-2"><Label htmlFor="site-notes">{t("permanentNotes")}</Label><Textarea id="site-notes" name="permanentNotes" rows={4} defaultValue={defaults.permanentNotes} maxLength={SITE_LIMITS.permanentNotes} disabled={pending} /></div>
       </section>
     </>
   );

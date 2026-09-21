@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SERVICE_RADIUS_KM } from "@/lib/domain/availability";
+import { FIELD, LATITUDE, LONGITUDE } from "@/lib/domain/field-rules";
 
 const initial: CoverageState = { error: null };
 
@@ -97,7 +99,7 @@ export function CoverageSettings({
                   id="coverage-address"
                   name="baseAddress"
                   defaultValue={baseAddress ?? ""}
-                  maxLength={200}
+                  maxLength={FIELD.address.max}
                   placeholder={t("baseAddressPlaceholder")}
                   disabled={pending}
                 />
@@ -108,7 +110,7 @@ export function CoverageSettings({
                   id="coverage-city"
                   name="baseCity"
                   defaultValue={baseCity ?? ""}
-                  maxLength={120}
+                  maxLength={FIELD.city.max}
                   placeholder={t("baseCityPlaceholder")}
                   disabled={pending}
                 />
@@ -127,8 +129,8 @@ export function CoverageSettings({
                   name="baseLat"
                   type="number"
                   step="any"
-                  min="-90"
-                  max="90"
+                  min={LATITUDE.min}
+                  max={LATITUDE.max}
                   defaultValue={baseLat ?? ""}
                   disabled={pending}
                 />
@@ -140,8 +142,8 @@ export function CoverageSettings({
                   name="baseLng"
                   type="number"
                   step="any"
-                  min="-180"
-                  max="180"
+                  min={LONGITUDE.min}
+                  max={LONGITUDE.max}
                   defaultValue={baseLng ?? ""}
                   disabled={pending}
                 />
@@ -152,8 +154,8 @@ export function CoverageSettings({
                   id="coverage-radius"
                   name="serviceRadiusKm"
                   type="number"
-                  min="1"
-                  max="3000"
+                  min={SERVICE_RADIUS_KM.min}
+                  max={SERVICE_RADIUS_KM.max}
                   defaultValue={serviceRadiusKm ?? ""}
                   placeholder={t("radiusPlaceholder")}
                   disabled={pending}

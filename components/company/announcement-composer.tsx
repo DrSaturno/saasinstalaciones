@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ANNOUNCEMENT_LIMITS } from "@/lib/domain/announcements";
 
 const initial: AnnouncementState = { error: null };
 const selectClass =
@@ -112,7 +113,8 @@ function ComposerForm({
               <Input
                 id="announcement-title"
                 name="title"
-                maxLength={120}
+                minLength={ANNOUNCEMENT_LIMITS.title.min}
+                maxLength={ANNOUNCEMENT_LIMITS.title.max}
                 placeholder={t("titlePlaceholder")}
                 required
                 disabled={pending}
@@ -124,7 +126,8 @@ function ComposerForm({
                 id="announcement-body"
                 name="body"
                 rows={4}
-                maxLength={2000}
+                minLength={ANNOUNCEMENT_LIMITS.body.min}
+                maxLength={ANNOUNCEMENT_LIMITS.body.max}
                 placeholder={t("bodyPlaceholder")}
                 required
                 disabled={pending}

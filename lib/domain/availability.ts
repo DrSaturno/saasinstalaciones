@@ -8,10 +8,23 @@ export const weeklyAvailabilitySchema = z.array(z.object({
   timezone: z.string().min(3).max(80),
 }).refine((value) => value.endsAt > value.startsAt, { path: ["endsAt"] })).max(14);
 
+/**
+ * Motivo de una ausencia. La base lo exige (check de 2 a 500) y lo repiten los
+ * dos formularios de ausencia del instalador: el de cada empresa habilitaba el
+ * botón con un solo carácter, que el servidor después rechazaba.
+ */
+export const ABSENCE_REASON = { min: 2, max: 500 } as const;
+
+/** Nota con la que la empresa aprueba o rechaza una ausencia. */
+export const UNAVAILABILITY_REVIEW_NOTE_MAX = 500;
+
+/** Radio de servicio que declara el instalador en su cobertura. */
+export const SERVICE_RADIUS_KM = { min: 1, max: 3000 } as const;
+
 export const unavailabilitySchema = z.object({
   startsAt: z.iso.datetime(),
   endsAt: z.iso.datetime(),
-  reason: z.string().trim().min(2).max(500),
+  reason: z.string().trim().min(ABSENCE_REASON.min).max(ABSENCE_REASON.max),
 }).refine((value) => value.endsAt > value.startsAt, { path: ["endsAt"] });
 
 export type WeeklyAvailabilityInput = z.infer<typeof weeklyAvailabilitySchema>[number];

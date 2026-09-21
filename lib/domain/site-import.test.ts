@@ -110,6 +110,30 @@ describe("filas incompletas", () => {
     });
     expect(analysis.issues[0]).toMatchObject({ code: "invalidCoordinates" });
   });
+
+  it("reporta en su fila un campo más largo que lo que acepta la ficha del local", () => {
+    // La fila no tenía tope: un nombre largo tiraba la tanda entera contra la
+    // base, o entraba y después no se podía guardar desde el formulario.
+    const analysis = analyzeSiteRows(
+      [
+        HEADER,
+        fila("x".repeat(161)),
+        fila("Sucursal 2", { address: "y".repeat(301) }),
+        fila("Sucursal 3"),
+      ],
+      { projectZones: ZONAS },
+    );
+    expect(analysis.counts).toMatchObject({ valid: 1, incomplete: 2 });
+    expect(analysis.issues).toEqual([
+      expect.objectContaining({ row: 2, code: "invalidLength", detail: "name" }),
+      expect.objectContaining({ row: 3, code: "invalidLength", detail: "address" }),
+    ]);
+  });
+
+  it("un nombre de una sola letra tampoco entra: la ficha pide al menos dos", () => {
+    const analysis = analyzeSiteRows([HEADER, fila("A")], { projectZones: ZONAS });
+    expect(analysis.issues[0]).toMatchObject({ code: "invalidLength", detail: "name" });
+  });
 });
 
 describe("zonas del proyecto", () => {

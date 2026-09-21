@@ -6,8 +6,9 @@ import { applicationOrigin } from "@/lib/app-origin";
 import { createClient } from "@/lib/supabase/server";
 import { clientIp, enforceRateLimit } from "@/lib/security/rate-limit";
 import { logEvent } from "@/lib/observability";
+import { newPassword, requiredEmail } from "@/lib/domain/field-rules";
 
-const requestSchema = z.object({ email: z.string().email() });
+const requestSchema = z.object({ email: requiredEmail() });
 
 export type ResetRequestState = { error: string | null; sent?: boolean };
 
@@ -64,7 +65,7 @@ export async function requestPasswordReset(
 
 const updateSchema = z
   .object({
-    newPassword: z.string().min(8).max(72),
+    newPassword: newPassword(),
     confirmPassword: z.string().min(1),
   })
   .refine((value) => value.newPassword === value.confirmPassword, {

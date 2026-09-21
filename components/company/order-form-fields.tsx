@@ -10,6 +10,8 @@ import type { OrderFormSite } from "@/lib/actions/orders/types";
 import type { OrderFormProject } from "@/lib/data/order-form";
 import type { LocationRequirementView } from "@/lib/data/location-detail";
 import type { OrderCurrency } from "@/types/database";
+import { MONEY_MAX } from "@/lib/domain/field-rules";
+import { ORDER_LIMITS } from "@/lib/domain/order-intake";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -218,7 +220,7 @@ export function OrderFormFields({
           <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_190px]">
             <div className="grid gap-2">
               <Label htmlFor="order-title">{t("workTitle")}</Label>
-              <Input id="order-title" name="title" required maxLength={200} placeholder={t("workTitlePlaceholder")} />
+              <Input id="order-title" name="title" required minLength={ORDER_LIMITS.title.min} maxLength={ORDER_LIMITS.title.max} placeholder={t("workTitlePlaceholder")} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="order-status">{t("initialStatus")}</Label>
@@ -251,7 +253,7 @@ export function OrderFormFields({
             </div>
             <div className="grid gap-2">
               <Label htmlFor="duration">{t("duration")}</Label>
-              <Input id="duration" name="estimatedDurationMinutes" type="number" min={1} max={1440} placeholder={t("durationPlaceholder")} disabled={disabled} />
+              <Input id="duration" name="estimatedDurationMinutes" type="number" min={ORDER_LIMITS.durationMinutes.min} max={ORDER_LIMITS.durationMinutes.max} placeholder={t("durationPlaceholder")} disabled={disabled} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="order-priority">{t("priority")}</Label>
@@ -289,11 +291,11 @@ export function OrderFormFields({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label htmlFor="order-description">{t("description")}</Label>
-              <Textarea id="order-description" name="description" rows={4} maxLength={4000} placeholder={t("descriptionPlaceholder")} disabled={disabled} />
+              <Textarea id="order-description" name="description" rows={4} maxLength={ORDER_LIMITS.description} placeholder={t("descriptionPlaceholder")} disabled={disabled} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="logistics-notes">{t("logistics")}</Label>
-              <Textarea id="logistics-notes" name="logisticsNotes" rows={4} maxLength={2000} placeholder={t("logisticsPlaceholder")} disabled={disabled} />
+              <Textarea id="logistics-notes" name="logisticsNotes" rows={4} maxLength={ORDER_LIMITS.logisticsNotes} placeholder={t("logisticsPlaceholder")} disabled={disabled} />
             </div>
           </div>
           <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border bg-muted/20 px-4 py-3">
@@ -306,7 +308,7 @@ export function OrderFormFields({
           {requiresFreight ? (
             <div className="grid gap-2">
               <Label htmlFor="freight-details">{t("freightDetails")}</Label>
-              <Input id="freight-details" name="freightDetails" maxLength={1000} required placeholder={t("freightPlaceholder")} disabled={disabled} />
+              <Input id="freight-details" name="freightDetails" maxLength={ORDER_LIMITS.freightDetails} required placeholder={t("freightPlaceholder")} disabled={disabled} />
             </div>
           ) : null}
         </OrderFormSection>
@@ -316,7 +318,7 @@ export function OrderFormFields({
             <Label htmlFor="order-amount">{t("amount")}</Label>
             <div className="relative mt-2">
               <span className="absolute inset-y-0 left-3 flex items-center font-mono text-xs text-muted-foreground">{orderCurrency}</span>
-              <Input id="order-amount" name="amount" type="number" min="0" step="0.01" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0,00" className="pl-14 font-mono text-lg" disabled={disabled} />
+              <Input id="order-amount" name="amount" type="number" min="0" max={MONEY_MAX} step="0.01" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0,00" className="pl-14 font-mono text-lg" disabled={disabled} />
             </div>
             <p className="mt-1.5 text-xs text-muted-foreground">{t("amountHelp")}</p>
           </div> : <div className="rounded-xl border bg-muted/30 p-4 text-sm text-muted-foreground">{project ? t("projectBillingHelp") : t("chooseProjectForBudget")}</div>}
@@ -330,7 +332,7 @@ export function OrderFormFields({
               <Label htmlFor="order-installer-amount">{t("installerAmount")}</Label>
               <div className="relative mt-2">
                 <span className="absolute inset-y-0 left-3 flex items-center font-mono text-xs text-muted-foreground">{orderCurrency}</span>
-                <Input id="order-installer-amount" name="installerAmount" type="number" min="0" step="0.01" inputMode="decimal" value={installerAmount} onChange={(event) => setInstallerAmount(event.target.value)} placeholder="0,00" className="pl-14 font-mono text-lg" disabled={disabled} />
+                <Input id="order-installer-amount" name="installerAmount" type="number" min="0" max={MONEY_MAX} step="0.01" inputMode="decimal" value={installerAmount} onChange={(event) => setInstallerAmount(event.target.value)} placeholder="0,00" className="pl-14 font-mono text-lg" disabled={disabled} />
               </div>
               <p className="mt-1.5 text-xs text-muted-foreground">{t("installerAmountHelp")}</p>
             </div>

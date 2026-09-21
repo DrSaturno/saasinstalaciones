@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { OrderStatus } from "@/types/database";
 import type { PendingPhoto } from "@/lib/offline/db";
-import { completionReadiness } from "@/lib/domain/field-flow";
+import { completionReadiness, INSTALLER_NOTE_MAX } from "@/lib/domain/field-flow";
 
 type Props = {
   userId: string;
@@ -333,6 +333,7 @@ export function TaskActions({
             placeholder={t("arrivalNotePlaceholder")}
             value={note}
             onChange={(e) => setNote(e.target.value)}
+            maxLength={INSTALLER_NOTE_MAX}
             rows={2}
           />
           <FilePicker files={files} onChange={setFiles} disabled={pending} />
@@ -359,6 +360,7 @@ export function TaskActions({
             placeholder={t("notePlaceholder")}
             value={note}
             onChange={(e) => setNote(e.target.value)}
+            maxLength={INSTALLER_NOTE_MAX}
             rows={3}
           />
           <FilePicker files={files} onChange={setFiles} disabled={pending} />

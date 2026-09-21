@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MONEY_MAX } from "@/lib/domain/field-rules";
 import { ORDER_ACTIVITY_KINDS } from "@/lib/domain/activity-kind";
 import { parseExplicitConditions } from "@/lib/domain/work-conditions";
 import { isValidTime } from "@/lib/domain/schedule-precision";
@@ -32,18 +33,31 @@ const optionalUuid = z
 const optionalAmount = z
   .union([
     z.literal(""),
-    z.coerce.number().finite().min(0).max(999_999_999_999.99),
+    z.coerce.number().finite().min(0).max(MONEY_MAX),
   ])
   .transform((value) => (value === "" ? null : value));
 
+/**
+ * Límites de los formularios de orden (alta, lote y edición), compartidos con
+ * `order-form-fields`, `create-orders-dialog` y `edit-order-dialog` para que
+ * los tres frenen en el navegador lo mismo que frena el servidor.
+ */
+export const ORDER_LIMITS = {
+  title: { min: 2, max: 200 },
+  description: 4_000,
+  freightDetails: 1_000,
+  logisticsNotes: 2_000,
+  durationMinutes: { min: 1, max: 24 * 60 },
+} as const;
+
 /** Campos que se cargan igual al crear y al editar una orden. */
 const orderFields = {
-  title: z.string().trim().min(2).max(200),
+  title: z.string().trim().min(ORDER_LIMITS.title.min).max(ORDER_LIMITS.title.max),
   // Qué contiene la orden: sólo relevamiento, sólo ejecución, o las dos.
   // `execution` por default para que los formularios que todavía no mandan el
   // campo sigan comportándose exactamente como antes.
   activityKind: z.enum(ORDER_ACTIVITY_KINDS).default("execution"),
-  description: z.string().trim().max(4_000).default(""),
+  description: z.string().trim().max(ORDER_LIMITS.description).default(""),
   scheduledDate: optionalDate,
   scheduledEndDate: optionalDate,
   // Hora de inicio y fin del trabajo. Opcionales: una orden puede agendarse
@@ -56,7 +70,14 @@ const orderFields = {
   scheduledEndTime: optionalTime.default(null),
   // Sirve para derivar el fin cuando sólo se carga el inicio.
   estimatedDurationMinutes: z
-    .union([z.literal(""), z.coerce.number().int().min(1).max(24 * 60)])
+    .union([
+      z.literal(""),
+      z.coerce
+        .number()
+        .int()
+        .min(ORDER_LIMITS.durationMinutes.min)
+        .max(ORDER_LIMITS.durationMinutes.max),
+    ])
     .transform((value) => (value === "" ? null : value))
     .default(null),
   priority: z.enum(ORDER_PRIORITIES).default("media"),
@@ -69,8 +90,8 @@ const orderFields = {
     .array(z.unknown())
     .default([])
     .transform((values) => parseExplicitConditions(values)),
-  freightDetails: z.string().trim().max(1_000).default(""),
-  logisticsNotes: z.string().trim().max(2_000).default(""),
+  freightDetails: z.string().trim().max(ORDER_LIMITS.freightDetails).default(""),
+  logisticsNotes: z.string().trim().max(ORDER_LIMITS.logisticsNotes).default(""),
   // `amount` es lo que se le cobra al cliente; `installerAmount`, lo que se le
   // paga a quien ejecuta. Dos números distintos: sin los dos no hay margen.
   amount: optionalAmount,
@@ -97,14 +118,14 @@ function checkOrderFields(value: OrderFieldValues, context: z.RefinementCtx) {
     context.addIssue({
       code: "custom",
       path: ["scheduledEndDate"],
-      message: "end_before_start",
+      message: "endBeforeStart",
     });
   }
   if (value.requiresFreight && value.freightDetails.length === 0) {
     context.addIssue({
       code: "custom",
       path: ["freightDetails"],
-      message: "freight_details_required",
+      message: "freightDetailsRequired",
     });
   }
 }

@@ -7,7 +7,8 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { updateOrder } from "@/lib/actions/orders/intake";
 import type { ActionState } from "@/lib/actions/orders/types";
-import { ORDER_PRIORITIES } from "@/lib/domain/order-intake";
+import { MONEY_MAX } from "@/lib/domain/field-rules";
+import { ORDER_LIMITS, ORDER_PRIORITIES } from "@/lib/domain/order-intake";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -108,7 +109,8 @@ export function EditOrderDialog({
               id="edit-title"
               name="title"
               defaultValue={defaults.title}
-              maxLength={200}
+              minLength={ORDER_LIMITS.title.min}
+              maxLength={ORDER_LIMITS.title.max}
               required
               disabled={pending}
             />
@@ -121,7 +123,7 @@ export function EditOrderDialog({
               name="description"
               defaultValue={defaults.description}
               rows={3}
-              maxLength={4000}
+              maxLength={ORDER_LIMITS.description}
               disabled={pending}
             />
           </div>
@@ -197,6 +199,7 @@ export function EditOrderDialog({
                   name="amount"
                   type="number"
                   min="0"
+                  max={MONEY_MAX}
                   step="0.01"
                   defaultValue={defaults.amount ?? ""}
                   className="pl-14 font-mono"
@@ -221,6 +224,7 @@ export function EditOrderDialog({
                   name="installerAmount"
                   type="number"
                   min="0"
+                  max={MONEY_MAX}
                   step="0.01"
                   defaultValue={defaults.installerAmount ?? ""}
                   className="pl-14 font-mono"
@@ -253,7 +257,7 @@ export function EditOrderDialog({
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit-duration">{common("duration")}</Label>
-              <Input id="edit-duration" name="estimatedDurationMinutes" type="number" min={1} max={1440} defaultValue={defaults.durationMinutes ?? ""} disabled={pending} />
+              <Input id="edit-duration" name="estimatedDurationMinutes" type="number" min={ORDER_LIMITS.durationMinutes.min} max={ORDER_LIMITS.durationMinutes.max} defaultValue={defaults.durationMinutes ?? ""} disabled={pending} />
             </div>
           </div>
           <p className="text-xs text-muted-foreground">{common("scheduleHelp")}</p>
@@ -283,7 +287,7 @@ export function EditOrderDialog({
                 name="freightDetails"
                 defaultValue={defaults.freightDetails}
                 rows={2}
-                maxLength={1000}
+                maxLength={ORDER_LIMITS.freightDetails}
                 required
                 disabled={pending}
               />
@@ -297,7 +301,7 @@ export function EditOrderDialog({
               name="logisticsNotes"
               defaultValue={defaults.logisticsNotes}
               rows={2}
-              maxLength={2000}
+              maxLength={ORDER_LIMITS.logisticsNotes}
               disabled={pending}
             />
           </div>

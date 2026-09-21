@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FIELD } from "@/lib/domain/field-rules";
 
 const initialState: ResetPasswordState = { error: null };
 
@@ -41,7 +42,8 @@ export function ResetPasswordForm() {
           name="newPassword"
           type="password"
           autoComplete="new-password"
-          minLength={8}
+          minLength={FIELD.password.min}
+          maxLength={FIELD.password.max}
           required
         />
         <p className="text-xs text-muted-foreground">{t("hint")}</p>
@@ -53,7 +55,8 @@ export function ResetPasswordForm() {
           name="confirmPassword"
           type="password"
           autoComplete="new-password"
-          minLength={8}
+          minLength={FIELD.password.min}
+          maxLength={FIELD.password.max}
           required
         />
       </div>

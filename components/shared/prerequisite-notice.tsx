@@ -10,6 +10,7 @@ import type { PrerequisiteState } from "@/lib/data/surveys";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { PREREQUISITE_WAIVE_REASON } from "@/lib/domain/field-flow";
 
 /**
  * Por qué la ejecución no puede arrancar todavía.
@@ -104,7 +105,7 @@ export function PrerequisiteNotice({
                     id={`waive-${state.executionActivityId}`}
                     value={reason}
                     onChange={(event) => setReason(event.target.value)}
-                    maxLength={500}
+                    maxLength={PREREQUISITE_WAIVE_REASON.max}
                     rows={3}
                     placeholder={t("reasonPlaceholder")}
                     disabled={pending}
@@ -114,7 +115,7 @@ export function PrerequisiteNotice({
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <Button
                       onClick={waive}
-                      disabled={pending || reason.trim().length < 10}
+                      disabled={pending || reason.trim().length < PREREQUISITE_WAIVE_REASON.min}
                       className="sm:flex-1"
                     >
                       {pending ? t("saving") : t("confirmWaive")}

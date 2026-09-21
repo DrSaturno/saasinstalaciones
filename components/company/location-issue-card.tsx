@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 import { resolveLocationIssue } from "@/lib/actions/location-issues";
 import type { LocationIssue } from "@/lib/data/location-issues";
-import { VARIANT_FIELDS } from "@/lib/domain/location-issues";
+import { LOCATION_ISSUE_NOTE, VARIANT_FIELDS } from "@/lib/domain/location-issues";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -116,7 +116,8 @@ export function LocationIssueCard({ issue }: { issue: LocationIssue }) {
               name="note"
               rows={3}
               required
-              minLength={10}
+              minLength={LOCATION_ISSUE_NOTE.min}
+              maxLength={LOCATION_ISSUE_NOTE.max}
               placeholder={t("notePlaceholder")}
             />
             <p className="text-xs text-muted-foreground">{t("noteWhy")}</p>

@@ -2011,6 +2011,24 @@
     "fieldSaved": "Listo, guardado",
     "save": "Guardar"
   },
+  "FieldErrors": {
+    "generic": "Hay datos que no son válidos. Revisá el formulario.",
+    "required": "Completá «{field}».",
+    "tooShort": "«{field}» tiene que tener al menos {min} caracteres.",
+    "tooLong": "«{field}» no puede superar los {max} caracteres.",
+    "invalidEmail": "«{field}» no es un email válido.",
+    "invalidNumber": "«{field}» tiene que ser un número.",
+    "outOfRangeBetween": "«{field}» tiene que estar entre {min} y {max}.",
+    "outOfRangeMin": "«{field}» no puede ser menor a {min}.",
+    "outOfRangeMax": "«{field}» no puede ser mayor a {max}.",
+    "invalid": "Revisá «{field}».",
+    "rules": {
+      "endBeforeStart": "La fecha de fin no puede ser anterior a la de inicio.",
+      "coordinatePair": "Cargá la latitud y la longitud juntas, o dejá las dos vacías.",
+      "freightDetailsRequired": "Si la orden requiere flete, contá los detalles del flete.",
+      "projectOrClient": "Elegí un proyecto o un cliente, no los dos."
+    }
+  },
   "Errors": {
     "membershipMustKeepRole": "La persona debe conservar al menos una función en esta empresa.",
     "installerRoleOpenOrders": "No se puede quitar instalación mientras tenga órdenes abiertas asignadas.",
@@ -2062,6 +2080,11 @@
     "siteHasHistory": "La instalación tiene historial y no se puede eliminar. Archivala para conservar los datos.",
     "siteZoneOutsideProject": "La zona «{zone}» no está habilitada en el proyecto.",
     "siteInvalidCoordinates": "Las coordenadas no son válidas.",
+    "siteNameLength": "El nombre tiene que tener entre {min} y {max} caracteres.",
+    "siteAddressTooLong": "La dirección supera los {max} caracteres.",
+    "siteCityTooLong": "La ciudad supera los {max} caracteres.",
+    "siteRefTooLong": "El código supera los {max} caracteres.",
+    "siteZoneTooLong": "La zona o provincia es demasiado larga.",
     "siteDuplicateInFile": "La referencia «{ref}» está repetida en la planilla.",
     "siteAlreadyImported": "La referencia «{ref}» ya estaba cargada en el proyecto.",
     "orderNotAssigned": "Esta orden no está asignada a vos.",

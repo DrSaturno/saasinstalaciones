@@ -7,6 +7,7 @@ import { changePassword, type PasswordState } from "@/lib/actions/account";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FIELD } from "@/lib/domain/field-rules";
 
 const initial: PasswordState = { error: null };
 
@@ -42,7 +43,8 @@ export function ChangePasswordForm() {
           name="newPassword"
           type="password"
           autoComplete="new-password"
-          minLength={8}
+          minLength={FIELD.password.min}
+          maxLength={FIELD.password.max}
           required
           disabled={pending}
         />
@@ -55,7 +57,8 @@ export function ChangePasswordForm() {
           name="confirmPassword"
           type="password"
           autoComplete="new-password"
-          minLength={8}
+          minLength={FIELD.password.min}
+          maxLength={FIELD.password.max}
           required
           disabled={pending}
         />
