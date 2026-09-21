@@ -7,6 +7,7 @@ import { z } from "zod";
 import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionState } from "./types";
+import { PREREQUISITE_WAIVE_REASON, SURVEY_CHANGES_REASON } from "@/lib/domain/field-flow";
 
 const decisionSchema = z.object({
   submissionId: z.string().uuid(),
@@ -14,9 +15,11 @@ const decisionSchema = z.object({
   // El mínimo de 3 lo exige también la función y el CHECK de la tabla. Se
   // valida acá para poder mostrar el error en el campo, no como un cartel rojo
   // genérico después de mandar.
-  reason: z.string().trim().max(1000).default(""),
+  reason: z.string().trim().max(SURVEY_CHANGES_REASON.max).default(""),
 }).refine(
-  (value) => value.decision !== "changes_requested" || value.reason.length >= 3,
+  (value) =>
+    value.decision !== "changes_requested" ||
+    value.reason.length >= SURVEY_CHANGES_REASON.min,
   { path: ["reason"] },
 );
 
@@ -120,7 +123,7 @@ const waiveSchema = z.object({
   activityId: z.string().uuid(),
   // 10 mínimo, igual que el CHECK de la tabla y que la función. Se repite acá
   // para poder mostrar el error en el campo en vez de un código de Postgres.
-  reason: z.string().trim().min(10).max(500),
+  reason: z.string().trim().min(PREREQUISITE_WAIVE_REASON.min).max(PREREQUISITE_WAIVE_REASON.max),
 });
 
 /**

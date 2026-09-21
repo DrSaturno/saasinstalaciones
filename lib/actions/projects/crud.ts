@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
+import type { z } from "zod";
 import type { createClient } from "@/lib/supabase/server";
 import { hasActiveCompanyRole } from "@/lib/data/company-membership-roles";
 import { projectInputSchema } from "@/lib/domain/projects";
+import { invalidFieldMessage } from "@/lib/field-error-message";
 import { requireOperator } from "./context";
 import type { ActionState } from "./types";
 
@@ -49,6 +51,25 @@ function parseProjectForm(formData: FormData) {
   });
 }
 
+/** El error de validación con los rótulos del formulario de proyecto. */
+async function projectFieldError(error: z.ZodError): Promise<string> {
+  const f = await getTranslations("CreateProject");
+  return invalidFieldMessage(error, {
+    name: f("name"),
+    clientId: f("client"),
+    coordinatorId: f("coordinator"),
+    country: f("country"),
+    zones: f("zonesArgentina"),
+    plannedInstallations: f("plannedInstallations"),
+    billingMode: f("billingMode"),
+    contractAmount: f("contractAmount"),
+    startsAt: f("start"),
+    endsAt: f("end"),
+    description: f("projectDescription"),
+    minCompletionPhotos: f("minCompletionPhotos"),
+  });
+}
+
 export async function createProject(
   _prev: ActionState,
   formData: FormData,
@@ -56,7 +77,7 @@ export async function createProject(
   const t = await getTranslations("Errors");
   const parsed = parseProjectForm(formData);
   if (!parsed.success) {
-    return { error: t("invalidData") };
+    return { error: await projectFieldError(parsed.error) };
   }
 
   let createdId: string | undefined;
@@ -118,7 +139,7 @@ export async function updateProject(
 ): Promise<ActionState> {
   const t = await getTranslations("Errors");
   const parsed = parseProjectForm(formData);
-  if (!parsed.success) return { error: t("invalidData") };
+  if (!parsed.success) return { error: await projectFieldError(parsed.error) };
 
   try {
     const { supabase, companyId } = await requireOperator();

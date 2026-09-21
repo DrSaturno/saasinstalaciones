@@ -11,9 +11,10 @@ import { LOCALE_COOKIE } from "@/i18n/config";
 import { clientIp, enforceRateLimit } from "@/lib/security/rate-limit";
 import { fetchTwoFactorStatus } from "@/lib/data/two-factor";
 import type { Locale, UserRole } from "@/types/database";
+import { requiredEmail } from "@/lib/domain/field-rules";
 
 const loginSchema = z.object({
-  email: z.string().email("Email inválido"),
+  email: requiredEmail(),
   password: z.string().min(1, "Ingresá tu contraseña"),
   next: z.string().optional(),
 });

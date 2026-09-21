@@ -20,6 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { UNAVAILABILITY_REVIEW_NOTE_MAX } from "@/lib/domain/availability";
 
 export function DashboardAlertDialog({
   kind,
@@ -107,6 +108,7 @@ export function DashboardAlertDialog({
                     value={notes[item.id] ?? ""}
                     onChange={(event) => setNotes((current) => ({ ...current, [item.id]: event.target.value }))}
                     placeholder={t("alertAbsenceNote")}
+                    maxLength={UNAVAILABILITY_REVIEW_NOTE_MAX}
                     className="sm:w-44"
                     aria-label={t("alertAbsenceNote")}
                   />

@@ -9,6 +9,8 @@ import { sendAnnouncementEmail } from "@/lib/email/announcements";
 import { requestPushDelivery } from "@/lib/push/events";
 import { createClient } from "@/lib/supabase/server";
 import { INTL_LOCALE } from "@/i18n/config";
+import { ANNOUNCEMENT_LIMITS } from "@/lib/domain/announcements";
+import { invalidFieldMessage } from "@/lib/field-error-message";
 
 /**
  * El público es un solo criterio: todo el equipo, una provincia o un proyecto.
@@ -23,8 +25,8 @@ const audienceSchema = z.object({
 export type AnnouncementAudience = z.infer<typeof audienceSchema>;
 
 const schema = z.object({
-  title: z.string().trim().min(2).max(120),
-  body: z.string().trim().min(2).max(2000),
+  title: z.string().trim().min(ANNOUNCEMENT_LIMITS.title.min).max(ANNOUNCEMENT_LIMITS.title.max),
+  body: z.string().trim().min(ANNOUNCEMENT_LIMITS.body.min).max(ANNOUNCEMENT_LIMITS.body.max),
   severity: z.enum(["info", "warning", "critical"]),
   audience: audienceSchema,
 });
@@ -74,7 +76,15 @@ export async function publishAnnouncement(
     severity: formData.get("severity") ?? "info",
     audience: readAudience(formData),
   });
-  if (!parsed.success) return { error: t("invalidData") };
+  if (!parsed.success) {
+    const f = await getTranslations("Announcements");
+    return {
+      error: await invalidFieldMessage(parsed.error, {
+        title: f("titleLabel"),
+        body: f("bodyLabel"),
+      }),
+    };
+  }
 
   try {
     const user = await getAuthorizedUser();

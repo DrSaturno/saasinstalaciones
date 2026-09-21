@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { addUnavailability, removeUnavailability, saveWeeklyAvailability } from "@/lib/actions/availability";
-import { countryTimezone, type WeeklyAvailabilityInput } from "@/lib/domain/availability";
+import { ABSENCE_REASON, countryTimezone, type WeeklyAvailabilityInput } from "@/lib/domain/availability";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,13 @@ export function AvailabilityCompanyCard({ company, disabled }: { company: Availa
   const [startsAt, setStartsAt] = useState("");
   const [endsAt, setEndsAt] = useState("");
   const [reason, setReason] = useState("");
+  // Lo mismo que exige el servidor: motivo de al menos 2 caracteres y fin
+  // posterior al inicio. Antes el botón se habilitaba con un solo carácter o
+  // con las fechas al revés, y el rechazo llegaba después.
+  const canAddException =
+    Boolean(startsAt && endsAt) &&
+    endsAt > startsAt &&
+    reason.trim().length >= ABSENCE_REASON.min;
   const [pending, startTransition] = useTransition();
   const days = useMemo(() => [t("days.sun"), t("days.mon"), t("days.tue"), t("days.wed"), t("days.thu"), t("days.fri"), t("days.sat")], [t]);
 
@@ -35,7 +42,7 @@ export function AvailabilityCompanyCard({ company, disabled }: { company: Availa
   });
 
   const addException = () => {
-    if (!startsAt || !endsAt || !reason.trim()) return;
+    if (!canAddException) return;
     startTransition(async () => {
       const result = await addUnavailability(company.id, { startsAt: new Date(startsAt).toISOString(), endsAt: new Date(endsAt).toISOString(), reason });
       if (result.error) {
@@ -74,8 +81,8 @@ export function AvailabilityCompanyCard({ company, disabled }: { company: Availa
         <Button type="button" onClick={save} disabled={disabled || pending}>{t("saveSchedule")}</Button>
 
         <div className="border-t pt-5"><h3 className="text-sm font-medium">{t("exceptions")}</h3><p className="text-xs text-muted-foreground">{t("exceptionsHelp")}</p></div>
-        <div className="grid gap-3 sm:grid-cols-2"><div className="flex flex-col gap-2"><Label htmlFor={`unavailable-from-${company.id}`}>{t("from")}</Label><Input id={`unavailable-from-${company.id}`} type="datetime-local" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} disabled={disabled || pending} /></div><div className="flex flex-col gap-2"><Label htmlFor={`unavailable-to-${company.id}`}>{t("to")}</Label><Input id={`unavailable-to-${company.id}`} type="datetime-local" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} disabled={disabled || pending} /></div><div className="flex flex-col gap-2 sm:col-span-2"><Label htmlFor={`unavailable-reason-${company.id}`}>{t("reason")}</Label><Input id={`unavailable-reason-${company.id}`} value={reason} onChange={(event) => setReason(event.target.value)} maxLength={500} disabled={disabled || pending} placeholder={t("reasonPlaceholder")} /></div></div>
-        <Button type="button" variant="outline" onClick={addException} disabled={disabled || pending || !startsAt || !endsAt || !reason.trim()}>{t("addException")}</Button>
+        <div className="grid gap-3 sm:grid-cols-2"><div className="flex flex-col gap-2"><Label htmlFor={`unavailable-from-${company.id}`}>{t("from")}</Label><Input id={`unavailable-from-${company.id}`} type="datetime-local" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} disabled={disabled || pending} /></div><div className="flex flex-col gap-2"><Label htmlFor={`unavailable-to-${company.id}`}>{t("to")}</Label><Input id={`unavailable-to-${company.id}`} type="datetime-local" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} disabled={disabled || pending} /></div><div className="flex flex-col gap-2 sm:col-span-2"><Label htmlFor={`unavailable-reason-${company.id}`}>{t("reason")}</Label><Input id={`unavailable-reason-${company.id}`} value={reason} onChange={(event) => setReason(event.target.value)} minLength={ABSENCE_REASON.min} maxLength={ABSENCE_REASON.max} disabled={disabled || pending} placeholder={t("reasonPlaceholder")} /></div></div>
+        <Button type="button" variant="outline" onClick={addException} disabled={disabled || pending || !canAddException}>{t("addException")}</Button>
         {exceptions.length ? <div className="space-y-2">{exceptions.map((exception) => <div key={exception.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-muted/30 p-3"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-medium">{exception.reason}</p><span className={`rounded-full px-2 py-0.5 text-caption font-medium uppercase tracking-wider ${exception.status === "approved" ? "bg-success/15 text-green-700" : exception.status === "rejected" ? "bg-destructive/10 text-destructive" : "bg-warning/15 text-amber-700"}`}>{t(`exceptionStatus.${exception.status}`)}</span></div><p className="font-mono text-xs text-muted-foreground">{format.dateTime(new Date(exception.startsAt), { dateStyle: "short", timeStyle: "short" })} — {format.dateTime(new Date(exception.endsAt), { dateStyle: "short", timeStyle: "short" })}</p>{exception.reviewNote ? <p className="mt-1 text-xs italic text-muted-foreground">{exception.reviewNote}</p> : null}</div><Button type="button" size="sm" variant="ghost" onClick={() => remove(exception.id)} disabled={pending}>{t("removeException")}</Button></div>)}</div> : null}
       </CardContent>
     </Card>

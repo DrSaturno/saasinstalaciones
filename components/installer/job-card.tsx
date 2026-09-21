@@ -7,6 +7,8 @@ import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { applyToBroadcast } from "@/lib/actions/broadcasts";
 import type { InstallerJob } from "@/lib/data/broadcasts";
+import { BROADCAST_LIMITS } from "@/lib/domain/broadcasts";
+import { MONEY_MAX } from "@/lib/domain/field-rules";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -108,7 +110,7 @@ export function JobCard({ job }: { job: InstallerJob }) {
                 id={`job-message-${job.id}`}
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
-                maxLength={600}
+                maxLength={BROADCAST_LIMITS.applicationMessage}
                 rows={5}
                 placeholder={t("messagePlaceholder")}
               />
@@ -124,6 +126,7 @@ export function JobCard({ job }: { job: InstallerJob }) {
                   id={`job-quote-${job.id}`}
                   type="number"
                   min="0"
+                  max={MONEY_MAX}
                   step="0.01"
                   inputMode="decimal"
                   value={quote}

@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { COMPLETION_PHOTOS } from "@/lib/domain/field-rules";
 
 const initial: CompanySettingsState = { error: null };
 
@@ -29,8 +30,8 @@ export function FieldSettingsForm({ minCompletionPhotos }: { minCompletionPhotos
           id="min-completion-photos"
           name="minCompletionPhotos"
           type="number"
-          min="0"
-          max="20"
+          min={COMPLETION_PHOTOS.min}
+          max={COMPLETION_PHOTOS.max}
           defaultValue={minCompletionPhotos}
           required
           disabled={pending}

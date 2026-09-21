@@ -6,11 +6,12 @@ import { z } from "zod";
 import { canOperateCompany } from "@/lib/auth";
 import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { createClient } from "@/lib/supabase/server";
+import { COMPLETION_PHOTOS } from "@/lib/domain/field-rules";
 
 export type CompanySettingsState = { error: string | null; ok?: boolean };
 
 const schema = z.object({
-  minCompletionPhotos: z.coerce.number().int().min(0).max(20),
+  minCompletionPhotos: z.coerce.number().int().min(COMPLETION_PHOTOS.min).max(COMPLETION_PHOTOS.max),
 });
 
 /**

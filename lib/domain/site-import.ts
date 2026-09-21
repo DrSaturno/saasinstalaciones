@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { normalizeHeader } from "@/lib/csv";
 import { normalizeLocationExternalRef } from "@/lib/domain/canonical-locations";
+import { firstFieldProblem } from "@/lib/domain/field-errors";
+import { LATITUDE, LONGITUDE } from "@/lib/domain/field-rules";
+import { SITE_LIMITS } from "@/lib/domain/sites";
 
 /**
  * Análisis de una planilla de locaciones, sin tocar la base.
@@ -37,19 +40,31 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   lng: ["lng", "lon", "longitud", "longitude"],
 };
 
+/**
+ * Mismos límites que la ficha de un local cargada a mano (`SITE_LIMITS`).
+ *
+ * La fila no tenía ningún tope: un nombre de más de 200 caracteres chocaba
+ * contra la base y, como se inserta de a tandas, se caía la tanda entera; uno
+ * de entre 161 y 200 entraba, pero después no se podía guardar desde el
+ * formulario de edición. Ahora el exceso se reporta en su fila.
+ */
 const siteRowSchema = z.object({
-  name: z.string().min(1),
-  address: z.string().default(""),
-  city: z.string().default(""),
-  state: z.string().default(""),
-  zone: z.string().default(""),
-  externalRef: z.string().optional(),
-  lat: z.union([z.literal(""), z.coerce.number().min(-90).max(90)]),
-  lng: z.union([z.literal(""), z.coerce.number().min(-180).max(180)]),
+  name: z.string().trim().min(SITE_LIMITS.name.min).max(SITE_LIMITS.name.max),
+  address: z.string().trim().max(SITE_LIMITS.address).default(""),
+  city: z.string().trim().max(SITE_LIMITS.city).default(""),
+  state: z.string().max(120).default(""),
+  zone: z.string().max(80).default(""),
+  externalRef: z.string().trim().max(SITE_LIMITS.externalRef).optional(),
+  lat: z.union([z.literal(""), z.coerce.number().min(LATITUDE.min).max(LATITUDE.max)]),
+  lng: z.union([z.literal(""), z.coerce.number().min(LONGITUDE.min).max(LONGITUDE.max)]),
 });
+
+/** Columnas cuyo largo se controla, para poder decir cuál se pasó. */
+const LENGTH_FIELDS: readonly string[] = ["name", "address", "city", "externalRef", "zone", "state"];
 
 export type SiteImportIssueCode =
   | "missingName"
+  | "invalidLength"
   | "invalidCoordinates"
   | "zoneOutsideProject"
   | "duplicateInFile"
@@ -84,6 +99,7 @@ export function issueExternalRef(issue: SiteImportIssue): string | null {
     case "alreadyImported":
       return issue.detail ?? null;
     case "missingName":
+    case "invalidLength":
     case "invalidCoordinates":
     case "zoneOutsideProject":
       return null;
@@ -218,8 +234,19 @@ export function analyzeSiteRows(
       lng: get("lng"),
     });
     if (!parsed.success) {
-      // El nombre ya se validó arriba, así que lo único que puede fallar acá
-      // son las coordenadas: valor no numérico o fuera de rango.
+      // O un largo fuera de rango (`detail` dice qué columna), o coordenadas
+      // que no son números o están fuera de rango.
+      const field = firstFieldProblem(parsed.error)?.field ?? "";
+      if (LENGTH_FIELDS.includes(field)) {
+        issues.push({
+          row,
+          code: "invalidLength",
+          // `state` y `zone` salen de la misma columna: se reportan como zona.
+          detail: field === "state" ? "zone" : field,
+          name: get("name").trim().slice(0, SITE_LIMITS.name.max),
+        });
+        return;
+      }
       issues.push({ row, code: "invalidCoordinates", name: get("name").trim() });
       return;
     }
@@ -283,7 +310,7 @@ export function analyzeSiteRows(
     counts: {
       found,
       valid: valid.length,
-      incomplete: countBy("missingName", "invalidCoordinates"),
+      incomplete: countBy("missingName", "invalidLength", "invalidCoordinates"),
       outsideZone: countBy("zoneOutsideProject"),
       duplicated: countBy("duplicateInFile", "alreadyImported"),
     },

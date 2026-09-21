@@ -12,6 +12,7 @@ import {
 } from "@/lib/email/invitations";
 import { INTL_LOCALE } from "@/i18n/config";
 import type { MembershipRole, RosterStatus } from "@/types/database";
+import { MONEY_MAX, requiredEmail } from "@/lib/domain/field-rules";
 
 async function requireManager() {
   const user = await getAuthorizedUser();
@@ -21,7 +22,8 @@ async function requireManager() {
   return { user, supabase: await createClient(), companyId: user.companyId };
 }
 
-const emailSchema = z.string().email("Email inválido");
+// El texto del error lo pone la acción, traducido: no va en el esquema.
+const emailSchema = requiredEmail();
 
 export type InviteResult = {
   error: string | null;
@@ -255,7 +257,10 @@ export async function setInstallerDefaultRate(
   const parsed = z
     .object({
       installerId: z.string().uuid(),
-      rate: z.number().min(0).max(99_999_999).nullable(),
+      // Mismo techo que cualquier monto (`numeric(14, 2)`). Era 99.999.999:
+      // diez mil veces menos que el costo de una sola orden, así que una
+      // tarifa podía no entrar donde el costo que prellena sí entraba.
+      rate: z.number().min(0).max(MONEY_MAX).nullable(),
     })
     .safeParse({ installerId, rate });
   if (!parsed.success) return { error: t("invalidData") };

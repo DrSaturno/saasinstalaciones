@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isInstallerArea } from "@/lib/auth";
 import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { fetchActiveCompanyRoleMemberships } from "@/lib/data/company-membership-roles";
+import { ABSENCE_REASON } from "@/lib/domain/availability";
 
 export type Result = { error: string | null; ok?: boolean };
 
@@ -26,7 +27,7 @@ const weeklySchema = z
 const absenceSchema = z.object({
   startsAt: z.string().min(1),
   endsAt: z.string().min(1),
-  reason: z.string().trim().min(2).max(500),
+  reason: z.string().trim().min(ABSENCE_REASON.min).max(ABSENCE_REASON.max),
 });
 
 /**

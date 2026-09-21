@@ -10,6 +10,7 @@ import styles from "./login.module.css";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FIELD } from "@/lib/domain/field-rules";
 
 const initialState: LoginState = { error: null };
 
@@ -44,6 +45,7 @@ export function LoginForm({
           type="email"
           autoComplete="email"
           placeholder={t("emailPlaceholder")}
+          maxLength={FIELD.email.max}
           required
           aria-invalid={Boolean(error)}
           aria-describedby={error ? "login-error" : undefined}

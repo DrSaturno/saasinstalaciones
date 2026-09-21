@@ -10,6 +10,7 @@ import {
   type OrderAttachmentRegistration,
 } from "@/lib/domain/order-intake";
 import { hasActiveCompanyRole } from "@/lib/data/company-membership-roles";
+import { orderFieldError } from "./field-error";
 import { requestPushDelivery } from "@/lib/push/events";
 import { activitiesFor } from "@/lib/domain/activity-kind";
 import type { TablesInsert } from "@/types/database";
@@ -58,7 +59,7 @@ export async function createOrder(
     installerId: formData.get("installerId") ?? "",
   });
   if (!parsed.success) {
-    return { error: t("invalidData") };
+    return { error: await orderFieldError(parsed.error) };
   }
 
   try {
@@ -237,7 +238,7 @@ export async function updateOrder(
     installerAmount: formData.get("installerAmount") ?? "",
     installerId: formData.get("installerId") ?? "",
   });
-  if (!parsed.success) return { error: t("invalidData") };
+  if (!parsed.success) return { error: await orderFieldError(parsed.error) };
 
   try {
     const { supabase, user } = await requireOperator();

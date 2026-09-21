@@ -9,6 +9,7 @@ import { decideSurveySubmission } from "@/lib/actions/orders/survey";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { SURVEY_CHANGES_REASON } from "@/lib/domain/field-flow";
 
 type Decision = "approved" | "changes_requested";
 
@@ -66,7 +67,7 @@ export function SurveyReview({
     });
   };
 
-  const needsReason = reason.trim().length < 3;
+  const needsReason = reason.trim().length < SURVEY_CHANGES_REASON.min;
 
   return (
     <Card className="border-[var(--warning)]/50 bg-cream/30">
@@ -107,7 +108,7 @@ export function SurveyReview({
                 id={`survey-reason-${submissionId}`}
                 value={reason}
                 onChange={(event) => setReason(event.target.value)}
-                maxLength={1000}
+                maxLength={SURVEY_CHANGES_REASON.max}
                 rows={3}
                 placeholder={t("reasonPlaceholder")}
                 disabled={pending}

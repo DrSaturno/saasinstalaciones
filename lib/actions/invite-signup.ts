@@ -6,11 +6,15 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { createCorrelationId, logEvent } from "@/lib/observability";
+import { newPassword, personName } from "@/lib/domain/field-rules";
+import { invalidFieldMessage } from "@/lib/field-error-message";
 
+// Nombre y contraseña con las reglas comunes de `FIELD`. El nombre admitía
+// 80 caracteres acá y 150 en cualquier otro lado donde se carga una persona.
 const schema = z.object({
   token: z.string().uuid(),
-  fullName: z.string().trim().min(2).max(80),
-  password: z.string().min(8).max(72),
+  fullName: personName(),
+  password: newPassword(),
 });
 
 export type SignupState = { error: string | null };
@@ -37,7 +41,15 @@ export async function signUpInstaller(
     fullName: formData.get("fullName"),
     password: formData.get("password"),
   });
-  if (!parsed.success) return { error: t("invalidData") };
+  if (!parsed.success) {
+    const f = await getTranslations("Invitation");
+    return {
+      error: await invalidFieldMessage(parsed.error, {
+        fullName: f("fullNameLabel"),
+        password: f("passwordLabel"),
+      }),
+    };
+  }
 
   const { token, fullName, password } = parsed.data;
 

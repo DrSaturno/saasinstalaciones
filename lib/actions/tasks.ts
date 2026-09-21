@@ -18,6 +18,7 @@ import { orderTransitionBlock } from "@/lib/domain/order-rules";
 import { logEvent } from "@/lib/observability";
 import { requestPushDelivery } from "@/lib/push/events";
 import type { OrderUpdateType } from "@/types/database";
+import { INSTALLER_NOTE_MAX } from "@/lib/domain/field-flow";
 
 async function requireInstaller() {
   const user = await getAuthorizedUser();
@@ -201,7 +202,7 @@ const updateSchema = z.object({
   orderId: z.string().uuid(),
   updateId: z.string().uuid(), // generado en el CLIENTE: idempotencia offline
   type: z.enum(["travel", "checkin", "progress", "blocker", "done"]),
-  note: z.string().max(2000).optional().default(""),
+  note: z.string().trim().max(INSTALLER_NOTE_MAX).optional().default(""),
   photos: z.array(z.string()).max(10).optional().default([]),
   // Sólo los hitos que mueven el estado los traen (FLD-R2.1). Un avance o un
   // bloqueo no cambian el estado de la orden, así que van en null.

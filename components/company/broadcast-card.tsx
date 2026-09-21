@@ -12,6 +12,7 @@ import {
   updateBroadcast,
 } from "@/lib/actions/broadcasts";
 import type { CoordinatorOption, ManagerBroadcast } from "@/lib/data/broadcasts";
+import { BROADCAST_LIMITS } from "@/lib/domain/broadcasts";
 import { AcceptApplicationDialog } from "@/components/company/accept-application-dialog";
 import { FormalizeProjectDialog } from "@/components/company/formalize-project-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -143,9 +144,9 @@ export function BroadcastCard({ broadcast, coordinators }: { broadcast: ManagerB
             <DialogDescription>{t("editDescription")}</DialogDescription>
           </DialogHeader>
           <form action={save} className="grid gap-4">
-            <div className="grid gap-2"><Label htmlFor={`title-${broadcast.id}`}>{t("titleLabel")}</Label><Input id={`title-${broadcast.id}`} name="title" defaultValue={broadcast.title} maxLength={120} required /></div>
-            <div className="grid gap-2"><Label htmlFor={`slots-${broadcast.id}`}>{t("slotsLabel")}</Label><Input id={`slots-${broadcast.id}`} name="slots" type="number" min={Math.max(1, broadcast.acceptedCount)} max={50} defaultValue={broadcast.slots} required /></div>
-            <div className="grid gap-2"><Label htmlFor={`description-${broadcast.id}`}>{t("detail")}</Label><Textarea id={`description-${broadcast.id}`} name="description" defaultValue={broadcast.description} maxLength={1200} rows={4} /></div>
+            <div className="grid gap-2"><Label htmlFor={`title-${broadcast.id}`}>{t("titleLabel")}</Label><Input id={`title-${broadcast.id}`} name="title" defaultValue={broadcast.title} minLength={BROADCAST_LIMITS.title.min} maxLength={BROADCAST_LIMITS.title.max} required /></div>
+            <div className="grid gap-2"><Label htmlFor={`slots-${broadcast.id}`}>{t("slotsLabel")}</Label><Input id={`slots-${broadcast.id}`} name="slots" type="number" min={Math.max(BROADCAST_LIMITS.slots.min, broadcast.acceptedCount)} max={BROADCAST_LIMITS.slots.max} defaultValue={broadcast.slots} required /></div>
+            <div className="grid gap-2"><Label htmlFor={`description-${broadcast.id}`}>{t("detail")}</Label><Textarea id={`description-${broadcast.id}`} name="description" defaultValue={broadcast.description} maxLength={BROADCAST_LIMITS.description} rows={4} /></div>
             <Button type="submit" disabled={pending}>{pending ? t("saving") : t("save")}</Button>
           </form>
         </DialogContent>

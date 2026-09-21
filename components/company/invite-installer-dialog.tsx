@@ -8,6 +8,7 @@ import { inviteInstaller } from "@/lib/actions/team";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FIELD } from "@/lib/domain/field-rules";
 import {
   Dialog,
   DialogContent,
@@ -102,7 +103,9 @@ export function InviteInstallerDialog() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="instalador@email.com"
-                  onKeyDown={(e) => e.key === "Enter" && submit()}
+                  maxLength={FIELD.email.max}
+                  required
+                  onKeyDown={(e) => e.key === "Enter" && email.trim() && submit()}
                 />
               </div>
               <div className="flex flex-col gap-2">
@@ -119,7 +122,7 @@ export function InviteInstallerDialog() {
                   <option value="coordinator">{t("coordinatorRole")}</option>
                 </select>
               </div>
-              <Button onClick={submit} disabled={pending}>
+              <Button onClick={submit} disabled={pending || !email.trim()}>
                 {pending ? t("creating") : t("submit")}
               </Button>
             </div>

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { setInstallerDefaultRate } from "@/lib/actions/team";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MONEY_MAX } from "@/lib/domain/field-rules";
 
 /**
  * Tarifa sugerida de un instalador en esta empresa.
@@ -62,6 +63,7 @@ export function InstallerRateField({
             aria-label={t("defaultRate")}
             type="number"
             min="0"
+            max={MONEY_MAX}
             step="0.01"
             inputMode="decimal"
             value={value}

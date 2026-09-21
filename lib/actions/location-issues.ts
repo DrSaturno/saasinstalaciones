@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getTranslations } from "next-intl/server";
 import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { createClient } from "@/lib/supabase/server";
+import { LOCATION_ISSUE_NOTE } from "@/lib/domain/location-issues";
 
 /**
  * Resolución de la cola de revisión del backfill (R2-UI-03).
@@ -18,7 +19,7 @@ import { createClient } from "@/lib/supabase/server";
 const schema = z.object({
   issueId: z.string().uuid(),
   decision: z.enum(["resolved", "ignored"]),
-  note: z.string().trim().min(10).max(1000),
+  note: z.string().trim().min(LOCATION_ISSUE_NOTE.min).max(LOCATION_ISSUE_NOTE.max),
 });
 
 export type LocationIssueActionState = { error: string | null; ok?: boolean };

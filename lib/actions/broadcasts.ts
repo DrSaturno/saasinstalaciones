@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
+import type { z } from "zod";
 import { canOperateCompany,
   isCoordinatorSomewhere,
   isInstallerArea,
@@ -16,6 +17,8 @@ import {
 } from "@/lib/domain/broadcasts";
 import { hasActiveCompanyRole } from "@/lib/data/company-membership-roles";
 import { requestPushDelivery } from "@/lib/push/events";
+import { firstFieldProblem } from "@/lib/domain/field-errors";
+import { invalidFieldMessage } from "@/lib/field-error-message";
 import { logEvent } from "@/lib/observability";
 import { createClient } from "@/lib/supabase/server";
 import type { OrderCurrency } from "@/types/database";
@@ -82,6 +85,44 @@ function errorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
+
+/** Errores de validación con los rótulos de cada formulario de convocatorias. */
+async function createBroadcastFieldError(error: z.ZodError): Promise<string> {
+  const f = await getTranslations("CreateBroadcast");
+  return invalidFieldMessage(error, {
+    projectId: f("project"),
+    clientId: f("client"),
+    zone: f("zone"),
+    title: f("searchTitle"),
+    description: f("detail"),
+    slots: f("slots"),
+    scheduledDate: f("scheduledDate"),
+    scheduledEndDate: f("scheduledEndDate"),
+    requirements: f("requirements"),
+    logisticsNotes: f("logistics"),
+    payAmount: f("payAmount"),
+    lat: f("latitude"),
+    lng: f("longitude"),
+  });
+}
+
+async function updateBroadcastFieldError(error: z.ZodError): Promise<string> {
+  const f = await getTranslations("BroadcastCard");
+  return invalidFieldMessage(error, {
+    title: f("titleLabel"),
+    slots: f("slotsLabel"),
+    description: f("detail"),
+  });
+}
+
+async function applicationFieldError(error: z.ZodError): Promise<string> {
+  const f = await getTranslations("JobCard");
+  return invalidFieldMessage(error, {
+    message: f("message"),
+    quotedAmount: f("quote"),
+  });
+}
+
 export async function createBroadcast(
   _previous: BroadcastActionState,
   formData: FormData,
@@ -104,7 +145,7 @@ export async function createBroadcast(
     lng: formData.get("lng") ?? "",
   });
   if (!parsed.success) {
-    return { error: t("invalidData") };
+    return { error: await createBroadcastFieldError(parsed.error) };
   }
 
   try {
@@ -191,7 +232,7 @@ export async function updateBroadcast(input: {
   const t = await getTranslations("Errors");
   const parsed = updateBroadcastSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: t("invalidData") };
+    return { error: await updateBroadcastFieldError(parsed.error) };
   }
 
   try {
@@ -258,7 +299,7 @@ export async function applyToBroadcast(
     quotedAmount,
   });
   if (!parsed.success) {
-    return { error: t("invalidData") };
+    return { error: await applicationFieldError(parsed.error) };
   }
 
   try {
@@ -382,7 +423,15 @@ export async function formalizeProjectFromBroadcast(input: {
 }): Promise<BroadcastActionState & { projectId?: string }> {
   const t = await getTranslations("Errors");
   const parsed = formalizeProjectSchema.safeParse(input);
-  if (!parsed.success) return { error: t("coordinatorRequired") };
+  if (!parsed.success) {
+    // Antes toda falla respondía «Asigná un coordinador», aunque el problema
+    // fuera un nombre de proyecto demasiado corto.
+    if (firstFieldProblem(parsed.error)?.field === "coordinatorId") {
+      return { error: t("coordinatorRequired") };
+    }
+    const f = await getTranslations("FormalizeProject");
+    return { error: await invalidFieldMessage(parsed.error, { name: f("projectName") }) };
+  }
 
   try {
     const { supabase, companyId } = await requireOperatorForBroadcast(

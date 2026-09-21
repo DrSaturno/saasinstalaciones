@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { COMPLETION_PHOTOS, MONEY_MAX } from "@/lib/domain/field-rules";
 import { AR_PROVINCES, BR_STATES } from "@/lib/domain/geography";
 import type { BillingMode, Country, OrderCurrency } from "@/types/database";
 
@@ -13,15 +14,29 @@ const optionalDate = z
   .refine((value) => value === "" || /^\d{4}-\d{2}-\d{2}$/.test(value))
   .transform((value) => value || null);
 
+/**
+ * Límites del formulario de proyecto, compartidos con `project-form-fields`
+ * para que el navegador frene exactamente lo que frena el servidor.
+ */
+export const PROJECT_LIMITS = {
+  name: { min: 2, max: 150 },
+  description: 2000,
+  plannedInstallations: { min: 0, max: 100000 },
+  minCompletionPhotos: COMPLETION_PHOTOS,
+} as const;
+
+// Sin techo, un importe de más de doce cifras pasaba la validación y lo
+// rechazaba la columna (`numeric(14, 2)`) con un error que no decía nada.
 const optionalAmount = z
   .union([z.string(), z.number()])
   .transform((value) => String(value).trim().replace(",", "."))
   .refine((value) => value === "" || /^\d+(\.\d{1,2})?$/.test(value))
-  .transform((value) => (value === "" ? null : Number(value)));
+  .transform((value) => (value === "" ? null : Number(value)))
+  .pipe(z.number().min(0).max(MONEY_MAX).nullable());
 
 export const projectInputSchema = z
   .object({
-    name: z.string().trim().min(2).max(150),
+    name: z.string().trim().min(PROJECT_LIMITS.name.min).max(PROJECT_LIMITS.name.max),
     clientId: z.string().uuid(),
     // Opcional: un proyecto puede nacer sin coordinador y asignarse después.
     // La columna en la base es nullable; exigirlo acá dejaba a la empresa sin
@@ -38,12 +53,16 @@ export const projectInputSchema = z
           ),
         { message: "invalidCoordinator" },
       ),
-    description: z.string().trim().max(2000),
+    description: z.string().trim().max(PROJECT_LIMITS.description),
     startsAt: optionalDate,
     endsAt: optionalDate,
     country: z.enum(["AR", "BR"]),
     zones: z.array(z.string().trim()).min(1).max(27),
-    plannedInstallations: z.coerce.number().int().min(0).max(100000),
+    plannedInstallations: z.coerce
+      .number()
+      .int()
+      .min(PROJECT_LIMITS.plannedInstallations.min)
+      .max(PROJECT_LIMITS.plannedInstallations.max),
     billingMode: z.enum(["project", "per_installation"]),
     contractAmount: optionalAmount,
     // Override del mínimo de fotos para cerrar (FLD-R4.2). Vacío significa
@@ -55,7 +74,11 @@ export const projectInputSchema = z
       .optional()
       .transform((value) => (!value ? null : Number(value)))
       .refine(
-        (value) => value === null || (Number.isInteger(value) && value >= 0 && value <= 20),
+        (value) =>
+          value === null ||
+          (Number.isInteger(value) &&
+            value >= PROJECT_LIMITS.minCompletionPhotos.min &&
+            value <= PROJECT_LIMITS.minCompletionPhotos.max),
         { message: "invalidMinPhotos" },
       )
       .default(null),
@@ -71,7 +94,9 @@ export const projectInputSchema = z
     }
 
     if (value.billingMode === "project" && value.contractAmount === null) {
-      context.addIssue({ code: "custom", path: ["contractAmount"], message: "amountRequired" });
+      // «required» y no un código propio: el mensaje tiene que nombrar el
+      // campo («Completá Importe total del proyecto»).
+      context.addIssue({ code: "custom", path: ["contractAmount"], message: "required" });
     }
   });
 

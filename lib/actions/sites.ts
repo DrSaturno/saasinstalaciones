@@ -6,6 +6,7 @@ import { z } from "zod";
 import { attachCanonicalLocations } from "@/lib/actions/canonical-locations";
 import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { siteInputSchema } from "@/lib/domain/sites";
+import { invalidFieldMessage } from "@/lib/field-error-message";
 import { logEvent } from "@/lib/observability";
 import { createClient } from "@/lib/supabase/server";
 
@@ -50,6 +51,33 @@ function parseSiteForm(formData: FormData) {
   });
 }
 
+/**
+ * El error de validación con el mismo rótulo que el formulario. Antes era un
+ * «Datos inválidos» sin más, y con quince campos no había forma de saber cuál
+ * corregir.
+ */
+async function siteFieldError(error: z.ZodError): Promise<string> {
+  const f = await getTranslations("SiteForm");
+  return invalidFieldMessage(error, {
+    name: f("name"),
+    externalRef: f("reference"),
+    address: f("address"),
+    city: f("city"),
+    zone: f("province"),
+    lat: f("latitude"),
+    lng: f("longitude"),
+    contactName: f("contactName"),
+    contactPhone: f("phone"),
+    contactEmail: f("email"),
+    openingHours: f("openingHours"),
+    accessNotes: f("access"),
+    parkingNotes: f("parking"),
+    technicalNotes: f("technical"),
+    riskNotes: f("risks"),
+    permanentNotes: f("permanentNotes"),
+  });
+}
+
 async function validateProjectZone(
   projectId: string,
   companyId: string,
@@ -81,7 +109,7 @@ export async function createSite(
 ): Promise<SiteActionState> {
   const t = await getTranslations("Errors");
   const parsed = parseSiteForm(formData);
-  if (!parsed.success) return { error: t("invalidData") };
+  if (!parsed.success) return { error: await siteFieldError(parsed.error) };
 
   try {
     const { supabase, companyId, userId } = await requireManager();
@@ -161,7 +189,7 @@ export async function updateSite(
 ): Promise<SiteActionState> {
   const t = await getTranslations("Errors");
   const parsed = parseSiteForm(formData);
-  if (!parsed.success) return { error: t("invalidData") };
+  if (!parsed.success) return { error: await siteFieldError(parsed.error) };
 
   try {
     const { supabase, companyId, userId } = await requireManager();

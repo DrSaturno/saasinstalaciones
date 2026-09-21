@@ -8,6 +8,7 @@ import { orderTransitionBlock } from "@/lib/domain/order-rules";
 import type { OrderStatus } from "@/types/database";
 import { operatedCompany, requireOperator } from "./context";
 import type { ActionState } from "./types";
+import { SURVEY_NOTE } from "@/lib/domain/field-flow";
 
 // ---------------------------------------------------------------------------
 // Máquina de estados: única vía para cambiar el status (regla no negociable #4)
@@ -111,7 +112,7 @@ export async function transitionOrder(
 
 const surveySchema = z.object({
   orderId: z.string().uuid(),
-  note: z.string().trim().min(3).max(2000),
+  note: z.string().trim().min(SURVEY_NOTE.min).max(SURVEY_NOTE.max),
 });
 
 /**

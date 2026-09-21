@@ -6,11 +6,12 @@ import { z } from "zod";
 import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { createClient } from "@/lib/supabase/server";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
+import { newPassword } from "@/lib/domain/field-rules";
 
 const schema = z
   .object({
     currentPassword: z.string().min(1),
-    newPassword: z.string().min(8).max(72),
+    newPassword: newPassword(),
     confirmPassword: z.string().min(1),
   })
   .refine((value) => value.newPassword === value.confirmPassword, {

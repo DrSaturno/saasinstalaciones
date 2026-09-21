@@ -3,7 +3,10 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { INTL_LOCALE } from "@/i18n/config";
 import { applicationOrigin } from "@/lib/app-origin";
+import { COMPANY_LIMITS } from "@/lib/domain/companies";
 import { countCompanyUsers } from "@/lib/domain/company-user-counts";
+import { personName, requiredEmail } from "@/lib/domain/field-rules";
+import { invalidFieldMessage } from "@/lib/field-error-message";
 import { createCorrelationId, logEvent } from "@/lib/observability";
 import {
   managerActivationUrl,
@@ -11,17 +14,21 @@ import {
 } from "@/lib/email/invitations";
 import { requirePlatformAdmin } from "../_guard";
 
+// Sin `trim` en los nombres, dos espacios pasaban el mínimo de 2 caracteres
+// y creaban una empresa sin nombre. Los mensajes ya no van en el esquema: los
+// traduce `invalidFieldMessage` en el idioma de quien opera.
 const createCompanySchema = z.object({
-  name: z.string().min(2, "Nombre muy corto").max(150),
+  name: z.string().trim().min(COMPANY_LIMITS.name.min).max(COMPANY_LIMITS.name.max),
   country: z.enum(["AR", "BR"]),
   orderPrefix: z
     .string()
-    .min(2)
-    .max(5)
-    .regex(/^[A-Z]+$/, "Solo letras mayúsculas")
+    .trim()
+    .min(COMPANY_LIMITS.orderPrefix.min)
+    .max(COMPANY_LIMITS.orderPrefix.max)
+    .regex(/^[A-Z]+$/)
     .default("ORD"),
-  managerEmail: z.string().email("Email inválido"),
-  managerName: z.string().min(2, "Nombre muy corto").max(150),
+  managerEmail: requiredEmail(),
+  managerName: personName(),
 });
 
 /** GET /api/master/companies — lista de empresas con conteos. */
@@ -102,10 +109,15 @@ export async function POST(request: NextRequest) {
 
   const parsed = createCompanySchema.safeParse(await request.json());
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: t("invalidData") },
-      { status: 400 },
-    );
+    const f = await getTranslations("CreateCompany");
+    const message = await invalidFieldMessage(parsed.error, {
+      name: f("businessName"),
+      country: f("country"),
+      orderPrefix: f("orderPrefix"),
+      managerName: f("manager"),
+      managerEmail: f("managerEmail"),
+    });
+    return NextResponse.json({ error: message }, { status: 400 });
   }
   const { name, country, orderPrefix, managerEmail, managerName } = parsed.data;
   const locale = country === "BR" ? "pt" : "es";

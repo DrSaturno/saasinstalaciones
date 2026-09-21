@@ -10,6 +10,7 @@ import { activitiesFor } from "@/lib/domain/activity-kind";
 import type { TablesInsert } from "@/types/database";
 import { operatedCompany, requireOperator } from "./context";
 import type { BulkResult } from "./types";
+import { orderFieldError } from "./field-error";
 
 const BATCH_SIZE = 500;
 
@@ -62,7 +63,12 @@ export async function createOrdersForProject(
     batchId: formData.get("batchId") ?? "",
   });
   if (!parsed.success) {
-    return { error: t("invalidData"), created: 0, skipped: 0 };
+    // El lote rotula el título «Título de las órdenes»: el mensaje dice eso.
+    return {
+      error: await orderFieldError(parsed.error, createOrdersT("orderTitle")),
+      created: 0,
+      skipped: 0,
+    };
   }
 
   let ctx;

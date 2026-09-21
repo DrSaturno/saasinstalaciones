@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { createOrdersForProject } from "@/lib/actions/orders/bulk";
-import { ORDER_INITIAL_STATUSES, ORDER_PRIORITIES } from "@/lib/domain/order-intake";
+import { MONEY_MAX } from "@/lib/domain/field-rules";
+import { ORDER_INITIAL_STATUSES, ORDER_LIMITS, ORDER_PRIORITIES } from "@/lib/domain/order-intake";
 import type { OrderCurrency } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -151,7 +152,8 @@ export function CreateOrdersDialog({
                     name="title"
                     defaultValue={t("defaultTitle")}
                     placeholder={t("placeholder")}
-                    maxLength={200}
+                    minLength={ORDER_LIMITS.title.min}
+                    maxLength={ORDER_LIMITS.title.max}
                     required
                     disabled={pending}
                   />
@@ -171,7 +173,7 @@ export function CreateOrdersDialog({
                   id="batch-description"
                   name="description"
                   rows={3}
-                  maxLength={4000}
+                  maxLength={ORDER_LIMITS.description}
                   disabled={pending}
                 />
               </div>
@@ -223,7 +225,7 @@ export function CreateOrdersDialog({
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="batch-logistics">{orderT("logistics")}</Label>
-                <Textarea id="batch-logistics" name="logisticsNotes" rows={2} maxLength={2000} disabled={pending} />
+                <Textarea id="batch-logistics" name="logisticsNotes" rows={2} maxLength={ORDER_LIMITS.logisticsNotes} disabled={pending} />
               </div>
               <label className="flex items-center gap-2 text-sm">
                 <input
@@ -239,7 +241,7 @@ export function CreateOrdersDialog({
               {requiresFreight ? (
                 <div className="grid gap-2">
                   <Label htmlFor="batch-freight">{orderT("freightDetails")}</Label>
-                  <Textarea id="batch-freight" name="freightDetails" rows={2} maxLength={1000} required disabled={pending} />
+                  <Textarea id="batch-freight" name="freightDetails" rows={2} maxLength={ORDER_LIMITS.freightDetails} required disabled={pending} />
                 </div>
               ) : null}
             </OrderFormSection>
@@ -265,6 +267,7 @@ export function CreateOrdersDialog({
                           name="amount"
                           type="number"
                           min="0"
+                          max={MONEY_MAX}
                           step="0.01"
                           inputMode="decimal"
                           placeholder="0,00"
@@ -285,6 +288,7 @@ export function CreateOrdersDialog({
                         name="installerAmount"
                         type="number"
                         min="0"
+                        max={MONEY_MAX}
                         step="0.01"
                         inputMode="decimal"
                         placeholder="0,00"

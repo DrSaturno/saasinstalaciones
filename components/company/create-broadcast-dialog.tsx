@@ -10,6 +10,8 @@ import {
   type BroadcastActionState,
 } from "@/lib/actions/broadcasts";
 import type { ClientOption, ProjectOption } from "@/lib/data/broadcasts";
+import { BROADCAST_LIMITS } from "@/lib/domain/broadcasts";
+import { LATITUDE, LONGITUDE, MONEY_MAX } from "@/lib/domain/field-rules";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -142,6 +144,8 @@ export function CreateBroadcastDialog({
               name="zone"
               list="company-zones"
               placeholder={t("zonePlaceholder")}
+              minLength={BROADCAST_LIMITS.zone.min}
+              maxLength={BROADCAST_LIMITS.zone.max}
               required
             />
             <datalist id="company-zones">
@@ -152,20 +156,20 @@ export function CreateBroadcastDialog({
             <p className="text-xs text-muted-foreground sm:col-span-2">{t("coordinatesHelp")}</p>
             <div className="grid gap-2">
               <Label htmlFor="broadcast-lat">{t("latitude")}</Label>
-              <Input id="broadcast-lat" name="lat" type="number" step="any" min="-90" max="90" />
+              <Input id="broadcast-lat" name="lat" type="number" step="any" min={LATITUDE.min} max={LATITUDE.max} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="broadcast-lng">{t("longitude")}</Label>
-              <Input id="broadcast-lng" name="lng" type="number" step="any" min="-180" max="180" />
+              <Input id="broadcast-lng" name="lng" type="number" step="any" min={LONGITUDE.min} max={LONGITUDE.max} />
             </div>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="broadcast-requirements">{t("requirements")}</Label>
-            <Textarea id="broadcast-requirements" name="requirements" maxLength={1500} rows={3} placeholder={t("requirementsPlaceholder")} />
+            <Textarea id="broadcast-requirements" name="requirements" maxLength={BROADCAST_LIMITS.requirements} rows={3} placeholder={t("requirementsPlaceholder")} />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="broadcast-logistics">{t("logistics")}</Label>
-            <Textarea id="broadcast-logistics" name="logisticsNotes" maxLength={1500} rows={3} placeholder={t("logisticsPlaceholder")} />
+            <Textarea id="broadcast-logistics" name="logisticsNotes" maxLength={BROADCAST_LIMITS.logisticsNotes} rows={3} placeholder={t("logisticsPlaceholder")} />
           </div>
           {canManageFinance ? (
             <div className="rounded-xl border p-4">
@@ -173,22 +177,22 @@ export function CreateBroadcastDialog({
                 <input type="checkbox" name="payVisible" checked={showPay} onChange={(event) => setShowPay(event.target.checked)} className="size-4 accent-primary" />
                 {t("showPay")}
               </label>
-              {showPay ? <div className="mt-3 grid gap-2"><Label htmlFor="broadcast-pay">{t("payAmount")}</Label><Input id="broadcast-pay" name="payAmount" type="number" min="0" step="0.01" required /></div> : <input type="hidden" name="payAmount" value="" />}
+              {showPay ? <div className="mt-3 grid gap-2"><Label htmlFor="broadcast-pay">{t("payAmount")}</Label><Input id="broadcast-pay" name="payAmount" type="number" min="0" max={MONEY_MAX} step="0.01" required /></div> : <input type="hidden" name="payAmount" value="" />}
             </div>
           ) : null}
           <div className="grid grid-cols-[1fr_90px] gap-3">
             <div className="grid gap-2">
               <Label htmlFor="broadcast-title">{t("searchTitle")}</Label>
-              <Input id="broadcast-title" name="title" maxLength={120} required />
+              <Input id="broadcast-title" name="title" minLength={BROADCAST_LIMITS.title.min} maxLength={BROADCAST_LIMITS.title.max} required />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="broadcast-slots">{t("slots")}</Label>
-              <Input id="broadcast-slots" name="slots" type="number" min={1} max={50} defaultValue={1} required />
+              <Input id="broadcast-slots" name="slots" type="number" min={BROADCAST_LIMITS.slots.min} max={BROADCAST_LIMITS.slots.max} defaultValue={1} required />
             </div>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="broadcast-description">{t("detail")}</Label>
-            <Textarea id="broadcast-description" name="description" maxLength={1200} rows={4} placeholder={t("detailPlaceholder")} />
+            <Textarea id="broadcast-description" name="description" maxLength={BROADCAST_LIMITS.description} rows={4} placeholder={t("detailPlaceholder")} />
           </div>
           {state.error ? <p role="alert" className="text-sm text-destructive">{state.error}</p> : null}
           <Button type="submit" disabled={pending}>{pending ? t("publishing") : t("submit")}</Button>

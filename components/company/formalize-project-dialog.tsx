@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { formalizeProjectFromBroadcast } from "@/lib/actions/broadcasts";
 import type { CoordinatorOption } from "@/lib/data/broadcasts";
+import { BROADCAST_LIMITS } from "@/lib/domain/broadcasts";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -92,7 +93,8 @@ export function FormalizeProjectDialog({
               id={`formalize-name-${broadcastId}`}
               value={name}
               onChange={(event) => setName(event.target.value)}
-              maxLength={120}
+              minLength={BROADCAST_LIMITS.title.min}
+              maxLength={BROADCAST_LIMITS.title.max}
               disabled={pending}
             />
           </div>
@@ -132,7 +134,7 @@ export function FormalizeProjectDialog({
 
           <Button
             onClick={submit}
-            disabled={pending || !coordinatorId || !name.trim()}
+            disabled={pending || !coordinatorId || name.trim().length < BROADCAST_LIMITS.title.min}
           >
             {pending ? t("creating") : t("submit")}
           </Button>

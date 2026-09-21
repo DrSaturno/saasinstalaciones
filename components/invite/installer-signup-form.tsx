@@ -6,6 +6,7 @@ import { signUpInstaller, type SignupState } from "@/lib/actions/invite-signup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FIELD } from "@/lib/domain/field-rules";
 
 const initialState: SignupState = { error: null };
 
@@ -44,6 +45,8 @@ export function InstallerSignupForm({
           name="fullName"
           autoComplete="name"
           placeholder={t("fullNamePlaceholder")}
+          minLength={FIELD.personName.min}
+          maxLength={FIELD.personName.max}
           required
           className="h-12 rounded-xl px-4"
         />
@@ -55,7 +58,8 @@ export function InstallerSignupForm({
           name="password"
           type="password"
           autoComplete="new-password"
-          minLength={8}
+          minLength={FIELD.password.min}
+          maxLength={FIELD.password.max}
           required
           className="h-12 rounded-xl px-4"
         />

@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { UNAVAILABILITY_REVIEW_NOTE_MAX } from "@/lib/domain/availability";
 
 /**
  * Aprobar / rechazar un aviso de inactividad.
@@ -67,6 +68,7 @@ export function UnavailabilityReview({ id, name }: { id: string; name: string })
             value={note}
             onChange={(event) => setNote(event.target.value)}
             placeholder={t("rejectReasonPlaceholder")}
+            maxLength={UNAVAILABILITY_REVIEW_NOTE_MAX}
             rows={3}
             disabled={pending}
           />

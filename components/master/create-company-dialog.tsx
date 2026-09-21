@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { COMPANY_LIMITS } from "@/lib/domain/companies";
+import { FIELD } from "@/lib/domain/field-rules";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -138,7 +140,7 @@ export function CreateCompanyDialog() {
             >
               <div className="flex flex-col gap-2">
                 <Label htmlFor="name">{t("businessName")}</Label>
-                <Input id="name" name="name" placeholder="Alltak Brasil Ltda." required />
+                <Input id="name" name="name" placeholder="Alltak Brasil Ltda." minLength={COMPANY_LIMITS.name.min} maxLength={COMPANY_LIMITS.name.max} required />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
@@ -163,7 +165,9 @@ export function CreateCompanyDialog() {
                     name="orderPrefix"
                     placeholder="ALL"
                     defaultValue="ORD"
-                    maxLength={5}
+                    minLength={COMPANY_LIMITS.orderPrefix.min}
+                    maxLength={COMPANY_LIMITS.orderPrefix.max}
+                    pattern={COMPANY_LIMITS.orderPrefix.pattern}
                     className="font-mono uppercase"
                     required
                   />
@@ -171,7 +175,7 @@ export function CreateCompanyDialog() {
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="managerName">{t("manager")}</Label>
-                <Input id="managerName" name="managerName" placeholder={t("managerPlaceholder")} required />
+                <Input id="managerName" name="managerName" placeholder={t("managerPlaceholder")} minLength={FIELD.personName.min} maxLength={FIELD.personName.max} required />
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="managerEmail">{t("managerEmail")}</Label>
@@ -180,6 +184,7 @@ export function CreateCompanyDialog() {
                   name="managerEmail"
                   type="email"
                   placeholder="responsable@empresa.com"
+                  maxLength={FIELD.email.max}
                   required
                 />
               </div>

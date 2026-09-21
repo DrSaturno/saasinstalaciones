@@ -15,6 +15,27 @@ import type { OrderStatus } from "@/types/database";
 export const DEFAULT_MIN_COMPLETION_PHOTOS = 3;
 
 /**
+ * Nota de un avance de campo (llegada, progreso, cierre). Viaja por la cola
+ * offline: si el navegador dejara escribir más de lo que acepta el servidor,
+ * el rechazo llegaría recién al sincronizar y el avance quedaría trabado en el
+ * teléfono como «cambio rechazado».
+ */
+export const INSTALLER_NOTE_MAX = 2000;
+
+/** Nota del relevamiento que carga la coordinación. */
+export const SURVEY_NOTE = { min: 3, max: 2000 } as const;
+
+/**
+ * Motivo para pedir cambios en un relevamiento. El mínimo lo exigen también la
+ * función y el CHECK de la tabla; acá vive una sola vez para el esquema y el
+ * botón, que antes lo tenían escrito cada uno por su lado.
+ */
+export const SURVEY_CHANGES_REASON = { min: 3, max: 1000 } as const;
+
+/** Motivo para dispensar el relevamiento previo a la ejecución (CHECK de 10 a 500). */
+export const PREREQUISITE_WAIVE_REASON = { min: 10, max: 500 } as const;
+
+/**
  * El mínimo efectivo de una orden: manda el proyecto, y si no fijó nada,
  * la empresa.
  *

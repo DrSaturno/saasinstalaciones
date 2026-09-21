@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ABSENCE_REASON } from "@/lib/domain/availability";
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6] as const;
 
@@ -217,7 +218,8 @@ export function GlobalAvailabilityCard({
               <Label htmlFor="absence-reason">{t("reason")}</Label>
               <Input
                 id="absence-reason"
-                maxLength={500}
+                minLength={ABSENCE_REASON.min}
+                maxLength={ABSENCE_REASON.max}
                 value={absence.reason}
                 onChange={(event) =>
                   setAbsence((current) => ({ ...current, reason: event.target.value }))
@@ -232,7 +234,7 @@ export function GlobalAvailabilityCard({
             className="mt-3"
             onClick={submitAbsence}
             disabled={
-              pending || !absence.startsAt || !absence.endsAt || absence.reason.trim().length < 2
+              pending || !absence.startsAt || !absence.endsAt || absence.reason.trim().length < ABSENCE_REASON.min
             }
           >
             {t("addAbsence")}

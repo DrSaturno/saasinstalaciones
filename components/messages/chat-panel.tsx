@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CHAT_MESSAGE_MAX } from "@/lib/domain/messages";
 
 type Attachment = { path: string; name: string; mimeType: string };
 
@@ -358,6 +359,7 @@ export function ChatPanel({
           </label>
           <Input
             value={body}
+            maxLength={CHAT_MESSAGE_MAX}
             onChange={(event) => {
               setBody(event.target.value);
               announceTyping();

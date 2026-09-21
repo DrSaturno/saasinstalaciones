@@ -1,9 +1,13 @@
 import { Input } from "@/components/ui/input";
+import { FIELD } from "@/lib/domain/field-rules";
 
 /**
  * Ciudad como texto libre con autocompletado nativo (<datalist>).
  * Las sugerencias salen de las ciudades ya cargadas de la empresa
  * (distinct sites.city), pasadas por prop. Server o Client Component.
+ *
+ * El largo máximo es el mismo en todos lados (`FIELD.city`), así que va acá y
+ * no en cada formulario que la usa.
  */
 export function CityInput({
   name = "city",
@@ -32,6 +36,7 @@ export function CityInput({
         defaultValue={defaultValue}
         list={unique.length ? listId : undefined}
         required={required}
+        maxLength={FIELD.city.max}
         disabled={disabled}
         placeholder={placeholder}
         autoComplete="off"
