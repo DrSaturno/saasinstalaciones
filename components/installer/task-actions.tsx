@@ -97,6 +97,13 @@ export function TaskActions({
         if (!active) return;
 
         if (queued) {
+          // Una etapa en la cola es lo mismo que una recién tocada: la pantalla
+          // la muestra y el servidor todavía no la devolvió. Sin marcarla, al
+          // reabrir la orden con la transición pendiente, apenas la cola la
+          // enviaba la pantalla volvía a la foto vieja del servidor y la orden
+          // retrocedía de etapa sola (visto en el CI: el historial ya decía «En
+          // proceso» y el botón seguía en «Iniciar trabajo»).
+          optimistic.current = queued;
           setRejected(false);
           setStatus(queued);
           return;

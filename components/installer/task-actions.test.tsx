@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import messages from "@/messages/es.json";
 
@@ -111,6 +111,30 @@ describe("etapas de campo del instalador", () => {
     );
 
     expect(await screen.findByRole("button", { name: "Marcar terminado" })).toBeTruthy();
+  });
+
+  it("no retrocede cuando la etapa encolada al reabrir termina de enviarse", async () => {
+    // Visto en el CI (installer-field-flow): se reabre la orden con la
+    // transición todavía en la cola. La pantalla la muestra, la cola la envía
+    // y se vacía, y en ese momento volvía a la etapa de la foto del servidor
+    // —anterior al envío— hasta que llegara un refresh. El historial de la
+    // misma pantalla ya decía «En proceso» y el botón seguía en «Iniciar
+    // trabajo»: la orden había retrocedido sola.
+    orderTransitionQueue.mockResolvedValue({ queued: "en_camino", rejected: null });
+    renderActions("planificada");
+    expect(await screen.findByRole("button", { name: "Llegué al sitio" })).toBeTruthy();
+
+    orderTransitionQueue.mockResolvedValue({ queued: null, rejected: null });
+    settleSync();
+
+    await waitFor(() => expect(orderTransitionQueue).toHaveBeenCalledTimes(2));
+    // La reconciliación es asíncrona: se le da un turno para que aplique antes
+    // de mirar, o el test pasaría aunque la pantalla retrocediera después.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(screen.getByRole("button", { name: "Llegué al sitio" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Voy en camino" })).toBeNull();
   });
 
   it("recupera la etapa encolada al reabrir la orden sin señal", async () => {
