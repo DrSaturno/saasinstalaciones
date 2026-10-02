@@ -3,6 +3,7 @@ import { syncInstallerTransition } from "@/lib/actions/tasks";
 import { requestPushDelivery } from "@/lib/push/events";
 import { logEvent } from "@/lib/observability";
 import { db, type OutboxItem, type PendingPhoto } from "./db";
+import { evidenceContentType, evidenceObjectName } from "@/lib/domain/evidence-upload";
 
 /** Encola una mutación (y sus fotos) para enviar ahora o al reconectar. */
 export async function enqueue(
@@ -143,11 +144,14 @@ export async function flush(): Promise<number> {
             if (!photo) continue;
             const path =
               photo.path ??
-              `${photo.companyId}/${photo.orderId}/${photo.id}-${photo.fileName}`;
+              `${photo.companyId}/${photo.orderId}/${evidenceObjectName(photo.id, photo.fileName, photo.blob.type)}`;
             if (!photo.path) {
               const { error } = await supabase.storage
                 .from("evidence")
-                .upload(path, photo.blob, { upsert: true });
+                .upload(path, photo.blob, {
+                  upsert: true,
+                  contentType: evidenceContentType(photo.fileName, photo.blob.type),
+                });
               if (error) throw error;
               await db.photos.update(photoId, { path });
             }

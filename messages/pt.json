@@ -1691,6 +1691,12 @@
     "sendFailed": "Não foi possível enviar",
     "attachmentsNeedConnection": "Os anexos precisam de conexão"
   },
+  "PhotoPicker": {
+    "camera": "Tirar foto",
+    "gallery": "Escolher da galeria",
+    "ready": "{count, plural, =1 {# foto pronta} other {# fotos prontas}}",
+    "clear": "Remover"
+  },
   "TaskActions": {
     "queued": "{message} · será enviado quando o sinal voltar",
     "startedNote": "Trabalho iniciado",

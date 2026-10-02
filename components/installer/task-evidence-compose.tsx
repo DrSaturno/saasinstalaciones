@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Camera, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { enqueue } from "@/lib/offline/sync";
 import { notifyQueued } from "@/lib/offline/use-sync";
 import type { PendingPhoto } from "@/lib/offline/db";
+import { PhotoPicker } from "@/components/installer/photo-picker";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -85,19 +86,7 @@ export function TaskEvidenceCompose({
       />
 
       <div className="mt-2 flex items-center justify-between gap-2">
-        <label className="flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            multiple
-            disabled={pending}
-            className="hidden"
-            onChange={(event) => setFiles([...(event.target.files ?? [])])}
-          />
-          <Camera className="size-4" aria-hidden="true" />
-          {files.length > 0 ? t("photosReady", { count: files.length }) : t("composePhoto")}
-        </label>
+        <PhotoPicker files={files} onChange={setFiles} disabled={pending} compact />
 
         <Button
           type="button"
