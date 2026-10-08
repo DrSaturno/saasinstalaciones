@@ -90,7 +90,7 @@ producción está la versión 3, que es vieja: le falta avisarle a un ayudante d
 Ojo: la función necesita sus secretos VAPID cargados en cada proyecto (Supabase → Edge Functions
 → Secrets). Si en Demo no están, te aviso cuáles faltan; los cargás vos, yo no toco claves.
 
-### B3 🟠 Mergear la corrección de seguridad de dependencias
+### B3 ✅ Mergear la corrección de seguridad de dependencias (hecho el 08-10-2026)
 
 Es el PR #51 (<https://github.com/DrSaturno/saasinstalaciones/pull/51>), aparte y chico: sube `next` de 16.3.5 a 16.3.6 (corrige una falla crítica de ejecución
 remota de código) y fuerza `proxy-addr` 2.0.8. Esto vuelve a poner CI en verde.
@@ -98,7 +98,7 @@ remota de código) y fuerza `proxy-addr` 2.0.8. Esto vuelve a poner CI en verde.
 1. Mirá que el PR tenga los tres checks en verde (te lo confirmo yo en el chat).
 2. Escribime: **«mergeá el PR de dependencias»**. Se despliega solo a producción.
 
-### B4 🟠 Mergear el arreglo de la pantalla de invitación
+### B4 ✅ Mergear el arreglo de la pantalla de invitación (hecho el 08-10-2026)
 
 Es el PR #53 (<https://github.com/DrSaturno/saasinstalaciones/pull/53>). La pantalla que viste el
 08-10, cuando abriste el link con tu sesión de gerente, deja de ser un callejón sin salida: ofrece
@@ -386,4 +386,4 @@ nota del checklist.
   correo sigue en SiteGround.
 - **Supabase Pro** (24-09-2026).
 - **Proyecto de Vercel mudado al team «gf instalaciones»** (comprobado el 08-10-2026; ya desplegaba desde ahí el 02-10).
-- **El fix crítico de dependencias** está preparado (B3); sólo falta mergearlo.
+- **Fix crítico de dependencias (#51) y arreglo de la invitación (#53)** en producción desde el 08-10-2026.
