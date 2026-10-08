@@ -25,20 +25,24 @@ export function InvitationFrame({
   return (
     <main className={styles.page}>
       <section className={styles.visual} aria-labelledby="invitation-visual-title">
-        <Image
-          className={styles.visualImage}
-          src="/images/invitation-signup-hero.webp"
-          alt={visualAlt}
-          fill
-          priority
-          sizes="(max-width: 800px) 100vw, 56vw"
-        />
-        <div className={styles.visualVeil} aria-hidden />
-
         <div className={styles.visualCopy}>
           <span>{visualEyebrow}</span>
           <h2 id="invitation-visual-title">{visualTitle}</h2>
           <p>{visualBody}</p>
+        </div>
+
+        {/* La escena va DEBAJO del texto, no detrás: en pantallas anchas el
+            recorte dejaba al instalador justo debajo del párrafo. */}
+        <div className={styles.visualScene}>
+          <Image
+            className={styles.sceneImage}
+            src="/images/invitation-signup-scene.webp"
+            alt={visualAlt}
+            width={1080}
+            height={880}
+            priority
+            sizes="(max-width: 800px) 100vw, 56vw"
+          />
         </div>
 
         <div className={styles.securityBadge}>
