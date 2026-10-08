@@ -10,36 +10,56 @@
 }
 
 .visual {
+  --visual-pad-y: clamp(58px, 5vw, 92px);
+  --visual-pad-x: clamp(48px, 4.8vw, 90px);
   position: relative;
   isolation: isolate;
+  display: flex;
   min-width: 0;
+  flex-direction: column;
   overflow: hidden;
-  padding: clamp(58px, 5vw, 92px) clamp(48px, 4.8vw, 90px);
+  padding: var(--visual-pad-y) var(--visual-pad-x) 0;
   border-radius: 30px 0 0 30px;
-  background: #dcecff;
+  /* El mismo tono que los bordes de la escena, para que se funda sin corte. */
+  background: #e9effc;
 }
 
-.visualImage {
+/* Ocupa lo que deja el texto, hasta el borde inferior del panel. La imagen se
+   dimensiona por alto: en un panel ancho queda entera y centrada; en uno
+   angosto se recorta a los costados, nunca arriba (la cabeza del instalador). */
+.visualScene {
+  position: relative;
+  min-height: 260px;
+  flex: 1 1 auto;
+  margin: clamp(20px, 3vh, 32px) calc(-1 * var(--visual-pad-x)) 0;
+}
+
+.sceneImage {
   position: absolute;
-  z-index: -2;
-  object-fit: cover;
-  object-position: center bottom;
+  bottom: 0;
+  left: 50%;
+  width: auto;
+  max-width: none;
+  height: 100%;
+  /* `translate`, no `transform`: la animación de entrada usa transform y lo pisaría. */
+  translate: -50% 0;
   filter: saturate(1.08) contrast(1.03);
+  -webkit-mask-image:
+    linear-gradient(90deg, transparent 0, #000 12%, #000 88%, transparent 100%),
+    linear-gradient(180deg, transparent 0, #000 16%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(90deg, transparent 0, #000 12%, #000 88%, transparent 100%),
+    linear-gradient(180deg, transparent 0, #000 16%);
+  mask-composite: intersect;
   animation: visual-arrive 760ms 80ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.visualVeil {
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-  background:
-    linear-gradient(180deg, rgb(238 247 255 / 94%) 0%, rgb(241 249 255 / 72%) 30%, transparent 62%),
-    linear-gradient(90deg, rgb(234 246 255 / 42%), transparent 68%);
-  pointer-events: none;
-}
-
 .visualCopy {
-  width: min(100%, 620px);
+  position: relative;
+  z-index: 1;
+  width: min(100%, 680px);
+  flex: 0 0 auto;
   animation: content-reveal 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -64,20 +84,20 @@
 }
 
 .visualCopy h2 {
-  max-width: 10ch;
-  margin: clamp(22px, 3vh, 34px) 0 20px;
+  max-width: 17ch;
+  margin: clamp(18px, 2.6vh, 28px) 0 16px;
   color: var(--invite-ink);
-  font-size: clamp(3.25rem, 4.55vw, 5.35rem);
+  font-size: clamp(2.6rem, 3.6vw, 4.1rem);
   font-weight: 780;
-  letter-spacing: -0.065em;
-  line-height: 0.97;
+  letter-spacing: -0.055em;
+  line-height: 1;
 }
 
 .visualCopy p {
-  max-width: 34ch;
+  max-width: 40ch;
   margin: 0;
-  color: var(--invite-muted);
-  font-size: clamp(1rem, 1.18vw, 1.25rem);
+  color: #4f5b69;
+  font-size: clamp(1rem, 1.12vw, 1.18rem);
   line-height: 1.55;
 }
 
@@ -185,8 +205,56 @@
   line-height: 1.6;
 }
 
+.contentHeader p strong {
+  color: var(--invite-ink);
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
 .formContent {
   margin-top: 34px;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.manualLink {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid rgb(37 151 208 / 35%);
+  border-radius: 10px;
+  background: #f4f9fd;
+  color: var(--invite-ink);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.8rem;
+}
+
+.manualLink:focus-visible {
+  outline: 3px solid rgb(37 151 208 / 26%);
+  outline-offset: 2px;
+}
+
+.backLink {
+  align-self: center;
+  margin-top: 6px;
+  color: #157ead;
+  font-size: 0.88rem;
+  font-weight: 650;
+  text-underline-offset: 4px;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+.backLink:focus-visible {
+  border-radius: 6px;
+  outline: 3px solid rgb(37 151 208 / 26%);
+  outline-offset: 3px;
 }
 
 .accountPrompt {
@@ -252,29 +320,24 @@
   }
 
   .visual {
+    --visual-pad-y: 42px;
+    --visual-pad-x: 24px;
     min-height: clamp(500px, 135vw, 620px);
     order: 2;
-    padding: 42px 24px;
     border-radius: 26px 26px 0 0;
   }
 
+  .visualScene {
+    min-height: clamp(280px, 78vw, 380px);
+  }
+
   .visualCopy h2 {
-    font-size: clamp(2.45rem, 11vw, 3.25rem);
+    font-size: clamp(2.3rem, 10vw, 3rem);
   }
 
   .visualCopy p {
     max-width: 30ch;
     font-size: 0.93rem;
-  }
-
-  .visualVeil {
-    background: linear-gradient(
-      180deg,
-      rgb(238 247 255 / 98%) 0%,
-      rgb(241 249 255 / 96%) 54%,
-      rgb(241 249 255 / 70%) 72%,
-      transparent 88%
-    );
   }
 
   .securityBadge {
@@ -289,7 +352,7 @@
 @media (prefers-reduced-motion: reduce) {
   .visualCopy,
   .formInner,
-  .visualImage {
+  .sceneImage {
     animation: none;
   }
 }
