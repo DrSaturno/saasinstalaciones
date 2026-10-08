@@ -59,7 +59,9 @@ export default async function InvitePage({
           <div className={styles.contentHeader}>
             <span>{t("invitationEyebrow")}</span>
             <h1>{t("staffTitle", { company: invite.company_name })}</h1>
-            <p>{t("staffSignupDescription")}</p>
+            <p>
+              {t("staffSignupDescription", { company: invite.company_name })}
+            </p>
           </div>
           <div className={styles.formContent}>
             <StaffSignupForm token={token} email={invite.email} />
@@ -67,12 +69,24 @@ export default async function InvitePage({
         </InvitationFrame>
       );
     }
+    // Con una sesión abierta (casi siempre el dueño que prueba el link): la
+    // misma salida que en la invitación de instalador, no un callejón.
     return (
       <InvitationFrame {...frameProps}>
         <div className={styles.contentHeader}>
           <span>{t("invitationEyebrow")}</span>
           <h1>{t("staffTitle", { company: invite.company_name })}</h1>
-          <p>{t("staffAlreadyLoggedIn")}</p>
+          <p>
+            {user.email
+              ? t.rich("staffAlreadyLoggedInWithEmail", {
+                  email: user.email,
+                  b: (chunks) => <strong>{chunks}</strong>,
+                })
+              : t("staffAlreadyLoggedIn")}
+          </p>
+        </div>
+        <div className={styles.formContent}>
+          <WrongAccountActions token={token} audience="staff" />
         </div>
       </InvitationFrame>
     );
