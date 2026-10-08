@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { isInstallerArea } from "@/lib/auth";
@@ -40,4 +41,20 @@ export async function acceptInvitation(token: string): Promise<AcceptState> {
   }
 
   return { error: null, ok: true };
+}
+
+/**
+ * Quien abre el link con una sesión de empresa o de plataforma abierta (el
+ * gerente que lo prueba, una compu compartida) no puede aceptarlo. Cerramos esa
+ * sesión y volvemos a la MISMA invitación, que ahora muestra el alta de
+ * instalador. El token se valida antes de armar la redirección, para que esto
+ * no sirva para mandar a nadie a una dirección arbitraria.
+ */
+export async function signOutForInvitation(token: string): Promise<void> {
+  const parsed = tokenSchema.safeParse(token);
+  if (!parsed.success) redirect("/");
+
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect(`/invite/${parsed.data}`);
 }

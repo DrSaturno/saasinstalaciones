@@ -5,6 +5,7 @@ import { getCurrentUser, isInstallerArea } from "@/lib/auth";
 import { AcceptInvitation } from "@/components/invite/accept-invitation";
 import { InstallerSignupForm } from "@/components/invite/installer-signup-form";
 import { InvitationFrame } from "@/components/invite/invitation-frame";
+import { WrongAccountActions } from "@/components/invite/wrong-account-actions";
 import styles from "@/components/invite/invitation.module.css";
 
 export default async function InvitePage({
@@ -73,15 +74,28 @@ export default async function InvitePage({
     );
   }
 
-  // Gerentes y administradores no pueden sumar una membresía de campo.
+  // Gerentes y administradores no pueden sumar una membresía de campo. Casi
+  // siempre es el propio gerente probando el link: le decimos con qué cuenta
+  // entró y le damos salida (copiar el link o cerrar sesión), no un callejón.
   if (!isInstallerArea(user)) {
     return (
       <InvitationFrame {...frameProps}>
         <div className={styles.contentHeader}>
           <span>{t("invitationEyebrow")}</span>
           <h1>{t("title", { company: invite.company_name })}</h1>
-          <p>{t("wrongRole")}</p>
+          <p>
+            {user.email
+              ? t.rich("wrongRoleWithEmail", {
+                  email: user.email,
+                  b: (chunks) => <strong>{chunks}</strong>,
+                })
+              : t("wrongRole")}
+          </p>
         </div>
+        <div className={styles.formContent}>
+          <WrongAccountActions token={token} />
+        </div>
+        <p className={styles.accountPrompt}>{t("wrongRoleHint")}</p>
       </InvitationFrame>
     );
   }
