@@ -98,6 +98,18 @@ remota de código) y fuerza `proxy-addr` 2.0.8. Esto vuelve a poner CI en verde.
 1. Mirá que el PR tenga los tres checks en verde (te lo confirmo yo en el chat).
 2. Escribime: **«mergeá el PR de dependencias»**. Se despliega solo a producción.
 
+### B4 🟠 Mergear el arreglo de la pantalla de invitación
+
+Es el PR #53 (<https://github.com/DrSaturno/saasinstalaciones/pull/53>). La pantalla que viste el
+08-10, cuando abriste el link con tu sesión de gerente, deja de ser un callejón sin salida: ofrece
+copiar el link para el instalador, cerrar sesión y seguir con el alta, o volver al panel. Además,
+el texto de la izquierda ya no queda encima del dibujo.
+
+1. Esperá a que tenga los checks en verde (te lo confirmo yo).
+2. Escribime: **«mergeá el PR de la invitación»**. Se despliega solo a producción.
+3. Para probarlo: invitá a un instalador, abrí el link **en una ventana de incógnito** (así ves lo
+   mismo que él) y después en tu navegador normal (ahí tienen que aparecer los botones nuevos).
+
 ---
 
 ## C. Vercel
