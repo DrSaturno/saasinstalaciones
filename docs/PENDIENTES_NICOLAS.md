@@ -16,8 +16,8 @@ Leyenda: 🔴 frena el paso a producción · 🟠 importante · 🟢 cuando pued
 ## Dónde estamos (en una línea)
 
 Todo lo nuevo de la hoja de ruta v2 (bloques 1 a 8) está hecho y probado en **Demo**, subido a la
-rama `feature/hoja-de-ruta-v2` con un PR abierto. **No está en producción.** Para llevarlo hacen
-falta, en este orden: **A → B → C** de abajo.
+rama `feature/hoja-de-ruta-v2` con el PR #52 abierto (<https://github.com/DrSaturno/saasinstalaciones/pull/52>). **No está en producción.** Para llevarlo hacen
+falta, en este orden: **A → B** de abajo.
 
 > ⚠️ **No mergees el PR de la hoja de ruta v2 vos.** Mergear a `main` despliega solo a producción, y
 > ese código necesita las migraciones nuevas aplicadas antes. Si se despliega sin ellas, se rompe.
@@ -92,7 +92,7 @@ Ojo: la función necesita sus secretos VAPID cargados en cada proyecto (Supabase
 
 ### B3 🟠 Mergear la corrección de seguridad de dependencias
 
-Es un PR aparte, chico: sube `next` de 16.3.5 a 16.3.6 (corrige una falla crítica de ejecución
+Es el PR #51 (<https://github.com/DrSaturno/saasinstalaciones/pull/51>), aparte y chico: sube `next` de 16.3.5 a 16.3.6 (corrige una falla crítica de ejecución
 remota de código) y fuerza `proxy-addr` 2.0.8. Esto vuelve a poner CI en verde.
 
 1. Mirá que el PR tenga los tres checks en verde (te lo confirmo yo en el chat).
@@ -100,50 +100,42 @@ remota de código) y fuerza `proxy-addr` 2.0.8. Esto vuelve a poner CI en verde.
 
 ---
 
-## C. Vercel: mover el proyecto a una cuenta propia 🔴
+## C. Vercel
 
-Hoy la app vive en el team `DrSaturno's projects`, junto con otros 30 proyectos, en plan
-**Hobby**, que **no permite uso comercial**. Hay que pasarla a un team propio en plan Pro.
+**Lo que comprobé el 08-10-2026:** el proyecto `saasinstalaciones` **ya está en el team nuevo
+«gf instalaciones»**. Producción se despliega desde ahí por lo menos desde el 02-10 y
+`www.seinstala.com.ar` responde bien. La mudanza está hecha; quedan estos tres puntos.
 
-### C1 Crear el team nuevo y contratar Pro (sólo vos)
+### C1 🔴 Confirmar que «gf instalaciones» está en plan Pro
 
-1. Entrá a <https://vercel.com> con la cuenta que quieras usar para Se Instala.
-2. Arriba a la izquierda, el selector de equipo → **Create Team**.
-3. Nombre: `Se Instala` (o el que quieras).
-4. Elegí el plan **Pro** y cargá el medio de pago.
-5. Avisame el nombre del team.
+El plan Hobby no permite uso comercial. Yo no puedo ver la facturación.
+1. Entrá a <https://vercel.com> → selector de equipo arriba a la izquierda → **gf instalaciones**.
+2. **Settings → Billing**.
+3. Tiene que decir **Pro**. Si dice **Hobby**, tocá **Upgrade** y cargá el medio de pago.
+4. Avisame qué dice.
 
-### C2 Conectar el team nuevo a mi conector
+### C2 🟠 Darle acceso a mi conector al proyecto
 
-1. En claude.ai → **Settings → Connectors → Vercel** → desconectar y volver a conectar.
-2. Al autorizar, tildá **el team nuevo** (y también `DrSaturno's projects`, para poder transferir).
-3. Avisame y verifico que veo los dos.
+Mi conector ve el team «gf instalaciones», pero **no ve ningún proyecto adentro**. Sin eso no
+puedo leer logs ni el estado de los despliegues; hoy lo veo sólo de rebote, por GitHub.
+1. En claude.ai → **Settings → Connectors → Vercel** → **Disconnect**.
+2. **Connect** de nuevo. En la pantalla de autorización de Vercel elegí **gf instalaciones** y,
+   si pregunta por proyectos, **All projects** (o tildá `saasinstalaciones`).
+3. Avisame y verifico que lo veo.
 
-### C3 Transferir el proyecto
+### C3 🟢 Ajustes del proyecto
 
-1. En Vercel, entrá al team **viejo** → proyecto **`saasinstalaciones`**.
-   - ⚠️ Fijate el nombre arriba a la izquierda. **`seinstalapro` es otro proyecto** (el
-     marketplace viejo). Ya nos confundimos una vez.
-2. **Settings → General** → bajá hasta **Transfer Project**.
-3. Elegí el team nuevo como destino y confirmá.
-4. Si Vercel te da un **código de transferencia** (dura 24 h), mandámelo o aceptalo vos desde el
-   team nuevo.
-5. Avisame. Yo verifico que:
-   - las variables de entorno hayan viajado (Production **y** Preview);
-   - `www.seinstala.com.ar` siga respondiendo.
+En Vercel → team gf instalaciones → proyecto **`saasinstalaciones`**.
+⚠️ Fijate el nombre arriba a la izquierda: **`seinstalapro` es otro proyecto**, el marketplace viejo.
+1. **Versión de Node:** Settings → General → **Node.js Version**. Vercel usa 24.x y el repo fija
+   22.14.0. Elegí **22.x** (es la que está probada) y guardá. Si preferís 24, decímelo y yo
+   igualo el repo.
+2. **Skew Protection:** Settings → Advanced → **Skew Protection** → activado → Save.
+3. **Monitor de caídas (opcional):** creá una cuenta gratis en <https://uptimerobot.com> →
+   **Add New Monitor** → tipo HTTP(s) → URL `https://www.seinstala.com.ar/api/health` → cada
+   5 minutos → alerta a tu mail.
 
-**No toques los registros MX en SiteGround**: el correo vive ahí. Si Vercel pide otro valor para
-`www`, te paso exactamente qué cambiar.
-
-### C4 🟢 Ajustes del proyecto, ya en el team nuevo
-
-1. **Versión de Node:** Settings → General → Node.js Version. Vercel usa 24.x y el repo fija
-   22.14.0. Decime cuál preferís y yo igualo el otro lado. Mi recomendación: 22.x, que es la que
-   está probada.
-2. **Skew Protection:** Settings → Advanced → Skew Protection → activado.
-3. **Logs y monitoreo:** con Pro, los logs duran más. Decidí si querés un monitor de caída que
-   consulte `https://www.seinstala.com.ar/api/health` (por ejemplo UptimeRobot, gratis) y te
-   avise por mail.
+**No toques los registros MX en SiteGround**: el correo vive ahí.
 
 ---
 
@@ -381,4 +373,5 @@ nota del checklist.
 - **DNS de `seinstala.com.ar`** (25-09-2026): apex y `www` apuntan a Vercel desde SiteGround, y el
   correo sigue en SiteGround.
 - **Supabase Pro** (24-09-2026).
+- **Proyecto de Vercel mudado al team «gf instalaciones»** (comprobado el 08-10-2026; ya desplegaba desde ahí el 02-10).
 - **El fix crítico de dependencias** está preparado (B3); sólo falta mergearlo.
