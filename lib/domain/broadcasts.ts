@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { LATITUDE, LONGITUDE, MONEY_MAX } from "@/lib/domain/field-rules";
+import { FIELD, MONEY_MAX } from "@/lib/domain/field-rules";
 
 /**
  * Límites de los formularios de convocatorias, compartidos con
@@ -26,12 +26,6 @@ const databaseId = () => z.string().regex(POSTGRES_UUID);
 const title = z.string().trim().min(BROADCAST_LIMITS.title.min).max(BROADCAST_LIMITS.title.max);
 const description = z.string().trim().max(BROADCAST_LIMITS.description);
 const slots = z.coerce.number().int().min(BROADCAST_LIMITS.slots.min).max(BROADCAST_LIMITS.slots.max);
-
-const optionalCoordinate = (range: { min: number; max: number }) =>
-  z
-    .union([z.literal(""), z.coerce.number().min(range.min).max(range.max)])
-    .default("")
-    .transform((value) => (value === "" ? null : value));
 
 /** Un `<select>` vacío manda "", no `undefined`: se normaliza a null. */
 const optionalDatabaseId = () =>
@@ -64,15 +58,13 @@ export const createBroadcastSchema = z.object({
     .union([z.literal(""), z.coerce.number().min(0).max(MONEY_MAX)])
     .default("")
     .transform((value) => (value === "" ? null : value)),
-  lat: optionalCoordinate(LATITUDE),
-  lng: optionalCoordinate(LONGITUDE),
+  // Opcional y NO se guarda: sólo sirve para ubicar el trabajo al publicar (se
+  // guarda el resultado, no la dirección). Sin ella, la convocatoria se ofrece
+  // a todos los de la provincia.
+  address: z.string().trim().max(FIELD.address.max).default(""),
 }).refine(
   (value) => !value.scheduledEndDate || !value.scheduledDate || value.scheduledEndDate >= value.scheduledDate,
   { path: ["scheduledEndDate"], message: "endBeforeStart" },
-).refine(
-  // Media coordenada no ubica nada: se piden las dos o ninguna.
-  (value) => (value.lat === null) === (value.lng === null),
-  { path: ["lng"], message: "coordinatePair" },
 ).refine(
   // Exactamente uno: con proyecto el cliente se hereda de él, y mandar los dos
   // abriría la puerta a que discrepen. Sin ninguno, la convocatoria quedaría

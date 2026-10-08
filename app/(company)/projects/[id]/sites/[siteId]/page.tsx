@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BackLink } from "@/components/shared/back-link";
+import { embeddedOrderAmount } from "@/lib/data/pricing";
 
 export default async function SiteDetailPage({ params }: { params: Promise<{ id: string; siteId: string }> }) {
   const { id: projectId, siteId } = await params;
@@ -25,7 +26,7 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
   const [{ data: site }, { data: project }, { data: orders }, attachments, gallery] = await Promise.all([
     supabase.from("sites").select("id, company_id, location_id, name, address, city, state, zone, lat, lng, status, external_ref, archived_at, contact_name, contact_phone, contact_email, opening_hours, access_notes, parking_notes, technical_notes, risk_notes, permanent_notes").eq("id", siteId).eq("project_id", projectId).single(),
     supabase.from("projects").select("id, name, country, zones").eq("id", projectId).single(),
-    supabase.from("work_orders").select("id, order_number, title, status, scheduled_date, amount, currency, created_at").eq("site_id", siteId).order("created_at", { ascending: false }),
+    supabase.from("work_orders").select("id, order_number, title, status, scheduled_date, currency, created_at, work_order_pricing(amount)").eq("site_id", siteId).order("created_at", { ascending: false }),
     fetchSiteAttachments(supabase, siteId),
     fetchSiteGallery(supabase, siteId),
   ]);
@@ -52,7 +53,7 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
         </div>
         <div className="flex flex-wrap gap-2">
           {site.location_id ? <Button asChild><Link href={`/locations/${site.location_id}`}><BookOpenText aria-hidden="true" />{t("canonicalHistory")}</Link></Button> : null}
-          <EditSiteDialog projectId={projectId} siteId={siteId} country={project.country} zones={project.zones} defaults={{ name: site.name, externalRef: site.external_ref ?? "", address: site.address, city: site.city, state: site.state, zone: site.zone, lat: site.lat, lng: site.lng, contactName: site.contact_name, contactPhone: site.contact_phone, contactEmail: site.contact_email, openingHours: site.opening_hours, accessNotes: site.access_notes, parkingNotes: site.parking_notes, technicalNotes: site.technical_notes, riskNotes: site.risk_notes, permanentNotes: site.permanent_notes }} />
+          <EditSiteDialog projectId={projectId} siteId={siteId} country={project.country} zones={project.zones} defaults={{ name: site.name, externalRef: site.external_ref ?? "", address: site.address, city: site.city, state: site.state, zone: site.zone, contactName: site.contact_name, contactPhone: site.contact_phone, contactEmail: site.contact_email, openingHours: site.opening_hours, accessNotes: site.access_notes, parkingNotes: site.parking_notes, technicalNotes: site.technical_notes, riskNotes: site.risk_notes, permanentNotes: site.permanent_notes }} />
           <SiteLifecycleActions projectId={projectId} siteId={siteId} archived={Boolean(site.archived_at)} orderCount={(orders ?? []).length} />
         </div>
       </div>
@@ -89,7 +90,7 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
       <section className="mt-9">
         <h2 className="text-lg font-semibold">{t("history")}</h2><p className="text-sm text-muted-foreground">{t("historyDescription")}</p>
         <div className="mt-4 overflow-hidden rounded-xl border bg-card">
-          {(orders ?? []).length === 0 ? <p className="py-12 text-center text-sm text-muted-foreground">{t("emptyHistory")}</p> : (orders ?? []).map((order) => <Link key={order.id} href={`/orders/${order.id}`} className="grid gap-2 border-b px-4 py-4 transition-colors hover:bg-muted/40 sm:grid-cols-[130px_1fr_130px_120px] sm:items-center"><span className="font-mono text-xs">{order.order_number}</span><div><p className="text-sm font-medium">{order.title}</p><p className="text-xs text-muted-foreground">{format.dateTime(new Date(order.created_at), { dateStyle: "medium" })}</p></div><StatusBadge status={order.status} kind="order" /><span className="text-right font-mono text-sm">{order.amount === null ? "—" : format.number(Number(order.amount), { style: "currency", currency: order.currency })}</span></Link>)}</div>
+          {(orders ?? []).length === 0 ? <p className="py-12 text-center text-sm text-muted-foreground">{t("emptyHistory")}</p> : (orders ?? []).map((order) => <Link key={order.id} href={`/orders/${order.id}`} className="grid gap-2 border-b px-4 py-4 transition-colors hover:bg-muted/40 sm:grid-cols-[130px_1fr_130px_120px] sm:items-center"><span className="font-mono text-xs">{order.order_number}</span><div><p className="text-sm font-medium">{order.title}</p><p className="text-xs text-muted-foreground">{format.dateTime(new Date(order.created_at), { dateStyle: "medium" })}</p></div><StatusBadge status={order.status} kind="order" /><span className="text-right font-mono text-sm">{embeddedOrderAmount(order) === null ? "—" : format.number(Number(embeddedOrderAmount(order)), { style: "currency", currency: order.currency })}</span></Link>)}</div>
       </section>
     </div>
   );

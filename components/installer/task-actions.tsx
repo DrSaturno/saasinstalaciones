@@ -8,6 +8,7 @@ import { enqueue, orderTransitionQueue } from "@/lib/offline/sync";
 import { notifyQueued } from "@/lib/offline/use-sync";
 import { prepareOfflineStorageForUser } from "@/lib/offline/session-storage";
 import { AcceptOrderButton } from "@/components/installer/accept-order-button";
+import { PhotoPicker } from "@/components/installer/photo-picker";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { OrderStatus } from "@/types/database";
@@ -343,7 +344,7 @@ export function TaskActions({
             maxLength={INSTALLER_NOTE_MAX}
             rows={2}
           />
-          <FilePicker files={files} onChange={setFiles} disabled={pending} />
+          <PhotoPicker files={files} onChange={setFiles} disabled={pending} />
           <Button onClick={arrive} disabled={pending} size="field">
             {pending ? t("arriving") : t("arrive")}
           </Button>
@@ -370,7 +371,7 @@ export function TaskActions({
             maxLength={INSTALLER_NOTE_MAX}
             rows={3}
           />
-          <FilePicker files={files} onChange={setFiles} disabled={pending} />
+          <PhotoPicker files={files} onChange={setFiles} disabled={pending} />
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -438,33 +439,5 @@ export function TaskActions({
       ) : null}
       {renderAction()}
     </div>
-  );
-}
-
-function FilePicker({
-  files,
-  onChange,
-  disabled,
-}: {
-  files: File[];
-  onChange: (files: File[]) => void;
-  disabled: boolean;
-}) {
-  const t = useTranslations("TaskActions");
-  return (
-    <label className="flex cursor-pointer items-center justify-center rounded-lg border border-dashed border-input py-3 text-sm text-muted-foreground transition-colors hover:border-primary/40">
-      <input
-        type="file"
-        accept="image/*"
-        capture="environment"
-        multiple
-        disabled={disabled}
-        className="hidden"
-        onChange={(e) => onChange([...(e.target.files ?? [])])}
-      />
-      {files.length > 0
-        ? t("photosReady", { count: files.length })
-        : t("pickPhotos")}
-    </label>
   );
 }

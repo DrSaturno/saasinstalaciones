@@ -8,7 +8,7 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 import { getAuthorizedUser } from "@/lib/auth-authorized";
 
-const user: CurrentUser = { id: "user-a", email: null, role: "company_manager", companyId: "company-a", fullName: "Test", locale: "es", memberships: [] };
+const user: CurrentUser = { id: "user-a", email: null, role: "company_manager", companyId: "company-a", fullName: "Test", locale: "es", memberships: [], isOwner: true, canManageFinance: true, canManageSettings: true };
 beforeEach(() => vi.resetAllMocks());
 
 describe("action authorization", () => {

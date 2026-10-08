@@ -198,8 +198,7 @@ export default async function InstallerProfilePage() {
           zones={reputation.zones}
           baseAddress={reputation.baseAddress}
           baseCity={reputation.baseCity}
-          baseLat={reputation.baseLat}
-          baseLng={reputation.baseLng}
+          baseLocated={reputation.baseLat !== null && reputation.baseLng !== null}
           serviceRadiusKm={reputation.serviceRadiusKm}
         />
       </div>

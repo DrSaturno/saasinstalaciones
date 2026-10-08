@@ -1,5 +1,6 @@
 import "server-only";
 
+import { orderScopeFilter } from "@/lib/data/order-team";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, OrderStatus, SchedulePrecision } from "@/types/database";
 
@@ -190,12 +191,13 @@ export async function fetchInstallerAgenda(
   supabase: SupabaseClient<Database>,
   installerId: string,
 ): Promise<AgendaRow[]> {
+  const scope = await orderScopeFilter(supabase, installerId);
   const raw: RawOrder[] = [];
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await supabase
       .from("work_orders")
       .select(SELECT)
-      .eq("assigned_installer_id", installerId)
+      .or(scope)
       .range(from, from + PAGE - 1)
       .overrideTypes<RawOrder[]>();
     if (error || !data) break;

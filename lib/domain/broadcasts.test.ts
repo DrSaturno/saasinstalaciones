@@ -22,7 +22,7 @@ describe("broadcast schemas", () => {
     expect(parsed.slots).toBe(2);
   });
 
-  it("exige las dos coordenadas o ninguna", () => {
+  it("la dirección aproximada es opcional y ya no existen las coordenadas", () => {
     const base = {
       projectId: ID,
       zone: "Córdoba",
@@ -30,11 +30,14 @@ describe("broadcast schemas", () => {
       description: "",
       slots: "1",
     };
-    expect(createBroadcastSchema.safeParse(base).success).toBe(true);
-    expect(
-      createBroadcastSchema.safeParse({ ...base, lat: "-31.42", lng: "-64.18" }).success,
-    ).toBe(true);
-    expect(createBroadcastSchema.safeParse({ ...base, lat: "-31.42" }).success).toBe(false);
+    const sinDireccion = createBroadcastSchema.safeParse(base);
+    expect(sinDireccion.success).toBe(true);
+    expect(sinDireccion.success && sinDireccion.data.address).toBe("");
+    const conDireccion = createBroadcastSchema.safeParse({ ...base, address: "  Av. Colón 100, Córdoba " });
+    expect(conDireccion.success && conDireccion.data.address).toBe("Av. Colón 100, Córdoba");
+    // Lo que alguien mande por afuera del formulario no se cuela al resultado.
+    const conCoordenadas = createBroadcastSchema.safeParse({ ...base, lat: "-31.42", lng: "-64.18" });
+    expect(conCoordenadas.success && "lat" in conCoordenadas.data).toBe(false);
   });
 
   it("rechaza cupos fuera del rango", () => {

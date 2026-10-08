@@ -6,7 +6,7 @@ import { OrderDocument, type OrderPdfData } from "@/lib/pdf/order-document";
 const LABELS = Object.fromEntries(
   [
     "documentKind", "issued", "assignment", "client", "project", "installer",
-    "scheduledDate", "priority", "amount", "site", "siteName", "address",
+    "scheduledDate", "priority", "amount", "yourPay", "site", "siteName", "address",
     "contact", "phone", "openingHours", "logistics", "indoor", "outdoor",
     "withFreight", "withoutFreight", "permits", "instructions", "description", "access",
     "parking", "technical", "risks", "freight", "history",
@@ -25,6 +25,7 @@ function orden(overrides: Partial<OrderPdfData> = {}): OrderPdfData {
     scheduledDate: "1 de agosto de 2026",
     createdAt: "28/07/26",
     amount: "$ 125.000,50",
+    amountIsInstallerPay: false,
     indoor: false,
     requiresFreight: true,
     freightDetails: "Camioneta con escalera extensible.",
@@ -61,6 +62,13 @@ describe("OrderDocument", () => {
     const buffer = await renderToBuffer(<OrderDocument data={orden()} />);
     expect(buffer.subarray(0, 5).toString()).toBe("%PDF-");
     expect(buffer.length).toBeGreaterThan(1_000);
+  });
+
+  it("genera el PDF del instalador con «Tu paga» en lugar del importe comercial", async () => {
+    const buffer = await renderToBuffer(
+      <OrderDocument data={orden({ amount: "$ 50,00", amountIsInstallerPay: true })} />,
+    );
+    expect(buffer.subarray(0, 5).toString()).toBe("%PDF-");
   });
 
   it("se banca una orden mínima, sin instalador ni fecha ni historial", async () => {

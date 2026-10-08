@@ -7,7 +7,7 @@ import {
   normalizeExternalRef,
 } from "@/lib/domain/site-import";
 
-const HEADER = ["nombre", "direccion", "ciudad", "provincia", "codigo", "lat", "lng"];
+const HEADER = ["nombre", "direccion", "ciudad", "provincia", "codigo"];
 
 function fila(
   name: string,
@@ -16,8 +16,6 @@ function fila(
     city: string;
     zone: string;
     ref: string;
-    lat: string;
-    lng: string;
   }> = {},
 ): string[] {
   return [
@@ -26,8 +24,6 @@ function fila(
     overrides.city ?? "Rosario",
     overrides.zone ?? "Santa Fe",
     overrides.ref ?? "",
-    overrides.lat ?? "",
-    overrides.lng ?? "",
   ];
 }
 
@@ -96,19 +92,23 @@ describe("filas incompletas", () => {
     expect(analysis.issues[0]).toMatchObject({ row: 2, code: "missingName" });
   });
 
-  it("distingue una coordenada inválida de un nombre faltante", () => {
+  it("una plantilla vieja con columnas de coordenadas se lee igual y las ignora", () => {
     const analysis = analyzeSiteRows(
-      [HEADER, fila("Sucursal 1", { lat: "no-es-un-numero" })],
+      [
+        [...HEADER, "lat", "lng"],
+        [...fila("Sucursal 1"), "-34.6037", "-58.3816"],
+      ],
       { projectZones: ZONAS },
     );
-    expect(analysis.issues[0]).toMatchObject({ code: "invalidCoordinates" });
+    expect(analysis.counts.valid).toBe(1);
+    expect(analysis.issues).toHaveLength(0);
+    expect(analysis.valid[0]).not.toHaveProperty("lat");
+    expect(analysis.valid[0]).not.toHaveProperty("lng");
   });
 
-  it("rechaza una latitud fuera de rango", () => {
-    const analysis = analyzeSiteRows([HEADER, fila("Sucursal 1", { lat: "120" })], {
-      projectZones: ZONAS,
-    });
-    expect(analysis.issues[0]).toMatchObject({ code: "invalidCoordinates" });
+  it("un nombre de un solo carácter se reporta por largo, y ya no como coordenada inválida", () => {
+    const analysis = analyzeSiteRows([HEADER, fila("X")], { projectZones: ZONAS });
+    expect(analysis.issues[0]).toMatchObject({ code: "invalidLength", detail: "name" });
   });
 
   it("reporta en su fila un campo más largo que lo que acepta la ficha del local", () => {

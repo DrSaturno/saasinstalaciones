@@ -32,11 +32,14 @@ function sourceKey(source: string): "manual" | "backfill" | "import" | "opportun
 export async function LocationPassport({
   location,
   client,
+  clients = [],
   summary,
   action,
 }: {
   location: CanonicalLocation;
   client: CanonicalLocationDetail["client"];
+  /** Todos los clientes que usan la locación. */
+  clients?: CanonicalLocationDetail["clients"];
   summary: CanonicalLocationDetail["summary"];
   action?: React.ReactNode;
 }) {
@@ -48,10 +51,9 @@ export async function LocationPassport({
   const address = [location.address, location.city, location.state]
     .filter(Boolean)
     .join(", ");
-  const coordinates =
-    location.lat !== null && location.lng !== null
-      ? `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`
-      : null;
+  // Los números de latitud y longitud no se muestran: sólo si el local ya está
+  // ubicado en el mapa.
+  const located = location.lat !== null && location.lng !== null;
   const metrics = [
     { label: t("metrics.projects"), value: summary.projectCount },
     { label: t("metrics.orders"), value: summary.orderCount },
@@ -142,9 +144,12 @@ export async function LocationPassport({
               <MapPin className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
               <div>
                 <p className="font-medium">{address || t("noAddress")}</p>
-                {coordinates ? (
-                  <p className="mt-1 font-mono text-caption text-muted-foreground">
-                    {coordinates}
+                <p className="mt-1 text-caption text-muted-foreground">
+                  {located ? t("mapLocated") : t("mapNotLocated")}
+                </p>
+                {clients.length > 1 ? (
+                  <p className="mt-1 text-caption font-medium text-primary">
+                    {t("sharedBy", { clients: clients.map((item) => item.name).join(", ") })}
                   </p>
                 ) : null}
               </div>

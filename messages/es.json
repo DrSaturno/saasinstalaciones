@@ -196,6 +196,9 @@
     "invalidTitle": "Invitación no válida",
     "invalidDescription": "El link venció o ya fue usado. Pedile a la empresa que te envíe una invitación nueva.",
     "title": "{company} te invitó a su equipo",
+    "staffTitle": "{company} te invitó como personal administrativo",
+    "staffSignupDescription": "Creá tu cuenta para gestionar {company} junto al resto del equipo administrativo.",
+    "staffAlreadyLoggedIn": "Ya tenés una sesión iniciada. Cerrala para crear esta cuenta nueva.",
     "loginDescription": "Iniciá sesión con tu cuenta de instalador para aceptar.",
     "signupDescription": "Creá tu cuenta de instalador para sumarte al equipo y empezar a recibir órdenes.",
     "fullNameLabel": "Nombre y apellido",
@@ -582,6 +585,14 @@
     "addOne": "Sumar una instalación contratada",
     "quantityUpdated": "Cantidad contratada actualizada"
   },
+  "CompleteLocations": {
+    "title": "Ubicaciones en el mapa",
+    "description": "{count, plural, =1 {Hay 1 local con dirección que todavía no está ubicado en el mapa.} other {Hay # locales con dirección que todavía no están ubicados en el mapa.}} Los ubicamos a partir de su dirección.",
+    "action": "Completar ubicaciones",
+    "working": "Ubicando…",
+    "done": "Ubicamos {located, plural, =1 {1 local} other {# locales}}. {notFound, plural, =0 {} =1 {1 no se pudo encontrar por su dirección. } other {# no se pudieron encontrar por su dirección. }}{remaining, plural, =0 {} other {Quedan #: volvé a apretar el botón.}}",
+    "noneFound": "No pudimos ubicar ningún local nuevo. {notFound, plural, =0 {} =1 {1 dirección no se pudo encontrar: revisá que tenga calle y número.} other {# direcciones no se pudieron encontrar: revisá que tengan calle y número.}}"
+  },
   "SitesActions": {
     "title": "Locaciones y órdenes",
     "description": "Cargá las locaciones del proyecto y después generá una orden de trabajo por cada una, todas con la misma fecha, prioridad e instalador.",
@@ -613,9 +624,7 @@
     "stateBrazil": "Estado",
     "stateFromZone": "Se toma de la zona elegida",
     "zone": "Zona",
-    "latitude": "Latitud",
-    "longitude": "Longitud",
-    "mapsHelp": "Las coordenadas son opcionales. Si no las cargás, Google Maps usará la dirección.",
+    "mapsHelp": "Ubicamos el local en el mapa automáticamente a partir de la dirección y la ciudad.",
     "contact": "Contacto del local",
     "contactName": "Nombre",
     "phone": "Teléfono",
@@ -673,6 +682,9 @@
     "deleted": "Instalación eliminada"
   },
   "CanonicalLocation": {
+    "sharedBy": "Locación compartida por: {clients}",
+    "mapLocated": "Ubicado en el mapa",
+    "mapNotLocated": "Todavía sin ubicación en el mapa",
     "backToClient": "Volver a {client}",
     "backToProjects": "Volver a proyectos",
     "eyebrow": "Ficha permanente de la locación",
@@ -838,6 +850,7 @@
     "scheduledDate": "Fecha programada",
     "priority": "Prioridad",
     "amount": "Importe",
+    "yourPay": "Tu paga",
     "site": "Locación",
     "siteName": "Local",
     "address": "Dirección",
@@ -1110,6 +1123,7 @@
     "client": "Cliente",
     "clientPlaceholder": "Shell Argentina",
     "selectClient": "Elegí un cliente",
+    "newClient": "＋ Crear cliente nuevo…",
     "coordinator": "Coordinador responsable",
     "selectCoordinator": "Elegí un coordinador",
     "noCoordinator": "Sin coordinador asignado",
@@ -1143,11 +1157,11 @@
     "minCompletionPhotosHelp": "Dejalo vacío para usar el mínimo de la empresa. Un 0 significa que este proyecto no pide fotos."
   },
   "ReuseSites": {
-    "trigger": "Traer de otro proyecto",
-    "title": "Reutilizar locaciones del cliente",
-    "description": "La ficha ya existe para el cliente. Al agregarla no se copia: su identidad, documentos e historial siguen siendo uno solo.",
+    "trigger": "Traer de otro proyecto o cliente",
+    "title": "Reutilizar locaciones de la empresa",
+    "description": "La ficha ya existe. Al agregarla no se copia: su identidad e historial siguen siendo uno solo. Si viene de otro cliente, sus documentos y requisitos no se comparten.",
     "loading": "Buscando locaciones…",
-    "empty": "Este cliente no tiene locaciones disponibles, o ya están todas asociadas a este proyecto.",
+    "empty": "No hay locaciones disponibles, o ya están todas asociadas a este proyecto.",
     "search": "Buscar por nombre, dirección o código",
     "found": "{count, plural, one {# locación disponible} other {# locaciones disponibles}}",
     "selectAll": "Seleccionar todas",
@@ -1155,7 +1169,8 @@
     "fromProject": "De: {project}",
     "addSelected": "{count, plural, =0 {Elegí al menos una} one {Agregar # locación} other {Agregar # locaciones}}",
     "adding": "Agregando…",
-    "added": "{count, plural, one {Se agregó # locación} other {Se agregaron # locaciones}}"
+    "added": "{count, plural, one {Se agregó # locación} other {Se agregaron # locaciones}}",
+    "fromClient": "De otro cliente: {client}"
   },
   "ImportSites": {
     "trigger": "Importar locaciones (Excel)",
@@ -1320,6 +1335,8 @@
     "endTime2": "Hora de fin",
     "duration": "Duración estimada (min)",
     "durationPlaceholder": "Ej. 240",
+    "requiredInstallers": "Instaladores necesarios",
+    "requiredInstallersHelp": "Cuántas personas hacen falta en total (1 a 15). Mientras falten, la orden figura como incompleta.",
     "scheduleHelp": "Cargar el horario permite que la plataforma detecte choques de agenda y traslados imposibles antes de asignar. Sin hora, la orden queda agendada por día y esos controles no se pueden aplicar."
   },
   "SitesTable": {
@@ -1420,7 +1437,43 @@
     "finalized": "Orden aprobada",
     "rated": "Calificación guardada"
   },
-  "InviteInstaller": {
+    "InviteStaff": {
+    "trigger": "Invitar personal administrativo",
+    "title": "Invitar personal administrativo",
+    "description": "Generamos un link de invitación para una subcuenta de tu empresa, con el permiso que decidas.",
+    "email": "Email de la persona",
+    "permissionsTitle": "Permisos de la subcuenta",
+    "financeLabel": "Ver lo que se le cobra al cliente",
+    "financeHint": "Importes de órdenes y proyectos. Sin este permiso, sólo ve lo operativo.",
+    "settingsLabel": "Cambiar la configuración de la empresa",
+    "settingsHint": "Hoy: el mínimo de fotos para cerrar una orden.",
+    "creating": "Creando…",
+    "submit": "Crear invitación",
+    "created": "Invitación creada",
+    "sent": "Invitación enviada por email",
+    "readyTitle": "Invitación lista",
+    "readyDescription": "Compartí este link con la persona. Al crear su cuenta, queda con el permiso que elegiste. Vence en 7 días.",
+    "sentDescription": "Enviamos la invitación a {email}. También podés compartir este link manualmente.",
+    "emailFailed": "La invitación se creó, pero el email no pudo enviarse. Compartí el link manualmente.",
+    "copy": "Copiar link",
+    "copied": "Link copiado",
+    "close": "Cerrar"
+  },
+  "CompanyStaff": {
+    "title": "Personal administrativo",
+    "description": "Subcuentas de tu empresa: operan todo igual que vos, salvo lo que no les habilites acá.",
+    "empty": "Todavía no invitaste a nadie.",
+    "unnamed": "(sin nombre todavía)",
+    "financeLabel": "Ve importes",
+    "settingsLabel": "Cambia configuración",
+    "pending": "Pendiente",
+    "expires": "Vence el {date}",
+    "expired": "Vencida",
+    "cancel": "Cancelar",
+    "cancelled": "Invitación cancelada",
+    "cancelConfirm": "¿Cancelar la invitación a {email}?"
+  },
+"InviteInstaller": {
     "trigger": "Invitar instalador",
     "readyTitle": "Invitación lista",
     "readyDescription": "Compartí este link con el instalador. Al abrirlo e iniciar sesión, se une a tu equipo. Vence en 7 días.",
@@ -1509,9 +1562,6 @@
     "noClients": "Todavía no hay clientes cargados. Cargá uno antes de publicar sin proyecto.",
     "zone": "Zona",
     "zonePlaceholder": "Ej: Buenos Aires",
-    "coordinatesHelp": "Coordenadas del trabajo (opcional). Con ellas sólo se ofrece a instaladores dentro de su radio; sin ellas, a todos los de la provincia.",
-    "latitude": "Latitud",
-    "longitude": "Longitud",
     "searchTitle": "Título",
     "slots": "Cupos",
     "detail": "Detalle",
@@ -1526,7 +1576,10 @@
     "payAmount": "Paga por el trabajo",
     "publishing": "Publicando…",
     "submit": "Publicar búsqueda",
-    "published": "Búsqueda publicada"
+    "published": "Búsqueda publicada",
+    "address": "Dirección aproximada del trabajo (opcional)",
+    "addressPlaceholder": "Av. Corrientes 1234, CABA",
+    "addressHelp": "Con la dirección ubicamos el trabajo y sólo se ofrece a instaladores dentro de su radio. Sin ella, se ofrece a todos los de la provincia. La dirección no se guarda."
   },
   "BroadcastCard": {
     "open": "Abierta",
@@ -1691,6 +1744,12 @@
     "sendFailed": "No se pudo enviar",
     "attachmentsNeedConnection": "Los adjuntos necesitan conexión"
   },
+  "PhotoPicker": {
+    "camera": "Sacar foto",
+    "gallery": "Elegir de la galería",
+    "ready": "{count, plural, =1 {# foto lista} other {# fotos listas}}",
+    "clear": "Quitar"
+  },
   "TaskActions": {
     "queued": "{message} · se enviará al recuperar señal",
     "startedNote": "Trabajo iniciado",
@@ -1814,14 +1873,14 @@
     "baseCity": "Ciudad",
     "baseCityPlaceholder": "La Plata",
     "radiusTitle": "Radio de trabajo (opcional)",
-    "radiusHelp": "Si cargás tu base y un radio, sólo vas a ver los trabajos que tengan coordenadas dentro de esa distancia. Los trabajos sin coordenadas te siguen apareciendo por provincia.",
-    "latitude": "Latitud de tu base",
-    "longitude": "Longitud de tu base",
+    "radiusHelp": "Si cargás tu base y un radio, sólo vas a ver los trabajos que estén dentro de esa distancia. Los trabajos sin ubicación te siguen apareciendo por provincia.",
     "radiusKm": "Radio en km",
     "radiusPlaceholder": "Ej: 80",
     "save": "Guardar cobertura",
     "saving": "Guardando…",
-    "saved": "Cobertura actualizada"
+    "saved": "Cobertura actualizada",
+    "baseLocated": "Tu base ya está ubicada en el mapa.",
+    "baseNotLocatedYet": "Al guardar, ubicamos tu base a partir de la dirección y la ciudad."
   },
   "StarRating": {
     "summary": "{value} de 5 estrellas",
@@ -2024,7 +2083,6 @@
     "invalid": "Revisá «{field}».",
     "rules": {
       "endBeforeStart": "La fecha de fin no puede ser anterior a la de inicio.",
-      "coordinatePair": "Cargá la latitud y la longitud juntas, o dejá las dos vacías.",
       "freightDetailsRequired": "Si la orden requiere flete, contá los detalles del flete.",
       "projectOrClient": "Elegí un proyecto o un cliente, no los dos."
     }
@@ -2048,10 +2106,14 @@
     "onlyInstallerReviews": "Sólo el instalador asignado puede enviar la orden a revisión.",
     "noSelfApproval": "No podés aprobar ni reabrir tu propia entrega.",
     "invalidData": "Datos inválidos",
-    "coordinatePairRequired": "Para usar un radio necesitás cargar latitud y longitud de tu base.",
+    "baseNotLocated": "No pudimos ubicar tu base. Revisá la dirección y la ciudad para usar el radio de trabajo.",
+    "locationUnavailable": "La ubicación automática todavía no está disponible. Guardá la cobertura sin radio y probá más tarde.",
     "accessDenied": "Acceso denegado",
     "notAuthenticated": "No autenticado",
     "unexpected": "Error inesperado",
+    "teamFull": "El equipo ya tiene 15 personas, que es el máximo.",
+    "teamAlreadyLead": "Esa persona ya es la responsable de la orden.",
+    "teamNeedsLead": "Asigná primero un responsable antes de sumar ayudantes.",
     "operation": "No se pudo completar la operación",
     "calendarSync": "No se pudo sincronizar Google Calendar. Revisá la conexión e intentá nuevamente.",
     "invalidEmail": "Email inválido",
@@ -2079,7 +2141,6 @@
     "siteHasOpenOrders": "La instalación tiene órdenes abiertas. Cerrá o cancelá esas órdenes antes de archivarla.",
     "siteHasHistory": "La instalación tiene historial y no se puede eliminar. Archivala para conservar los datos.",
     "siteZoneOutsideProject": "La zona «{zone}» no está habilitada en el proyecto.",
-    "siteInvalidCoordinates": "Las coordenadas no son válidas.",
     "siteNameLength": "El nombre tiene que tener entre {min} y {max} caracteres.",
     "siteAddressTooLong": "La dirección supera los {max} caracteres.",
     "siteCityTooLong": "La ciudad supera los {max} caracteres.",
@@ -2231,11 +2292,89 @@
     "financialDescription": "Lo que entró y lo que costó ejecutarlo.",
     "revenue": "Ingresos",
     "installerCost": "Costo instaladores",
+    "otherCosts": "Otros costos",
     "profit": "Ganancia",
     "margin": "{value}% margen",
-    "costMissing": "Falta cargar el costo de los instaladores en las órdenes. Sin ese dato no se puede calcular la ganancia real del proyecto.",
+    "costMissing": "Falta cargar el costo de los instaladores o algún otro gasto en el proyecto. Sin ese dato no se puede calcular la ganancia real del proyecto.",
     "budgetVsReal": "Realizado sobre presupuesto",
-    "committedCost": "Comprometido con instaladores: {value}"
+    "committedCost": "Comprometido con instaladores: {value}",
+    "completionTitle": "Avance de órdenes",
+    "ordersDone": "Finalizadas",
+    "ordersOpen": "Abiertas"
+  },
+  "OrderChat": {
+    "title": "Chat del equipo",
+    "subtitle": "Una sola conversación para todo el equipo de esta orden.",
+    "empty": "Todavía no hay mensajes. Escribí el primero.",
+    "placeholder": "Escribí un mensaje para el equipo…",
+    "send": "Enviar",
+    "you": "Vos",
+    "someone": "Alguien del equipo"
+  },
+  "OrderTeam": {
+    "title": "Equipo de la orden",
+    "count": "{count} de {max} personas",
+    "incomplete": "Incompleta: faltan {missing} para llegar a las {required} necesarias.",
+    "staffed": "Cubre las {required} personas necesarias.",
+    "lead": "Responsable",
+    "empty": "Todavía no sumaste ayudantes. Podés agregar hasta 14 más.",
+    "pick": "Elegí a quién sumar…",
+    "add": "Sumar",
+    "added": "Ayudante sumado",
+    "remove": "Quitar",
+    "removed": "Ayudante quitado",
+    "removeConfirm": "¿Quitar a {name} del equipo de esta orden?",
+    "full": "El equipo está completo (15 personas).",
+    "noCandidates": "No queda nadie del equipo de la empresa para sumar.",
+    "noAmount": "Sin monto",
+    "amountPrompt": "¿Cuánto cobra {name} por esta orden?",
+    "amountSaved": "Monto guardado",
+    "markPaid": "Marcar pagado",
+    "paid": "Pagado",
+    "paymentSaved": "Estado de pago guardado"
+  },
+  "ProjectTrackingLink": {
+    "title": "Link para el cliente",
+    "description": "Compartilo con tu cliente para que siga el avance sin tener que escribirte.",
+    "generate": "Generar link",
+    "regenerate": "Generar uno nuevo",
+    "revoke": "Desactivar",
+    "copy": "Copiar",
+    "copied": "Link copiado",
+    "working": "Un momento…",
+    "generated": "Link generado",
+    "revoked": "Link desactivado",
+    "regenerateConfirm": "El link anterior deja de funcionar. ¿Generar uno nuevo?",
+    "revokeConfirm": "El cliente ya no va a poder ver el avance con este link. ¿Desactivarlo?",
+    "error": "No se pudo generar el link"
+  },
+  "ProjectTracking": {
+    "eyebrow": "Seguimiento del proyecto",
+    "progressLabel": "Avance",
+    "done": "Finalizadas",
+    "open": "Abiertas",
+    "milestonesTitle": "Hitos",
+    "photosTitle": "Fotos",
+    "invalidTitle": "Este link no está disponible",
+    "invalidDescription": "Puede haber vencido o haber sido desactivado. Pedile un link nuevo a la empresa.",
+    "rateLimited": "Demasiados intentos. Probá de nuevo en unos minutos.",
+    "footer": "Seguimiento en vivo, generado por Se Instala."
+  },
+  "ProjectExpenses": {
+    "title": "Otros costos",
+    "description": "Materiales, viáticos, transporte y otros gastos manuales del proyecto.",
+    "empty": "Todavía no cargaste ningún gasto.",
+    "concept": "Concepto",
+    "amount": "Monto",
+    "date": "Fecha",
+    "loadedBy": "Cargado por",
+    "add": "Cargar gasto",
+    "adding": "Cargando…",
+    "delete": "Borrar",
+    "deleteConfirm": "¿Borrar el gasto \"{concept}\"?",
+    "conceptPlaceholder": "Ej: fletes, materiales, viáticos",
+    "saved": "Gasto cargado",
+    "deleted": "Gasto borrado"
   },
   "RescheduleResponse": {
     "title": "Tu trabajo fue reprogramado",

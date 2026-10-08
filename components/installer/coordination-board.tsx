@@ -30,6 +30,8 @@ export type CoordinationOrder = {
   companyName: string;
   installerId: string | null;
   installerName: string;
+  /** Ayudantes activos del plantel (bloque 5), además del responsable. */
+  helperInstallerIds: string[];
   acceptedAt: string | null;
   hasSurvey: boolean;
 };
@@ -81,6 +83,7 @@ export function CoordinationBoard({
       {
         status: order.status,
         assignedInstallerId: order.installerId,
+        helperInstallerIds: order.helperInstallerIds,
         acceptedAt: order.acceptedAt,
         hasSurvey: order.hasSurvey,
         scheduledDate: order.scheduledDate,

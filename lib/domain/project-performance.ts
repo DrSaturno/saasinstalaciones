@@ -27,8 +27,12 @@ export type ProjectPerformance = {
   revenue: number;
   /** Lo que se le paga al instalador por esas mismas órdenes terminadas. */
   installerCost: number;
-  /** Ingreso menos costo, sobre lo terminado. */
+  /** Gastos manuales del proyecto (bloque 6): materiales, viáticos, transporte. */
+  otherCosts: number;
+  /** Ingreso menos costo de instaladores menos otros costos, sobre lo terminado. */
   profit: number;
+  /** `finalizadas ÷ (total − canceladas)`, 0 si no hay órdenes vivas. */
+  completionPct: number;
   /** Porcentaje de ganancia sobre el ingreso; `null` si todavía no hay ingreso. */
   marginPct: number | null;
   /** Lo comprometido con los instaladores por TODO el proyecto, no sólo lo hecho. */
@@ -49,6 +53,12 @@ export function buildProjectPerformance(
   orders: PerformanceOrder[],
   incidents: PerformanceIncident[],
   today: string,
+  /**
+   * Gastos manuales ya cargados para este proyecto (bloque 6). Default 0: un
+   * proyecto sin gastos cargados se comporta exactamente como antes de este
+   * bloque — es aditivo, no cambia ningún número existente.
+   */
+  otherCosts = 0,
 ): ProjectPerformance {
   // Una orden cancelada no suma ni resta: no se hizo ni se va a hacer.
   const live = orders.filter((order) => order.status !== "cancelada");
@@ -65,7 +75,7 @@ export function buildProjectPerformance(
 
   const installerCost = done.reduce((sum, order) => sum + Number(order.installerAmount ?? 0), 0);
   const committedCost = live.reduce((sum, order) => sum + Number(order.installerAmount ?? 0), 0);
-  const profit = revenue - installerCost;
+  const profit = revenue - installerCost - otherCosts;
 
   const budget =
     project.billingMode === "project"
@@ -90,7 +100,9 @@ export function buildProjectPerformance(
     currency: project.currency,
     revenue,
     installerCost,
+    otherCosts,
     profit,
+    completionPct: live.length ? Math.round((done.length / live.length) * 100) : 0,
     marginPct: revenue > 0 ? Math.round((profit / revenue) * 100) : null,
     committedCost,
     budget,
@@ -107,6 +119,8 @@ export function buildProjectPerformance(
       open: incidents.filter((incident) => incident.status === "open").length,
       critical: incidents.filter((incident) => incident.severity === "critical").length,
     },
-    costMissing: committedCost === 0,
+    // Con gastos cargados ya hay algo real que mostrar, aunque no haya costo
+    // de instalador todavía.
+    costMissing: committedCost === 0 && otherCosts === 0,
   };
 }

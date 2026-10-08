@@ -142,4 +142,57 @@ describe("buildProjectPerformance", () => {
     );
     expect(result.marginPct).toBeNull();
   });
+
+  describe("bloque 6: otros costos y avance", () => {
+    it("sin gastos cargados (default), la ganancia no cambia", () => {
+      const result = buildProjectPerformance(POR_INSTALACION, [orden()], [], HOY);
+      expect(result.otherCosts).toBe(0);
+      expect(result.profit).toBe(600);
+    });
+
+    it("resta los otros costos de la ganancia", () => {
+      const result = buildProjectPerformance(POR_INSTALACION, [orden()], [], HOY, 150);
+      expect(result.otherCosts).toBe(150);
+      // 1000 (ingreso) − 400 (instalador) − 150 (otros costos)
+      expect(result.profit).toBe(450);
+    });
+
+    it("con gastos cargados y sin costo de instalador, ya hay algo real que mostrar", () => {
+      const result = buildProjectPerformance(
+        POR_INSTALACION,
+        [orden({ installerAmount: null })],
+        [],
+        HOY,
+        150,
+      );
+      expect(result.costMissing).toBe(false);
+      expect(result.profit).toBe(850);
+    });
+
+    it("avance: finalizadas ÷ (total − canceladas)", () => {
+      const result = buildProjectPerformance(
+        POR_INSTALACION,
+        [
+          orden(),
+          orden({ status: "pendiente", finalizedAt: null }),
+          orden({ status: "cancelada", finalizedAt: null }),
+        ],
+        [],
+        HOY,
+      );
+      // 1 finalizada de 2 vivas (la cancelada no cuenta ni en el numerador ni
+      // en el denominador).
+      expect(result.completionPct).toBe(50);
+    });
+
+    it("sin órdenes vivas, el avance es 0 y no explota dividiendo por cero", () => {
+      const result = buildProjectPerformance(
+        POR_INSTALACION,
+        [orden({ status: "cancelada", finalizedAt: null })],
+        [],
+        HOY,
+      );
+      expect(result.completionPct).toBe(0);
+    });
+  });
 });

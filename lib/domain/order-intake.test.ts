@@ -140,4 +140,19 @@ describe("horarios de la orden", () => {
       ).toThrow();
     }
   });
+
+  it("instaladores necesarios: vacío o ausente quedan en null, 1 a 15 valen", () => {
+    expect(orderIntakeSchema.parse(base).requiredInstallers).toBeNull();
+    expect(orderIntakeSchema.parse({ ...base, requiredInstallers: "" }).requiredInstallers).toBeNull();
+    expect(orderIntakeSchema.parse({ ...base, requiredInstallers: "4" }).requiredInstallers).toBe(4);
+    expect(orderIntakeSchema.parse({ ...base, requiredInstallers: "15" }).requiredInstallers).toBe(15);
+  });
+
+  it("instaladores necesarios: rechaza 0, 16 y decimales", () => {
+    for (const value of ["0", "16", "2.5", "-1"]) {
+      expect(() =>
+        orderIntakeSchema.parse({ ...base, requiredInstallers: value }),
+      ).toThrow();
+    }
+  });
 });

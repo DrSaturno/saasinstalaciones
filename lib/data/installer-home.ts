@@ -1,5 +1,6 @@
 import "server-only";
 
+import { orderScopeFilter } from "@/lib/data/order-team";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   AnnouncementSeverity,
@@ -101,7 +102,7 @@ export async function fetchInstallerHome(
       .select(
         "id, company_id, order_number, title, status, scheduled_date, finalized_at, sites(name, address, city, zone, lat, lng)",
       )
-      .eq("assigned_installer_id", installerId)
+      .or(await orderScopeFilter(supabase, installerId))
       .order("scheduled_date", { ascending: true, nullsFirst: false }),
     supabase
       .from("announcements")

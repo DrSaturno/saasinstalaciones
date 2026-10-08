@@ -29,15 +29,18 @@ export async function registerSiteAttachments(siteId: string, attachments: Order
     if (files.data.some((file) => !file.storagePath.startsWith(prefix))) return { error: t("invalidData") };
     let error: { message: string } | null = null;
     if (site.location_id) {
-      const { data: location } = await supabase
-        .from("locations")
+      // Una locacion puede ser de varios clientes y lo que se sube es de UNO: el
+      // del proyecto desde el que se sube, no el cliente de origen de la locacion.
+      const { data: project } = await supabase
+        .from("projects")
         .select("client_id")
-        .eq("id", site.location_id)
+        .eq("id", site.project_id)
+        .eq("company_id", companyId)
         .single();
-      if (!location) return { error: t("operation") };
+      if (!project?.client_id) return { error: t("operation") };
       const rows: TablesInsert<"location_attachments">[] = files.data.map((file) => ({
         location_id: site.location_id!,
-        client_id: location.client_id,
+        client_id: project.client_id!,
         company_id: companyId,
         storage_path: file.storagePath,
         file_name: file.fileName,

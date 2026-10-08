@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { FIELD, LATITUDE, LONGITUDE, optionalEmail } from "@/lib/domain/field-rules";
+import { FIELD, optionalEmail } from "@/lib/domain/field-rules";
 
 /**
  * Límites de la ficha de un local. Los usa el esquema de abajo y los usa el
@@ -23,14 +23,6 @@ export const SITE_LIMITS = {
   permanentNotes: 3000,
 } as const;
 
-const optionalCoordinate = (range: { min: number; max: number }) =>
-  z
-    .union([z.string(), z.number()])
-    .transform((value) => String(value).trim().replace(",", "."))
-    .refine((value) => value === "" || Number.isFinite(Number(value)))
-    .transform((value) => (value === "" ? null : Number(value)))
-    .refine((value) => value === null || (value >= range.min && value <= range.max));
-
 export const siteInputSchema = z
   .object({
     name: z.string().trim().min(SITE_LIMITS.name.min).max(SITE_LIMITS.name.max),
@@ -39,8 +31,6 @@ export const siteInputSchema = z
     city: z.string().trim().max(SITE_LIMITS.city),
     state: z.string().trim().max(120),
     zone: z.string().trim().min(1).max(80),
-    lat: optionalCoordinate(LATITUDE),
-    lng: optionalCoordinate(LONGITUDE),
     contactName: z.string().trim().max(SITE_LIMITS.contactName),
     contactPhone: z.string().trim().max(SITE_LIMITS.contactPhone),
     contactEmail: optionalEmail(),
@@ -50,13 +40,6 @@ export const siteInputSchema = z
     technicalNotes: z.string().trim().max(SITE_LIMITS.technicalNotes),
     riskNotes: z.string().trim().max(SITE_LIMITS.riskNotes),
     permanentNotes: z.string().trim().max(SITE_LIMITS.permanentNotes),
-  })
-  .superRefine((value, context) => {
-    // La única regla que el navegador no puede validar solo: el rango de
-    // cada coordenada ya lo frena el `min`/`max` del input.
-    if ((value.lat === null) !== (value.lng === null)) {
-      context.addIssue({ code: "custom", path: ["lat"], message: "coordinatePair" });
-    }
   });
 
 export type SiteInput = z.infer<typeof siteInputSchema>;
@@ -68,8 +51,6 @@ export type SiteFormDefaults = {
   city: string;
   state: string;
   zone: string;
-  lat: number | null;
-  lng: number | null;
   contactName: string;
   contactPhone: string;
   contactEmail: string;

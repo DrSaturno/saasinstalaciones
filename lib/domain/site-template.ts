@@ -10,8 +10,6 @@ export const SITE_COLUMNS = [
   { key: "ciudad", width: 20, required: false },
   { key: "provincia", width: 22, required: false },
   { key: "codigo", width: 16, required: false },
-  { key: "lat", width: 14, required: false },
-  { key: "lng", width: 14, required: false },
 ] as const;
 
 export type SiteColumnKey = (typeof SITE_COLUMNS)[number]["key"];
@@ -26,8 +24,6 @@ export const SITE_TEMPLATE_EXAMPLES: string[][] = [
     "CABA",
     "Buenos Aires",
     "SUC-001",
-    "-34.6037",
-    "-58.3816",
   ],
   [
     "Sucursal Norte",
@@ -35,7 +31,5 @@ export const SITE_TEMPLATE_EXAMPLES: string[][] = [
     "CABA",
     "Buenos Aires",
     "SUC-002",
-    "",
-    "",
   ],
 ];

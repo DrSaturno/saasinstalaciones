@@ -16,7 +16,6 @@ import type { z } from "zod";
  */
 export const CROSS_FIELD_RULES = [
   "endBeforeStart",
-  "coordinatePair",
   "freightDetailsRequired",
   "projectOrClient",
 ] as const;
