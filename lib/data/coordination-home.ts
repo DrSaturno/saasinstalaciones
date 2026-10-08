@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { orderStaffing } from "@/lib/domain/order-staffing";
 import type { Database, OrderStatus } from "@/types/database";
 
 export type CoordinationHome = {
@@ -50,7 +51,9 @@ export async function fetchCoordinationHome(
 
   const { data: orders } = await supabase
     .from("work_orders")
-    .select("id, company_id, status, assigned_installer_id, updated_at")
+    .select(
+      "id, company_id, status, assigned_installer_id, required_installers, updated_at, work_order_team_members(status)",
+    )
     .in("project_id", projectIds);
 
   const companyIds = [
@@ -72,10 +75,17 @@ export async function fetchCoordinationHome(
       projects: companyProjects.length,
       total: companyOrders.length,
       byStatus,
+      // «Sin cubrir»: sin responsable o con menos gente de la requerida.
       unassigned: companyOrders.filter(
         (order) =>
-          !order.assigned_installer_id &&
-          !["finalizada", "cancelada"].includes(order.status),
+          !["finalizada", "cancelada"].includes(order.status) &&
+          orderStaffing({
+            assignedInstallerId: order.assigned_installer_id,
+            requiredInstallers: order.required_installers,
+            activeHelpers: (order.work_order_team_members ?? []).filter(
+              (member) => member.status === "active",
+            ).length,
+          }).incomplete,
       ).length,
       doneToday: companyOrders.filter(
         (order) =>

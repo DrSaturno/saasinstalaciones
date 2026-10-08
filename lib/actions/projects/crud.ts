@@ -7,6 +7,7 @@ import type { createClient } from "@/lib/supabase/server";
 import { hasActiveCompanyRole } from "@/lib/data/company-membership-roles";
 import { projectInputSchema } from "@/lib/domain/projects";
 import { invalidFieldMessage } from "@/lib/field-error-message";
+import { setProjectContractAmount } from "@/lib/actions/orders/pricing";
 import { requireOperator } from "./context";
 import type { ActionState } from "./types";
 
@@ -82,7 +83,7 @@ export async function createProject(
 
   let createdId: string | undefined;
   try {
-    const { supabase, companyId } = await requireOperator();
+    const { supabase, companyId, userId } = await requireOperator();
     const [{ data: client }, coordinatorId] = await Promise.all([
       supabase
         .from("clients")
@@ -113,16 +114,24 @@ export async function createProject(
         zones: parsed.data.zones,
         planned_installations: parsed.data.plannedInstallations,
         billing_mode: parsed.data.billingMode,
-        contract_amount:
-          parsed.data.billingMode === "project"
-            ? parsed.data.contractAmount
-            : null,
         currency: parsed.data.country === "BR" ? "BRL" : "ARS",
       })
       .select("id")
       .single();
     if (error || !data) return { error: error?.message ?? t("operation") };
     createdId = data.id;
+    // El monto de contrato vive en `project_pricing`, que el instalador no lee.
+    const contractAmount =
+      parsed.data.billingMode === "project" ? parsed.data.contractAmount : null;
+    if (contractAmount !== null) {
+      const pricingError = await setProjectContractAmount(supabase, {
+        projectId: data.id,
+        companyId,
+        amount: contractAmount,
+        userId,
+      });
+      if (pricingError) return { error: pricingError };
+    }
   } catch {
     return { error: t("unexpected") };
   }
@@ -142,7 +151,7 @@ export async function updateProject(
   if (!parsed.success) return { error: await projectFieldError(parsed.error) };
 
   try {
-    const { supabase, companyId } = await requireOperator();
+    const { supabase, companyId, userId } = await requireOperator();
     const [{ data: current }, { data: sites }] = await Promise.all([
       supabase.from("projects").select("country").eq("id", projectId).eq("company_id", companyId).single(),
       supabase.from("sites").select("zone").eq("project_id", projectId).eq("company_id", companyId),
@@ -170,10 +179,6 @@ export async function updateProject(
         zones: parsed.data.zones,
         planned_installations: parsed.data.plannedInstallations,
         billing_mode: parsed.data.billingMode,
-        contract_amount:
-          parsed.data.billingMode === "project"
-            ? parsed.data.contractAmount
-            : null,
         currency: parsed.data.country === "BR" ? "BRL" : "ARS",
         min_completion_photos: parsed.data.minCompletionPhotos,
       })
@@ -182,6 +187,16 @@ export async function updateProject(
       .select("id")
       .single();
     if (error || !data) return { error: t("projectNotFound") };
+    // Cambiar a cobro por instalación deja el proyecto sin monto de contrato:
+    // se borra la fila de `project_pricing`, igual que antes se ponía en NULL.
+    const pricingError = await setProjectContractAmount(supabase, {
+      projectId,
+      companyId,
+      amount:
+        parsed.data.billingMode === "project" ? parsed.data.contractAmount : null,
+      userId,
+    });
+    if (pricingError) return { error: pricingError };
   } catch {
     return { error: t("unexpected") };
   }

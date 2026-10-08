@@ -66,7 +66,10 @@ const ALL_AREAS = Object.values(ROLE_AREAS).flat();
  */
 const PUBLIC_PATHS = ["/", "/login", "/forgot-password", "/reset-password"];
 const isPublic = (path: string) =>
-  PUBLIC_PATHS.includes(path) || path.startsWith("/invite/");
+  PUBLIC_PATHS.includes(path) ||
+  path.startsWith("/invite/") ||
+  // Bloque 7: seguimiento del cliente final, sin login (docs/specs/2026-09-24-link-cliente).
+  path.startsWith("/seguimiento/");
 
 /**
  * Proxy (middleware en Next 16): en cada request refresca la sesión de

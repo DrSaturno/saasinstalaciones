@@ -47,7 +47,7 @@
 | 15 | Validación de variables al iniciar | ❌ | Ninguna; las faltantes aparecen como 500 en runtime |
 | 16 | Separación de credenciales por entorno | ✅ | Proyectos Supabase distintos; secretos separados |
 | 17 | Separación de datos por entorno | ✅ | Producción y Demo son proyectos distintos |
-| 18 | Entorno de staging | ⛔ | **No existe**; el plan free permite 2 proyectos y están usados |
+| 18 | Entorno de staging | ⛔ | **No existe.** Con Pro ya se puede crear, pero cada proyecto extra suma costo mensual: pendiente de autorización de gasto |
 | 19 | Previews funcionales | ❌ | Sin variables de Supabase → 500 |
 | 20 | Debug desactivado en producción | ✅ | `unsafe-eval` sólo en dev; sin `console.log` sueltos |
 | 21 | Feature flags | ❌ | No existen (el release-runbook asume que sí) |
@@ -80,9 +80,9 @@
 
 | # | Ítem | Estado | Evidencia / qué falta |
 |---|---|:--:|---|
-| 41 | Backups automáticos | ⛔ | Plan `free`: no los provee |
-| 42 | PITR | ⛔ | Complemento de pago |
-| 43 | Retención definida | ⛔ | Depende de 41 |
+| 41 | Backups automáticos | 👤 | Plan `pro` verificado el 24-09-2026: los incluye (diarios). **Falta confirmar en el panel** (Database → Backups) que exista al menos uno |
+| 42 | PITR | ⛔ | Complemento de pago; no confirmado |
+| 43 | Retención definida | 👤 | Pro: 7 días con backup diario. Definir si alcanza (ver #45) |
 | 44 | **Restauración probada** | ❌ | **Nunca ejecutada** |
 | 45 | RPO definido y alcanzable | ❌ | Indefinido; hoy infinito |
 | 46 | RTO definido y alcanzable | ❌ | Indefinido |
@@ -136,7 +136,7 @@
 | 79 | …con aviso si se cae | ❌ | Falla abierto y el log se auto-redacta |
 | 80 | RPCs no expuestas a `anon` | ✅ | SEC-01/02/03 |
 | 81 | Límites en buckets de Storage | ✅ | SEC-05/09 |
-| 82 | Protección de contraseñas filtradas | ⛔ | Requiere plan Pro de Supabase |
+| 82 | Protección de contraseñas filtradas | 👤 | Ya disponible con Pro, pero **sigue deshabilitada** (advisor `auth_leaked_password_protection` el 24-09-2026). Es un toggle del panel: Authentication → Sign In / Providers → Password security → «Prevent use of leaked passwords» |
 | 83 | Sin fuga de errores internos | ❌ | 2 casos (`/api/master/companies`, toast de chat) |
 | 84 | Captcha **desactivado** | ✅ | Correcto: la app no lo implementa; activarlo rompería el login |
 
@@ -144,7 +144,7 @@
 
 | # | Ítem | Estado | Evidencia |
 |---|---|:--:|---|
-| 85 | Plan de Supabase apto para producción | ⛔ | `free`: sin backups, se pausa por inactividad |
+| 85 | Plan de Supabase apto para producción | ✅ | `pro` verificado por MCP el 24-09-2026; ya no se pausa por inactividad |
 | 86 | Plan de Vercel apto para uso comercial | 👤 | Hobby: **prohíbe uso comercial**, sin SLA. Verificar y subir |
 | 87 | Proyectos huérfanos limpiados | ❌ | `Base 3 - Legacy` inactivo en la organización |
 | 88 | Dominio y certificado | ✅ | Gestionados por Vercel |

@@ -52,7 +52,9 @@ export async function fetchInstallerEarnings(
     )
     // Redundante con la política de la base, y a propósito: si algún día
     // alguien afloja esa política, esto sigue acotando a la persona correcta.
-    .eq("assigned_installer_id", installerId)
+    // `installer_id` es responsable O ayudante (bloque 5): la vista ya
+    // devuelve una fila por cada rol que esta persona tuvo en cada orden.
+    .eq("installer_id", installerId)
     .overrideTypes<EarningRow[]>();
 
   // Sin esto, un error de consulta se ve igual que «todavía no trabajaste»:

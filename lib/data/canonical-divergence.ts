@@ -103,5 +103,64 @@ export async function fetchDivergenceReport(
     if (data.length < PAGE) break;
   }
 
-  return measureDivergence(sites, locations, associations);
+  // El código del local es del CLIENTE (`client_locations`), no de la ficha: dos
+  // clientes que comparten una locación tienen cada uno el suyo en sus puntos. Si se
+  // comparara con el código de la ficha, todo punto del segundo cliente saldría
+  // «divergente». Se compara contra el vínculo del cliente del proyecto del punto.
+  const [linkRefByKey, clientByProject] = await Promise.all([
+    fetchLinkRefs(supabase),
+    fetchProjectClients(supabase),
+  ]);
+  const locationById = new Map(locations.map((location) => [location.id, location]));
+  const comparableSites = sites.map((site) => {
+    if (!site.locationId) return site;
+    const clientId = clientByProject.get(site.projectId);
+    const key = `${site.locationId}:${clientId}`;
+    if (!clientId || !linkRefByKey.has(key)) return site;
+    const location = locationById.get(site.locationId);
+    if (!location) return site;
+    const expected = linkRefByKey.get(key) ?? null;
+    return {
+      ...site,
+      // Igual al código del vínculo: no diverge. Distinto: se marca para que diverja.
+      externalRef:
+        (site.externalRef ?? null) === expected
+          ? location.externalRef
+          : `__divergente__:${site.externalRef ?? ""}`,
+    };
+  });
+
+  return measureDivergence(comparableSites, locations, associations);
+}
+
+async function fetchLinkRefs(
+  supabase: SupabaseClient<Database>,
+): Promise<Map<string, string | null>> {
+  const refs = new Map<string, string | null>();
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("client_locations")
+      .select("location_id, client_id, external_ref")
+      .range(from, from + PAGE - 1);
+    if (error || !data) break;
+    for (const row of data) refs.set(`${row.location_id}:${row.client_id}`, row.external_ref);
+    if (data.length < PAGE) break;
+  }
+  return refs;
+}
+
+async function fetchProjectClients(
+  supabase: SupabaseClient<Database>,
+): Promise<Map<string, string>> {
+  const clients = new Map<string, string>();
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("projects")
+      .select("id, client_id")
+      .range(from, from + PAGE - 1);
+    if (error || !data) break;
+    for (const row of data) if (row.client_id) clients.set(row.id, row.client_id);
+    if (data.length < PAGE) break;
+  }
+  return clients;
 }

@@ -288,6 +288,11 @@ export function OrderFormFields({
             </select>
             {roster.length === 0 ? <p className="text-xs text-muted-foreground">{t("emptyRoster")}</p> : null}
           </div>
+          <div className="grid max-w-[220px] gap-2">
+            <Label htmlFor="order-required-installers">{t("requiredInstallers")}</Label>
+            <Input id="order-required-installers" name="requiredInstallers" type="number" inputMode="numeric" min={ORDER_LIMITS.requiredInstallers.min} max={ORDER_LIMITS.requiredInstallers.max} defaultValue={1} disabled={disabled} />
+            <p className="text-xs text-muted-foreground">{t("requiredInstallersHelp")}</p>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label htmlFor="order-description">{t("description")}</Label>

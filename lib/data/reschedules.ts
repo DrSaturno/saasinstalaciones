@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { orderScopeFilter } from "@/lib/data/order-team";
 import type { Database } from "@/types/database";
 import type { ScheduledOrder } from "@/lib/domain/schedule-conflicts";
 import { throwIfDataError } from "@/lib/data/errors";
@@ -76,7 +77,7 @@ export async function fetchInstallerSchedule(
   const { data, error } = await supabase
     .from("work_orders")
     .select("id, order_number, title, scheduled_date, scheduled_end_date")
-    .eq("assigned_installer_id", installerId)
+    .or(await orderScopeFilter(supabase, installerId))
     .not("status", "in", "(cancelada,finalizada)")
     .not("scheduled_date", "is", null);
   throwIfDataError("reschedules.installer_schedule", error);

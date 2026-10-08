@@ -9,6 +9,7 @@ import { createCorrelationId, logEvent } from "@/lib/observability";
 import { activitiesFor } from "@/lib/domain/activity-kind";
 import type { TablesInsert } from "@/types/database";
 import { operatedCompany, requireOperator } from "./context";
+import { setOrdersAmount } from "./pricing";
 import type { BulkResult } from "./types";
 import { orderFieldError } from "./field-error";
 
@@ -182,6 +183,14 @@ export async function createOrdersForProject(
     requestedSiteIds: parsed.data.siteIds,
   });
 
+  // El importe es por instalación: repartirlo cuando el proyecto se cobra como
+  // un todo duplicaría el monto contratado. Vive en `work_order_pricing` (que el
+  // instalador no lee), no en la fila de la orden.
+  const batchAmount =
+    user.role === "company_manager" && project.billing_mode === "per_installation"
+      ? parsed.data.amount
+      : null;
+
   const rows: TablesInsert<"work_orders">[] = toCreate.map((siteId) => ({
     company_id: companyId,
     project_id: projectId,
@@ -196,12 +205,6 @@ export async function createOrdersForProject(
     requires_freight: parsed.data.requiresFreight,
     freight_details: parsed.data.freightDetails,
     logistics_notes: parsed.data.logisticsNotes,
-    // El importe es por instalación: repartirlo cuando el proyecto se cobra
-    // como un todo duplicaría el monto contratado.
-    amount:
-      user.role === "company_manager" && project.billing_mode === "per_installation"
-        ? parsed.data.amount
-        : null,
     // Mismo costo para todo el lote: es el caso normal al generar N órdenes
     // iguales. Después se puede ajustar orden por orden.
     installer_amount:
@@ -269,6 +272,21 @@ export async function createOrdersForProject(
     }
     created += insertedOrders?.length ?? 0;
     for (const order of insertedOrders ?? []) toFinish.push(order.id);
+    if (batchAmount !== null) {
+      const pricingError = await setOrdersAmount(supabase, {
+        orderIds: (insertedOrders ?? []).map((order) => order.id),
+        companyId,
+        amount: batchAmount,
+        userId: user.id,
+      });
+      if (pricingError) {
+        return {
+          error: t("orderBatch", { count: created, error: pricingError }),
+          created,
+          skipped,
+        };
+      }
+    }
   }
 
   // Órdenes de ESTE lote que todavía no están terminadas: o las acaba de crear
@@ -289,6 +307,18 @@ export async function createOrdersForProject(
         activityCount: order.work_activities.length,
       })),
     });
+    // Reparación de un lote reintentado: si el intento anterior se cortó entre
+    // crear las órdenes y guardar su importe, se completa sin pisar lo que ya
+    // tenga importe.
+    if (batchAmount !== null && (unfinished ?? []).length > 0) {
+      await setOrdersAmount(supabase, {
+        orderIds: (unfinished ?? []).map((order) => order.id),
+        companyId,
+        amount: batchAmount,
+        userId: user.id,
+        keepExisting: true,
+      });
+    }
   }
 
   // Actividades, horario y —recién con las dos cosas ya existiendo— asignación.

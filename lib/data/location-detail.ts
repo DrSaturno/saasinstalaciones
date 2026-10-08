@@ -113,6 +113,8 @@ export type LocationEventView = Pick<
 export type CanonicalLocationDetail = {
   location: CanonicalLocation;
   client: { id: string; name: string } | null;
+  /** Todos los clientes que usan la locación (vínculos `client_locations`), el de origen incluido. */
+  clients: { id: string; name: string }[];
   projects: LocationProjectHistory[];
   requirements: LocationRequirementView[];
   documents: LocationDocumentView[];
@@ -160,6 +162,7 @@ export async function fetchCanonicalLocationDetail(
     { data: canonicalDocuments },
     { data: events },
     { data: sites },
+    { data: clientLinks },
   ] = await Promise.all([
     supabase
       .from("locations")
@@ -198,9 +201,18 @@ export async function fetchCanonicalLocationDetail(
       .from("sites")
       .select("id, project_id")
       .eq("location_id", locationId),
+    supabase
+      .from("client_locations")
+      .select("client_id, clients(id, name)")
+      .eq("location_id", locationId),
   ]);
 
   if (locationError || !location) return null;
+
+  const usingClients = (clientLinks ?? [])
+    .map((link) => (Array.isArray(link.clients) ? link.clients[0] : link.clients))
+    .filter((client): client is { id: string; name: string } => Boolean(client))
+    .sort((a, b) => a.name.localeCompare(b.name, "es"));
 
   const associationRows = associations ?? [];
   const requirementRows = requirements ?? [];
@@ -530,6 +542,7 @@ export async function fetchCanonicalLocationDetail(
   return {
     location: locationRow,
     client: clientRelation ?? null,
+    clients: usingClients,
     projects: projectHistory,
     requirements: requirementViews,
     documents,

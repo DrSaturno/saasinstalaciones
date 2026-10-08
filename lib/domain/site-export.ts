@@ -20,21 +20,7 @@ export type ExportableSite = {
   /** En el importador provincia = zona = state: es un solo valor. */
   zone: string | null;
   externalRef: string | null;
-  lat: number | null;
-  lng: number | null;
 };
-
-/**
- * Las coordenadas van con punto decimal y sin notación científica.
- *
- * Excel muestra `-3.46037e+1` si el número llega como float en ciertos rangos, y
- * eso vuelve como texto no numérico en la reimportación. Se escriben como texto
- * ya formateado.
- */
-function formatCoordinate(value: number | null): string {
-  if (value === null || Number.isNaN(value)) return "";
-  return String(value);
-}
 
 /** Una fila por locación, en el orden exacto de la plantilla. */
 export function buildSiteExportRows(
@@ -46,8 +32,6 @@ export function buildSiteExportRows(
     site.city ?? "",
     site.zone ?? "",
     site.externalRef ?? "",
-    formatCoordinate(site.lat),
-    formatCoordinate(site.lng),
   ]);
 }
 

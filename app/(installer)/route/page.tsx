@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { orderScopeFilter } from "@/lib/data/order-team";
 import { redirect } from "next/navigation";
 import { MapPin, Route as RouteIcon } from "lucide-react";
 import { getTranslations } from "next-intl/server";
@@ -58,7 +59,7 @@ export default async function InstallerRoutePage() {
     .select(
       "id, company_id, order_number, title, status, scheduled_date, sites(name, address, city, lat, lng), companies(name)",
     )
-    .eq("assigned_installer_id", user.id)
+    .or(await orderScopeFilter(supabase, user.id))
     .in("status", [
       "planificada",
       "en_camino",

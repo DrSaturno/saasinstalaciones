@@ -12,6 +12,27 @@ type ClientLocation = Pick<
   "id" | "client_id" | "name" | "address" | "city" | "state" | "zone" | "external_ref"
 >;
 
+type LinkedLocationRow = {
+  client_id: string;
+  external_ref: string | null;
+  locations: {
+    id: string;
+    name: string;
+    address: string;
+    city: string;
+    state: string;
+    zone: string;
+  };
+};
+
+/**
+ * Las locaciones que usa cada cliente, por el vínculo `client_locations`.
+ *
+ * Una locación es de la empresa y la pueden usar varios clientes (docs/specs/
+ * 2026-09-24-locaciones-compartidas): contarlas por `locations.client_id` sólo
+ * vería al cliente de origen. El código que se devuelve es el del CLIENTE, no el
+ * de la ficha. Sin `clientId` devuelve los vínculos de todos los clientes.
+ */
 async function fetchAllLocations(
   supabase: SupabaseClient<Database>,
   clientId?: string,
@@ -19,19 +40,32 @@ async function fetchAllLocations(
   const rows: ClientLocation[] = [];
   for (let from = 0; ; from += PAGE) {
     let query = supabase
-      .from("locations")
-      .select("id, client_id, name, address, city, state, zone, external_ref")
-      .is("archived_at", null)
-      .order("name")
+      .from("client_locations")
+      .select(
+        "client_id, external_ref, locations!inner(id, name, address, city, state, zone, archived_at)",
+      )
+      .is("locations.archived_at", null)
+      .order("location_id")
       .range(from, from + PAGE - 1);
     if (clientId) query = query.eq("client_id", clientId);
-    const { data, error } = await query;
+    const { data, error } = await query.overrideTypes<LinkedLocationRow[]>();
     throwIfDataError("clients.locations", error);
     if (!data) break;
-    rows.push(...data);
+    for (const link of data) {
+      rows.push({
+        id: link.locations.id,
+        client_id: link.client_id,
+        name: link.locations.name,
+        address: link.locations.address,
+        city: link.locations.city,
+        state: link.locations.state,
+        zone: link.locations.zone,
+        external_ref: link.external_ref,
+      });
+    }
     if (data.length < PAGE) break;
   }
-  return rows;
+  return rows.sort((a, b) => a.name.localeCompare(b.name, "es"));
 }
 
 export type ClientSummary = {
@@ -127,9 +161,12 @@ export async function fetchClientDetail(
   }
   const sites: { id: string; location_id: string | null }[] = [];
   for (let index = 0; index < locationIds.length; index += ID_BATCH) {
+    // Sólo los puntos de proyectos de ESTE cliente: una locación compartida también
+    // tiene puntos en proyectos de otros clientes, y sus órdenes no son de éste.
     const { data, error } = await supabase
       .from("sites")
-      .select("id, location_id")
+      .select("id, location_id, projects!inner(client_id)")
+      .eq("projects.client_id", clientId)
       .in("location_id", locationIds.slice(index, index + ID_BATCH));
     throwIfDataError("clients.detail_sites", error);
     sites.push(...(data ?? []));

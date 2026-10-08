@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SERVICE_RADIUS_KM } from "@/lib/domain/availability";
-import { FIELD, LATITUDE, LONGITUDE } from "@/lib/domain/field-rules";
+import { FIELD } from "@/lib/domain/field-rules";
 
 const initial: CoverageState = { error: null };
 
@@ -24,15 +24,14 @@ export function CoverageSettings({
   zones,
   baseAddress,
   baseCity,
-  baseLat,
-  baseLng,
+  baseLocated,
   serviceRadiusKm,
 }: {
   zones: string[];
   baseAddress: string | null;
   baseCity: string | null;
-  baseLat: number | null;
-  baseLng: number | null;
+  /** Si la base ya tiene ubicación calculada (las coordenadas no se muestran). */
+  baseLocated: boolean;
   serviceRadiusKm: number | null;
 }) {
   const t = useTranslations("Coverage");
@@ -116,38 +115,15 @@ export function CoverageSettings({
                 />
               </div>
             </div>
+            <p className="mt-2 text-xs text-muted-foreground" role="status">
+              {baseLocated ? t("baseLocated") : t("baseNotLocatedYet")}
+            </p>
           </div>
 
           <div className="border-t pt-4">
             <p className="text-sm font-medium">{t("radiusTitle")}</p>
             <p className="mt-1 text-xs text-muted-foreground">{t("radiusHelp")}</p>
-            <div className="mt-3 grid gap-3 sm:grid-cols-3">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="coverage-lat">{t("latitude")}</Label>
-                <Input
-                  id="coverage-lat"
-                  name="baseLat"
-                  type="number"
-                  step="any"
-                  min={LATITUDE.min}
-                  max={LATITUDE.max}
-                  defaultValue={baseLat ?? ""}
-                  disabled={pending}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="coverage-lng">{t("longitude")}</Label>
-                <Input
-                  id="coverage-lng"
-                  name="baseLng"
-                  type="number"
-                  step="any"
-                  min={LONGITUDE.min}
-                  max={LONGITUDE.max}
-                  defaultValue={baseLng ?? ""}
-                  disabled={pending}
-                />
-              </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="coverage-radius">{t("radiusKm")}</Label>
                 <Input

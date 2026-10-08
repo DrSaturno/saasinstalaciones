@@ -42,6 +42,7 @@ export type EditOrderDefaults = {
   amount: number | null;
   installerAmount: number | null;
   installerId: string;
+  requiredInstallers: number;
   conditions: ExplicitWorkCondition[];
   startTime: string;
   endTime: string;
@@ -185,6 +186,21 @@ export function EditOrderDialog({
                 ))}
               </select>
             </div>
+          </div>
+
+          <div className="flex max-w-[220px] flex-col gap-2">
+            <Label htmlFor="edit-required-installers">{common("requiredInstallers")}</Label>
+            <Input
+              id="edit-required-installers"
+              name="requiredInstallers"
+              type="number"
+              inputMode="numeric"
+              min={ORDER_LIMITS.requiredInstallers.min}
+              max={ORDER_LIMITS.requiredInstallers.max}
+              defaultValue={defaults.requiredInstallers}
+              disabled={pending}
+            />
+            <p className="text-xs text-muted-foreground">{common("requiredInstallersHelp")}</p>
           </div>
 
           {canEditAmount ? (

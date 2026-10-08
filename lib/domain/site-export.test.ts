@@ -16,8 +16,6 @@ const SITES: ExportableSite[] = [
     city: "CABA",
     zone: "Buenos Aires",
     externalRef: "SHELL-0001",
-    lat: -34.6037,
-    lng: -58.3816,
   },
   {
     name: "Estación Norte",
@@ -25,8 +23,6 @@ const SITES: ExportableSite[] = [
     city: "CABA",
     zone: "Buenos Aires",
     externalRef: "SHELL-0002",
-    lat: null,
-    lng: null,
   },
   {
     // Sin dirección ni código: se exporta igual, con las celdas vacías.
@@ -35,8 +31,6 @@ const SITES: ExportableSite[] = [
     city: null,
     zone: "Córdoba",
     externalRef: null,
-    lat: null,
-    lng: null,
   },
 ];
 
@@ -53,14 +47,13 @@ describe("buildSiteExportSheet", () => {
 
   it("los nulos van como celda vacía, no como 'null'", () => {
     const fila = buildSiteExportRows(SITES)[2];
-    expect(fila).toEqual(["Estación sin datos", "", "", "Córdoba", "", "", ""]);
+    expect(fila).toEqual(["Estación sin datos", "", "", "Córdoba", ""]);
   });
 
-  it("las coordenadas salen con punto decimal y sin notación científica", () => {
-    const fila = buildSiteExportRows(SITES)[0];
-    expect(fila[5]).toBe("-34.6037");
-    expect(fila[6]).toBe("-58.3816");
-    expect(fila[5]).not.toMatch(/e/i);
+  it("no emite columnas de coordenadas", () => {
+    const [header] = buildSiteExportSheet(SITES);
+    expect(header.join(" ")).not.toMatch(/lat|lng|latitud|longitud/i);
+    expect(buildSiteExportRows(SITES)[0]).toHaveLength(header.length);
   });
 });
 
@@ -81,8 +74,6 @@ describe("contrato de ida y vuelta", () => {
       "Estación sin datos",
     ]);
     expect(analysis.valid[0].externalRef).toBe("SHELL-0001");
-    expect(analysis.valid[0].lat).toBe(-34.6037);
-    expect(analysis.valid[0].lng).toBe(-58.3816);
     expect(analysis.valid[0].zone).toBe("Buenos Aires");
     expect(analysis.valid[2].zone).toBe("Córdoba");
   });

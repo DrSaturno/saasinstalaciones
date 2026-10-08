@@ -144,3 +144,129 @@ export async function signUpInstaller(
 
   redirect("/home");
 }
+
+/**
+ * Alta de una subcuenta de gerente desde un link de invitación (SUBCTA-*).
+ *
+ * El rol (`company_manager`), la empresa y `is_owner: false` se fijan en
+ * `app_metadata` —el único campo que `handle_new_user` lee para decidir el rol
+ * (SEC-16), y que el cliente nunca controla— así que este flujo no puede crear
+ * un dueño ni una cuenta de otra empresa aunque alguien manipulara el
+ * formulario. El email sale de la invitación, nunca del formulario.
+ *
+ * Mismo patrón que `signUpInstaller`: `service_role` sólo para crear la cuenta
+ * ya confirmada; el permiso otorgado al invitar se aplica con la sesión de la
+ * propia subcuenta, vía `accept_company_staff_invitation` (paralela a
+ * `accept_invitation`: ésa exige rol instalador/coordinador y no aplica acá).
+ */
+export async function signUpCompanyStaff(
+  _prev: SignupState,
+  formData: FormData,
+): Promise<SignupState> {
+  const t = await getTranslations("Errors");
+  const parsed = schema.safeParse({
+    token: formData.get("token"),
+    fullName: formData.get("fullName"),
+    password: formData.get("password"),
+  });
+  if (!parsed.success) {
+    const f = await getTranslations("Invitation");
+    return {
+      error: await invalidFieldMessage(parsed.error, {
+        fullName: f("fullNameLabel"),
+        password: f("passwordLabel"),
+      }),
+    };
+  }
+
+  const { token, fullName, password } = parsed.data;
+
+  const supabase = await createClient();
+  const { data: preview } = await supabase.rpc("invitation_preview", {
+    p_token: token,
+  });
+  const invite = Array.isArray(preview) ? preview[0] : null;
+  if (
+    !invite ||
+    !invite.valid ||
+    !invite.email ||
+    invite.invite_role !== "company_staff"
+  ) {
+    return { error: t("invalidInvitation") };
+  }
+
+  const locale = (await getLocale()).startsWith("pt") ? "pt" : "es";
+
+  const admin = createAdminClient();
+  const { data: createData, error: createError } =
+    await admin.auth.admin.createUser({
+      email: invite.email,
+      password,
+      email_confirm: true,
+      app_metadata: {
+        role: "company_manager",
+        company_id: invite.company_id,
+        is_owner: false,
+      },
+      user_metadata: {
+        full_name: fullName,
+        locale,
+      },
+    });
+  if (createError) {
+    const code = (createError as { code?: string }).code;
+    if (code === "email_exists" || /already/i.test(createError.message)) {
+      return { error: t("emailExists") };
+    }
+    if (code === "weak_password") return { error: t("weakPassword") };
+    return { error: t("signupFailed") };
+  }
+
+  const createdUserId = createData.user?.id;
+  if (!createdUserId) return { error: t("signupFailed") };
+
+  const correlationId = createCorrelationId();
+  const rollbackCreatedUser = async (step: string) => {
+    const { error } = await admin.auth.admin.deleteUser(createdUserId);
+    if (error) {
+      logEvent("error", "invite_signup.staff_rollback_failed", {
+        correlation_id: correlationId,
+        user_id: createdUserId,
+        step,
+        auth_code: (error as { code?: string }).code ?? null,
+      });
+      return;
+    }
+    logEvent("warn", "invite_signup.staff_rolled_back", {
+      correlation_id: correlationId,
+      user_id: createdUserId,
+      step,
+    });
+  };
+
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: invite.email,
+    password,
+  });
+  if (signInError) {
+    await rollbackCreatedUser("sign_in");
+    return { error: t("signupFailed") };
+  }
+
+  const { error: acceptError } = await supabase.rpc(
+    "accept_company_staff_invitation",
+    { p_token: token },
+  );
+  if (acceptError) {
+    await supabase.auth.signOut();
+    await rollbackCreatedUser("accept_company_staff_invitation");
+    return { error: t("signupFailed") };
+  }
+
+  logEvent("info", "invite_signup.staff_completed", {
+    correlation_id: correlationId,
+    user_id: createdUserId,
+  });
+
+  redirect("/dashboard");
+}

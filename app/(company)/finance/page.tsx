@@ -20,7 +20,12 @@ export default async function FinancePage({
   searchParams: Promise<{ period?: string; from?: string; to?: string }>;
 }) {
   const user = await getCurrentUser();
-  if (user?.role !== "company_manager") redirect("/dashboard");
+  // Una subcuenta sin permiso de finanzas no llega ni a ver la pantalla en
+  // blanco: se la manda al tablero, igual que a cualquier rol que no sea de
+  // empresa (SUBCTA-*). La base ya protege los datos por su cuenta
+  // (`auth_can_see_commercials`, bloque 8); esto evita mostrar una pantalla
+  // vacía sin explicación.
+  if (user?.role !== "company_manager" || !user.canManageFinance) redirect("/dashboard");
   const query = await searchParams;
   const period = ["week", "fortnight", "month", "semester", "custom"].includes(query.period ?? "") ? query.period! : "month";
   const toDate = new Date();

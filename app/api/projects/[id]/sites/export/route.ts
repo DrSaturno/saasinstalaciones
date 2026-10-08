@@ -59,7 +59,7 @@ export async function GET(
   for (let from = 0; ; from += 1000) {
     const { data, error } = await supabase
       .from("sites")
-      .select("name, address, city, zone, external_ref, lat, lng")
+      .select("name, address, city, zone, external_ref")
       .eq("project_id", id)
       .is("archived_at", null)
       .order("name")
@@ -72,8 +72,6 @@ export async function GET(
         city: row.city,
         zone: row.zone,
         externalRef: row.external_ref,
-        lat: row.lat,
-        lng: row.lng,
       });
     }
     if (data.length < 1000) break;

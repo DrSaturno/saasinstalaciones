@@ -10,6 +10,7 @@ import {
   projectCurrency,
   type ProjectFormDefaults,
 } from "@/lib/domain/projects";
+import { ClientDialog } from "@/components/company/client-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,6 +33,9 @@ const EMPTY: ProjectFormDefaults = {
   minCompletionPhotos: null,
 };
 
+/** Valor reservado de la opción «Crear cliente nuevo»: nunca es un id y nunca se envía. */
+const NEW_CLIENT = "__new_client__";
+
 const selectClass = "h-9 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 export function ProjectFormFields({
@@ -50,6 +54,16 @@ export function ProjectFormFields({
   fixedCoordinatorId?: string;
 }) {
   const t = useTranslations("CreateProject");
+  // El cliente se controla acá porque «Crear cliente nuevo» tiene que poder
+  // elegirlo apenas se guarda. Los recién creados se suman a la lista aunque la
+  // página todavía no haya recargado la suya.
+  const [clientId, setClientId] = useState(defaults.clientId);
+  const [createdClients, setCreatedClients] = useState<{ id: string; name: string }[]>([]);
+  const [clientDialogOpen, setClientDialogOpen] = useState(false);
+  const clientOptions = [
+    ...clients,
+    ...createdClients.filter((created) => !clients.some((client) => client.id === created.id)),
+  ];
   const [country, setCountry] = useState<Country>(defaults.country);
   const [billingMode, setBillingMode] = useState<BillingMode>(defaults.billingMode);
   const [zones, setZones] = useState<string[]>(defaults.zones);
@@ -76,10 +90,34 @@ export function ProjectFormFields({
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="project-client">{t("client")}</Label>
-          <select id="project-client" name="clientId" defaultValue={defaults.clientId} className={selectClass} required disabled={pending}>
+          <select
+            id="project-client"
+            name="clientId"
+            value={clientId}
+            onChange={(event) => {
+              // La opción especial abre el alta y deja elegido lo que había: si
+              // se cancela, el formulario queda como estaba.
+              if (event.target.value === NEW_CLIENT) setClientDialogOpen(true);
+              else setClientId(event.target.value);
+            }}
+            className={selectClass}
+            required
+            disabled={pending}
+          >
             <option value="">{t("selectClient")}</option>
-            {clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}
+            {clientOptions.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}
+            {canManageFinance ? <option value={NEW_CLIENT}>{t("newClient")}</option> : null}
           </select>
+          {canManageFinance ? (
+            <ClientDialog
+              open={clientDialogOpen}
+              onOpenChange={setClientDialogOpen}
+              onSaved={(created) => {
+                setCreatedClients((current) => [...current, created]);
+                setClientId(created.id);
+              }}
+            />
+          ) : null}
         </div>
       </div>
 

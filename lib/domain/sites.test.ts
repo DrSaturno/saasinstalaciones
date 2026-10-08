@@ -8,8 +8,6 @@ const base = {
   city: "Buenos Aires",
   state: "CABA",
   zone: "AMBA",
-  lat: "-34.6037",
-  lng: "-58.3816",
   contactName: "Ana",
   contactPhone: "",
   contactEmail: "ana@example.com",
@@ -26,8 +24,11 @@ describe("siteInputSchema", () => {
     expect(siteInputSchema.safeParse(base).success).toBe(true);
   });
 
-  it("exige latitud y longitud juntas", () => {
-    expect(siteInputSchema.safeParse({ ...base, lng: "" }).success).toBe(false);
+  it("ya no pide ni acepta coordenadas: la ubicación sale de la dirección", () => {
+    const parsed = siteInputSchema.safeParse({ ...base, lat: "-34.6", lng: "-58.3" });
+    expect(parsed.success).toBe(true);
+    expect(parsed.success && "lat" in parsed.data).toBe(false);
+    expect(parsed.success && "lng" in parsed.data).toBe(false);
   });
 });
 

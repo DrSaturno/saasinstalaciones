@@ -11,6 +11,18 @@
 > migración fallida es, a día de hoy, **pérdida definitiva de datos**.
 > Los detalles y el camino a GO están en §11 y §13.
 
+> **Actualización 2026-09-24 — Supabase pasó a Pro.** Verificado por MCP
+> (`get_organization` → `"plan":"pro"`, `tier_pro`). Producción y Demo figuran
+> `ACTIVE_HEALTHY`; `query_logs` ya responde (antes daba «Backend error»).
+> **Lo que cambia:** OPS-01 deja de ser bloqueante por plan. **Lo que NO
+> cambia todavía:** (a) no está verificado que el backup diario exista ni que
+> se pueda restaurar (OPS-06 sigue abierto — el MCP no expone los backups; se
+> mira en el panel: Database → Backups); (b) PITR es un complemento aparte y no
+> está confirmado; (c) Vercel sigue sin confirmarse (OPS-03); (d) RPO/RTO sin
+> definir; (e) staging (OPS-16) ahora es posible pero cuesta dinero: requiere
+> autorización de gasto. El veredicto NO-GO → GO se cierra recién con (a), (c)
+> y (d).
+
 > **Estado de remediación (2026-09-04, misma jornada).** Se implementó todo lo
 > que no depende de plan contratado ni de una decisión de negocio:
 >

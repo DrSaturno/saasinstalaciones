@@ -4,14 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CityInput } from "@/components/shared/city-input";
-import { LATITUDE, LONGITUDE } from "@/lib/domain/field-rules";
 import { SITE_LIMITS, type SiteFormDefaults } from "@/lib/domain/sites";
 import type { Country } from "@/types/database";
 import { useTranslations } from "next-intl";
 
 const EMPTY: SiteFormDefaults = {
   name: "", externalRef: "", address: "", city: "", state: "", zone: "",
-  lat: null, lng: null, contactName: "", contactPhone: "", contactEmail: "",
+  contactName: "", contactPhone: "", contactEmail: "",
   openingHours: "", accessNotes: "", parkingNotes: "", technicalNotes: "",
   riskNotes: "", permanentNotes: "",
 };
@@ -36,10 +35,6 @@ export function SiteFormFields({ defaults = EMPTY, zones, country, pending, city
           <div className="flex flex-col gap-2 sm:col-span-2"><Label htmlFor="site-address">{t("address")}</Label><Input id="site-address" name="address" defaultValue={defaults.address} maxLength={SITE_LIMITS.address} disabled={pending} /></div>
           <div className="flex flex-col gap-2"><Label htmlFor="site-zone">{country === "BR" ? t("stateBrazil") : t("province")}</Label><select id="site-zone" name="zone" defaultValue={defaults.zone || zones[0]} className={selectClass} required disabled={pending}>{zones.map((zone) => <option key={zone} value={zone}>{zone}</option>)}</select></div>
           <div className="flex flex-col gap-2"><Label htmlFor="site-city">{t("city")}</Label><CityInput id="site-city" defaultValue={defaults.city} suggestions={citySuggestions} disabled={pending} /></div>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-2"><Label htmlFor="site-lat">{t("latitude")}</Label><Input id="site-lat" name="lat" type="number" min={LATITUDE.min} max={LATITUDE.max} step="any" defaultValue={defaults.lat ?? ""} disabled={pending} /></div>
-          <div className="flex flex-col gap-2"><Label htmlFor="site-lng">{t("longitude")}</Label><Input id="site-lng" name="lng" type="number" min={LONGITUDE.min} max={LONGITUDE.max} step="any" defaultValue={defaults.lng ?? ""} disabled={pending} /></div>
         </div>
         <p className="text-xs text-muted-foreground">{t("mapsHelp")}</p>
       </section>

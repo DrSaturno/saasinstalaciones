@@ -86,6 +86,16 @@ export type CurrentUser = {
   fullName: string;
   locale: "es" | "pt";
   memberships: CompanyMembership[];
+  /**
+   * Sólo tiene sentido para `role === "company_manager"`. `true` = dueño de la
+   * empresa; `false` = subcuenta creada por el dueño (SUBCTA-*). Para
+   * cualquier otro rol vale `false` sin que signifique nada.
+   */
+  isOwner: boolean;
+  /** Ve y edita lo que la empresa le cobra a su cliente (bloque 8). El dueño siempre; una subcuenta sólo con este permiso. */
+  canManageFinance: boolean;
+  /** Cambia la configuración de la empresa (hoy: mínimo de fotos de cierre). El dueño siempre; una subcuenta sólo con este permiso. */
+  canManageSettings: boolean;
 };
 
 /**
@@ -106,7 +116,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("role, company_id, full_name, locale")
+      .select("role, company_id, full_name, locale, is_owner")
       .eq("id", user.id)
       .single(),
     supabase
@@ -142,6 +152,19 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 
   if (isCompanyManagerBlocked(profile.role, company?.status)) return null;
 
+  // Permisos de subcuenta (SUBCTA-*): sólo hace falta consultarlos para una
+  // subcuenta real. El dueño y cualquier otro rol no tienen fila —y no la
+  // necesitan— así que se ahorra la consulta.
+  const isStaffAccount =
+    profile.role === "company_manager" && profile.is_owner === false;
+  const { data: staffPermissions } = isStaffAccount
+    ? await supabase
+        .from("company_staff_permissions")
+        .select("can_manage_finance, can_manage_settings")
+        .eq("user_id", user.id)
+        .maybeSingle()
+    : { data: null };
+
   const activeCompanies = new Map(
     (membershipRows ?? [])
       .filter((membership) => membership.companies?.status === "active")
@@ -156,6 +179,13 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
       profile.role === "company_manager" ? profile.company_id : null,
     fullName: profile.full_name,
     locale: profile.locale,
+    isOwner: profile.role === "company_manager" ? profile.is_owner : false,
+    canManageFinance:
+      profile.role === "company_manager" &&
+      (profile.is_owner || Boolean(staffPermissions?.can_manage_finance)),
+    canManageSettings:
+      profile.role === "company_manager" &&
+      (profile.is_owner || Boolean(staffPermissions?.can_manage_settings)),
     memberships: (membershipRoleRows ?? [])
       .filter((membership) => activeCompanies.has(membership.company_id))
       .map((membership) => ({
