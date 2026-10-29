@@ -180,8 +180,8 @@
     "hint": "Al menos 8 caracteres.",
     "submit": "Guardar contraseña",
     "submitting": "Guardando…",
-    "done": "Listo, tu contraseña quedó actualizada.",
-    "goToLogin": "Ingresar",
+    "done": "Listo, tu contraseña quedó actualizada. Te llevamos a tu panel…",
+    "goToPanel": "Entrar a mi panel",
     "invalidLink": "El link no sirve",
     "invalidLinkDescription": "Puede haber vencido o ya haberse usado. Pedí uno nuevo.",
     "requestNew": "Pedir un link nuevo"

@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   setNewPassword,
@@ -16,17 +17,29 @@ const initialState: ResetPasswordState = { error: null };
 
 export function ResetPasswordForm() {
   const t = useTranslations("ResetPassword");
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(
     setNewPassword,
     initialState,
   );
 
+  // La sesión de recuperación sigue abierta después de guardar: no hay por qué
+  // volver a pedir la contraseña recién elegida. `/` lo manda el proxy al panel
+  // de su rol (el instalador, a sus tareas).
+  useEffect(() => {
+    if (!state.ok) return;
+    const timer = window.setTimeout(() => router.replace("/"), 1500);
+    return () => window.clearTimeout(timer);
+  }, [state.ok, router]);
+
   if (state.ok) {
     return (
       <div className="flex flex-col gap-4">
-        <p className="text-sm text-muted-foreground">{t("done")}</p>
+        <p className="text-sm text-muted-foreground" role="status">
+          {t("done")}
+        </p>
         <Button asChild size="lg">
-          <Link href="/login">{t("goToLogin")}</Link>
+          <Link href="/">{t("goToPanel")}</Link>
         </Button>
       </div>
     );

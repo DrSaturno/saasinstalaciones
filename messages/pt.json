@@ -180,8 +180,8 @@
     "hint": "Pelo menos 8 caracteres.",
     "submit": "Salvar senha",
     "submitting": "Salvando…",
-    "done": "Pronto, sua senha foi atualizada.",
-    "goToLogin": "Entrar",
+    "done": "Pronto, sua senha foi atualizada. Levando você ao seu painel…",
+    "goToPanel": "Entrar no meu painel",
     "invalidLink": "O link não serve",
     "invalidLinkDescription": "Ele pode ter expirado ou já ter sido usado. Peça um novo.",
     "requestNew": "Pedir um novo link"
