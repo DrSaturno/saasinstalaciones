@@ -190,7 +190,8 @@
     "goToPanel": "Entrar a mi panel",
     "invalidLink": "El link no sirve",
     "invalidLinkDescription": "Puede haber vencido o ya haberse usado. Pedí uno nuevo.",
-    "requestNew": "Pedir un link nuevo"
+    "requestNew": "Pedir un link nuevo",
+    "linkNotWorking": "¿El link venció o no funciona?"
   },
   "Invitation": {
     "visualEyebrow": "Invitación de campo",
