@@ -34,6 +34,7 @@ export default async function ResetPasswordPage(props: {
       visualBody={t("visualBody")}
       visualAlt={t("visualAlt")}
       secureAccess={t("secureAccess")}
+      compact
     >
       <div className={styles.contentHeader}>
         <span>{t("eyebrow")}</span>
