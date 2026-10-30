@@ -14,7 +14,14 @@ import styles from "./invitation.module.css";
  * cerrar esa sesión y seguir con el alta, o copiar el link para mandárselo al
  * instalador, que es el caso más común (el gerente lo abrió para probarlo).
  */
-export function WrongAccountActions({ token }: { token: string }) {
+export function WrongAccountActions({
+  token,
+  audience = "installer",
+}: {
+  token: string;
+  /** A quién va dirigida la invitación: cambia sólo el texto de los botones. */
+  audience?: "installer" | "staff";
+}) {
   const t = useTranslations("Invitation");
   const [pending, startTransition] = useTransition();
   const [copied, setCopied] = useState(false);
@@ -45,7 +52,9 @@ export function WrongAccountActions({ token }: { token: string }) {
     <div className={styles.actions}>
       <Button onClick={copyLink} className="h-auto min-h-9 w-full whitespace-normal py-2">
         {copied ? <Check aria-hidden /> : <Copy aria-hidden />}
-        {copied ? t("linkCopied") : t("copyLink")}
+        {copied
+          ? t("linkCopied")
+          : t(audience === "staff" ? "copyLinkStaff" : "copyLink")}
       </Button>
       {manualLink ? (
         <input
@@ -64,7 +73,9 @@ export function WrongAccountActions({ token }: { token: string }) {
         className="h-auto min-h-9 w-full whitespace-normal py-2"
       >
         <LogOut aria-hidden />
-        {pending ? t("signingOut") : t("signOutAndContinue")}
+        {pending
+          ? t("signingOut")
+          : t(audience === "staff" ? "signOutAndContinueStaff" : "signOutAndContinue")}
       </Button>
       <Link href="/" className={styles.backLink}>
         {t("backToPanel")}

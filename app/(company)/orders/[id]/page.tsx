@@ -6,6 +6,10 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchActiveRoster } from "@/lib/data/orders";
 import { fetchOrderEvidence } from "@/lib/data/order-evidence";
 import { fetchOrderSchedule } from "@/lib/data/order-schedule";
+import { fetchOrderTeam } from "@/lib/data/order-team";
+import { OrderTeamPanel } from "@/components/company/order-team-panel";
+import { OrderChatPanel } from "@/components/shared/order-chat-panel";
+import { fetchOrderChat, fetchOrderTeamSize } from "@/lib/data/order-chat";
 import { OrderActions } from "@/components/company/order-actions";
 import { ReviewDeliveryDialog } from "@/components/company/review-delivery-dialog";
 import { OrderIncidents } from "@/components/company/order-incidents";
@@ -45,6 +49,7 @@ import { canOperateCompany, getCurrentUser } from "@/lib/auth";
 import { PageContainer } from "@/components/shared/page-container";
 import { BackLink } from "@/components/shared/back-link";
 import { throwIfDataError } from "@/lib/data/errors";
+import { embeddedOrderAmount } from "@/lib/data/pricing";
 
 export default async function OrderDetailPage({
   params,
@@ -75,7 +80,7 @@ export default async function OrderDetailPage({
   const { data: order, error: orderError } = await supabase
     .from("work_orders")
     .select(
-      "id, order_number, title, description, status, scheduled_date, scheduled_end_date, priority, indoor, requires_freight, freight_details, logistics_notes, amount, installer_amount, currency, company_id, assigned_installer_id, created_at, project_id, site_id",
+      "id, order_number, title, description, status, scheduled_date, scheduled_end_date, priority, indoor, requires_freight, freight_details, logistics_notes, installer_amount, currency, company_id, assigned_installer_id, required_installers, created_at, project_id, site_id, work_order_pricing(amount)",
     )
     .eq("id", id)
     .single();
@@ -134,15 +139,25 @@ export default async function OrderDetailPage({
   const incidents = incidentsResult.data;
   const conditionRows = conditionsResult.data;
 
+  const orderAmount = embeddedOrderAmount(order);
   const amount =
-    order.amount === null
+    orderAmount === null
       ? t("notDefined")
-      : format.number(Number(order.amount), {
+      : format.number(orderAmount, {
           style: "currency",
           currency: order.currency,
         });
 
   const canWriteEvidence = user ? canOperateCompany(user, order.company_id) : false;
+
+  // Bloque 5: plantel de ayudantes. Sólo lo ve quien opera la orden, y sólo
+  // tiene sentido con un responsable ya asignado.
+  const team =
+    canWriteEvidence && order.assigned_installer_id
+      ? await fetchOrderTeam(supabase, id)
+      : [];
+  const leadName =
+    roster.find((member) => member.id === order.assigned_installer_id)?.name ?? "—";
 
   // Sólo el gerente resuelve un pedido de baja. El coordinador lo ve en la
   // bandeja de notificaciones, pero la decisión no es suya.
@@ -224,9 +239,10 @@ export default async function OrderDetailPage({
             requiresFreight: order.requires_freight,
             freightDetails: order.freight_details ?? "",
             logisticsNotes: order.logistics_notes ?? "",
-            amount: order.amount,
+            amount: orderAmount,
             installerAmount: order.installer_amount,
             installerId: order.assigned_installer_id ?? "",
+            requiredInstallers: order.required_installers,
             conditions: (conditionRows ?? []).map((row) => row.condition),
             startTime: schedule?.startTime ?? "",
             endTime: schedule?.endTime ?? "",
@@ -395,6 +411,28 @@ export default async function OrderDetailPage({
               ) : null}
             </CardContent>
           </Card>
+
+          {canWriteEvidence && order.assigned_installer_id ? (
+            <OrderTeamPanel
+              orderId={order.id}
+              currency={order.currency}
+              leadId={order.assigned_installer_id}
+              leadName={leadName}
+              requiredInstallers={order.required_installers}
+              team={team}
+              roster={roster.map(({ id: rosterId, name }) => ({ id: rosterId, name }))}
+              showMoney={user?.role === "company_manager"}
+            />
+          ) : null}
+
+          {user && (await fetchOrderTeamSize(supabase, id)) > 0 ? (
+            <OrderChatPanel
+              orderId={order.id}
+              currentUserId={user.id}
+              currentUserName={user.fullName}
+              initialMessages={await fetchOrderChat(supabase, id)}
+            />
+          ) : null}
 
           <div id="evidencia" />
           <OrderEvidencePanel

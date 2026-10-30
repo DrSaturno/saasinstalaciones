@@ -29,6 +29,7 @@ export async function orderFieldError(
     scheduledEndDate: f("endDate"),
     scheduledStartTime: f("startTime"),
     estimatedDurationMinutes: f("duration"),
+    requiredInstallers: f("requiredInstallers"),
     priority: f("priority"),
     installerId: f("installer"),
     description: f("description"),

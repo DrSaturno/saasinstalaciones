@@ -34,6 +34,7 @@ export default async function CanonicalLocationPage({
       <LocationPassport
         location={detail.location}
         client={detail.client}
+        clients={detail.clients}
         summary={detail.summary}
         action={detail.editContext ? (
           <EditSiteDialog
@@ -48,8 +49,6 @@ export default async function CanonicalLocationPage({
               city: detail.location.city,
               state: detail.location.state,
               zone: detail.location.zone,
-              lat: detail.location.lat,
-              lng: detail.location.lng,
               contactName: detail.location.contact_name,
               contactPhone: detail.location.contact_phone,
               contactEmail: detail.location.contact_email,

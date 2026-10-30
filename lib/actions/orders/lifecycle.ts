@@ -45,11 +45,20 @@ export async function transitionOrder(
       hasSurvey = (count ?? 0) > 0;
     }
 
+    // Ayudantes del plantel (bloque 5): vacío en el caso común de un solo
+    // instalador, la consulta no le cuesta nada a ese camino.
+    const { data: helpers } = await supabase
+      .from("work_order_team_members")
+      .select("installer_id")
+      .eq("order_id", orderId)
+      .eq("status", "active");
+
     // Validamos acá para dar un error claro; el trigger valida igual en la DB.
     const block = orderTransitionBlock(
       {
         status: order.status,
         assignedInstallerId: order.assigned_installer_id,
+        helperInstallerIds: (helpers ?? []).map((h) => h.installer_id),
         acceptedAt: order.installer_accepted_at,
         hasSurvey,
         scheduledDate: order.scheduled_date,

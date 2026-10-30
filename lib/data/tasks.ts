@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { orderScopeFilter } from "@/lib/data/order-team";
 import type { Database, OrderStatus } from "@/types/database";
 import { throwIfDataError } from "@/lib/data/errors";
 
@@ -65,7 +66,7 @@ export async function fetchMyTasks(
     .select(
       "id, order_number, title, status, scheduled_date, installer_accepted_at, company_id, sites(name, address, city), companies(name)",
     )
-    .eq("assigned_installer_id", installerId)
+    .or(await orderScopeFilter(supabase, installerId))
     .order("scheduled_date", { ascending: true, nullsFirst: false })
     .overrideTypes<RawTask[]>();
 

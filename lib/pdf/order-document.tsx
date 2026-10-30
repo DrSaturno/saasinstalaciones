@@ -18,6 +18,8 @@ export type OrderPdfData = {
   scheduledDate: string | null;
   createdAt: string;
   amount: string | null;
+  /** true cuando `amount` es la paga del instalador y no el importe comercial. */
+  amountIsInstallerPay: boolean;
   indoor: boolean;
   requiresFreight: boolean;
   freightDetails: string;
@@ -251,7 +253,7 @@ export function OrderDocument({ data }: { data: OrderPdfData }) {
             <Field label={l.installer} value={data.installer} />
             <Field label={l.scheduledDate} value={data.scheduledDate ?? "—"} />
             <Field label={l.priority} value={data.priorityLabel} />
-            {data.amount ? <Field label={l.amount} value={data.amount} /> : null}
+            {data.amount ? <Field label={data.amountIsInstallerPay ? l.yourPay : l.amount} value={data.amount} /> : null}
           </View>
         </View>
 

@@ -21,6 +21,11 @@ export default async function SettingsPage() {
     fetchTwoFactorStatus(supabase),
   ]);
   const isManager = user?.role === "company_manager";
+  // Una subcuenta sin permiso de configuración (SUBCTA-*) sigue viendo el
+  // resto de esta pantalla (su cuenta, contraseña, 2FA): sólo se le oculta
+  // este bloque. La RPC (`set_company_min_completion_photos`) hace la misma
+  // comprobación, así que ocultar el formulario no es la única defensa.
+  const canManageCompanySettings = Boolean(user?.isOwner || user?.canManageSettings);
 
   return (
     <main className="mx-auto max-w-3xl">
@@ -44,7 +49,7 @@ export default async function SettingsPage() {
         {/* Sólo gerencia: el mínimo de evidencia es política de la empresa,
             no una preferencia de quien coordina un proyecto. La acción lo
             vuelve a comprobar. */}
-        {isManager ? (
+        {isManager && canManageCompanySettings ? (
           <Card>
             <CardHeader className="border-b">
               <div className="flex items-center gap-2">

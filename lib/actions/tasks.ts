@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { isInstallerArea } from "@/lib/auth";
 import { getAuthorizedUser } from "@/lib/auth-authorized";
@@ -17,7 +18,7 @@ import {
 import { orderTransitionBlock } from "@/lib/domain/order-rules";
 import { logEvent } from "@/lib/observability";
 import { requestPushDelivery } from "@/lib/push/events";
-import type { OrderUpdateType } from "@/types/database";
+import type { Database, OrderUpdateType } from "@/types/database";
 import { INSTALLER_NOTE_MAX } from "@/lib/domain/field-flow";
 
 async function requireInstaller() {
@@ -26,6 +27,22 @@ async function requireInstaller() {
     throw new Error("Acceso denegado");
   }
   return { user, supabase: await createClient() };
+}
+
+/**
+ * Ayudantes activos del plantel de una orden (bloque 5). Vacío en el caso
+ * común de un solo instalador — la consulta no le cambia nada a ese camino.
+ */
+async function fetchOrderHelperIds(
+  supabase: SupabaseClient<Database>,
+  orderId: string,
+): Promise<string[]> {
+  const { data } = await supabase
+    .from("work_order_team_members")
+    .select("installer_id")
+    .eq("order_id", orderId)
+    .eq("status", "active");
+  return (data ?? []).map((h) => h.installer_id);
 }
 
 export type ActionState = { error: string | null; ok?: boolean };
@@ -49,7 +66,12 @@ async function installerTransition(
     .eq("id", orderId)
     .maybeSingle();
   if (readError) return { error: readError.message, retryable: true };
-  if (!order || order.assigned_installer_id !== user.id) {
+
+  const helperInstallerIds = await fetchOrderHelperIds(supabase, orderId);
+  const isTeamMember =
+    order?.assigned_installer_id === user.id || helperInstallerIds.includes(user.id);
+
+  if (!order || !isTeamMember) {
     return { error: t("orderNotAssigned"), retryable: false };
   }
 
@@ -65,6 +87,7 @@ async function installerTransition(
     {
       status: order.status,
       assignedInstallerId: order.assigned_installer_id,
+      helperInstallerIds,
       acceptedAt: order.installer_accepted_at,
       // El instalador nunca sale de 'relevamiento': eso lo hace la empresa o el
       // coordinador desde su tablero, así que acá la regla del acta no aplica.
@@ -79,13 +102,15 @@ async function installerTransition(
   }
   if (block) return { error: t(block), retryable: false };
 
-  // Compare-and-set: si el estado o la asignación cambian entre lectura y
-  // escritura, esta operación no pisa el trabajo concurrente.
+  // Compare-and-set: si el estado cambia entre lectura y escritura, esta
+  // operación no pisa el trabajo concurrente. Ya no compara
+  // `assigned_installer_id` acá — con equipo, quien escribe puede ser un
+  // ayudante; la membresía vigente (responsable o ayudante activo) la exige
+  // la RLS de la fila, no este filtro.
   const { data: updated, error } = await supabase
     .from("work_orders")
     .update({ status: toStatus })
     .eq("id", orderId)
-    .eq("assigned_installer_id", user.id)
     .in("status", decision.expectedStatuses)
     .select("id")
     .maybeSingle();
@@ -99,7 +124,7 @@ async function installerTransition(
     if (retryReadError) {
       return { error: retryReadError.message, retryable: true };
     }
-    if (current?.assigned_installer_id === user.id && current.status === toStatus) {
+    if (isTeamMember && current?.status === toStatus) {
       return { error: null, ok: true };
     }
     return { error: t("invalidTransition"), retryable: false };
@@ -235,7 +260,13 @@ export async function addUpdate(input: {
       .select("id, company_id, assigned_installer_id")
       .eq("id", parsed.data.orderId)
       .single();
-    if (!order || order.assigned_installer_id !== user.id) {
+    const helperInstallerIds = order
+      ? await fetchOrderHelperIds(supabase, parsed.data.orderId)
+      : [];
+    if (
+      !order ||
+      (order.assigned_installer_id !== user.id && !helperInstallerIds.includes(user.id))
+    ) {
       return { error: t("orderNotAssigned") };
     }
 
@@ -378,7 +409,11 @@ export async function reportBlocker(
       .select("id, company_id, assigned_installer_id")
       .eq("id", orderId)
       .single();
-    if (!order || order.assigned_installer_id !== user.id) {
+    const helperInstallerIds = order ? await fetchOrderHelperIds(supabase, orderId) : [];
+    if (
+      !order ||
+      (order.assigned_installer_id !== user.id && !helperInstallerIds.includes(user.id))
+    ) {
       return { error: t("orderNotAssigned") };
     }
 

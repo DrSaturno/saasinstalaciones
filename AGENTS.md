@@ -1,7 +1,11 @@
 <!-- BEGIN:nextjs-agent-rules -->
+
 # This is NOT the Next.js you know
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
 <!-- END:nextjs-agent-rules -->
 
 # Se Instala
@@ -73,6 +77,7 @@ Estilo: claro y aireado, bordes sutiles en vez de sombras, radius 10-14px, chips
 | RESEND_FROM_EMAIL | Remitente Resend de un dominio verificado |
 | APP_URL | Origen público usado en links de invitación por email |
 | NEXT_PUBLIC_GOOGLE_MAPS_API_KEY | Mapa operativo del tablero (Maps JavaScript API). Restringida por dominio en Google Cloud |
+| GOOGLE_GEOCODING_API_KEY | Secreta, sólo servidor, distinta de la del mapa. Ubica locales, bases de instaladores y convocatorias a partir de su dirección (Geocoding API). Sin ella no se rompe nada: quedan sin ubicación. Google cobra por consulta |
 | GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET | OAuth de Google Calendar. Sin las dos, `googleCalendarConfigured()` da false y la integración queda apagada en silencio |
 | GOOGLE_TOKEN_ENCRYPTION_KEY | 32 bytes en hex o base64. Cifra los tokens de Calendar en la base (AES-256-GCM) |
 | UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN | Rate limiting distribuido. **Sin esto el limitador degrada a no-op y no hay freno de fuerza bruta**: verificar en `/api/health` (`checks.redis`) |

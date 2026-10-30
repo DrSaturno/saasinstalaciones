@@ -1,9 +1,14 @@
 # Respaldo y restauración — Se Instala
 
-> **Estado actual: NO HAY BACKUPS.**
-> La organización de Supabase está en plan `free`, que no provee backups
-> descargables ni PITR. **Nunca se ejecutó una restauración.** Hoy, un borrado
-> accidental o una migración destructiva es pérdida definitiva de datos.
+> **Actualización 2026-09-24: la organización pasó a plan `pro`** (verificado
+> por MCP). Eso habilita backups diarios automáticos (7 días). **Todavía no
+> está verificado que exista un backup ni que se pueda restaurar**, y **nunca se
+> ejecutó una restauración**: hasta hacerlo (§4), «hay backups» no está
+> probado. PITR es un complemento aparte, no confirmado. Los pasos 1 (plan)
+> queda cumplido; los pasos 2–3 y la restauración de prueba siguen abiertos.
+>
+> *Estado previo (plan `free`):* sin backups descargables ni PITR; un borrado
+> accidental o una migración destructiva era pérdida definitiva de datos.
 >
 > Este documento define el estado objetivo y el procedimiento para llegar y
 > mantenerlo. Todo lo marcado 🔴 **todavía no existe**.

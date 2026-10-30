@@ -42,6 +42,9 @@ const multiCompanyUser: CurrentUser = {
       role: "installer",
     },
   ],
+  isOwner: false,
+  canManageFinance: false,
+  canManageSettings: false,
 };
 
 describe("helpers de membresía", () => {

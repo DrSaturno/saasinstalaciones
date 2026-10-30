@@ -48,6 +48,8 @@ export const ORDER_LIMITS = {
   freightDetails: 1_000,
   logisticsNotes: 2_000,
   durationMinutes: { min: 1, max: 24 * 60 },
+  /** Instaladores que la orden necesita (responsable + ayudantes); tope del plantel. */
+  requiredInstallers: { min: 1, max: 15 },
 } as const;
 
 /** Campos que se cargan igual al crear y al editar una orden. */
@@ -77,6 +79,19 @@ const orderFields = {
         .int()
         .min(ORDER_LIMITS.durationMinutes.min)
         .max(ORDER_LIMITS.durationMinutes.max),
+    ])
+    .transform((value) => (value === "" ? null : value))
+    .default(null),
+  // Vacío o ausente = «no se dijo»: al crear vale 1, al editar no se toca. Los
+  // formularios que no lo mandan (el de lote) siguen valiendo igual.
+  requiredInstallers: z
+    .union([
+      z.literal(""),
+      z.coerce
+        .number()
+        .int()
+        .min(ORDER_LIMITS.requiredInstallers.min)
+        .max(ORDER_LIMITS.requiredInstallers.max),
     ])
     .transform((value) => (value === "" ? null : value))
     .default(null),

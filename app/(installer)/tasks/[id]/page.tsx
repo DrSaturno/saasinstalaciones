@@ -19,6 +19,8 @@ import { PrerequisiteNotice } from "@/components/shared/prerequisite-notice";
 import { TaskActions } from "@/components/installer/task-actions";
 import { TaskEvidenceCompose } from "@/components/installer/task-evidence-compose";
 import { OrderEvidencePanel } from "@/components/shared/order-evidence-panel";
+import { OrderChatPanel } from "@/components/shared/order-chat-panel";
+import { fetchOrderChat, fetchOrderTeamSize } from "@/lib/data/order-chat";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { OrderPdfButton } from "@/components/shared/order-pdf-button";
 import { CalendarizeOrderButton } from "@/components/shared/calendarize-order-button";
@@ -84,6 +86,7 @@ export default async function TaskDetailPage({
   throwIfDataError("task.minimum_photos", minPhotosResult.error);
   throwIfDataError("task.photo_count", photoCountResult.error);
   const site = siteResult.data;
+  const teamSize = await fetchOrderTeamSize(supabase, id);
   const minPhotos = minPhotosResult.data;
   const photoCount = photoCountResult.data;
 
@@ -326,6 +329,17 @@ export default async function TaskDetailPage({
           </div>
         </CardContent>
       </Card>
+
+      {teamSize > 0 ? (
+        <div className="mt-4">
+          <OrderChatPanel
+            orderId={order.id}
+            currentUserId={user.id}
+            currentUserName={user.fullName}
+            initialMessages={await fetchOrderChat(supabase, order.id)}
+          />
+        </div>
+      ) : null}
 
       <div className="mt-4">
         <OrderEvidencePanel

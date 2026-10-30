@@ -28,12 +28,30 @@ type ClientField = {
 export function ClientDialog({
   client,
   trigger,
+  open: controlledOpen,
+  onOpenChange,
+  onSaved,
 }: {
   client?: ClientSummary;
   trigger?: React.ReactNode;
+  /**
+   * Modo controlado: quien lo usa decide cuándo se abre, sin botón propio. Sirve
+   * para abrirlo desde otro formulario (p. ej. «Crear cliente nuevo» en el alta
+   * de proyecto).
+   */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Se llama con el cliente ya guardado, para que quien lo abrió pueda elegirlo. */
+  onSaved?: (client: { id: string; name: string }) => void;
 }) {
   const t = useTranslations("Clients");
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const controlled = controlledOpen !== undefined;
+  const open = controlled ? controlledOpen : internalOpen;
+  const setOpen = (next: boolean) => {
+    if (controlled) onOpenChange?.(next);
+    else setInternalOpen(next);
+  };
   const router = useRouter();
   const action = saveClient.bind(null, client?.id ?? null);
   const [state, formAction, pending] = useActionState(
@@ -42,6 +60,7 @@ export function ClientDialog({
       if (result.ok) {
         setOpen(false);
         toast.success(t("saved"));
+        if (result.client) onSaved?.(result.client);
         router.refresh();
       }
       return result;
@@ -65,13 +84,15 @@ export function ClientDialog({
   ];
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button variant={client ? "outline" : "default"}>
-            {client ? t("edit") : t("new")}
-          </Button>
-        )}
-      </DialogTrigger>
+      {controlled ? null : (
+        <DialogTrigger asChild>
+          {trigger ?? (
+            <Button variant={client ? "outline" : "default"}>
+              {client ? t("edit") : t("new")}
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-xl">
         <DialogHeader><DialogTitle>{client ? t("editTitle") : t("newTitle")}</DialogTitle></DialogHeader>
         <form action={formAction} className="grid gap-4 sm:grid-cols-2">

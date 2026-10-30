@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser, isInstallerArea } from "@/lib/auth";
 import { AcceptInvitation } from "@/components/invite/accept-invitation";
 import { InstallerSignupForm } from "@/components/invite/installer-signup-form";
+import { StaffSignupForm } from "@/components/invite/staff-signup-form";
 import { InvitationFrame } from "@/components/invite/invitation-frame";
 import { WrongAccountActions } from "@/components/invite/wrong-account-actions";
 import styles from "@/components/invite/invitation.module.css";
@@ -43,6 +44,49 @@ export default async function InvitePage({
           <span>{t("invitationEyebrow")}</span>
           <h1>{t("invalidTitle")}</h1>
           <p>{t("invalidDescription")}</p>
+        </div>
+      </InvitationFrame>
+    );
+  }
+
+  // Subcuenta de gerente (SUBCTA-*): siempre es un alta de cuenta nueva, no una
+  // membresía que se suma a la sesión abierta — igual que el instalador, pero
+  // sin el botón «Aceptar» de más abajo, que no aplica a este tipo de alta.
+  if (invite.invite_role === "company_staff") {
+    if (!user) {
+      return (
+        <InvitationFrame {...frameProps}>
+          <div className={styles.contentHeader}>
+            <span>{t("invitationEyebrow")}</span>
+            <h1>{t("staffTitle", { company: invite.company_name })}</h1>
+            <p>
+              {t("staffSignupDescription", { company: invite.company_name })}
+            </p>
+          </div>
+          <div className={styles.formContent}>
+            <StaffSignupForm token={token} email={invite.email} />
+          </div>
+        </InvitationFrame>
+      );
+    }
+    // Con una sesión abierta (casi siempre el dueño que prueba el link): la
+    // misma salida que en la invitación de instalador, no un callejón.
+    return (
+      <InvitationFrame {...frameProps}>
+        <div className={styles.contentHeader}>
+          <span>{t("invitationEyebrow")}</span>
+          <h1>{t("staffTitle", { company: invite.company_name })}</h1>
+          <p>
+            {user.email
+              ? t.rich("staffAlreadyLoggedInWithEmail", {
+                  email: user.email,
+                  b: (chunks) => <strong>{chunks}</strong>,
+                })
+              : t("staffAlreadyLoggedIn")}
+          </p>
+        </div>
+        <div className={styles.formContent}>
+          <WrongAccountActions token={token} audience="staff" />
         </div>
       </InvitationFrame>
     );

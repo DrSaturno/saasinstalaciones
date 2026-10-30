@@ -20,6 +20,8 @@ import type { TablesInsert } from "@/types/database";
 import { BATCH_SIZE, requireOperator } from "./context";
 import type { ImportPreflight, ImportResult } from "./types";
 import { SITE_LIMITS } from "@/lib/domain/sites";
+import { geocodeQueryFor } from "@/lib/domain/geocoding";
+import { geocodeBatch } from "@/lib/geocoding/google";
 
 // ---------------------------------------------------------------------------
 // Importación masiva de puntos
@@ -41,6 +43,10 @@ import { SITE_LIMITS } from "@/lib/domain/sites";
 // El id se deriva en el servidor y no se acepta del cliente: así no hay id ajeno
 // que validar ni forma de escribir sobre el lote de otra empresa.
 // ---------------------------------------------------------------------------
+
+/** Cuántas locaciones se ubican dentro de la importación misma (el resto, después). */
+const IMPORT_GEOCODE_MAX = 300;
+const IMPORT_GEOCODE_BUDGET_MS = 8_000;
 
 type OperatorContext = Awaited<ReturnType<typeof requireOperator>>;
 
@@ -104,8 +110,6 @@ function describeIssue(t: ErrorTranslator, issue: SiteImportIssue): string {
       return t("missingName");
     case "invalidLength":
       return describeLengthIssue(t, issue.detail);
-    case "invalidCoordinates":
-      return t("siteInvalidCoordinates");
     case "zoneOutsideProject":
       return t("siteZoneOutsideProject", { zone: issue.detail || "—" });
     case "duplicateInFile":
@@ -153,8 +157,9 @@ function toCanonicalProjection(
     zone: row.zone,
     country,
     external_ref: row.externalRef,
-    lat: row.lat,
-    lng: row.lng,
+    // La ubicación se calcula de la dirección justo antes de insertar.
+    lat: null,
+    lng: null,
     contact_name: "",
     contact_phone: "",
     contact_email: "",
@@ -325,12 +330,16 @@ export async function importSites(
       .map((row) => normalizeLocationExternalRef(row.externalRef))
       .filter((ref): ref is string => Boolean(ref)),
   );
+  // Las locaciones que el cliente YA tiene, propias o compartidas, se reconocen por
+  // el código que él mismo les puso (`client_locations`): el código es del cliente,
+  // no de la locación (docs/specs/2026-09-24-locaciones-compartidas).
   const existingByRef = new Map<string, CanonicalLocationProjection>();
   if (requestedRefs.size > 0) {
+    const locationIdByRef = new Map<string, string>();
     for (let from = 0; ; from += 1000) {
       const { data, error } = await supabase
-        .from("locations")
-        .select("id, company_id, client_id, name, address, city, state, zone, country, lat, lng, external_ref, normalized_external_ref, contact_name, contact_phone, contact_email, opening_hours, access_notes, parking_notes, technical_notes, risk_notes, permanent_notes")
+        .from("client_locations")
+        .select("location_id, normalized_external_ref")
         .eq("company_id", companyId)
         .eq("client_id", clientId)
         .not("normalized_external_ref", "is", null)
@@ -339,15 +348,30 @@ export async function importSites(
         return { error: t("operation"), inserted: 0, skipped };
       }
       if (!data) break;
-      for (const location of data) {
-        if (
-          location.normalized_external_ref &&
-          requestedRefs.has(location.normalized_external_ref)
-        ) {
-          existingByRef.set(location.normalized_external_ref, location);
+      for (const link of data) {
+        if (link.normalized_external_ref && requestedRefs.has(link.normalized_external_ref)) {
+          locationIdByRef.set(link.normalized_external_ref, link.location_id);
         }
       }
       if (data.length < 1000) break;
+    }
+
+    const linkedIds = [...new Set(locationIdByRef.values())];
+    const refByLocationId = new Map([...locationIdByRef].map(([ref, id]) => [id, ref]));
+    // De a 100: `in` viaja en la URL.
+    for (let index = 0; index < linkedIds.length; index += 100) {
+      const { data, error } = await supabase
+        .from("locations")
+        .select("id, company_id, client_id, name, address, city, state, zone, country, lat, lng, external_ref, contact_name, contact_phone, contact_email, opening_hours, access_notes, parking_notes, technical_notes, risk_notes, permanent_notes")
+        .eq("company_id", companyId)
+        .in("id", linkedIds.slice(index, index + 100));
+      if (error) {
+        return { error: t("operation"), inserted: 0, skipped };
+      }
+      for (const location of data ?? []) {
+        const ref = refByLocationId.get(location.id);
+        if (ref) existingByRef.set(ref, location);
+      }
     }
   }
 
@@ -412,6 +436,32 @@ export async function importSites(
       created_by: userId,
     });
     newRows.push(row);
+  }
+
+  // Ubicación automática a partir de la dirección (nadie carga coordenadas).
+  // Con un tope y un presupuesto de tiempo: una planilla de miles de filas no
+  // puede colgar la solicitud. Lo que no entre queda sin ubicar y se completa
+  // con «Completar ubicaciones». Sin clave configurada no se intenta nada.
+  const locatable = newLocations.flatMap((location) => {
+    const query = geocodeQueryFor({
+      address: location.address,
+      city: location.city,
+      state: location.state,
+      country: project.country,
+    });
+    return query ? [{ id: location.id, query }] : [];
+  });
+  const located = await geocodeBatch(locatable, {
+    max: IMPORT_GEOCODE_MAX,
+    concurrency: 8,
+    budgetMs: IMPORT_GEOCODE_BUDGET_MS,
+  });
+  for (const location of newLocations) {
+    const coordinates = located.located.get(location.id);
+    if (coordinates) {
+      location.lat = coordinates.lat;
+      location.lng = coordinates.lng;
+    }
   }
 
   let createdLocations = 0;
@@ -480,8 +530,6 @@ export async function importSites(
         state: "",
         zone: "",
         externalRef: issueExternalRef(issue),
-        lat: null,
-        lng: null,
       },
       outcome: "skipped" as const,
       locationId: null,

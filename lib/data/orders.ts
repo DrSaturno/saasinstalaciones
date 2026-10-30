@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { fetchActiveCompanyRoleMemberships } from "@/lib/data/company-membership-roles";
 import type { Database, OrderStatus } from "@/types/database";
 import { throwIfDataError } from "@/lib/data/errors";
+import { embeddedOrderAmount, ORDER_PRICING_SELECT, type OrderPricingEmbed } from "@/lib/data/pricing";
 
 export type OrderRow = {
   id: string;
@@ -28,7 +29,7 @@ export type OrderRow = {
 
 const PAGE = 1000;
 
-type RawOrder = {
+type RawOrder = OrderPricingEmbed & {
   id: string;
   order_number: string;
   title: string;
@@ -36,7 +37,6 @@ type RawOrder = {
   scheduled_date: string | null;
   scheduled_end_date: string | null;
   finalized_at: string | null;
-  amount: number | null;
   currency: Database["public"]["Tables"]["work_orders"]["Row"]["currency"];
   created_at: string;
   project_id: string;
@@ -57,7 +57,7 @@ function shape(
     scheduled_date: o.scheduled_date,
     scheduled_end_date: o.scheduled_end_date,
     finalized_at: o.finalized_at,
-    amount: o.amount,
+    amount: embeddedOrderAmount(o),
     currency: o.currency,
     created_at: o.created_at,
     site_name: o.sites?.name ?? "—",
@@ -88,7 +88,7 @@ export async function fetchAllOrders(
     let query = supabase
       .from("work_orders")
       .select(
-        "id, order_number, title, status, scheduled_date, scheduled_end_date, finalized_at, amount, currency, created_at, project_id, assigned_installer_id, sites(name, city, zone), projects(name)",
+        `id, order_number, title, status, scheduled_date, scheduled_end_date, finalized_at, currency, created_at, project_id, assigned_installer_id, sites(name, city, zone), projects(name), ${ORDER_PRICING_SELECT}`,
       )
       .order("created_at", { ascending: false })
       .range(from, from + PAGE - 1);

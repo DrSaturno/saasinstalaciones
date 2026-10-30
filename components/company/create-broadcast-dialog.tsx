@@ -11,7 +11,7 @@ import {
 } from "@/lib/actions/broadcasts";
 import type { ClientOption, ProjectOption } from "@/lib/data/broadcasts";
 import { BROADCAST_LIMITS } from "@/lib/domain/broadcasts";
-import { LATITUDE, LONGITUDE, MONEY_MAX } from "@/lib/domain/field-rules";
+import { FIELD, MONEY_MAX } from "@/lib/domain/field-rules";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -152,16 +152,15 @@ export function CreateBroadcastDialog({
               {zones.map((zone) => <option key={zone} value={zone} />)}
             </datalist>
           </div>
-          <div className="grid gap-3 rounded-xl border p-4 sm:grid-cols-2">
-            <p className="text-xs text-muted-foreground sm:col-span-2">{t("coordinatesHelp")}</p>
-            <div className="grid gap-2">
-              <Label htmlFor="broadcast-lat">{t("latitude")}</Label>
-              <Input id="broadcast-lat" name="lat" type="number" step="any" min={LATITUDE.min} max={LATITUDE.max} />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="broadcast-lng">{t("longitude")}</Label>
-              <Input id="broadcast-lng" name="lng" type="number" step="any" min={LONGITUDE.min} max={LONGITUDE.max} />
-            </div>
+          <div className="grid gap-2">
+            <Label htmlFor="broadcast-address">{t("address")}</Label>
+            <Input
+              id="broadcast-address"
+              name="address"
+              maxLength={FIELD.address.max}
+              placeholder={t("addressPlaceholder")}
+            />
+            <p className="text-xs text-muted-foreground">{t("addressHelp")}</p>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="broadcast-requirements">{t("requirements")}</Label>

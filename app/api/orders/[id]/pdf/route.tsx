@@ -7,6 +7,7 @@ import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { fetchLocationRequirements } from "@/lib/data/location-detail";
 import { OrderDocument, type OrderPdfData } from "@/lib/pdf/order-document";
 import type { OrderPriority, OrderStatus, OrderUpdateType } from "@/types/database";
+import { embeddedOrderAmount } from "@/lib/data/pricing";
 
 type OpenRequirementStatus = "pending" | "expired" | "rejected";
 
@@ -55,11 +56,42 @@ export async function GET(
   const { data: order } = await supabase
     .from("work_orders")
     .select(
-      "id, order_number, title, description, status, priority, scheduled_date, created_at, amount, currency, indoor, requires_freight, freight_details, site_id, project_id, company_id, assigned_installer_id",
+      "id, order_number, title, description, status, priority, scheduled_date, created_at, installer_amount, currency, indoor, requires_freight, freight_details, site_id, project_id, company_id, assigned_installer_id, work_order_pricing(amount)",
     )
     .eq("id", id)
     .maybeSingle();
   if (!order) return NextResponse.json({ error: "not_found" }, { status: 404 });
+
+  // Lo que se imprime depende de quién lo baja. El importe comercial (lo que la
+  // empresa cobra al cliente) sólo llega si la RLS de `work_order_pricing` deja
+  // verlo —hoy, el gerente—; al instalador nunca le llega. Si no lo hay y quien
+  // baja el PDF es del plantel, se imprime SU propia paga: la del responsable
+  // si es el responsable, o la suya propia si es un ayudante (bloque 5) — nunca
+  // la de otro integrante del mismo equipo.
+  const commercialAmount = embeddedOrderAmount(order);
+  let installerPay: number | null = null;
+  if (commercialAmount === null) {
+    if (order.assigned_installer_id === user.id) {
+      installerPay = order.installer_amount !== null ? Number(order.installer_amount) : null;
+    } else {
+      const { data: teamMember } = await supabase
+        .from("work_order_team_members")
+        .select("installer_amount")
+        .eq("order_id", id)
+        .eq("installer_id", user.id)
+        .eq("status", "active")
+        .maybeSingle();
+      installerPay = teamMember?.installer_amount !== undefined && teamMember?.installer_amount !== null
+        ? Number(teamMember.installer_amount)
+        : null;
+    }
+  }
+  const pdfAmount: { value: number; isInstallerPay: boolean } | null =
+    order.currency && commercialAmount !== null
+      ? { value: commercialAmount, isInstallerPay: false }
+      : order.currency && installerPay !== null
+        ? { value: installerPay, isInstallerPay: true }
+        : null;
 
   const [t, statusT, createOrderT, locationT, format] = await Promise.all([
     getTranslations("OrderPdf"),
@@ -143,13 +175,8 @@ export async function GET(
         })
       : null,
     createdAt: day(order.created_at),
-    amount:
-      order.amount !== null && order.currency
-        ? format.number(Number(order.amount), {
-            style: "currency",
-            currency: order.currency,
-          })
-        : null,
+    amount: pdfAmount === null ? null : format.number(pdfAmount.value, { style: "currency", currency: order.currency }),
+    amountIsInstallerPay: pdfAmount?.isInstallerPay ?? false,
     indoor: order.indoor,
     requiresFreight: order.requires_freight,
     freightDetails: order.freight_details ?? "",

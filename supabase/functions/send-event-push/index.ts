@@ -107,7 +107,11 @@ Deno.serve(async (request) => {
     if (eventInput.event === "order_assigned") {
       if (caller.role !== "company_manager" || !caller.company_id) return false;
       const { data } = await admin.from("work_orders").select("id, assigned_installer_id").eq("id", eventInput.resourceId).eq("company_id", caller.company_id).maybeSingle();
-      return Boolean(data && (!eventInput.subjectId || data.assigned_installer_id === eventInput.subjectId));
+      if (!data) return false;
+      if (!eventInput.subjectId || data.assigned_installer_id === eventInput.subjectId) return true;
+      // Bloque 5: un ayudante activo del plantel también puede ser el destinatario.
+      const { data: helper } = await admin.from("work_order_team_members").select("id").eq("order_id", eventInput.resourceId).eq("installer_id", eventInput.subjectId).eq("status", "active").maybeSingle();
+      return Boolean(helper);
     }
     if (eventInput.event === "update_received" || eventInput.event === "blocker_reported") {
       // Un avance o un bloqueo los origina el instalador asignado a la orden.

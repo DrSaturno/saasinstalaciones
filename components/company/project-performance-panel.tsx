@@ -7,6 +7,7 @@ import {
 import { getFormatter, getTranslations } from "next-intl/server";
 import type { ProjectPerformance } from "@/lib/domain/project-performance";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { OrderCompletionPie } from "@/components/company/order-completion-pie";
 
 /**
  * Cómo le fue al proyecto en plata.
@@ -58,6 +59,12 @@ export async function ProjectPerformancePanel({
             </p>
             <p className="mt-1 text-xs text-muted-foreground">{t("installerCost")}</p>
           </div>
+          {performance.otherCosts > 0 ? (
+            <div>
+              <p className="font-mono text-xl font-semibold">{money(performance.otherCosts)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t("otherCosts")}</p>
+            </div>
+          ) : null}
           {performance.costMissing ? null : (
             <div className="flex items-end justify-between gap-4 rounded-xl border bg-muted/30 p-4 sm:col-span-2 lg:col-span-1">
               <div>
@@ -95,6 +102,16 @@ export async function ProjectPerformancePanel({
               style={{ width: `${Math.min(100, performance.budgetUsedPct ?? 0)}%` }}
             />
           </div>
+        </div>
+
+        <div className="border-t pt-4">
+          <p className="mb-3 text-xs font-medium text-muted-foreground">{t("completionTitle")}</p>
+          <OrderCompletionPie
+            done={performance.orders.done}
+            total={performance.orders.total}
+            doneLabel={t("ordersDone")}
+            openLabel={t("ordersOpen")}
+          />
         </div>
 
         {!performance.costMissing && performance.committedCost > performance.installerCost ? (

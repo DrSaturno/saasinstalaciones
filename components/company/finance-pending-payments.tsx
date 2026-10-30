@@ -7,6 +7,7 @@ import { HandCoins } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { setOrderPaymentStatus } from "@/lib/actions/orders/payment";
+import { setTeamMemberPaymentStatus } from "@/lib/actions/orders/team";
 import type { FinancialOverview } from "@/lib/domain/finance";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,9 +33,12 @@ export function FinancePendingPayments({
   const money = (value: number, currency: string) =>
     format.number(value, { style: "currency", currency, maximumFractionDigits: 0 });
 
-  const markPaid = (orderId: string, orderNumber: string) => {
+  const markPaid = (row: FinancialOverview["pendingPayments"][number]) => {
+    const { orderId, orderNumber, memberInstallerId } = row;
     startTransition(async () => {
-      const res = await setOrderPaymentStatus({ orderId, status: "paid" });
+      const res = memberInstallerId
+        ? await setTeamMemberPaymentStatus({ orderId, installerId: memberInstallerId, status: "paid" })
+        : await setOrderPaymentStatus({ orderId, status: "paid" });
       if (res.error) {
         toast.error(res.error);
         return;
@@ -83,7 +87,7 @@ export function FinancePendingPayments({
             </thead>
             <tbody className="divide-y">
               {rows.map((row) => (
-                <tr key={row.orderId} className="hover:bg-muted/30">
+                <tr key={`${row.orderId}:${row.memberInstallerId ?? "lead"}`} className="hover:bg-muted/30">
                   <td className="px-4 py-3">
                     <Link className="font-mono text-xs font-medium hover:text-primary" href={`/orders/${row.orderId}`}>
                       {row.orderNumber}
@@ -102,7 +106,7 @@ export function FinancePendingPayments({
                       size="sm"
                       variant="outline"
                       disabled={pending}
-                      onClick={() => markPaid(row.orderId, row.orderNumber)}
+                      onClick={() => markPaid(row)}
                     >
                       {t("markPaid")}
                     </Button>

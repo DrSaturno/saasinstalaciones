@@ -15,12 +15,25 @@ import type { BillingMode, OrderCurrency, OrderStatus, PaymentStatus, ProjectSta
  * decidir afuera: el fetcher ya no puede descartar borradores en la consulta
  * sin esconder plata que se debe. Lo decide esta función, sección por sección.
  */
-export type FinanceProjectInput = { id: string; name: string; status: ProjectStatus; billingMode: BillingMode; contractAmount: number | null; currency: OrderCurrency };
-export type FinanceOrderInput = { id: string; orderNumber: string; title: string; projectId: string; siteId: string; status: OrderStatus; amount: number | null; installerAmount: number | null; paymentStatus: PaymentStatus; currency: OrderCurrency; installerId: string | null; finalizedAt: string | null; scheduledDate: string | null };
+export type FinanceProjectInput = {
+  id: string;
+  name: string;
+  status: ProjectStatus;
+  billingMode: BillingMode;
+  contractAmount: number | null;
+  currency: OrderCurrency;
+  /** Gastos manuales ya cargados (bloque 6). Default 0 en el fetcher. */
+  otherCosts?: number;
+};
+/** Un ayudante activo de la orden (bloque 5), con su propio monto y su propio cobro. */
+export type FinanceTeamMember = { installerId: string; amount: number | null; paymentStatus: PaymentStatus };
+export type FinanceOrderInput = { id: string; orderNumber: string; title: string; projectId: string; siteId: string; status: OrderStatus; amount: number | null; installerAmount: number | null; /** Costo de los ayudantes activos (bloque 5), aparte del responsable. Si viene `team`, se deriva de ahí. */ teamCost?: number; /** Ayudantes activos: permite atribuir costo y pagos pendientes a cada persona. */ team?: FinanceTeamMember[]; paymentStatus: PaymentStatus; currency: OrderCurrency; installerId: string | null; finalizedAt: string | null; scheduledDate: string | null };
 export type FinanceBreakdown = { name: string; currency: OrderCurrency; orders: number; contracted: number; completed: number; pending: number; installerCost: number };
 
 /** Una orden terminada que todavía no se le pagó al instalador. */
 export type PendingPaymentRow = {
+  /** Presente cuando la deuda es de un ayudante y no del responsable (bloque 5). */
+  memberInstallerId?: string;
   orderId: string;
   orderNumber: string;
   title: string;
@@ -33,7 +46,16 @@ export type PendingPaymentRow = {
 
 export type FinancialOverview = {
   currencies: { currency: OrderCurrency; contracted: number; completed: number; pending: number; average: number; growth: number | null; installerCost: number; margin: number }[];
-  projects: (FinanceBreakdown & { id: string; mode: BillingMode; progress: number; margin: number })[];
+  projects: (FinanceBreakdown & {
+    id: string;
+    mode: BillingMode;
+    progress: number;
+    margin: number;
+    /** Gastos manuales del proyecto (bloque 6). */
+    otherCosts: number;
+    /** `finalizadas ÷ (total − canceladas)`, para la torta de avance. */
+    completionRate: number;
+  })[];
   zones: FinanceBreakdown[];
   installers: FinanceBreakdown[];
   months: { month: string; currency: OrderCurrency; value: number }[];
@@ -80,6 +102,14 @@ export function buildFinancialOverview(projects: FinanceProjectInput[], orders: 
 
   for (const project of projects) {
     const allProjectOrders = liveOrders.filter((order) => order.projectId === project.id);
+    const otherCosts = project.otherCosts ?? 0;
+    // Sale de TODAS las órdenes vivas del proyecto, no de las del período: el
+    // avance de un proyecto no depende de qué rango de fechas esté mirando
+    // ahora mismo la pantalla de finanzas.
+    const finalizedCount = allProjectOrders.filter((order) => order.status === "finalizada").length;
+    const completionRate = allProjectOrders.length
+      ? Math.round((finalizedCount / allProjectOrders.length) * 100)
+      : 0;
 
     // La deuda con el instalador no caduca con el filtro de período ni depende
     // de en qué estado esté el proyecto: una orden terminada y sin pagar es
@@ -117,6 +147,30 @@ export function buildFinancialOverview(projects: FinanceProjectInput[], orders: 
       pendingTotals.set(project.currency, totals);
     }
 
+    // Cada ayudante cobra por su cuenta: su deuda es suya, no del responsable.
+    for (const order of allProjectOrders) {
+      if (order.status !== "finalizada") continue;
+      for (const member of order.team ?? []) {
+        if (member.paymentStatus !== "pending") continue;
+        const installerCost = Number(member.amount ?? 0);
+        pendingPayments.push({
+          memberInstallerId: member.installerId,
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          title: order.title,
+          projectName: project.name,
+          installerName: context.installerNames.get(member.installerId) ?? "Instalador",
+          installerCost,
+          currency: project.currency,
+          finalizedAt: order.finalizedAt,
+        });
+        const totals = pendingTotals.get(project.currency) ?? { total: 0, orders: 0 };
+        totals.total += installerCost;
+        totals.orders++;
+        pendingTotals.set(project.currency, totals);
+      }
+    }
+
     // Un borrador todavía no es trabajo comprometido, así que no entra en las
     // métricas del período. Su deuda ya quedó contada arriba, que es lo único
     // que se le debe a alguien aunque el proyecto no esté confirmado.
@@ -152,14 +206,26 @@ export function buildFinancialOverview(projects: FinanceProjectInput[], orders: 
     for (const order of projectOrders) {
       const value = project.billingMode === "project" ? share : Number(order.amount ?? 0);
       const realized = order.status === "finalizada" ? value : 0;
-      const installerCost = Number(order.installerAmount ?? 0);
+      // Responsable + ayudantes: es lo que la empresa gasta en gente por esta orden.
+      const teamCost = order.team
+        ? order.team.reduce((sum, member) => sum + Number(member.amount ?? 0), 0)
+        : Number(order.teamCost ?? 0);
+      const installerCost = Number(order.installerAmount ?? 0) + teamCost;
       completed += realized;
       projectInstallerCost += installerCost;
       if (order.status === "finalizada") projectRealizedCost += installerCost;
       const zone = context.siteZones.get(order.siteId) ?? "—";
       addBreakdown(zoneMap, `${project.currency}:${zone}`, zone, project.currency, value, realized, installerCost);
       const installer = order.installerId ? context.installerNames.get(order.installerId) ?? "Instalador" : "Sin asignar";
-      addBreakdown(installerMap, `${project.currency}:${installer}`, installer, project.currency, value, realized, installerCost);
+      // El ingreso de la orden y su costo de responsable van al responsable; cada
+      // ayudante suma la orden y su propio costo, sin ingreso (no hay forma
+      // honesta de repartirlo). Por eso, sumando personas, `orders` puede pasar
+      // el total de órdenes.
+      addBreakdown(installerMap, `${project.currency}:${installer}`, installer, project.currency, value, realized, Number(order.installerAmount ?? 0));
+      for (const member of order.team ?? []) {
+        const helper = context.installerNames.get(member.installerId) ?? "Instalador";
+        addBreakdown(installerMap, `${project.currency}:${helper}`, helper, project.currency, 0, 0, Number(member.amount ?? 0));
+      }
 
       if (realized && order.finalizedAt) {
         const month = order.finalizedAt.slice(0, 7);
@@ -172,7 +238,7 @@ export function buildFinancialOverview(projects: FinanceProjectInput[], orders: 
     currency.contracted += contracted;
     currency.completed += completed;
     currency.installerCost += projectInstallerCost;
-    currency.realizedCost += projectRealizedCost;
+    currency.realizedCost += projectRealizedCost + otherCosts;
     currency.entities += project.billingMode === "project" ? 1 : Math.max(projectOrders.length, 1);
     for (const order of projectOrders.filter((item) => item.status === "finalizada" && item.finalizedAt)) {
       const value = project.billingMode === "project" ? share : Number(order.amount ?? 0);
@@ -187,8 +253,11 @@ export function buildFinancialOverview(projects: FinanceProjectInput[], orders: 
       pending: Math.max(0, contracted - completed),
       progress: contracted ? Math.round((completed / contracted) * 100) : 0,
       installerCost: projectInstallerCost,
-      // Ingreso y costo de lo TERMINADO: los dos lados del mismo momento.
-      margin: completed - projectRealizedCost,
+      otherCosts,
+      completionRate,
+      // Ingreso y costo de lo TERMINADO (instaladores + otros gastos): los dos
+      // lados del mismo momento.
+      margin: completed - projectRealizedCost - otherCosts,
     });
   }
 

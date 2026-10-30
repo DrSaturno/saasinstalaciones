@@ -27,11 +27,12 @@ type ReusableLocation = {
   state: string;
   externalRef: string | null;
   projectName: string;
+  fromClient: string | null;
 };
 
 /**
- * Trae al proyecto actual locaciones que el mismo cliente ya tiene cargadas en
- * proyectos anteriores, para no volver a cargarlas a mano.
+ * Trae al proyecto actual locaciones que la empresa ya tiene cargadas —de este
+ * cliente o de otro—, para no volver a cargarlas a mano.
  */
 export function ReuseSitesDialog({
   projectId,
@@ -184,6 +185,11 @@ export function ReuseSitesDialog({
                         .filter(Boolean)
                         .join(", ")}
                     </p>
+                    {site.fromClient ? (
+                      <p className="text-xs font-medium text-primary">
+                        {t("fromClient", { client: site.fromClient })}
+                      </p>
+                    ) : null}
                     {site.projectName ? (
                       <p className="text-xs text-muted-foreground">
                         {t("fromProject", { project: site.projectName })}

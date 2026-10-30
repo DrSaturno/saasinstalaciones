@@ -15,6 +15,7 @@ function orden(overrides: Partial<OrderRuleContext> = {}): OrderRuleContext {
   return {
     status: "pendiente",
     assignedInstallerId: "inst-1",
+    helperInstallerIds: [],
     acceptedAt: null,
     hasSurvey: false,
     scheduledDate: "2026-08-01",
@@ -185,6 +186,49 @@ describe("regla: nadie aprueba ni reabre su propia entrega (ADR-001)", () => {
 
   it("la empresa, que nunca es la asignada, también puede aprobar", () => {
     expect(orderTransitionBlock(enRevision, "finalizada", GERENTE)).toBeNull();
+  });
+});
+
+describe("regla: bloque 5, un ayudante activo tiene el mismo acceso que el responsable", () => {
+  const AYUDANTE = { id: "helper-1" };
+
+  it("un ayudante puede iniciar el trabajo, no sólo el responsable", () => {
+    const lista = orden({
+      status: "planificada",
+      acceptedAt: "2026-07-28T10:00:00Z",
+      helperInstallerIds: ["helper-1"],
+    });
+    expect(orderTransitionBlock(lista, "en_proceso", AYUDANTE)).toBeNull();
+  });
+
+  it("un ayudante puede mandar la orden a revisión", () => {
+    const enProceso = orden({ status: "en_proceso", helperInstallerIds: ["helper-1"] });
+    expect(orderTransitionBlock(enProceso, "en_revision", AYUDANTE)).toBeNull();
+  });
+
+  it("un ayudante no puede aprobar ni reabrir su propia entrega (ADR-001 alcanza al equipo)", () => {
+    const enRevision = orden({ status: "en_revision", helperInstallerIds: ["helper-1"] });
+    expect(orderTransitionBlock(enRevision, "finalizada", AYUDANTE)).toBe("noSelfApproval");
+    expect(orderTransitionBlock(enRevision, "en_proceso", AYUDANTE)).toBe("noSelfApproval");
+  });
+
+  it("alguien que no está en el plantel (ni responsable ni ayudante) sigue bloqueado", () => {
+    const lista = orden({
+      status: "planificada",
+      acceptedAt: "2026-07-28T10:00:00Z",
+      helperInstallerIds: ["otro-ayudante"],
+    });
+    expect(orderTransitionBlock(lista, "en_proceso", AYUDANTE)).toBe("onlyInstallerStarts");
+  });
+
+  it("sin responsable, tener sólo ayudantes no alcanza para salir de pendiente", () => {
+    expect(
+      orderTransitionBlock(
+        orden({ assignedInstallerId: null, helperInstallerIds: ["helper-1"] }),
+        "planificada",
+        AYUDANTE,
+      ),
+    ).toBe("needsInstaller");
   });
 });
 

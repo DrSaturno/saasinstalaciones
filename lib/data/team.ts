@@ -185,10 +185,14 @@ export async function fetchRoster(
 export async function fetchPendingInvitations(
   supabase: SupabaseClient<Database>,
 ): Promise<PendingInvitation[]> {
+  // Explícito y no sólo por RLS: aunque la política ya oculta las invitaciones
+  // de subcuenta a quien no es dueño, esta lista es la de «equipo» y nunca
+  // debe mezclar una invitación de personal administrativo (SUBCTA-*).
   const { data, error } = await supabase
     .from("invitations")
     .select("id, email, token, created_at, expires_at, status, role")
     .eq("status", "pending")
+    .in("role", ["installer", "coordinator"])
     .order("created_at", { ascending: false });
   throwIfDataError("team.pending_invitations", error);
 
@@ -200,6 +204,6 @@ export async function fetchPendingInvitations(
     createdAt: inv.created_at,
     expiresAt: inv.expires_at,
     expired: new Date(inv.expires_at).getTime() < now,
-    role: inv.role,
+    role: inv.role as "installer" | "coordinator",
   }));
 }

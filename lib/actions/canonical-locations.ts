@@ -15,6 +15,14 @@ const READ_PAGE = 1000;
  * Asocia identidades existentes y crea solamente la proyeccion `sites` que el
  * resto de la app necesita durante el dual-read. La locacion permanente y sus
  * documentos no se copian.
+ *
+ * Una locacion es de la EMPRESA, no de un cliente: puede usarse en proyectos de
+ * cualquier cliente de esa empresa (docs/specs/2026-09-24-locaciones-compartidas).
+ * Lo que la ata a un cliente es el vinculo `client_locations`, que esta funcion
+ * asegura antes de asociarla al proyecto. El vinculo de una locacion con su
+ * cliente de origen ya existe (lo crea la base); para cualquier otro cliente se
+ * crea aca, SIN codigo propio: el codigo del local es del cliente y se le
+ * asigna despues, si lo tiene.
  */
 export async function attachCanonicalLocations(
   supabase: SupabaseClient<Database>,
@@ -28,7 +36,6 @@ export async function attachCanonicalLocations(
   const outOfScope = uniqueLocations.some(
     (location) =>
       location.company_id !== project.company_id ||
-      location.client_id !== project.client_id ||
       location.country !== project.country ||
       !project.zones.includes(location.zone),
   );
@@ -94,6 +101,24 @@ export async function attachCanonicalLocations(
     );
   });
   if (pending.length === 0) return { inserted: 0, siteIds: [], error: null };
+
+  // Vinculo con el cliente del proyecto para las locaciones que vienen de otro
+  // cliente. `ignoreDuplicates`: si ya estaba vinculada (otro proyecto del mismo
+  // cliente), no se toca su codigo.
+  const needLinks = pending.filter((location) => location.client_id !== project.client_id);
+  for (let index = 0; index < needLinks.length; index += WRITE_BATCH) {
+    const { error } = await supabase.from("client_locations").upsert(
+      needLinks.slice(index, index + WRITE_BATCH).map((location) => ({
+        location_id: location.id,
+        company_id: project.company_id,
+        client_id: project.client_id,
+        external_ref: null,
+        created_by: userId,
+      })),
+      { onConflict: "location_id,client_id", ignoreDuplicates: true },
+    );
+    if (error) return { inserted: 0, siteIds: [], error: error.message };
+  }
 
   const missingProjections = pending.filter(
     (location) => !siteIdByLocation.has(location.id),

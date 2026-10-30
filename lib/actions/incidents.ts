@@ -47,7 +47,15 @@ async function requireOperatorForOrder(orderId: string) {
     .single();
   if (!order) throw new Error("access");
 
-  const isAssignedInstaller = order.assigned_installer_id === user.id;
+  // Responsable o ayudante activo del plantel (bloque 5).
+  const { data: helper } = await supabase
+    .from("work_order_team_members")
+    .select("id")
+    .eq("order_id", orderId)
+    .eq("installer_id", user.id)
+    .eq("status", "active")
+    .maybeSingle();
+  const isAssignedInstaller = order.assigned_installer_id === user.id || Boolean(helper);
   const operates =
     (user.role === "company_manager" || isCoordinatorSomewhere(user)) &&
     canOperateCompany(user, order.company_id);

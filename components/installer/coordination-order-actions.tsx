@@ -24,6 +24,7 @@ export function CoordinationOrderActions({
   orderNumber,
   status,
   assignedInstallerId,
+  helperInstallerIds,
   acceptedAt,
   hasSurvey,
   scheduledDate,
@@ -33,6 +34,7 @@ export function CoordinationOrderActions({
   orderNumber: string;
   status: OrderStatus;
   assignedInstallerId: string | null;
+  helperInstallerIds: string[];
   acceptedAt: string | null;
   hasSurvey: boolean;
   scheduledDate: string | null;
@@ -47,6 +49,7 @@ export function CoordinationOrderActions({
   const context = {
     status,
     assignedInstallerId,
+    helperInstallerIds,
     acceptedAt,
     hasSurvey,
     scheduledDate,

@@ -9,7 +9,9 @@ import { hasActiveCompanyRole } from "@/lib/data/company-membership-roles";
 import { isInstallerArea } from "@/lib/auth";
 import { getAuthorizedUser } from "@/lib/auth-authorized";
 import { createClient } from "@/lib/supabase/server";
-import { FIELD, LATITUDE, LONGITUDE } from "@/lib/domain/field-rules";
+import { FIELD } from "@/lib/domain/field-rules";
+import { addressChanged } from "@/lib/domain/geocoding";
+import { geocodingConfigured, locateAddress } from "@/lib/geocoding/google";
 
 type Result = { error: string | null; ok?: boolean; id?: string };
 
@@ -40,8 +42,6 @@ const coverageSchema = z.object({
   // admitía 200 caracteres de dirección y un local, 300.
   baseAddress: z.string().trim().max(FIELD.address.max),
   baseCity: z.string().trim().max(FIELD.city.max),
-  baseLat: z.union([z.literal(""), z.coerce.number().min(LATITUDE.min).max(LATITUDE.max)]).transform((v) => (v === "" ? null : v)),
-  baseLng: z.union([z.literal(""), z.coerce.number().min(LONGITUDE.min).max(LONGITUDE.max)]).transform((v) => (v === "" ? null : v)),
   serviceRadiusKm: z.union([z.literal(""), z.coerce.number().int().min(SERVICE_RADIUS_KM.min).max(SERVICE_RADIUS_KM.max)]).transform((v) => (v === "" ? null : v)),
 });
 
@@ -63,31 +63,52 @@ export async function saveCoverage(
     zones: formData.getAll("zones").map(String),
     baseAddress: formData.get("baseAddress") ?? "",
     baseCity: formData.get("baseCity") ?? "",
-    baseLat: formData.get("baseLat") ?? "",
-    baseLng: formData.get("baseLng") ?? "",
     serviceRadiusKm: formData.get("serviceRadiusKm") ?? "",
   });
   if (!parsed.success) return { error: t("invalidData") };
-  // El radio sin base desde dónde medirlo no filtra nada: se pide el par completo.
-  if (
-    parsed.data.serviceRadiusKm !== null &&
-    (parsed.data.baseLat === null || parsed.data.baseLng === null)
-  ) {
-    return { error: t("coordinatePairRequired") };
-  }
 
   try {
     const user = await getAuthorizedUser();
     if (!user || !isInstallerArea(user)) return { error: t("accessDenied") };
     const supabase = await createClient();
+
+    // La base se ubica sola a partir de la dirección y la ciudad: nadie carga
+    // coordenadas. Sólo se vuelve a preguntar si cambió el lugar; si no, se
+    // conserva la ubicación que ya tenía.
+    const { data: current } = await supabase
+      .from("installers")
+      .select("base_address, base_city, base_lat, base_lng")
+      .eq("id", user.id)
+      .maybeSingle();
+    const baseChanged = addressChanged(
+      { address: current?.base_address, city: current?.base_city },
+      { address: parsed.data.baseAddress, city: parsed.data.baseCity },
+    );
+    const coordinates = baseChanged
+      ? await locateAddress(
+          { address: parsed.data.baseAddress, city: parsed.data.baseCity, country: "AR" },
+          // Para un radio de decenas de kilómetros alcanza el centro de la ciudad.
+          { allowCityOnly: true },
+        )
+      : current?.base_lat != null && current.base_lng != null
+        ? { lat: current.base_lat, lng: current.base_lng }
+        : null;
+
+    // Un radio sin base ubicada no filtra nada: se avisa en vez de guardarlo mudo.
+    if (parsed.data.serviceRadiusKm !== null && !coordinates) {
+      return {
+        error: geocodingConfigured() ? t("baseNotLocated") : t("locationUnavailable"),
+      };
+    }
+
     const { error } = await supabase
       .from("installers")
       .update({
         zones: parsed.data.zones,
         base_address: parsed.data.baseAddress || null,
         base_city: parsed.data.baseCity || null,
-        base_lat: parsed.data.baseLat,
-        base_lng: parsed.data.baseLng,
+        base_lat: coordinates?.lat ?? null,
+        base_lng: coordinates?.lng ?? null,
         service_radius_km: parsed.data.serviceRadiusKm,
       })
       .eq("id", user.id);

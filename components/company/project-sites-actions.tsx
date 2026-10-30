@@ -2,6 +2,7 @@ import { MapPinned } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { CreateOrdersDialog } from "@/components/company/create-orders-dialog";
 import type { BatchSite } from "@/components/company/order-batch-site-picker";
+import { CompleteLocationsButton } from "@/components/company/complete-locations-button";
 import { CreateSiteDialog } from "@/components/company/create-site-dialog";
 import { ImportSitesDialog } from "@/components/company/import-sites-dialog";
 import { OrderFormSection } from "@/components/company/order-form-section";
@@ -30,6 +31,7 @@ export async function ProjectSitesActions({
   currency,
   canManageFinance,
   perInstallation,
+  unlocatedCount = 0,
 }: {
   projectId: string;
   country: Country;
@@ -42,6 +44,8 @@ export async function ProjectSitesActions({
   currency: OrderCurrency;
   canManageFinance: boolean;
   perInstallation: boolean;
+  /** Locales con dirección y sin ubicación en el mapa. 0 oculta el aviso. */
+  unlocatedCount?: number;
 }) {
   const t = await getTranslations("SitesActions");
 
@@ -84,6 +88,8 @@ export async function ProjectSitesActions({
               ) : null}
             </div>
           </div>
+
+          <CompleteLocationsButton projectId={projectId} missing={unlocatedCount} />
         </OrderFormSection>
 
         <OrderFormSection number="02" title={t("ordersTitle")} description={t("ordersDescription")}>

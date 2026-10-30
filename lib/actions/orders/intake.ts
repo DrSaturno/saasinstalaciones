@@ -19,6 +19,7 @@ import {
   assignmentGateErrorMessage,
 } from "./assignment-gate";
 import { syncOrderConditions } from "./conditions";
+import { setOrderAmount } from "./pricing";
 import { syncActivitySchedule } from "./schedule";
 import { operatedCompany, requireOperator } from "./context";
 import type {
@@ -52,6 +53,7 @@ export async function createOrder(
     scheduledStartTime: formData.get("scheduledStartTime") ?? "",
     scheduledEndTime: formData.get("scheduledEndTime") ?? "",
     estimatedDurationMinutes: formData.get("estimatedDurationMinutes") ?? "",
+    requiredInstallers: formData.get("requiredInstallers") ?? "",
     freightDetails: formData.get("freightDetails") ?? "",
     logisticsNotes: formData.get("logisticsNotes") ?? "",
     amount: formData.get("amount") ?? "",
@@ -115,11 +117,9 @@ export async function createOrder(
         requires_freight: parsed.data.requiresFreight,
         freight_details: parsed.data.freightDetails,
         logistics_notes: parsed.data.logisticsNotes,
-        amount:
-          user.role === "company_manager" &&
-          project.billing_mode === "per_installation"
-            ? parsed.data.amount
-            : null,
+        required_installers: parsed.data.requiredInstallers ?? 1,
+        // El importe comercial no va acá: vive en `work_order_pricing`, que el
+        // instalador no puede leer. Se guarda más abajo, con la orden creada.
         // El costo del instalador NO depende de la modalidad de cobro: aunque
         // al cliente se le facture el proyecto entero, a cada instalador se le
         // paga por orden. Sí queda reservado al gerente, igual que el ingreso.
@@ -135,6 +135,21 @@ export async function createOrder(
       .select("id, order_number")
       .single();
     if (error || !order) return { error: error?.message ?? t("unexpected") };
+
+    // El importe es potestad del gerente y sólo con cobro por instalación.
+    if (
+      user.role === "company_manager" &&
+      project.billing_mode === "per_installation" &&
+      parsed.data.amount !== null
+    ) {
+      const pricingError = await setOrderAmount(supabase, {
+        orderId: order.id,
+        companyId,
+        amount: parsed.data.amount,
+        userId: user.id,
+      });
+      if (pricingError) return { error: pricingError };
+    }
 
     // Las actividades de la orden. Se crean acá y no por trigger porque el
     // tipo es una decisión de quien la carga, no algo derivable de la fila.
@@ -232,6 +247,7 @@ export async function updateOrder(
     scheduledStartTime: formData.get("scheduledStartTime") ?? "",
     scheduledEndTime: formData.get("scheduledEndTime") ?? "",
     estimatedDurationMinutes: formData.get("estimatedDurationMinutes") ?? "",
+    requiredInstallers: formData.get("requiredInstallers") ?? "",
     freightDetails: formData.get("freightDetails") ?? "",
     logisticsNotes: formData.get("logisticsNotes") ?? "",
     amount: formData.get("amount") ?? "",
@@ -291,10 +307,8 @@ export async function updateOrder(
         requires_freight: parsed.data.requiresFreight,
         freight_details: parsed.data.freightDetails,
         logistics_notes: parsed.data.logisticsNotes,
-        // El importe sigue siendo potestad del gerente y sólo con cobro por
-        // instalación; un coordinador no puede tocarlo.
-        ...(user.role === "company_manager" && project.billing_mode === "per_installation"
-          ? { amount: parsed.data.amount }
+        ...(parsed.data.requiredInstallers !== null
+          ? { required_installers: parsed.data.requiredInstallers }
           : {}),
         ...(user.role === "company_manager"
           ? { installer_amount: parsed.data.installerAmount }
@@ -304,6 +318,19 @@ export async function updateOrder(
       .eq("id", orderId)
       .eq("company_id", companyId);
     if (error) return { error: error.message };
+
+    // El importe sigue siendo potestad del gerente y sólo con cobro por
+    // instalación; un coordinador no puede tocarlo (y la RLS de
+    // `work_order_pricing` tampoco se lo permitiría).
+    if (user.role === "company_manager" && project.billing_mode === "per_installation") {
+      const pricingError = await setOrderAmount(supabase, {
+        orderId,
+        companyId,
+        amount: parsed.data.amount,
+        userId: user.id,
+      });
+      if (pricingError) return { error: pricingError };
+    }
 
     await syncOrderConditions(
       supabase,

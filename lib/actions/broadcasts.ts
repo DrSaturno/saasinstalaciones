@@ -20,6 +20,7 @@ import { requestPushDelivery } from "@/lib/push/events";
 import { firstFieldProblem } from "@/lib/domain/field-errors";
 import { invalidFieldMessage } from "@/lib/field-error-message";
 import { logEvent } from "@/lib/observability";
+import { locateAddress } from "@/lib/geocoding/google";
 import { createClient } from "@/lib/supabase/server";
 import type { OrderCurrency } from "@/types/database";
 
@@ -101,8 +102,7 @@ async function createBroadcastFieldError(error: z.ZodError): Promise<string> {
     requirements: f("requirements"),
     logisticsNotes: f("logistics"),
     payAmount: f("payAmount"),
-    lat: f("latitude"),
-    lng: f("longitude"),
+    address: f("address"),
   });
 }
 
@@ -141,8 +141,7 @@ export async function createBroadcast(
     logisticsNotes: formData.get("logisticsNotes") ?? "",
     payVisible: formData.get("payVisible") === "on",
     payAmount: formData.get("payAmount") ?? "",
-    lat: formData.get("lat") ?? "",
-    lng: formData.get("lng") ?? "",
+    address: formData.get("address") ?? "",
   });
   if (!parsed.success) {
     return { error: await createBroadcastFieldError(parsed.error) };
@@ -187,6 +186,14 @@ export async function createBroadcast(
       currency = country === "BR" ? "BRL" : "ARS";
     }
 
+    // La ubicación del trabajo sale de la dirección aproximada, si la hay. Nadie
+    // carga coordenadas; y si no se puede ubicar, se publica igual, por provincia.
+    const coordinates = await locateAddress({
+      address: parsed.data.address,
+      state: parsed.data.zone,
+      country: currency === "BRL" ? "BR" : "AR",
+    });
+
     const { data: broadcast, error } = await supabase
       .from("broadcasts")
       .insert({
@@ -207,9 +214,9 @@ export async function createBroadcast(
             ? parsed.data.payAmount
             : null,
         currency,
-        // Con coordenadas, el matching afina por radio; sin ellas, sólo provincia.
-        lat: parsed.data.lat,
-        lng: parsed.data.lng,
+        // Con ubicación, el matching afina por radio; sin ella, sólo provincia.
+        lat: coordinates?.lat ?? null,
+        lng: coordinates?.lng ?? null,
       })
       .select("id")
       .single();

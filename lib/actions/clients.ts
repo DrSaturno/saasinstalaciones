@@ -26,7 +26,12 @@ async function clientFieldError(error: z.ZodError): Promise<string> {
   });
 }
 
-export type ClientActionState = { error: string | null; ok?: boolean };
+export type ClientActionState = {
+  error: string | null;
+  ok?: boolean;
+  /** El cliente guardado: quien lo creó desde otro formulario lo necesita para elegirlo. */
+  client?: { id: string; name: string };
+};
 
 export async function saveClient(
   clientId: string | null,
@@ -78,10 +83,14 @@ export async function saveClient(
         .update(values)
         .eq("id", clientId)
         .eq("company_id", user.companyId)
-    : await supabase.from("clients").insert(values);
-  if (result.error) return { error: result.error.message };
+        .select("id, name")
+        .maybeSingle()
+    : await supabase.from("clients").insert(values).select("id, name").maybeSingle();
+  if (result.error || !result.data) {
+    return { error: result.error?.message ?? t("unexpected") };
+  }
   revalidatePath("/clients");
   revalidatePath("/projects");
   if (clientId) revalidatePath(`/clients/${clientId}`);
-  return { error: null, ok: true };
+  return { error: null, ok: true, client: { id: result.data.id, name: result.data.name } };
 }

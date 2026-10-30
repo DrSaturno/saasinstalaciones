@@ -76,6 +76,13 @@ export default async function CoordinationOrderPage({
       : Promise.resolve({ data: null }),
   ]);
 
+  const { data: helperRows } = await supabase
+    .from("work_order_team_members")
+    .select("installer_id")
+    .eq("order_id", id)
+    .eq("status", "active");
+  const helperInstallerIds = (helperRows ?? []).map((row) => row.installer_id);
+
   const hasSurvey = (updates ?? []).some((update) => update.type === "survey");
   const maps = site
     ? googleMapsHref({
@@ -180,6 +187,7 @@ export default async function CoordinationOrderPage({
             orderNumber={order.order_number}
             status={order.status}
             assignedInstallerId={order.assigned_installer_id}
+            helperInstallerIds={helperInstallerIds}
             acceptedAt={order.installer_accepted_at}
             hasSurvey={hasSurvey}
             scheduledDate={order.scheduled_date}

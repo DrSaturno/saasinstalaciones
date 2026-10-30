@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { embeddedOrderAmount, embeddedProjectContractAmount, ORDER_PRICING_SELECT, PROJECT_PRICING_SELECT, type OrderPricingEmbed, type ProjectPricingEmbed } from "@/lib/data/pricing";
 import { isInstallerAvailableAt } from "@/lib/domain/availability";
 import { buildFinancialOverview } from "@/lib/domain/finance";
 import { activeMembershipRoles } from "@/lib/domain/membership-roles";
@@ -30,24 +31,24 @@ import type {
 const PAGE = 1000;
 const DAY = 86_400_000;
 
-type Project = {
+type Project = ProjectPricingEmbed & {
   id: string; company_id: string; name: string; client_name: string;
   planned_installations: number; country: Country; status: ProjectStatus;
   starts_at: string | null; ends_at: string | null; billing_mode: BillingMode;
-  contract_amount: number | null; currency: OrderCurrency; coordinator_id: string | null;
+  currency: OrderCurrency; coordinator_id: string | null;
 };
 type Site = {
   id: string; project_id: string; name: string; address: string; zone: string;
   city: string; lat: number | null; lng: number | null; status: string;
   archived_at: string | null;
 };
-type Order = {
+type Order = OrderPricingEmbed & {
   id: string; project_id: string; site_id: string; order_number: string;
   title: string; status: OrderStatus; scheduled_date: string | null;
   scheduled_end_date: string | null; finalized_at: string | null;
   assigned_installer_id: string | null; assigned_at: string | null;
   original_scheduled_date: string | null; reschedule_count: number;
-  visit_count: number; amount: number | null; currency: OrderCurrency;
+  visit_count: number; currency: OrderCurrency;
   installer_amount: number | null; payment_status: PaymentStatus;
   created_at: string;
 };
@@ -119,9 +120,9 @@ async function fetchPaged<T>(fetchPage: (from: number, to: number) => Promise<{ 
 
 export async function fetchDashboardOverview(supabase: SupabaseClient<Database>, country: Country): Promise<DashboardOverview> {
   const [projects, sites, orders, incidents, rosterResult, roleResult] = await Promise.all([
-    fetchPaged<Project>(async (from, to) => supabase.from("projects").select("id, company_id, name, client_name, planned_installations, country, status, starts_at, ends_at, billing_mode, contract_amount, currency, coordinator_id").in("status", ["active", "paused"]).range(from, to).overrideTypes<Project[]>()),
+    fetchPaged<Project>(async (from, to) => supabase.from("projects").select(`id, company_id, name, client_name, planned_installations, country, status, starts_at, ends_at, billing_mode, currency, coordinator_id, ${PROJECT_PRICING_SELECT}`).in("status", ["active", "paused"]).range(from, to).overrideTypes<Project[]>()),
     fetchPaged<Site>(async (from, to) => supabase.from("sites").select("id, project_id, name, address, zone, city, lat, lng, status, archived_at").is("archived_at", null).range(from, to).overrideTypes<Site[]>()),
-    fetchPaged<Order>(async (from, to) => supabase.from("work_orders").select("id, project_id, site_id, order_number, title, status, scheduled_date, scheduled_end_date, finalized_at, assigned_installer_id, assigned_at, original_scheduled_date, reschedule_count, visit_count, amount, currency, installer_amount, payment_status, created_at").range(from, to).overrideTypes<Order[]>()),
+    fetchPaged<Order>(async (from, to) => supabase.from("work_orders").select(`id, project_id, site_id, order_number, title, status, scheduled_date, scheduled_end_date, finalized_at, assigned_installer_id, assigned_at, original_scheduled_date, reschedule_count, visit_count, currency, installer_amount, payment_status, created_at, ${ORDER_PRICING_SELECT}`).range(from, to).overrideTypes<Order[]>()),
     fetchPaged<Incident>(async (from, to) => supabase.from("order_incidents").select("id, order_id, category, severity, description, requires_revisit, status, created_at").range(from, to).overrideTypes<Incident[]>()),
     supabase.from("company_installers").select("company_id, installer_id").eq("status", "active"),
     supabase.from("company_membership_roles").select("company_id, user_id, role"),
@@ -260,8 +261,8 @@ export async function fetchDashboardOverview(supabase: SupabaseClient<Database>,
   const completionChange = previousCompletions ? Math.round(((currentCompletions - previousCompletions) / previousCompletions) * 100) : currentCompletions ? null : 0;
 
   const finance = buildFinancialOverview(
-    projects.map((item) => ({ id: item.id, name: item.name, status: item.status, billingMode: item.billing_mode, contractAmount: item.contract_amount, currency: item.currency })),
-    relevantOrders.map((item) => ({ id: item.id, orderNumber: item.order_number, title: item.title, projectId: item.project_id, siteId: item.site_id, status: item.status, amount: item.amount, installerAmount: item.installer_amount, paymentStatus: item.payment_status, currency: item.currency, installerId: item.assigned_installer_id, finalizedAt: item.finalized_at, scheduledDate: item.scheduled_date })),
+    projects.map((item) => ({ id: item.id, name: item.name, status: item.status, billingMode: item.billing_mode, contractAmount: embeddedProjectContractAmount(item), currency: item.currency })),
+    relevantOrders.map((item) => ({ id: item.id, orderNumber: item.order_number, title: item.title, projectId: item.project_id, siteId: item.site_id, status: item.status, amount: embeddedOrderAmount(item), installerAmount: item.installer_amount, paymentStatus: item.payment_status, currency: item.currency, installerId: item.assigned_installer_id, finalizedAt: item.finalized_at, scheduledDate: item.scheduled_date })),
     { siteZones: new Map(activeSites.map((site) => [site.id, site.zone])), installerNames: profileNames },
   );
   const daysElapsed = Number(today.slice(8, 10));

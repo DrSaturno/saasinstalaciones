@@ -198,3 +198,51 @@ describe("el margen compara cosas del mismo momento", () => {
     expect(result.projects[0].installerCost).toBe(1200);
   });
 });
+
+describe("equipo de la orden (ayudantes)", () => {
+  const proyecto = { id: "p", name: "Proyecto", status: "active" as const, billingMode: "per_installation" as const, contractAmount: null, currency: "ARS" as const };
+  const contexto = { siteZones: new Map(), installerNames: new Map([["lead", "Lía"], ["h1", "Hugo"], ["h2", "Hana"]]), now: new Date("2026-07-21T12:00:00Z") };
+  const orden = {
+    id: "1", orderNumber: "OT-1", title: "Con equipo", projectId: "p", siteId: "a", status: "finalizada" as const,
+    amount: 1000, installerAmount: 300, paymentStatus: "paid" as const, currency: "ARS" as const, installerId: "lead",
+    finalizedAt: "2026-07-10T12:00:00Z", scheduledDate: "2026-07-10",
+    team: [
+      { installerId: "h1", amount: 100, paymentStatus: "pending" as const },
+      { installerId: "h2", amount: 50, paymentStatus: "paid" as const },
+    ],
+  };
+
+  it("el costo de la orden suma responsable y ayudantes, y el margen lo descuenta", () => {
+    const result = buildFinancialOverview([proyecto], [orden], contexto);
+    expect(result.projects[0]).toMatchObject({ installerCost: 450, margin: 550 });
+  });
+
+  it("cada persona figura con SU costo; el ingreso va sólo al responsable", () => {
+    const result = buildFinancialOverview([proyecto], [orden], contexto);
+    const by = Object.fromEntries(result.installers.map((row) => [row.name, row]));
+    expect(by["Lía"]).toMatchObject({ completed: 1000, installerCost: 300 });
+    expect(by["Hugo"]).toMatchObject({ completed: 0, installerCost: 100 });
+    expect(by["Hana"]).toMatchObject({ completed: 0, installerCost: 50 });
+  });
+
+  it("la deuda de un ayudante sin cobrar aparece aparte, a su nombre y con su monto", () => {
+    const result = buildFinancialOverview([proyecto], [orden], contexto);
+    // El responsable ya cobró (`paid`), Hana también: sólo Hugo está pendiente.
+    expect(result.pendingPayments).toHaveLength(1);
+    expect(result.pendingPayments[0]).toMatchObject({ installerName: "Hugo", installerCost: 100, memberInstallerId: "h1" });
+    expect(result.pendingPaymentTotals).toEqual([{ currency: "ARS", total: 100, orders: 1 }]);
+  });
+
+  it("si el responsable también está sin cobrar, son dos filas distintas de la misma orden", () => {
+    const result = buildFinancialOverview([proyecto], [{ ...orden, paymentStatus: "pending" }], contexto);
+    expect(result.pendingPayments.map((row) => [row.installerName, row.memberInstallerId ?? "lead"])).toEqual(
+      expect.arrayContaining([["Lía", "lead"], ["Hugo", "h1"]]),
+    );
+    expect(result.pendingPaymentTotals[0].total).toBe(400);
+  });
+
+  it("los ayudantes de una orden sin terminar todavía no deben nada", () => {
+    const result = buildFinancialOverview([proyecto], [{ ...orden, status: "en_proceso", finalizedAt: null }], contexto);
+    expect(result.pendingPayments).toHaveLength(0);
+  });
+});

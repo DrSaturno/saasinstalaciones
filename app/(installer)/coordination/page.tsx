@@ -36,7 +36,7 @@ export default async function CoordinationPage() {
     ? await supabase
         .from("work_orders")
         .select(
-          "id, order_number, title, status, scheduled_date, assigned_installer_id, project_id, installer_accepted_at",
+          "id, order_number, title, status, scheduled_date, assigned_installer_id, project_id, installer_accepted_at, work_order_team_members(installer_id, status)",
         )
         .in("project_id", projectIds)
         .order("scheduled_date", { ascending: true, nullsFirst: false })
@@ -111,6 +111,9 @@ export default async function CoordinationPage() {
             installerName: order.assigned_installer_id
               ? (installerName.get(order.assigned_installer_id) ?? "")
               : "",
+            helperInstallerIds: (order.work_order_team_members ?? [])
+              .filter((member) => member.status === "active")
+              .map((member) => member.installer_id),
             acceptedAt: order.installer_accepted_at,
             hasSurvey: withSurvey.has(order.id),
           }))}

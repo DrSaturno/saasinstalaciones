@@ -65,6 +65,17 @@ describe("invitación abierta con una cuenta que no puede aceptarla", () => {
     expect(toastSuccess).not.toHaveBeenCalled();
   });
 
+  it("en una invitación de subcuenta habla de la persona invitada, no del instalador", () => {
+    render(
+      <NextIntlClientProvider locale="es-AR" messages={messages}>
+        <WrongAccountActions token={TOKEN} audience="staff" />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByRole("button", { name: "Copiar link para la persona invitada" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cerrar sesión y crear la cuenta" })).toBeTruthy();
+    expect(screen.queryByText(/instalador/)).toBeNull();
+  });
+
   it("cerrar sesión llama a la acción con el token de esta invitación", async () => {
     renderActions();
     fireEvent.click(

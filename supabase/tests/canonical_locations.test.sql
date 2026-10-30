@@ -315,8 +315,8 @@ select throws_ok(
     )
   $test$,
   'P0001',
-  'La locación canónica no pertenece al tenant y cliente del proyecto',
-  'sites rechaza una locación de otro cliente aun dentro del mismo tenant'
+  'La locación canónica no está vinculada al cliente del proyecto',
+  'sites rechaza una locación NO vinculada al cliente del proyecto, aun dentro del mismo tenant'
 );
 
 -- ---------------------------------------------------------------------------

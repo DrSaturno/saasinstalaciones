@@ -5,7 +5,9 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { attachCanonicalLocations } from "@/lib/actions/canonical-locations";
 import { getAuthorizedUser } from "@/lib/auth-authorized";
+import { addressChanged } from "@/lib/domain/geocoding";
 import { siteInputSchema } from "@/lib/domain/sites";
+import { locateAddress } from "@/lib/geocoding/google";
 import { invalidFieldMessage } from "@/lib/field-error-message";
 import { logEvent } from "@/lib/observability";
 import { createClient } from "@/lib/supabase/server";
@@ -37,8 +39,6 @@ function parseSiteForm(formData: FormData) {
     city: formData.get("city") ?? "",
     state: formData.get("state") ?? "",
     zone: formData.get("zone"),
-    lat: formData.get("lat") ?? "",
-    lng: formData.get("lng") ?? "",
     contactName: formData.get("contactName") ?? "",
     contactPhone: formData.get("contactPhone") ?? "",
     contactEmail: formData.get("contactEmail") ?? "",
@@ -64,8 +64,6 @@ async function siteFieldError(error: z.ZodError): Promise<string> {
     address: f("address"),
     city: f("city"),
     zone: f("province"),
-    lat: f("latitude"),
-    lng: f("longitude"),
     contactName: f("contactName"),
     contactPhone: f("phone"),
     contactEmail: f("email"),
@@ -116,6 +114,16 @@ export async function createSite(
     const project = await validateProjectZone(projectId, companyId, parsed.data.zone);
     if (!project?.client_id) return { error: t("invalidData") };
 
+    // La ubicación sale de la dirección; nadie carga coordenadas. Si no se
+    // puede ubicar (sin clave, dirección que Google no encuentra) el local se
+    // guarda igual, sin ubicación.
+    const coordinates = await locateAddress({
+      address: parsed.data.address,
+      city: parsed.data.city,
+      state: parsed.data.state || parsed.data.zone,
+      country: project.country,
+    });
+
     const locationId = crypto.randomUUID();
     const { data: location, error } = await supabase
       .from("locations")
@@ -130,8 +138,8 @@ export async function createSite(
         state: parsed.data.state || parsed.data.zone,
         zone: parsed.data.zone,
         country: project.country,
-        lat: parsed.data.lat,
-        lng: parsed.data.lng,
+        lat: coordinates?.lat ?? null,
+        lng: coordinates?.lng ?? null,
         contact_name: parsed.data.contactName,
         contact_phone: parsed.data.contactPhone,
         contact_email: parsed.data.contactEmail,
@@ -197,12 +205,34 @@ export async function updateSite(
     if (!project) return { error: t("invalidData") };
     const { data: current } = await supabase
       .from("sites")
-      .select("id, location_id")
+      .select("id, location_id, address, city, state, zone, lat, lng")
       .eq("id", siteId)
       .eq("project_id", projectId)
       .eq("company_id", companyId)
       .single();
     if (!current) return { error: t("siteNotFound") };
+
+    // Sólo se vuelve a preguntar a Google si cambió el lugar. Editar un
+    // teléfono no cuesta una consulta ni mueve el pin. Si cambió y la nueva
+    // dirección no se puede ubicar, se descarta la ubicación vieja: un punto
+    // que ya no corresponde es peor que ninguno.
+    const nextState = parsed.data.state || parsed.data.zone;
+    const placeChanged = addressChanged(current, {
+      address: parsed.data.address,
+      city: parsed.data.city,
+      state: nextState,
+      zone: parsed.data.zone,
+    });
+    const coordinates = placeChanged
+      ? await locateAddress({
+          address: parsed.data.address,
+          city: parsed.data.city,
+          state: nextState,
+          country: project.country,
+        })
+      : current.lat !== null && current.lng !== null
+        ? { lat: current.lat, lng: current.lng }
+        : null;
 
     const identity = {
       name: parsed.data.name,
@@ -211,8 +241,8 @@ export async function updateSite(
       city: parsed.data.city,
       state: parsed.data.state || parsed.data.zone,
       zone: parsed.data.zone,
-      lat: parsed.data.lat,
-      lng: parsed.data.lng,
+      lat: coordinates?.lat ?? null,
+      lng: coordinates?.lng ?? null,
       contact_name: parsed.data.contactName,
       contact_phone: parsed.data.contactPhone,
       contact_email: parsed.data.contactEmail,
@@ -224,15 +254,39 @@ export async function updateSite(
       permanent_notes: parsed.data.permanentNotes,
     };
     if (current.location_id) {
+      // La ficha (dirección, contacto, notas…) es de la empresa y la ven todos los
+      // clientes que usan la locación. El CÓDIGO del local es del cliente: se guarda
+      // en el vínculo de ESTE cliente y sólo se escribe en la ficha si este cliente
+      // es el de origen (compatibilidad). Editarlo desde el proyecto de un cliente
+      // nunca pisa el código de otro.
+      const clientId = project.client_id;
+      if (!clientId) return { error: t("invalidData") };
+      const { external_ref: ownRef, ...sharedIdentity } = identity;
+      const { data: origin } = await supabase
+        .from("locations")
+        .select("client_id")
+        .eq("id", current.location_id)
+        .maybeSingle();
+      const isOrigin = origin?.client_id === clientId;
+
       const { error: locationError } = await supabase
         .from("locations")
-        .update({ ...identity, updated_by: userId })
+        .update({ ...(isOrigin ? identity : sharedIdentity), updated_by: userId })
         .eq("id", current.location_id)
         .eq("company_id", companyId);
       if (locationError) return { error: t("operation") };
+      const { error: linkError } = await supabase
+        .from("client_locations")
+        .update({ external_ref: ownRef })
+        .eq("location_id", current.location_id)
+        .eq("client_id", clientId)
+        .eq("company_id", companyId);
+      if (linkError) return { error: t("operation") };
+      // El código de cada punto lo fija la base a partir del vínculo de su propio
+      // cliente; acá sólo se propaga la identidad compartida.
       const { error: projectionError } = await supabase
         .from("sites")
-        .update({ ...identity, is_placeholder: false })
+        .update({ ...sharedIdentity, is_placeholder: false })
         .eq("location_id", current.location_id)
         .eq("company_id", companyId);
       if (projectionError) return { error: t("operation") };

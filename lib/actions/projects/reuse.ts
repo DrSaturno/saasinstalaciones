@@ -14,7 +14,12 @@ const LOCATION_FIELDS =
   "id, company_id, client_id, name, address, city, state, zone, country, lat, lng, external_ref, contact_name, contact_phone, contact_email, opening_hours, access_notes, parking_notes, technical_notes, risk_notes, permanent_notes" as const;
 
 /**
- * Identidades permanentes del cliente que todavia no estan en este proyecto.
+ * Identidades permanentes de la EMPRESA que todavia no estan en este proyecto.
+ *
+ * Una locacion es de la empresa: se puede traer al proyecto de un cliente una
+ * que se cargo para otro (docs/specs/2026-09-24-locaciones-compartidas). Las que
+ * ya usa el cliente del proyecto llevan su codigo; las de otros clientes no lo
+ * muestran, porque el codigo es de cada cliente, y indican de que cliente vienen.
  *
  * Ya no deduplica copias de `sites` por nombre/direccion: la identidad es
  * `locations.id` y la asociacion existente es `project_locations`.
@@ -29,6 +34,8 @@ export async function fetchReusableLocations(projectId: string): Promise<{
     state: string;
     externalRef: string | null;
     projectName: string;
+    /** Cliente de origen si la locacion viene de OTRO cliente; `null` si ya es del cliente del proyecto. */
+    fromClient: string | null;
   }[];
 }> {
   const t = await getTranslations("Errors");
@@ -44,21 +51,37 @@ export async function fetchReusableLocations(projectId: string): Promise<{
     if (project.zones.length === 0) return { error: null, locations: [] };
     const clientId = project.client_id;
 
+    // Qué locaciones ya usa el cliente del proyecto (y con qué código propio), y
+    // cómo se llaman los demás clientes, para indicar de dónde viene cada una.
+    const [{ data: ownLinks }, { data: clientNames }] = await Promise.all([
+      supabase
+        .from("client_locations")
+        .select("location_id, external_ref")
+        .eq("company_id", companyId)
+        .eq("client_id", clientId)
+        .limit(20000),
+      supabase.from("clients").select("id, name").eq("company_id", companyId),
+    ]);
+    const ownRefByLocation = new Map(
+      (ownLinks ?? []).map((link) => [link.location_id, link.external_ref]),
+    );
+    const nameByClient = new Map((clientNames ?? []).map((client) => [client.id, client.name]));
+
     const [locationRows, { data: associations }] = await Promise.all([
       (async () => {
         const rows: {
           id: string;
+          client_id: string;
           name: string;
           address: string;
           city: string;
           state: string;
-          external_ref: string | null;
         }[] = [];
         for (let from = 0; ; from += PAGE) {
           const { data, error } = await supabase
             .from("locations")
-            .select("id, name, address, city, state, external_ref")
-            .eq("client_id", clientId)
+            .select("id, client_id, name, address, city, state")
+            .eq("company_id", companyId)
             .eq("country", project.country)
             .in("zone", project.zones)
             .is("archived_at", null)
@@ -129,13 +152,16 @@ export async function fetchReusableLocations(projectId: string): Promise<{
         .filter((location) => !current.has(location.id))
         .map((location) => {
           const previousProjectId = previousProjectByLocation.get(location.id);
+          const ownsIt = ownRefByLocation.has(location.id);
           return {
             id: location.id,
             name: location.name,
             address: location.address,
             city: location.city,
             state: location.state,
-            externalRef: location.external_ref,
+            // El codigo es del cliente: sólo se muestra el del cliente del proyecto.
+            externalRef: ownsIt ? (ownRefByLocation.get(location.id) ?? null) : null,
+            fromClient: ownsIt ? null : (nameByClient.get(location.client_id) ?? null),
             projectName: previousProjectId
               ? (projectName.get(previousProjectId) ?? "")
               : "",
@@ -147,7 +173,10 @@ export async function fetchReusableLocations(projectId: string): Promise<{
   }
 }
 
-/** Asocia las identidades elegidas; no copia la locacion ni sus documentos. */
+/**
+ * Asocia las identidades elegidas; no copia la locacion ni sus documentos. Si vienen de
+ * otro cliente de la empresa, `attachCanonicalLocations` las vincula al cliente del proyecto.
+ */
 export async function reuseLocations(
   projectId: string,
   locationIds: string[],
@@ -177,7 +206,6 @@ export async function reuseLocations(
         .from("locations")
         .select(LOCATION_FIELDS)
         .in("id", ids.data.slice(index, index + ID_BATCH))
-        .eq("client_id", project.client_id)
         .eq("company_id", companyId)
         .eq("country", project.country)
         .in("zone", project.zones)

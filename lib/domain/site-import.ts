@@ -2,7 +2,6 @@ import { z } from "zod";
 import { normalizeHeader } from "@/lib/csv";
 import { normalizeLocationExternalRef } from "@/lib/domain/canonical-locations";
 import { firstFieldProblem } from "@/lib/domain/field-errors";
-import { LATITUDE, LONGITUDE } from "@/lib/domain/field-rules";
 import { SITE_LIMITS } from "@/lib/domain/sites";
 
 /**
@@ -36,8 +35,6 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   state: ["provincia", "state", "estado", "departamento"],
   zone: ["zona", "zone", "region", "regiao"],
   externalRef: ["codigo", "ref", "referencia", "external", "id", "externalref"],
-  lat: ["lat", "latitud", "latitude"],
-  lng: ["lng", "lon", "longitud", "longitude"],
 };
 
 /**
@@ -55,8 +52,6 @@ const siteRowSchema = z.object({
   state: z.string().max(120).default(""),
   zone: z.string().max(80).default(""),
   externalRef: z.string().trim().max(SITE_LIMITS.externalRef).optional(),
-  lat: z.union([z.literal(""), z.coerce.number().min(LATITUDE.min).max(LATITUDE.max)]),
-  lng: z.union([z.literal(""), z.coerce.number().min(LONGITUDE.min).max(LONGITUDE.max)]),
 });
 
 /** Columnas cuyo largo se controla, para poder decir cuál se pasó. */
@@ -65,7 +60,6 @@ const LENGTH_FIELDS: readonly string[] = ["name", "address", "city", "externalRe
 export type SiteImportIssueCode =
   | "missingName"
   | "invalidLength"
-  | "invalidCoordinates"
   | "zoneOutsideProject"
   | "duplicateInFile"
   | "alreadyImported";
@@ -100,7 +94,6 @@ export function issueExternalRef(issue: SiteImportIssue): string | null {
       return issue.detail ?? null;
     case "missingName":
     case "invalidLength":
-    case "invalidCoordinates":
     case "zoneOutsideProject":
       return null;
   }
@@ -119,8 +112,6 @@ export type ParsedSiteRow = {
   state: string;
   zone: string;
   externalRef: string | null;
-  lat: number | null;
-  lng: number | null;
 };
 
 export type SiteImportCounts = {
@@ -230,12 +221,10 @@ export function analyzeSiteRows(
       state: zone,
       zone,
       externalRef: get("externalRef") || undefined,
-      lat: get("lat"),
-      lng: get("lng"),
     });
     if (!parsed.success) {
-      // O un largo fuera de rango (`detail` dice qué columna), o coordenadas
-      // que no son números o están fuera de rango.
+      // O un largo fuera de rango (`detail` dice qué columna), o un nombre que
+      // no alcanza el mínimo.
       const field = firstFieldProblem(parsed.error)?.field ?? "";
       if (LENGTH_FIELDS.includes(field)) {
         issues.push({
@@ -247,7 +236,7 @@ export function analyzeSiteRows(
         });
         return;
       }
-      issues.push({ row, code: "invalidCoordinates", name: get("name").trim() });
+      issues.push({ row, code: "missingName", name: get("name").trim() });
       return;
     }
 
@@ -296,8 +285,6 @@ export function analyzeSiteRows(
       state: parsed.data.state,
       zone: parsed.data.zone,
       externalRef: ref ?? null,
-      lat: parsed.data.lat === "" ? null : parsed.data.lat,
-      lng: parsed.data.lng === "" ? null : parsed.data.lng,
     });
   });
 
@@ -310,7 +297,7 @@ export function analyzeSiteRows(
     counts: {
       found,
       valid: valid.length,
-      incomplete: countBy("missingName", "invalidLength", "invalidCoordinates"),
+      incomplete: countBy("missingName", "invalidLength"),
       outsideZone: countBy("zoneOutsideProject"),
       duplicated: countBy("duplicateInFile", "alreadyImported"),
     },

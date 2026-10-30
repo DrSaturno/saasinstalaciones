@@ -22,6 +22,11 @@ export type OrderRuleBlock =
 export type OrderRuleContext = {
   status: OrderStatus;
   assignedInstallerId: string | null;
+  /**
+   * Ayudantes activos del plantel (bloque 5, `work_order_team_members`),
+   * además del responsable. Vacío en el caso común de un solo instalador.
+   */
+  helperInstallerIds: readonly string[];
   acceptedAt: string | null;
   hasSurvey: boolean;
   scheduledDate: string | null;
@@ -41,6 +46,14 @@ export type Actor = {
  * Devuelve el motivo por el que NO se puede pasar al estado destino, o `null`
  * si la transición es válida para ese actor.
  */
+/** El actor es el responsable de la orden o un ayudante activo de su plantel. */
+function isTeamMember(order: OrderRuleContext, actor: Actor): boolean {
+  return (
+    actor.id === order.assignedInstallerId ||
+    order.helperInstallerIds.includes(actor.id)
+  );
+}
+
 export function orderTransitionBlock(
   order: OrderRuleContext,
   to: OrderStatus,
@@ -49,6 +62,8 @@ export function orderTransitionBlock(
   if (!canTransition(order.status, to)) return "invalidTransition";
 
   // Cancelar está exento: se puede cancelar una orden que nunca se asignó.
+  // Un responsable sigue siendo obligatorio (bloque 5): tener sólo ayudantes,
+  // sin responsable, no alcanza para avanzar la orden.
   if (
     order.status === "pendiente" &&
     to !== "cancelada" &&
@@ -68,22 +83,24 @@ export function orderTransitionBlock(
 
   if (order.status === "planificada" && to === "en_proceso") {
     if (!order.acceptedAt) return "needsAcceptance";
-    // Sólo quien está en el punto sabe que empezó.
-    if (actor.id !== order.assignedInstallerId) return "onlyInstallerStarts";
+    // Sólo quien está en el punto sabe que empezó — el responsable o
+    // cualquier ayudante activo de su equipo (bloque 5).
+    if (!isTeamMember(order, actor)) return "onlyInstallerStarts";
   }
 
-  // Mandar a revisión es potestad del instalador asignado: el coordinador
+  // Mandar a revisión es potestad de quien está en el equipo: el coordinador
   // aprueba y la empresa es última instancia, pero ninguno de los dos "envía".
-  if (to === "en_revision" && actor.id !== order.assignedInstallerId) {
+  if (to === "en_revision" && !isTeamMember(order, actor)) {
     return "onlyInstallerReviews";
   }
 
   // ADR-001: quien ejecuta la actividad no puede aprobar su propia entrega,
-  // aunque también sea coordinador del proyecto (rol dual, R1).
+  // aunque también sea coordinador del proyecto (rol dual, R1) — alcanza a
+  // todo el equipo, no sólo al responsable (bloque 5).
   if (
     order.status === "en_revision" &&
     (to === "finalizada" || to === "en_proceso") &&
-    actor.id === order.assignedInstallerId
+    isTeamMember(order, actor)
   ) {
     return "noSelfApproval";
   }
