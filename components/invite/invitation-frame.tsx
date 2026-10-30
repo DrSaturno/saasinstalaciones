@@ -11,6 +11,8 @@ type InvitationFrameProps = {
   visualBody: string;
   visualAlt: string;
   secureAccess: string;
+  /** Pantallas de paso (elegir contraseña): la escena va arriba y más grande, sin repetir el título. */
+  compact?: boolean;
 };
 
 export function InvitationFrame({
@@ -21,9 +23,10 @@ export function InvitationFrame({
   visualBody,
   visualAlt,
   secureAccess,
+  compact = false,
 }: InvitationFrameProps) {
   return (
-    <main className={styles.page}>
+    <main className={compact ? `${styles.page} ${styles.compact}` : styles.page}>
       <section className={styles.visual} aria-labelledby="invitation-visual-title">
         <div className={styles.visualCopy}>
           <span>{visualEyebrow}</span>
