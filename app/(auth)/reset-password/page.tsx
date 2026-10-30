@@ -3,13 +3,15 @@ import { getTranslations } from "next-intl/server";
 import { ResetPasswordForm } from "./reset-password-form";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InvitationFrame } from "@/components/invite/invitation-frame";
+import styles from "@/components/invite/invitation.module.css";
 
 export default async function ResetPasswordPage(props: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  const [t, searchParams, supabase] = await Promise.all([
+  const [t, common, searchParams, supabase] = await Promise.all([
     getTranslations("ResetPassword"),
+    getTranslations("Common"),
     props.searchParams,
     createClient(),
   ]);
@@ -22,36 +24,33 @@ export default async function ResetPasswordPage(props: {
   } = await supabase.auth.getUser();
   const invalid = Boolean(searchParams.error) || !user;
 
+  // Mismo marco que la invitación: la persona llega desde un mail y ve la
+  // misma escena y la misma marca en cada paso del acceso.
   return (
-    <main className="flex flex-1 items-center justify-center px-6 py-16">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <Link href="/" className="font-mono text-sm text-muted-foreground">
-            Se Instala
-          </Link>
-        </div>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">
-              {invalid ? t("invalidLink") : t("title")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {invalid ? (
-              <div className="flex flex-col gap-4">
-                <p className="text-sm text-muted-foreground">
-                  {t("invalidLinkDescription")}
-                </p>
-                <Button asChild size="lg">
-                  <Link href="/forgot-password">{t("requestNew")}</Link>
-                </Button>
-              </div>
-            ) : (
-              <ResetPasswordForm />
-            )}
-          </CardContent>
-        </Card>
+    <InvitationFrame
+      brand={common("brand")}
+      visualEyebrow={t("visualEyebrow")}
+      visualTitle={t("visualTitle")}
+      visualBody={t("visualBody")}
+      visualAlt={t("visualAlt")}
+      secureAccess={t("secureAccess")}
+    >
+      <div className={styles.contentHeader}>
+        <span>{t("eyebrow")}</span>
+        <h1>{invalid ? t("invalidLink") : t("title")}</h1>
+        <p>{invalid ? t("invalidLinkDescription") : t("description")}</p>
       </div>
-    </main>
+      <div className={styles.formContent}>
+        {invalid ? (
+          <div className={styles.actions}>
+            <Button asChild size="lg">
+              <Link href="/forgot-password">{t("requestNew")}</Link>
+            </Button>
+          </div>
+        ) : (
+          <ResetPasswordForm />
+        )}
+      </div>
+    </InvitationFrame>
   );
 }

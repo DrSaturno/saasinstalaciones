@@ -173,6 +173,12 @@
     "backToLogin": "Volver a ingresar"
   },
   "ResetPassword": {
+    "visualEyebrow": "Acceso seguro",
+    "visualTitle": "Volvé a tu operación en un minuto.",
+    "visualBody": "Elegí una contraseña nueva y retomá tus trabajos donde los dejaste, desde el celular o la compu.",
+    "visualAlt": "Instalador junto a su camioneta confirmando un trabajo desde el celular, conectado con un local por una ruta de trabajo.",
+    "secureAccess": "El link se usa una sola vez y vence en poco tiempo",
+    "eyebrow": "Recuperar acceso",
     "title": "Elegí tu contraseña nueva",
     "description": "Vas a poder ingresar con ella la próxima vez.",
     "newPassword": "Contraseña nueva",
@@ -180,8 +186,8 @@
     "hint": "Al menos 8 caracteres.",
     "submit": "Guardar contraseña",
     "submitting": "Guardando…",
-    "done": "Listo, tu contraseña quedó actualizada.",
-    "goToLogin": "Ingresar",
+    "done": "Listo, tu contraseña quedó actualizada. Te llevamos a tu panel…",
+    "goToPanel": "Entrar a mi panel",
     "invalidLink": "El link no sirve",
     "invalidLinkDescription": "Puede haber vencido o ya haberse usado. Pedí uno nuevo.",
     "requestNew": "Pedir un link nuevo"

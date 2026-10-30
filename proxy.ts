@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import type { CompanyStatus, Database, UserRole } from "@/types/database";
 import { isProfileLocale, LOCALE_COOKIE } from "@/i18n/config";
 import { isCompanyManagerBlocked } from "@/lib/domain/company-access";
+import { isAuthCallbackQuery } from "@/lib/domain/auth-callback";
 
 const ROLE_HOME: Record<UserRole, string> = {
   platform_admin: "/master",
@@ -118,6 +119,20 @@ export async function proxy(request: NextRequest) {
   // Las rutas /api se guardan a sí mismas y responden JSON (401/403).
   // Redirigirlas a /login devolvería HTML a un cliente que espera JSON.
   if (path.startsWith("/api/")) return response;
+
+  // Link de recuperación de contraseña que Supabase mandó a la Site URL en vez
+  // de al callback (mail pedido desde su panel, o ruta no permitida). Sin esto
+  // la persona quedaba en la landing con el código en la barra y sin poder
+  // elegir su contraseña. Va antes de leer la sesión: alguien logueado con
+  // otra cuenta también tiene que poder canjear el link.
+  if (
+    (path === "/" || path === "/login") &&
+    isAuthCallbackQuery(request.nextUrl.searchParams)
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/api/auth/callback";
+    return NextResponse.redirect(url);
+  }
 
   /**
    * Distinguir "no hay sesión" de "Supabase no responde" (OPS-14).

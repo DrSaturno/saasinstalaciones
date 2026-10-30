@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   setNewPassword,
@@ -16,25 +17,40 @@ const initialState: ResetPasswordState = { error: null };
 
 export function ResetPasswordForm() {
   const t = useTranslations("ResetPassword");
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(
     setNewPassword,
     initialState,
   );
 
+  // La sesión de recuperación sigue abierta después de guardar: no hay por qué
+  // volver a pedir la contraseña recién elegida. `/` lo manda el proxy al panel
+  // de su rol (el instalador, a sus tareas).
+  useEffect(() => {
+    if (!state.ok) return;
+    const timer = window.setTimeout(() => router.replace("/"), 1500);
+    return () => window.clearTimeout(timer);
+  }, [state.ok, router]);
+
   if (state.ok) {
     return (
       <div className="flex flex-col gap-4">
-        <p className="text-sm text-muted-foreground">{t("done")}</p>
-        <Button asChild size="lg">
-          <Link href="/login">{t("goToLogin")}</Link>
+        <p className="text-sm text-muted-foreground" role="status">
+          {t("done")}
+        </p>
+        <Button
+          asChild
+          size="lg"
+          className="h-12 rounded-xl text-sm font-semibold"
+        >
+          <Link href="/">{t("goToPanel")}</Link>
         </Button>
       </div>
     );
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
-      <p className="text-sm text-muted-foreground">{t("description")}</p>
+    <form action={formAction} className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
         <Label htmlFor="newPassword">{t("newPassword")}</Label>
         <Input
@@ -44,6 +60,7 @@ export function ResetPasswordForm() {
           autoComplete="new-password"
           minLength={FIELD.password.min}
           maxLength={FIELD.password.max}
+          className="h-12 rounded-xl px-4"
           required
         />
         <p className="text-xs text-muted-foreground">{t("hint")}</p>
@@ -57,6 +74,7 @@ export function ResetPasswordForm() {
           autoComplete="new-password"
           minLength={FIELD.password.min}
           maxLength={FIELD.password.max}
+          className="h-12 rounded-xl px-4"
           required
         />
       </div>
@@ -65,7 +83,12 @@ export function ResetPasswordForm() {
           {state.error}
         </p>
       )}
-      <Button type="submit" size="lg" disabled={pending} className="mt-2">
+      <Button
+        type="submit"
+        size="lg"
+        disabled={pending}
+        className="mt-2 h-12 rounded-xl text-sm font-semibold"
+      >
         {pending ? t("submitting") : t("submit")}
       </Button>
     </form>
