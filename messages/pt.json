@@ -173,6 +173,12 @@
     "backToLogin": "Voltar para entrar"
   },
   "ResetPassword": {
+    "visualEyebrow": "Acesso seguro",
+    "visualTitle": "Volte à sua operação em um minuto.",
+    "visualBody": "Escolha uma nova senha e retome seus trabalhos de onde parou, pelo celular ou pelo computador.",
+    "visualAlt": "Instalador ao lado da sua van confirmando um trabalho pelo celular, conectado a uma loja por uma rota de trabalho.",
+    "secureAccess": "O link é usado uma única vez e expira em pouco tempo",
+    "eyebrow": "Recuperar acesso",
     "title": "Escolha sua nova senha",
     "description": "Você vai usá-la para entrar na próxima vez.",
     "newPassword": "Nova senha",

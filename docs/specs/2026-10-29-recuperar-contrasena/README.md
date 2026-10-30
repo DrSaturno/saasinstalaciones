@@ -32,6 +32,10 @@ En los dos casos nadie leía el link y la persona quedaba en la landing.
 - **RECUP-04** — Después de guardar la contraseña nueva, la persona va directo a su panel (el proxy
   rutea `/` según el rol), sin volver a pedirle la contraseña recién elegida.
 - **RECUP-05** — Nada de esto toca las visitas normales a la landing ni sus anclas (`#funciones`).
+- **RECUP-06** — La pantalla de contraseña nueva (y la de «El link no sirve») usa el mismo marco que la
+  invitación: escena del instalador, marca y campos de 48 px, en escritorio y en celular.
+- **RECUP-07** — El mail de recuperación sale desde `no-responder@seinstala.com.ar` (SMTP propio por
+  Resend) con la plantilla de marca de `email-reset-password.html`.
 
 ## Tareas
 
@@ -49,8 +53,10 @@ En los dos casos nadie leía el link y la persona quedaba en la landing.
   - `/?utm_source=…` y `/#funciones` → landing sin cambios.
 
   **Sin verificar:** el camino feliz con un link real. Requiere un mail de recuperación de verdad.
-- [ ] **RECUP-T-06** — Configuración del panel de Supabase en **producción**. Sólo la puede hacer
-  Nicolás; ver abajo.
+- [x] **RECUP-T-06** — Configuración del panel de Supabase en **producción** (hecha por Nicolás el
+  29-10-2026): Site URL, Redirect URLs, SMTP de Resend y plantilla. Probado con un mail real: llegó
+  desde `no-responder@seinstala.com.ar` y el botón abre la pantalla de contraseña nueva. → RECUP-07
+- [x] **RECUP-T-07** — `reset-password/page.tsx` sobre `InvitationFrame`, con textos es/pt. → RECUP-06
 
 ## Configuración del panel de Supabase (Nicolás)
 

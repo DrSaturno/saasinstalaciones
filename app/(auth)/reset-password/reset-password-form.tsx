@@ -38,7 +38,11 @@ export function ResetPasswordForm() {
         <p className="text-sm text-muted-foreground" role="status">
           {t("done")}
         </p>
-        <Button asChild size="lg">
+        <Button
+          asChild
+          size="lg"
+          className="h-12 rounded-xl text-sm font-semibold"
+        >
           <Link href="/">{t("goToPanel")}</Link>
         </Button>
       </div>
@@ -46,8 +50,7 @@ export function ResetPasswordForm() {
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
-      <p className="text-sm text-muted-foreground">{t("description")}</p>
+    <form action={formAction} className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
         <Label htmlFor="newPassword">{t("newPassword")}</Label>
         <Input
@@ -57,6 +60,7 @@ export function ResetPasswordForm() {
           autoComplete="new-password"
           minLength={FIELD.password.min}
           maxLength={FIELD.password.max}
+          className="h-12 rounded-xl px-4"
           required
         />
         <p className="text-xs text-muted-foreground">{t("hint")}</p>
@@ -70,6 +74,7 @@ export function ResetPasswordForm() {
           autoComplete="new-password"
           minLength={FIELD.password.min}
           maxLength={FIELD.password.max}
+          className="h-12 rounded-xl px-4"
           required
         />
       </div>
@@ -78,7 +83,12 @@ export function ResetPasswordForm() {
           {state.error}
         </p>
       )}
-      <Button type="submit" size="lg" disabled={pending} className="mt-2">
+      <Button
+        type="submit"
+        size="lg"
+        disabled={pending}
+        className="mt-2 h-12 rounded-xl text-sm font-semibold"
+      >
         {pending ? t("submitting") : t("submit")}
       </Button>
     </form>
