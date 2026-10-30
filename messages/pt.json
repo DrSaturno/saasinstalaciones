@@ -190,7 +190,8 @@
     "goToPanel": "Entrar no meu painel",
     "invalidLink": "O link não serve",
     "invalidLinkDescription": "Ele pode ter expirado ou já ter sido usado. Peça um novo.",
-    "requestNew": "Pedir um novo link"
+    "requestNew": "Pedir um novo link",
+    "linkNotWorking": "O link expirou ou não funciona?"
   },
   "Invitation": {
     "visualEyebrow": "Convite de campo",

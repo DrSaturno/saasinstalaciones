@@ -91,6 +91,15 @@ export function ResetPasswordForm() {
       >
         {pending ? t("submitting") : t("submit")}
       </Button>
+      <p className="text-center text-sm text-muted-foreground">
+        {t("linkNotWorking")}{" "}
+        <Link
+          href="/forgot-password"
+          className="font-semibold text-primary underline-offset-4 hover:underline"
+        >
+          {t("requestNew")}
+        </Link>
+      </p>
     </form>
   );
 }
