@@ -91,12 +91,12 @@ describe("service worker cache policy", () => {
     );
   });
 
-  it("no cachea pantallas autenticadas ajenas al trabajo de campo", () => {
+  it.each(['/dashboard','/finance','/finance/cheques','/api/finance/summary/pdf'])("no cachea la ruta privada %s fuera del área de campo", (path) => {
     const { listeners } = serviceWorkerRuntime();
     const respondWith = vi.fn();
 
     listeners.get("fetch")?.({
-      request: documentRequest("https://app.test/dashboard"),
+      request: documentRequest(`https://app.test${path}`),
       respondWith,
     });
 

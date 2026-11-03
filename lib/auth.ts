@@ -92,7 +92,7 @@ export type CurrentUser = {
    * cualquier otro rol vale `false` sin que signifique nada.
    */
   isOwner: boolean;
-  /** Ve y edita lo que la empresa le cobra a su cliente (bloque 8). El dueño siempre; una subcuenta sólo con este permiso. */
+  /** Ve y edita lo que la empresa le cobra a su cliente (bloque 8) y accede a Finanzas. El dueño siempre; una subcuenta sólo con este permiso. */
   canManageFinance: boolean;
   /** Cambia la configuración de la empresa (hoy: mínimo de fotos de cierre). El dueño siempre; una subcuenta sólo con este permiso. */
   canManageSettings: boolean;

@@ -9,6 +9,7 @@ export type UserRole =
   | "platform_admin"
   | "company_manager"
   | "installer";
+export type InvitationRole = "installer" | "coordinator" | "company_staff";
 export type MembershipRole = "installer" | "coordinator";
 export type Locale = "es" | "pt";
 export type CompanyStatus = "active" | "suspended";

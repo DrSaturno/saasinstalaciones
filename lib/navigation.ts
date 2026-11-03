@@ -21,7 +21,7 @@ type NavTranslations = Awaited<ReturnType<typeof getTranslations<"Navigation">>>
  */
 export function companyNav(
   t: NavTranslations,
-  { needsLocationReview }: { needsLocationReview: boolean },
+  { needsLocationReview, canManageFinance = false, canManageSettings = false }: { needsLocationReview: boolean; canManageFinance?: boolean; canManageSettings?: boolean },
 ): NavItem[] {
   return [
     { href: "/dashboard", label: t("home"), icon: "dashboard" },
@@ -32,14 +32,14 @@ export function companyNav(
     { href: "/team", label: t("team"), icon: "team" },
     { href: "/broadcasts", label: t("broadcasts"), icon: "broadcasts" },
     { href: "/messages", label: t("messages"), icon: "messages" },
-    { href: "/finance", label: t("finance"), icon: "finance" },
+    ...(canManageFinance ? [{ href: "/finance", label: t("finance"), icon: "finance" as const }] : []),
     // La cola de revisión del backfill es transitoria: sólo se muestra
     // mientras haya filas sin decidir. Un ítem fijo para un artefacto de
     // migración sería ruido permanente en el menú.
     ...(needsLocationReview
       ? [{ href: "/locations/review", label: t("locationReview"), icon: "orders" as const }]
       : []),
-    { href: "/settings", label: t("settings"), icon: "settings" },
+    ...(canManageSettings ? [{ href: "/settings", label: t("settings"), icon: "settings" as const }] : []),
   ];
 }
 

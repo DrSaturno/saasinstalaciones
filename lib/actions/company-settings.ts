@@ -38,7 +38,7 @@ export async function updateCompanyFieldSettings(
     const [user, supabase] = await Promise.all([getAuthorizedUser(), createClient()]);
     // Sólo gerencia: el mínimo de evidencia es política de la empresa, no una
     // preferencia de quien coordina un proyecto.
-    if (!user || user.role !== "company_manager" || !user.companyId) {
+    if (!user || user.role !== "company_manager" || !user.companyId || !user.canManageSettings) {
       return { error: t("accessDenied") };
     }
     if (!canOperateCompany(user, user.companyId)) return { error: t("accessDenied") };

@@ -1,3 +1,4 @@
+import { OrderFinancialCosts } from "@/components/company/order-financial-costs";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Images, MessageSquareText, TriangleAlert } from "lucide-react";
@@ -183,6 +184,7 @@ export default async function OrderDetailPage({
       null
     : false;
 
+  const financeT = await getTranslations("FinanceOperations");
   return (
     <PageContainer>
       <BackLink href="/orders" label={t("back")} />
@@ -206,6 +208,10 @@ export default async function OrderDetailPage({
           )}
         </div>
         <div className="flex flex-wrap items-start gap-2">
+        {user?.role === "company_manager" && (!("canManageFinance" in user) || Boolean(user.canManageFinance)) && <Link
+          href={`/finance/orders/${order.id}`}
+          className="inline-flex min-h-9 items-center rounded-md border px-3 text-sm font-medium text-primary hover:bg-primary/5"
+        >{financeT("orderFinances")}</Link>}
         <OrderPdfButton orderId={order.id} size="default" />
         <CalendarizeOrderButton
           orderNumber={order.order_number}
@@ -450,6 +456,7 @@ export default async function OrderDetailPage({
             currentUserId={user?.id ?? null}
           />
 
+          <OrderFinancialCosts orderId={order.id} />
           <div id="incidencias" />
           <OrderIncidents orderId={order.id} incidents={incidents ?? []} />
         </div>

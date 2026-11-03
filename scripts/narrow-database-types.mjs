@@ -30,7 +30,7 @@ const NARROWING = {
   profiles: { role: "UserRole", locale: "Locale" },
   company_installers: { role: "MembershipRole", status: "RosterStatus" },
   company_membership_roles: { role: "MembershipRole" },
-  invitations: { status: "InvitationStatus", role: "MembershipRole" },
+  invitations: { status: "InvitationStatus", role: "InvitationRole" },
   projects: {
     status: "ProjectStatus",
     country: "Country",
@@ -64,6 +64,7 @@ const NARROWING = {
     audience_type: "AnnouncementAudience",
   },
   installer_unavailability: { status: "UnavailabilityStatus" },
+  work_order_team_members: { payment_status: "PaymentStatus" },
 };
 
 /**
@@ -77,6 +78,18 @@ const NARROWING = {
  */
 const TRIGGER_FILLED = {
   work_orders: ["order_number"],
+};
+
+
+/**
+ * Las vistas de Finanzas salen con todas las columnas `| null` porque Postgres
+ * no propaga NOT NULL a través de joins ni expresiones. Estas son las que, por
+ * construcción de la vista, nunca son nulas (base NOT NULL o coalesce/greatest).
+ */
+const VIEW_NON_NULL = {
+  finance_cash_movements: ["amount", "category", "company_id", "currency", "description", "direction", "entry_id", "id", "method", "reference", "settled_on"],
+  finance_entry_balances: ["amount", "available_amount", "category", "company_id", "created_at", "credit_amount", "currency", "description", "direction", "id", "installment", "open_amount", "paid_amount", "reserved_amount", "source", "status", "updated_at"],
+  finance_invoice_differences: ["company_id", "current_amount", "entry_id", "invoice_amount", "invoice_id"],
 };
 
 const ALIASES = path.join(process.cwd(), "scripts", "database-domain-aliases.ts");
@@ -127,6 +140,16 @@ for (let i = 0; i < lines.length; i++) {
   if (/^ {8}\w+:/.test(line) && !openSection) section = null;
 
   if (!table || !section) continue;
+
+  // Vistas de Finanzas: quitar `| null` de las columnas que nunca lo son.
+  if (section === "Row" && VIEW_NON_NULL[table]) {
+    const view = line.match(/^ {10}(\w+): (.+) \| null$/);
+    if (view && VIEW_NON_NULL[table].includes(view[1])) {
+      lines[i] = `          ${view[1]}: ${view[2]}`;
+      applied += 1;
+      continue;
+    }
+  }
 
   // Sólo columnas cuyo tipo generado sea exactamente `string`.
   const column = line.match(/^ {10}(\w+)(\??): (\w+)( \| null)?$/);

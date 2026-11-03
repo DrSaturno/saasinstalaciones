@@ -9,18 +9,18 @@ const hrefs = (items: { href: string }[]) => items.map((item) => item.href);
 
 describe("companyNav", () => {
   it("incluye agenda y configuración, que se habían perdido entrando por Mensajería", () => {
-    const nav = hrefs(companyNav(t, { needsLocationReview: false }));
+    const nav = hrefs(companyNav(t, { canManageFinance: true, canManageSettings: true, needsLocationReview: false }));
     expect(nav).toContain("/agenda");
     expect(nav).toContain("/settings");
   });
 
   it("muestra la revisión de locaciones sólo mientras quede algo por decidir", () => {
-    expect(hrefs(companyNav(t, { needsLocationReview: false }))).not.toContain("/locations/review");
-    expect(hrefs(companyNav(t, { needsLocationReview: true }))).toContain("/locations/review");
+    expect(hrefs(companyNav(t, { canManageFinance: true, canManageSettings: true, needsLocationReview: false }))).not.toContain("/locations/review");
+    expect(hrefs(companyNav(t, { canManageFinance: true, canManageSettings: true, needsLocationReview: true }))).toContain("/locations/review");
   });
 
   it("deja configuración al final, incluso con la revisión intercalada", () => {
-    const nav = hrefs(companyNav(t, { needsLocationReview: true }));
+    const nav = hrefs(companyNav(t, { canManageFinance: true, canManageSettings: true, needsLocationReview: true }));
     expect(nav.at(-1)).toBe("/settings");
   });
 });

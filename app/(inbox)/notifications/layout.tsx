@@ -36,7 +36,7 @@ export default async function InboxLayout({ children }: { children: React.ReactN
   // Ídem Mensajería: la bandeja es una pantalla compartida, pero el menú tiene
   // que ser el del área de quien entra.
   const nav = companyMode
-    ? companyNav(t, { needsLocationReview: await needsLocationReview(supabase) })
+    ? companyNav(t, { needsLocationReview: await needsLocationReview(supabase), canManageFinance: user.canManageFinance, canManageSettings: user.canManageSettings })
     : installerNav(t, { isCoordinator: isCoordinatorSomewhere(user) });
 
   return (

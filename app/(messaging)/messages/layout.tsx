@@ -30,7 +30,7 @@ export default async function MessagingLayout({ children }: { children: React.Re
   // El mismo menú que en el área de cada uno: entrar por Mensajería no puede
   // cambiar de qué ítems dispone la persona.
   const nav = companyMode
-    ? companyNav(t, { needsLocationReview: await needsLocationReview(supabase) })
+    ? companyNav(t, { needsLocationReview: await needsLocationReview(supabase), canManageFinance: user.canManageFinance, canManageSettings: user.canManageSettings })
     : installerNav(t, { isCoordinator: isCoordinatorSomewhere(user) });
 
   return (

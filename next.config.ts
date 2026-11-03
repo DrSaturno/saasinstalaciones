@@ -80,6 +80,8 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  // PGlite carga sus archivos WASM con las APIs nativas de Node.
+  serverExternalPackages: ["@electric-sql/pglite"],
   turbopack: {
     root: path.join(__dirname),
   },

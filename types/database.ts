@@ -17,9 +17,8 @@ export type UserRole =
   | "platform_admin"
   | "company_manager"
   | "installer";
+export type InvitationRole = "installer" | "coordinator" | "company_staff";
 export type MembershipRole = "installer" | "coordinator";
-/** El único rol de invitación que no es una membresía de campo: alta de subcuenta (SUBCTA-*). */
-export type InvitationRole = MembershipRole | "company_staff";
 export type Locale = "es" | "pt";
 export type CompanyStatus = "active" | "suspended";
 export type Country = "AR" | "BR";
@@ -107,7 +106,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.15"
   }
   public: {
     Tables: {
@@ -545,13 +544,6 @@ export type Database = {
             foreignKeyName: "calendar_order_events_order_company_fk"
             columns: ["order_id", "company_id"]
             isOneToOne: false
-            referencedRelation: "installer_earnings"
-            referencedColumns: ["order_id", "company_id"]
-          },
-          {
-            foreignKeyName: "calendar_order_events_order_company_fk"
-            columns: ["order_id", "company_id"]
-            isOneToOne: false
             referencedRelation: "work_orders"
             referencedColumns: ["id", "company_id"]
           },
@@ -718,6 +710,7 @@ export type Database = {
           created_by?: string | null
           external_ref?: string | null
           location_id: string
+          normalized_external_ref?: string | null
         }
         Update: {
           client_id?: string
@@ -726,6 +719,7 @@ export type Database = {
           created_by?: string | null
           external_ref?: string | null
           location_id?: string
+          normalized_external_ref?: string | null
         }
         Relationships: [
           {
@@ -816,58 +810,6 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      company_staff_permissions: {
-        Row: {
-          can_manage_finance: boolean
-          can_manage_settings: boolean
-          company_id: string
-          created_at: string
-          granted_by: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          can_manage_finance?: boolean
-          can_manage_settings?: boolean
-          company_id: string
-          created_at?: string
-          granted_by?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          can_manage_finance?: boolean
-          can_manage_settings?: boolean
-          company_id?: string
-          created_at?: string
-          granted_by?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "company_staff_permissions_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "company_staff_permissions_granted_by_fkey"
-            columns: ["granted_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "company_staff_permissions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1038,6 +980,58 @@ export type Database = {
           },
         ]
       }
+      company_staff_permissions: {
+        Row: {
+          can_manage_finance: boolean
+          can_manage_settings: boolean
+          company_id: string
+          created_at: string
+          granted_by: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          can_manage_finance?: boolean
+          can_manage_settings?: boolean
+          company_id: string
+          created_at?: string
+          granted_by?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          can_manage_finance?: boolean
+          can_manage_settings?: boolean
+          company_id?: string
+          created_at?: string
+          granted_by?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_staff_permissions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_staff_permissions_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_staff_permissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feature_flag_events: {
         Row: {
           actor_id: string | null
@@ -1107,6 +1101,920 @@ export type Database = {
           key?: string
         }
         Relationships: []
+      }
+      finance_cheque_allocations: {
+        Row: {
+          amount: number
+          cheque_id: string
+          company_id: string
+          entry_id: string
+        }
+        Insert: {
+          amount: number
+          cheque_id: string
+          company_id: string
+          entry_id: string
+        }
+        Update: {
+          amount?: number
+          cheque_id?: string
+          company_id?: string
+          entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_cheque_allocations_cheque_id_company_id_fkey"
+            columns: ["cheque_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_cheques"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_cheque_allocations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_cheque_allocations_entry_id_company_id_fkey"
+            columns: ["entry_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entries"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_cheque_allocations_entry_id_company_id_fkey"
+            columns: ["entry_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entry_balances"
+            referencedColumns: ["id", "company_id"]
+          },
+        ]
+      }
+      finance_cheque_events: {
+        Row: {
+          cheque_id: string
+          company_id: string
+          created_at: string
+          created_by: string
+          id: string
+          note: string
+          occurred_on: string
+          status: string
+        }
+        Insert: {
+          cheque_id: string
+          company_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          note?: string
+          occurred_on: string
+          status: string
+        }
+        Update: {
+          cheque_id?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          note?: string
+          occurred_on?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_cheque_events_cheque_id_company_id_fkey"
+            columns: ["cheque_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_cheques"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_cheque_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_cheque_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_cheques: {
+        Row: {
+          amount: number
+          bank: string
+          client_id: string | null
+          company_id: string
+          created_at: string
+          created_by: string
+          currency: string
+          direction: string
+          id: string
+          installment: string
+          issued_on: string
+          kind: string
+          maturity_on: string
+          project_id: string | null
+          reference: string
+          request_payload: Json
+          settled_on: string | null
+          status: string
+          supplier_id: string | null
+          term_days: number | null
+        }
+        Insert: {
+          amount: number
+          bank: string
+          client_id?: string | null
+          company_id: string
+          created_at?: string
+          created_by: string
+          currency: string
+          direction: string
+          id: string
+          installment?: string
+          issued_on: string
+          kind: string
+          maturity_on: string
+          project_id?: string | null
+          reference: string
+          request_payload: Json
+          settled_on?: string | null
+          status?: string
+          supplier_id?: string | null
+          term_days?: number | null
+        }
+        Update: {
+          amount?: number
+          bank?: string
+          client_id?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          currency?: string
+          direction?: string
+          id?: string
+          installment?: string
+          issued_on?: string
+          kind?: string
+          maturity_on?: string
+          project_id?: string | null
+          reference?: string
+          request_payload?: Json
+          settled_on?: string | null
+          status?: string
+          supplier_id?: string | null
+          term_days?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_cheques_client_id_company_id_fkey"
+            columns: ["client_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_cheques_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_cheques_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_cheques_project_id_company_id_fkey"
+            columns: ["project_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_cheques_supplier_id_company_id_fkey"
+            columns: ["supplier_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_suppliers"
+            referencedColumns: ["id", "company_id"]
+          },
+        ]
+      }
+      finance_documents: {
+        Row: {
+          company_id: string
+          created_at: string
+          entry_id: string
+          file_name: string
+          id: string
+          kind: string
+          mime_type: string
+          size_bytes: number
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          entry_id: string
+          file_name: string
+          id?: string
+          kind: string
+          mime_type: string
+          size_bytes: number
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          entry_id?: string
+          file_name?: string
+          id?: string
+          kind?: string
+          mime_type?: string
+          size_bytes?: number
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_documents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_documents_entry_fk"
+            columns: ["entry_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entries"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_documents_entry_fk"
+            columns: ["entry_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entry_balances"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_entries: {
+        Row: {
+          amount: number
+          category: string
+          client_id: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          description: string
+          direction: string
+          due_on: string | null
+          id: string
+          installment: string
+          order_id: string | null
+          period_month: string | null
+          project_id: string | null
+          settled_on: string | null
+          source: string
+          source_key: string | null
+          status: string
+          supplier_id: string | null
+          template_id: string | null
+          updated_at: string
+          updated_by: string | null
+          zone: string | null
+        }
+        Insert: {
+          amount: number
+          category: string
+          client_id?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          currency: string
+          description?: string
+          direction: string
+          due_on?: string | null
+          id?: string
+          installment?: string
+          order_id?: string | null
+          period_month?: string | null
+          project_id?: string | null
+          settled_on?: string | null
+          source?: string
+          source_key?: string | null
+          status?: string
+          supplier_id?: string | null
+          template_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          zone?: string | null
+        }
+        Update: {
+          amount?: number
+          category?: string
+          client_id?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string
+          direction?: string
+          due_on?: string | null
+          id?: string
+          installment?: string
+          order_id?: string | null
+          period_month?: string | null
+          project_id?: string | null
+          settled_on?: string | null
+          source?: string
+          source_key?: string | null
+          status?: string
+          supplier_id?: string | null
+          template_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          zone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_entries_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_entries_project_id_company_id_fkey"
+            columns: ["project_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_entries_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_entry_client_fk"
+            columns: ["client_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_entry_order_fk"
+            columns: ["order_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_entry_supplier_fk"
+            columns: ["supplier_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_suppliers"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_entry_template_fk"
+            columns: ["template_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_expense_templates"
+            referencedColumns: ["id", "company_id"]
+          },
+        ]
+      }
+      finance_entry_events: {
+        Row: {
+          changed_by: string | null
+          company_id: string
+          created_at: string
+          entry_id: string
+          from_status: string | null
+          id: string
+          new_amount: number | null
+          old_amount: number | null
+          to_status: string
+        }
+        Insert: {
+          changed_by?: string | null
+          company_id: string
+          created_at?: string
+          entry_id: string
+          from_status?: string | null
+          id?: string
+          new_amount?: number | null
+          old_amount?: number | null
+          to_status: string
+        }
+        Update: {
+          changed_by?: string | null
+          company_id?: string
+          created_at?: string
+          entry_id?: string
+          from_status?: string | null
+          id?: string
+          new_amount?: number | null
+          old_amount?: number | null
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_entry_events_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_entry_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_events_entry_fk"
+            columns: ["entry_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entries"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_events_entry_fk"
+            columns: ["entry_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entry_balances"
+            referencedColumns: ["id", "company_id"]
+          },
+        ]
+      }
+      finance_expense_templates: {
+        Row: {
+          active: boolean
+          amount: number
+          category: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          description: string
+          due_day: number
+          ends_on: string | null
+          id: string
+          starts_on: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          amount: number
+          category: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          currency: string
+          description: string
+          due_day: number
+          ends_on?: string | null
+          id?: string
+          starts_on: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          amount?: number
+          category?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string
+          due_day?: number
+          ends_on?: string | null
+          id?: string
+          starts_on?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_expense_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_expense_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_template_supplier_fk"
+            columns: ["supplier_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_suppliers"
+            referencedColumns: ["id", "company_id"]
+          },
+        ]
+      }
+      finance_invoice_allocations: {
+        Row: {
+          amount: number
+          company_id: string
+          created_at: string
+          entry_id: string
+          invoice_id: string
+          source_amount_at_registration: number | null
+        }
+        Insert: {
+          amount: number
+          company_id: string
+          created_at?: string
+          entry_id: string
+          invoice_id: string
+          source_amount_at_registration?: number | null
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          created_at?: string
+          entry_id?: string
+          invoice_id?: string
+          source_amount_at_registration?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_allocation_entry_fk"
+            columns: ["entry_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entries"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_allocation_entry_fk"
+            columns: ["entry_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entry_balances"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_allocation_invoice_fk"
+            columns: ["invoice_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_invoices"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_invoice_allocations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_invoices: {
+        Row: {
+          amount: number
+          client_id: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          direction: string
+          due_on: string | null
+          file_name: string | null
+          id: string
+          invoice_number: string
+          issued_on: string
+          sent_at: string | null
+          status: string
+          storage_path: string | null
+          supplier_id: string | null
+        }
+        Insert: {
+          amount: number
+          client_id?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          currency: string
+          direction: string
+          due_on?: string | null
+          file_name?: string | null
+          id?: string
+          invoice_number: string
+          issued_on: string
+          sent_at?: string | null
+          status?: string
+          storage_path?: string | null
+          supplier_id?: string | null
+        }
+        Update: {
+          amount?: number
+          client_id?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          direction?: string
+          due_on?: string | null
+          file_name?: string | null
+          id?: string
+          invoice_number?: string
+          issued_on?: string
+          sent_at?: string | null
+          status?: string
+          storage_path?: string | null
+          supplier_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_invoice_client_fk"
+            columns: ["client_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_invoice_supplier_fk"
+            columns: ["supplier_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_suppliers"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_invoices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_payment_batches: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          id: string
+          request_payload: Json
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          id: string
+          request_payload: Json
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          request_payload?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_payment_batches_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_payment_batches_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_payment_rules: {
+        Row: {
+          amba_weekday: number
+          company_id: string
+          interior_weekday: number
+          updated_at: string
+        }
+        Insert: {
+          amba_weekday?: number
+          company_id: string
+          interior_weekday?: number
+          updated_at?: string
+        }
+        Update: {
+          amba_weekday?: number
+          company_id?: string
+          interior_weekday?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_payment_rules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_suppliers: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          installer_id: string | null
+          kind: string
+          name: string
+          tax_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          installer_id?: string | null
+          kind?: string
+          name: string
+          tax_id?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          installer_id?: string | null
+          kind?: string
+          name?: string
+          tax_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_supplier_roster_fk"
+            columns: ["company_id", "installer_id"]
+            isOneToOne: true
+            referencedRelation: "company_installers"
+            referencedColumns: ["company_id", "installer_id"]
+          },
+          {
+            foreignKeyName: "finance_suppliers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_suppliers_installer_id_fkey"
+            columns: ["installer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_transactions: {
+        Row: {
+          amount: number
+          batch_id: string | null
+          cheque_id: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          entry_id: string
+          id: string
+          installment: string
+          method: string
+          occurred_on: string
+          proof_document_id: string | null
+          reference: string
+        }
+        Insert: {
+          amount: number
+          batch_id?: string | null
+          cheque_id?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          entry_id: string
+          id?: string
+          installment?: string
+          method: string
+          occurred_on: string
+          proof_document_id?: string | null
+          reference?: string
+        }
+        Update: {
+          amount?: number
+          batch_id?: string | null
+          cheque_id?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          entry_id?: string
+          id?: string
+          installment?: string
+          method?: string
+          occurred_on?: string
+          proof_document_id?: string | null
+          reference?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_transaction_entry_fk"
+            columns: ["entry_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entries"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_transaction_entry_fk"
+            columns: ["entry_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entry_balances"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_transaction_proof_fk"
+            columns: ["proof_document_id", "entry_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_documents"
+            referencedColumns: ["id", "entry_id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_transactions_batch_id_company_id_fkey"
+            columns: ["batch_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_payment_batches"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_transactions_cheque_id_company_id_fkey"
+            columns: ["cheque_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_cheques"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_transactions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_transactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       installer_global_unavailability: {
         Row: {
@@ -1282,13 +2190,6 @@ export type Database = {
             foreignKeyName: "installer_performance_events_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
-            referencedRelation: "installer_earnings"
-            referencedColumns: ["order_id"]
-          },
-          {
-            foreignKeyName: "installer_performance_events_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
             referencedRelation: "work_orders"
             referencedColumns: ["id"]
           },
@@ -1355,13 +2256,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "installers"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "installer_reliability_events_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "installer_earnings"
-            referencedColumns: ["order_id"]
           },
           {
             foreignKeyName: "installer_reliability_events_order_id_fkey"
@@ -1649,8 +2543,8 @@ export type Database = {
             foreignKeyName: "location_attachments_location_tenant_client_fk"
             columns: ["location_id", "company_id", "client_id"]
             isOneToOne: false
-            referencedRelation: "locations"
-            referencedColumns: ["id", "company_id", "client_id"]
+            referencedRelation: "client_locations"
+            referencedColumns: ["location_id", "company_id", "client_id"]
           },
           {
             foreignKeyName: "location_attachments_uploaded_by_fkey"
@@ -1829,8 +2723,8 @@ export type Database = {
             foreignKeyName: "location_change_events_location_tenant_client_fk"
             columns: ["location_id", "company_id", "client_id"]
             isOneToOne: false
-            referencedRelation: "locations"
-            referencedColumns: ["id", "company_id", "client_id"]
+            referencedRelation: "client_locations"
+            referencedColumns: ["location_id", "company_id", "client_id"]
           },
         ]
       }
@@ -1920,8 +2814,8 @@ export type Database = {
             foreignKeyName: "location_requirements_location_tenant_client_fk"
             columns: ["location_id", "company_id", "client_id"]
             isOneToOne: false
-            referencedRelation: "locations"
-            referencedColumns: ["id", "company_id", "client_id"]
+            referencedRelation: "client_locations"
+            referencedColumns: ["location_id", "company_id", "client_id"]
           },
           {
             foreignKeyName: "location_requirements_responsible_user_id_fkey"
@@ -2374,13 +3268,6 @@ export type Database = {
             foreignKeyName: "order_attachments_order_company_fk"
             columns: ["order_id", "company_id"]
             isOneToOne: false
-            referencedRelation: "installer_earnings"
-            referencedColumns: ["order_id", "company_id"]
-          },
-          {
-            foreignKeyName: "order_attachments_order_company_fk"
-            columns: ["order_id", "company_id"]
-            isOneToOne: false
             referencedRelation: "work_orders"
             referencedColumns: ["id", "company_id"]
           },
@@ -2464,19 +3351,145 @@ export type Database = {
             foreignKeyName: "order_cancellation_requests_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
-            referencedRelation: "installer_earnings"
-            referencedColumns: ["order_id"]
-          },
-          {
-            foreignKeyName: "order_cancellation_requests_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
             referencedRelation: "work_orders"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "order_cancellation_requests_reviewed_by_fkey"
             columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_chat_messages: {
+        Row: {
+          body: string
+          company_id: string
+          created_at: string
+          id: string
+          order_id: string
+          sender_id: string
+          sender_name: string
+        }
+        Insert: {
+          body: string
+          company_id: string
+          created_at?: string
+          id?: string
+          order_id: string
+          sender_id: string
+          sender_name?: string
+        }
+        Update: {
+          body?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          order_id?: string
+          sender_id?: string
+          sender_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_chat_messages_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_chat_messages_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_chat_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_financial_costs: {
+        Row: {
+          active: boolean
+          amount: number
+          category: string
+          company_id: string
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          order_id: string
+          payee_id: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          active?: boolean
+          amount: number
+          category: string
+          company_id: string
+          created_at?: string
+          created_by: string
+          description: string
+          id?: string
+          order_id: string
+          payee_id: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          active?: boolean
+          amount?: number
+          category?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          order_id?: string
+          payee_id?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_financial_costs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_financial_costs_company_id_payee_id_fkey"
+            columns: ["company_id", "payee_id"]
+            isOneToOne: false
+            referencedRelation: "company_installers"
+            referencedColumns: ["company_id", "installer_id"]
+          },
+          {
+            foreignKeyName: "order_financial_costs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_financial_costs_order_id_company_id_fkey"
+            columns: ["order_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "order_financial_costs_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -2554,13 +3567,6 @@ export type Database = {
             foreignKeyName: "order_incidents_order_company_fk"
             columns: ["order_id", "company_id"]
             isOneToOne: false
-            referencedRelation: "installer_earnings"
-            referencedColumns: ["order_id", "company_id"]
-          },
-          {
-            foreignKeyName: "order_incidents_order_company_fk"
-            columns: ["order_id", "company_id"]
-            isOneToOne: false
             referencedRelation: "work_orders"
             referencedColumns: ["id", "company_id"]
           },
@@ -2627,11 +3633,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "order_payment_events_order_company_fk"
-            columns: ["order_id", "company_id"]
+            foreignKeyName: "order_payment_events_installer_id_fkey"
+            columns: ["installer_id"]
             isOneToOne: false
-            referencedRelation: "installer_earnings"
-            referencedColumns: ["order_id", "company_id"]
+            referencedRelation: "installers"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "order_payment_events_order_company_fk"
@@ -2720,13 +3726,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "installers"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "order_reschedules_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "installer_earnings"
-            referencedColumns: ["order_id"]
           },
           {
             foreignKeyName: "order_reschedules_order_id_fkey"
@@ -2848,13 +3847,6 @@ export type Database = {
             foreignKeyName: "order_updates_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
-            referencedRelation: "installer_earnings"
-            referencedColumns: ["order_id"]
-          },
-          {
-            foreignKeyName: "order_updates_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
             referencedRelation: "work_orders"
             referencedColumns: ["id"]
           },
@@ -2900,58 +3892,6 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      order_chat_messages: {
-        Row: {
-          body: string
-          company_id: string
-          created_at: string
-          id: string
-          order_id: string
-          sender_id: string
-          sender_name: string
-        }
-        Insert: {
-          body: string
-          company_id: string
-          created_at?: string
-          id?: string
-          order_id: string
-          sender_id: string
-          sender_name?: string
-        }
-        Update: {
-          body?: string
-          company_id?: string
-          created_at?: string
-          id?: string
-          order_id?: string
-          sender_id?: string
-          sender_name?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "order_chat_messages_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "order_chat_messages_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "work_orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "order_chat_messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3079,8 +4019,8 @@ export type Database = {
             foreignKeyName: "project_locations_location_tenant_client_fk"
             columns: ["location_id", "company_id", "client_id"]
             isOneToOne: false
-            referencedRelation: "locations"
-            referencedColumns: ["id", "company_id", "client_id"]
+            referencedRelation: "client_locations"
+            referencedColumns: ["location_id", "company_id", "client_id"]
           },
           {
             foreignKeyName: "project_locations_project_tenant_client_fk"
@@ -3184,18 +4124,18 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "project_tracking_links_revoked_by_fkey"
-            columns: ["revoked_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "project_tracking_links_project_company_fk"
             columns: ["project_id", "company_id"]
             isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "project_tracking_links_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -3361,13 +4301,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "installers"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ratings_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: true
-            referencedRelation: "installer_earnings"
-            referencedColumns: ["order_id"]
           },
           {
             foreignKeyName: "ratings_order_id_fkey"
@@ -4034,13 +4967,6 @@ export type Database = {
             foreignKeyName: "work_activities_order_company_fk"
             columns: ["work_order_id", "company_id"]
             isOneToOne: false
-            referencedRelation: "installer_earnings"
-            referencedColumns: ["order_id", "company_id"]
-          },
-          {
-            foreignKeyName: "work_activities_order_company_fk"
-            columns: ["work_order_id", "company_id"]
-            isOneToOne: false
             referencedRelation: "work_orders"
             referencedColumns: ["id", "company_id"]
           },
@@ -4208,13 +5134,6 @@ export type Database = {
             foreignKeyName: "work_order_conditions_order_company_fk"
             columns: ["order_id", "company_id"]
             isOneToOne: false
-            referencedRelation: "installer_earnings"
-            referencedColumns: ["order_id", "company_id"]
-          },
-          {
-            foreignKeyName: "work_order_conditions_order_company_fk"
-            columns: ["order_id", "company_id"]
-            isOneToOne: false
             referencedRelation: "work_orders"
             referencedColumns: ["id", "company_id"]
           },
@@ -4249,13 +5168,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "work_order_pricing_order_fk"
-            columns: ["order_id", "company_id"]
-            isOneToOne: false
-            referencedRelation: "installer_earnings"
-            referencedColumns: ["order_id", "company_id"]
           },
           {
             foreignKeyName: "work_order_pricing_order_fk"
@@ -4343,13 +5255,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "installers"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "work_order_team_members_order_company_fk"
-            columns: ["order_id", "company_id"]
-            isOneToOne: false
-            referencedRelation: "installer_earnings"
-            referencedColumns: ["order_id", "company_id"]
           },
           {
             foreignKeyName: "work_order_team_members_order_company_fk"
@@ -4530,14 +5435,209 @@ export type Database = {
       }
     }
     Views: {
+      finance_cash_movements: {
+        Row: {
+          amount: number
+          batch_id: string | null
+          category: string
+          cheque_id: string | null
+          client_id: string | null
+          company_id: string
+          currency: string
+          description: string
+          direction: string
+          entry_id: string
+          id: string
+          method: string
+          order_id: string | null
+          proof_document_id: string | null
+          reference: string
+          settled_on: string
+          supplier_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_transaction_entry_fk"
+            columns: ["entry_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entries"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_transaction_entry_fk"
+            columns: ["entry_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entry_balances"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_transaction_proof_fk"
+            columns: ["proof_document_id", "entry_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_documents"
+            referencedColumns: ["id", "entry_id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_transactions_batch_id_company_id_fkey"
+            columns: ["batch_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_payment_batches"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_transactions_cheque_id_company_id_fkey"
+            columns: ["cheque_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_cheques"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_transactions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_entry_balances: {
+        Row: {
+          amount: number
+          available_amount: number
+          category: string
+          client_id: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          credit_amount: number
+          currency: string
+          description: string
+          direction: string
+          due_on: string | null
+          id: string
+          installment: string
+          open_amount: number
+          order_id: string | null
+          paid_amount: number
+          period_month: string | null
+          project_id: string | null
+          reserved_amount: number
+          settled_on: string | null
+          source: string
+          source_key: string | null
+          status: string
+          supplier_id: string | null
+          template_id: string | null
+          updated_at: string
+          updated_by: string | null
+          zone: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_entries_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_entries_project_id_company_id_fkey"
+            columns: ["project_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_entries_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_entry_client_fk"
+            columns: ["client_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_entry_order_fk"
+            columns: ["order_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_entry_supplier_fk"
+            columns: ["supplier_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_suppliers"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_entry_template_fk"
+            columns: ["template_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_expense_templates"
+            referencedColumns: ["id", "company_id"]
+          },
+        ]
+      }
+      finance_invoice_differences: {
+        Row: {
+          company_id: string
+          current_amount: number
+          entry_id: string
+          invoice_amount: number
+          invoice_id: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_allocation_entry_fk"
+            columns: ["entry_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entries"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_allocation_entry_fk"
+            columns: ["entry_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entry_balances"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_allocation_invoice_fk"
+            columns: ["invoice_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "finance_invoices"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "finance_invoice_allocations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       installer_earnings: {
         Row: {
           amount: number | null
-          installer_id: string | null
           company_id: string | null
           created_at: string | null
           currency: string | null
           finalized_at: string | null
+          installer_id: string | null
           order_id: string | null
           order_number: string | null
           payment_status: string | null
@@ -4548,70 +5648,7 @@ export type Database = {
           status: string | null
           title: string | null
         }
-        Insert: {
-          amount?: number | null
-          installer_id?: string | null
-          company_id?: string | null
-          created_at?: string | null
-          currency?: string | null
-          finalized_at?: string | null
-          order_id?: string | null
-          order_number?: string | null
-          payment_status?: string | null
-          payment_status_changed_at?: string | null
-          project_id?: string | null
-          scheduled_date?: string | null
-          site_id?: string | null
-          status?: string | null
-          title?: string | null
-        }
-        Update: {
-          amount?: number | null
-          installer_id?: string | null
-          company_id?: string | null
-          created_at?: string | null
-          currency?: string | null
-          finalized_at?: string | null
-          order_id?: string | null
-          order_number?: string | null
-          payment_status?: string | null
-          payment_status_changed_at?: string | null
-          project_id?: string | null
-          scheduled_date?: string | null
-          site_id?: string | null
-          status?: string | null
-          title?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "work_orders_assigned_installer_id_fkey"
-            columns: ["installer_id"]
-            isOneToOne: false
-            referencedRelation: "installers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "work_orders_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "work_orders_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "work_orders_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       location_backfill_report: {
         Row: {
@@ -4649,6 +5686,15 @@ export type Database = {
         Returns: undefined
       }
       accept_invitation: { Args: { p_token: string }; Returns: undefined }
+      add_order_team_member: {
+        Args: {
+          p_installer_id: string
+          p_operation_id: string
+          p_order_id: string
+          p_override_reason?: string
+        }
+        Returns: Json
+      }
       announcement_audience: {
         Args: { p_audience: Json; p_company: string }
         Returns: {
@@ -4665,6 +5711,16 @@ export type Database = {
           email: string
         }[]
       }
+      apply_order_status_change: {
+        Args: {
+          p_attribute_caller?: boolean
+          p_expected_status?: string
+          p_note: string
+          p_order_id: string
+          p_to_status: string
+        }
+        Returns: undefined
+      }
       assign_activity: {
         Args: { p_activity_id: string; p_installer_id: string }
         Returns: string
@@ -4677,44 +5733,6 @@ export type Database = {
           p_override_reason?: string
         }
         Returns: Json
-      }
-      order_team_size: {
-        Args: { p_order_id: string }
-        Returns: number
-      }
-      auth_can_use_order_chat: {
-        Args: { p_company_id: string; p_order_id: string }
-        Returns: boolean
-      }
-      add_order_team_member: {
-        Args: {
-          p_installer_id: string
-          p_operation_id: string
-          p_order_id: string
-          p_override_reason?: string
-        }
-        Returns: Json
-      }
-      remove_order_team_member: {
-        Args: { p_installer_id: string; p_order_id: string }
-        Returns: undefined
-      }
-      set_team_member_amount: {
-        Args: { p_amount: number; p_installer_id: string; p_order_id: string }
-        Returns: undefined
-      }
-      set_team_member_payment_status: {
-        Args: {
-          p_installer_id: string
-          p_note?: string
-          p_order_id: string
-          p_status: string
-        }
-        Returns: undefined
-      }
-      auth_is_order_helper: {
-        Args: { p_order_id: string }
-        Returns: boolean
       }
       auth_can_operate_work_activity: {
         Args: { p_activity_id: string }
@@ -4732,6 +5750,10 @@ export type Database = {
         Args: { p_company_id: string }
         Returns: boolean
       }
+      auth_can_use_order_chat: {
+        Args: { p_company_id: string; p_order_id: string }
+        Returns: boolean
+      }
       auth_companies: { Args: { p_role?: string }; Returns: string[] }
       auth_company: { Args: never; Returns: string }
       auth_coordinates_anywhere: { Args: never; Returns: boolean }
@@ -4743,14 +5765,15 @@ export type Database = {
         Args: { p_activity_id: string }
         Returns: boolean
       }
-      auth_is_company_owner: {
-        Args: { p_company_id: string }
-        Returns: boolean
-      }
       auth_is_company_manager: {
         Args: { p_company_id: string }
         Returns: boolean
       }
+      auth_is_company_owner: {
+        Args: { p_company_id: string }
+        Returns: boolean
+      }
+      auth_is_order_helper: { Args: { p_order_id: string }; Returns: boolean }
       auth_role: { Args: never; Returns: string }
       broadcast_matches_installer: {
         Args: { p_broadcast_id: string }
@@ -4766,43 +5789,16 @@ export type Database = {
         Returns: number
       }
       can_operate_project: { Args: { p_project_id: string }; Returns: boolean }
-      rotate_project_tracking_link: { Args: { p_project_id: string }; Returns: string }
-      revoke_project_tracking_link: { Args: { p_project_id: string }; Returns: undefined }
-      project_tracking_snapshot: { Args: { p_token: string }; Returns: Json }
-      storage_path_has_active_tracking_link: { Args: { p_order_id: string }; Returns: boolean }
+      can_read_location: { Args: { p_location_id: string }; Returns: boolean }
       can_read_location_client: {
         Args: { p_client_id: string; p_location_id: string }
         Returns: boolean
       }
-      can_read_location: { Args: { p_location_id: string }; Returns: boolean }
       close_broadcast: { Args: { p_broadcast_id: string }; Returns: undefined }
       company_is_active: { Args: { p_company_id: string }; Returns: boolean }
       company_path_is_active: {
         Args: { p_company_id: string }
         Returns: boolean
-      }
-      apply_order_status_change: {
-        Args: {
-          p_attribute_caller?: boolean
-          p_expected_status?: string
-          p_note: string
-          p_order_id: string
-          p_to_status: string
-        }
-        Returns: undefined
-      }
-      finish_order_batch: {
-        Args: {
-          p_date?: string
-          p_duration_minutes?: number
-          p_end_time?: string
-          p_include_execution?: boolean
-          p_include_survey?: boolean
-          p_installer_id?: string
-          p_order_ids: string[]
-          p_start_time?: string
-        }
-        Returns: Json
       }
       create_order_activities: {
         Args: {
@@ -4868,6 +5864,90 @@ export type Database = {
       feature_enabled: {
         Args: { p_company_id?: string; p_flag_key: string }
         Returns: boolean
+      }
+      finance_attach_operation_proof: {
+        Args: {
+          p_mime: string
+          p_name: string
+          p_operation: string
+          p_path: string
+          p_size: number
+          p_type: string
+        }
+        Returns: number
+      }
+      finance_can_access: { Args: { p_company: string }; Returns: boolean }
+      finance_change_cheque: {
+        Args: { p_id: string; p_note: string; p_on: string; p_status: string }
+        Returns: undefined
+      }
+      finance_generate_expense_month: {
+        Args: { p_month: string }
+        Returns: number
+      }
+      finance_import_existing_orders: { Args: never; Returns: number }
+      finance_next_payment_date: {
+        Args: { p_finished: string; p_weekday: number }
+        Returns: string
+      }
+      finance_order_commercial_amount: {
+        Args: { p_order: string }
+        Returns: number
+      }
+      finance_order_source_amount: {
+        Args: { p_company: string; p_order: string }
+        Returns: number
+      }
+      finance_project_source_amount: {
+        Args: { p_company: string; p_project: string }
+        Returns: number
+      }
+      finance_register_cheque: {
+        Args: { p_data: Json; p_id: string }
+        Returns: string
+      }
+      finance_register_invoice: {
+        Args: {
+          p_allocations: Json
+          p_amount: number
+          p_company_id: string
+          p_currency: string
+          p_direction: string
+          p_due_on: string
+          p_file_name: string
+          p_id: string
+          p_invoice_number: string
+          p_issued_on: string
+          p_party_id: string
+          p_storage_path: string
+        }
+        Returns: string
+      }
+      finance_register_payment_batch: {
+        Args: { p_data: Json; p_id: string }
+        Returns: string
+      }
+      finance_sync_helper: {
+        Args: { p_company: string; p_member: string }
+        Returns: undefined
+      }
+      finance_sync_order: { Args: { p_order: string }; Returns: undefined }
+      finance_sync_project_amount: {
+        Args: { p_project: string }
+        Returns: undefined
+      }
+      finish_order_batch: {
+        Args: {
+          p_date?: string
+          p_duration_minutes?: number
+          p_end_time?: string
+          p_include_execution?: boolean
+          p_include_survey?: boolean
+          p_installer_id?: string
+          p_order_ids: string[]
+          p_start_time?: string
+        }
+        Returns: Json
       }
       formalize_project_from_broadcast: {
         Args: {
@@ -4940,6 +6020,7 @@ export type Database = {
       order_condition_snapshot: { Args: { p_order_id: string }; Returns: Json }
       order_min_photos: { Args: { p_order: string }; Returns: number }
       order_photo_count: { Args: { p_order: string }; Returns: number }
+      order_team_size: { Args: { p_order_id: string }; Returns: number }
       persist_in_app_notification: {
         Args: {
           p_aggregate_id: string
@@ -4963,6 +6044,7 @@ export type Database = {
           name: string
         }[]
       }
+      project_tracking_snapshot: { Args: { p_token: string }; Returns: Json }
       promote_installer_to_coordinator: {
         Args: { p_installer_id: string }
         Returns: undefined
@@ -4990,6 +6072,10 @@ export type Database = {
       }
       reject_broadcast_application: {
         Args: { p_broadcast_id: string; p_installer_id: string }
+        Returns: undefined
+      }
+      remove_order_team_member: {
+        Args: { p_installer_id: string; p_order_id: string }
         Returns: undefined
       }
       replace_installer_weekly_availability: {
@@ -5061,6 +6147,14 @@ export type Database = {
         Args: { p_role: string; p_user_id: string }
         Returns: undefined
       }
+      revoke_project_tracking_link: {
+        Args: { p_project_id: string }
+        Returns: undefined
+      }
+      rotate_project_tracking_link: {
+        Args: { p_project_id: string }
+        Returns: string
+      }
       run_reliability_jobs: { Args: never; Returns: Json }
       search_order_evidence: {
         Args: { p_kinds?: string[]; p_order_id: string; p_query?: string }
@@ -5098,6 +6192,23 @@ export type Database = {
       set_order_payment_status: {
         Args: { p_note?: string; p_order_id: string; p_status: string }
         Returns: undefined
+      }
+      set_team_member_amount: {
+        Args: { p_amount: number; p_installer_id: string; p_order_id: string }
+        Returns: undefined
+      }
+      set_team_member_payment_status: {
+        Args: {
+          p_installer_id: string
+          p_note?: string
+          p_order_id: string
+          p_status: string
+        }
+        Returns: undefined
+      }
+      storage_path_has_active_tracking_link: {
+        Args: { p_order_id: string }
+        Returns: boolean
       }
       submit_survey_submission: {
         Args: {

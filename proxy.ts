@@ -78,6 +78,10 @@ const isPublic = (path: string) =>
  * rutas públicas.
  */
 export async function proxy(request: NextRequest) {
+  if(request.nextUrl.pathname==='/finance-preview'||request.nextUrl.pathname.startsWith('/finance-preview/')||request.nextUrl.pathname.startsWith('/api/finance-development')){
+    const local=['localhost','127.0.0.1','[::1]'].includes(request.nextUrl.hostname);
+    return process.env.NODE_ENV==='development'&&local?NextResponse.next({request}):new NextResponse(null,{status:404});
+  }
   let response = NextResponse.next({ request });
 
   /**

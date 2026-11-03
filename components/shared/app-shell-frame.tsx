@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { FinanceNavigation } from "@/components/company/finance-navigation";
 import { ChevronLeft, ChevronRight, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SidebarNav } from "@/components/shared/sidebar-nav";
@@ -38,6 +40,8 @@ export function AppShellFrame({
   const t = useTranslations("Navigation");
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname=usePathname();
+  const financeArea=/^\/finance(\/|$)/.test(pathname)&&nav.some((item)=>item.href==='/finance');
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => setCollapsed(loadCollapsed()));
@@ -97,11 +101,11 @@ export function AppShellFrame({
           </Button>
         </div>
 
-        <SidebarNav
+        {financeArea?<FinanceNavigation collapsed={collapsed} onNavigate={()=>setMobileOpen(false)} showOperations/>:<SidebarNav
           items={nav}
           collapsed={collapsed}
           onNavigate={() => setMobileOpen(false)}
-        />
+        />}
 
         <div className="border-t border-sidebar-border p-3">
           <div className={cn("rounded-lg bg-sidebar-accent p-3", collapsed && "lg:p-2")}>

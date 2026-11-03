@@ -29,7 +29,7 @@ export default async function CompanyLayout({
   const twoFactor = twoFactorGate(await fetchTwoFactorStatus(supabase), user.role);
   if (twoFactor) redirect(twoFactor);
 
-  const nav = companyNav(t, { needsLocationReview: await needsLocationReview(supabase) });
+  const nav = companyNav(t, { needsLocationReview: await needsLocationReview(supabase), canManageFinance: user.canManageFinance, canManageSettings: user.canManageSettings });
 
   return (
     <AppShell
