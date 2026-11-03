@@ -70,3 +70,31 @@ pnpm exec next dev --webpack --hostname 127.0.0.1 --port 3001
 ```
 
 Con las variables de Demo, iniciar sesión como gerente dueño de «Gráfica Demo SA» y abrir `/finance`. Para ver una subcuenta sin Finanzas, crearla desde Equipo sin el permiso: debe poder abrir OTs y precios pero no `/finance`.
+
+## Auditoría para producción — 03-11-2026: NO-GO por ahora
+
+Lo que pasó:
+- pgTAP de Finanzas en Demo: 47/47.
+- Las rutas de demo (`/finance-preview`, `/api/finance-development`) dan 404 fuera de `next dev` en localhost (proxy + guarda en la página y la API). PGlite está en `devDependencies`.
+- El service worker no cachea `/finance` ni sus PDF (`public/sw.test.ts`).
+- Todo lo del apartado «Pruebas».
+
+Por qué no se pasó:
+1. **Pasar Finanzas a producción es pasar toda la hoja de ruta v2.** Producción no tiene ninguna migración de v2 (última: `20260921224613`) y tiene uso real: 2 empresas, 22 perfiles, 17 proyectos, 115 OTs. Serían 12 migraciones (8 de v2, con traslado de datos de precios y locaciones, más las 4 de Finanzas) y 190+ archivos de código. v2 (PR #52) quedó frenada a la espera de la revisión de pantallas de Nicolás, que no se hizo.
+2. **Nadie usó todavía las pantallas de Finanzas con login.** Están probadas las reglas en la base, no el recorrido real (crear proyecto → OTs con precios → cobro/pago → comprobante → PDF).
+3. **El preview de Vercel apunta a la base de Producción.** Subir esta rama para revisarla en un preview correría código nuevo contra la base vieja de producción. Antes hay que apuntar el preview a Demo.
+4. Falta confirmar que hay un backup reciente de producción y cómo se restaura, antes de aplicar migraciones de datos.
+
+Camino a producción:
+1. Apuntar `NEXT_PUBLIC_SUPABASE_URL` / `ANON_KEY` de **Preview** a Demo en Vercel (Nicolás).
+2. Subir la rama, abrir el preview y que Nicolás recorra la lista de abajo con un dueño de Demo.
+3. Con su OK: backup manual de producción → migraciones de v2 en orden → las 4 de Finanzas → verificar con SQL → merge a `main` → verificar `www.seinstala.com.ar`.
+
+Lista para recorrer en el preview:
+- Crear un proyecto con cliente y facturación por instalación, dos OTs con precio y un instalador con importe.
+- `/finance/collections`: aparecen los dos cobros. Cambiar el precio de una OT: cambia el importe, sin un cobro nuevo.
+- Finalizar una OT y ver el pago del instalador en `/finance/payments`, con su fecha. Registrar una transferencia repartida entre dos pagos y adjuntar un comprobante.
+- Registrar un cheque de cobro, acreditarlo, y ver la caja en `/finance/cash`.
+- Bajar el PDF de una OT y el resumen.
+- Entrar como subcuenta sin permiso de Finanzas: ve precios de OTs y no ve `/finance`.
+- Mirar todo en el celular.
