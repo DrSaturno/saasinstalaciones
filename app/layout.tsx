@@ -3,6 +3,7 @@ import { Inter, Fragment_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Toaster } from "@/components/ui/sonner";
+import { RecoveryHashHandler } from "@/components/auth/recovery-hash-handler";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -62,6 +63,7 @@ export default async function RootLayout({
           <Providers>{children}</Providers>
         </NextIntlClientProvider>
         <Toaster />
+        <RecoveryHashHandler />
       </body>
     </html>
   );

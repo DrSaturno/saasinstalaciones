@@ -74,3 +74,36 @@ describe("áreas declaradas en el proxy", () => {
     expect(collisions).toEqual([]);
   });
 });
+
+describe("link de recuperación que Supabase mandó a la página principal", () => {
+  // `proxy` arma el cliente de Supabase antes de mirar la ruta; con estas
+  // variables alcanza, porque el reenvío se decide antes de pedir la sesión.
+  process.env.NEXT_PUBLIC_SUPABASE_URL ??= "https://example.supabase.co";
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??= "anon-key";
+
+  async function visit(path: string) {
+    const { proxy } = await import("./proxy");
+    const { NextRequest } = await import("next/server");
+    return proxy(new NextRequest(`https://www.seinstala.com.ar${path}`));
+  }
+
+  it("reenvía el código al callback, que es el que lo canjea", async () => {
+    const response = await visit("/?code=abc123");
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "https://www.seinstala.com.ar/api/auth/callback?code=abc123",
+    );
+  });
+
+  it("también desde el login, y con el formato token_hash", async () => {
+    const response = await visit("/login?token_hash=h1&type=recovery");
+    expect(response.headers.get("location")).toBe(
+      "https://www.seinstala.com.ar/api/auth/callback?token_hash=h1&type=recovery",
+    );
+  });
+
+  it("un link vencido va al callback, que ofrece pedir uno nuevo", async () => {
+    const response = await visit("/?error=access_denied&error_code=otp_expired");
+    expect(response.headers.get("location")).toContain("/api/auth/callback?");
+  });
+});
