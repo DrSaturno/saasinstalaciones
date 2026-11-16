@@ -3,6 +3,7 @@ import {
   buildWeeklyDigest,
   financeRequiresInvoice,
   financeStage,
+  financeWaitsForOrder,
   groupByZone,
   sumByCurrency,
   type DigestEntry,
@@ -29,6 +30,16 @@ describe("etapa visible de un pago", () => {
     expect(financeStage({ ...pay, category: "fixed" }, false)).toBe("ready");
     expect(financeStage({ ...pay, status: "review" }, true)).toBe("review");
     expect(financeStage({ ...pay, status: "settled" }, false)).toBe("settled");
+  });
+  it("el pago de una OT sin terminar espera la orden; el anticipo, los gastos sin OT y lo ya aprobado no", () => {
+    const finished = new Set(["ot-terminada"]);
+    const pay = { direction: "payable", status: "review", order_id: "ot-abierta", installment: "balance" };
+    expect(financeWaitsForOrder(pay, finished)).toBe(true);
+    expect(financeWaitsForOrder({ ...pay, order_id: "ot-terminada" }, finished)).toBe(false);
+    expect(financeWaitsForOrder({ ...pay, installment: "advance" }, finished)).toBe(false);
+    expect(financeWaitsForOrder({ ...pay, order_id: null }, finished)).toBe(false);
+    expect(financeWaitsForOrder({ ...pay, status: "approved" }, finished)).toBe(false);
+    expect(financeWaitsForOrder({ ...pay, direction: "receivable" }, finished)).toBe(false);
   });
 });
 

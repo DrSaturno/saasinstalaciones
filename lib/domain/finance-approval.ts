@@ -30,6 +30,20 @@ export function financeStage(
   return financeRequiresInvoice(entry.direction, entry.category) && !hasInvoice ? "awaitingInvoice" : "ready";
 }
 
+/**
+ * Un pago de una OT que todavía no se terminó: no está para que el dueño lo
+ * decida ni para pagarse, así que no se muestra en Pagos ni se puede aprobar.
+ * Aparece solo cuando la orden se finaliza en Operaciones. El anticipo es la
+ * excepción: se aprueba y se paga antes de terminar el trabajo.
+ */
+export function financeWaitsForOrder(
+  entry: { direction: string; status: string; order_id: string | null; installment?: string | null },
+  finishedOrderIds: ReadonlySet<string>,
+): boolean {
+  return entry.direction === "payable" && entry.status === "review" && !!entry.order_id
+    && entry.installment !== "advance" && !finishedOrderIds.has(entry.order_id);
+}
+
 export type FinanceZoneKey = "amba" | "interior" | "general";
 
 /** AMBA, interior o «general» (gastos sin OT: fijos, sueldos, otros). */

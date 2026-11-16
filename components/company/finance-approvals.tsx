@@ -7,7 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { CheckCheck, Clock3, FileText, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import type { FinanceWorkspace, WorkspaceEntry } from "@/lib/data/finance-workspace";
-import { financeStage, financeZoneKey, sumByCurrency, type FinanceZoneKey } from "@/lib/domain/finance-approval";
+import { financeStage, financeWaitsForOrder, financeZoneKey, sumByCurrency, type FinanceZoneKey } from "@/lib/domain/finance-approval";
 import { nextFinanceWeekday } from "@/lib/domain/finance-forecast";
 import { financeDisplayDate, financeMoney } from "@/lib/domain/finance-presentation";
 import { useFinanceActions } from "@/components/company/finance-action-context";
@@ -53,8 +53,8 @@ export function FinanceApprovals({ data, today, canApprove, digest }: {
     [data.orders],
   );
   const review = data.entries.filter((entry) => entry.direction === "payable" && entry.status === "review" && entry.amount > 0);
-  const approvable = review.filter((entry) => !entry.order_id || finished.has(entry.order_id));
-  const waiting = review.filter((entry) => entry.order_id && !finished.has(entry.order_id));
+  const approvable = review.filter((entry) => !financeWaitsForOrder(entry, finished));
+  const waiting = review.filter((entry) => financeWaitsForOrder(entry, finished));
   const awaitingInvoice = data.entries.filter(
     (entry) => entry.direction === "payable" && financeStage(entry, entry.invoices.length > 0 || data.documents.some((file) => file.entry_id === entry.id && file.kind === "invoice")) === "awaitingInvoice",
   );
