@@ -11,7 +11,8 @@ export type PushEvent =
   | "order_assigned"
   | "update_received"
   | "announcement"
-  | "blocker_reported";
+  | "blocker_reported"
+  | "payment_approved";
 
 /**
  * Despacha el push como mejora progresiva. La notificación in-app ya fue

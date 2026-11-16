@@ -6,6 +6,8 @@ import { ArrowRight,ArrowUpRight,Download,FolderOpen,Paperclip } from "lucide-re
 import type { FinanceFilters } from "@/lib/data/finance-operations";
 import { financeDisplayDate,financeMoney,type FinanceTableEntry,type FinanceTableDocument } from "@/lib/domain/finance-presentation";
 import { FinanceEntryDetail } from "@/components/company/finance-entry-detail";
+import { FinanceStageBadge } from "@/components/company/finance-hint";
+import { financeStage } from "@/lib/domain/finance-approval";
 
 function csvCell(value:string|number|null) {
   const raw=String(value??''),safe=/^[=+\-@\t\r]/.test(raw)?`'${raw}`:raw;
@@ -16,11 +18,11 @@ function exportRows(entries:FinanceTableEntry[],headings:string[]) {
   const url=URL.createObjectURL(new Blob(['\uFEFF'+rows.map((row)=>row.map(csvCell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}));
   const link=document.createElement('a');link.href=url;link.download=`finanzas-${new Date().toISOString().slice(0,10)}.csv`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-const stateClasses:Record<string,string>={review:'bg-amber-50 text-amber-800 ring-amber-200/60',approved:'bg-sky-50 text-sky-800 ring-sky-200/60',settled:'bg-emerald-50 text-emerald-800 ring-emerald-200/60',void:'bg-slate-100 text-slate-500 ring-slate-200'};
 
-export function FinanceOperationsTable({entries,exportEntries=entries,documents,filters,today,demo=false,filterAction='/finance/operations',hideFilters=false}:{entries:FinanceTableEntry[];exportEntries?:FinanceTableEntry[];documents:FinanceTableDocument[];filters:FinanceFilters;today:string;demo?:boolean;filterAction?:string;hideFilters?:boolean}) {
+export function FinanceOperationsTable({entries,exportEntries=entries,documents,filters,today,demo=false,filterAction='/finance/operations',hideFilters=false,initialEntryId}:{initialEntryId?:string;entries:FinanceTableEntry[];exportEntries?:FinanceTableEntry[];documents:FinanceTableDocument[];filters:FinanceFilters;today:string;demo?:boolean;filterAction?:string;hideFilters?:boolean}) {
   const t=useTranslations('FinanceOperations'),v2=useTranslations('FinanceV2'),locale=useLocale();
-  const [selection,setSelection]=useState<{id:string;tab:'movement'|'documents'}|null>(null);
+  // `initialEntryId` abre el detalle directo: así se llega desde el Resumen en un clic (FLX-70).
+  const [selection,setSelection]=useState<{id:string;tab:'movement'|'documents'}|null>(initialEntryId?{id:initialEntryId,tab:'movement'}:null);
   const trigger=useRef<HTMLButtonElement|null>(null);
   const selected=entries.find((entry)=>entry.id===selection?.id);
   const byEntry=new Map<string,FinanceTableDocument[]>();for(const file of documents)byEntry.set(file.entry_id,[...(byEntry.get(file.entry_id)??[]),file]);
@@ -43,7 +45,7 @@ export function FinanceOperationsTable({entries,exportEntries=entries,documents,
           <td className="finance-primary-cell"><p className="font-semibold text-[#25465b]">{entry.partyName}</p><p className="mt-1 max-w-64 truncate text-xs text-[#7c8d9a]" title={entry.description}>{!filters.direction&&<>{t(entry.direction as 'payable'|'receivable')} · </>}{t(`categories.${entry.category}` as 'categories.installation')} · {entry.description||t(`installments.${entry.installment}` as 'installments.total')}</p>{entry.source==='imported'&&<p className="mt-1 text-xs text-amber-800">{t('importedReview')}</p>}</td>
           <td data-label={t('orderNumber')}>{!demo&&entry.order_id?<Link href={`/finance/orders/${entry.order_id}`} className="rounded-md bg-[#f0f5f8] px-2 py-1 font-mono text-xs font-medium text-[#47718b] hover:bg-blue-50">{entry.orderNumber}</Link>:<span className="text-xs text-muted-foreground">{entry.orderNumber??'—'}</span>}</td>
           <td data-label={v2('currentPending')} className="whitespace-nowrap text-right"><p className="font-sans text-[15px] font-semibold tracking-tight tabular-nums">{money(entry.open_amount??(entry.status==='settled'?0:entry.amount))}</p>{!!entry.paid_amount&&<p className="mt-1 text-xs text-muted-foreground">{v2('totalAmount')}: {money(entry.amount)}</p>}</td>
-          <td data-label={t('status')}><span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${stateClasses[entry.status]??stateClasses.review}`}><span className="size-1 rounded-full bg-current"/>{t(`statuses.${entry.status}` as 'statuses.review')}</span>{!!entry.reserved_amount&&<p className="mt-1 text-xs text-amber-800">{v2('chequeReservedShort')}</p>}{!!entry.credit_amount&&<p className="mt-1 text-xs text-emerald-700">{v2('credit')}: {money(entry.credit_amount)}</p>}</td>
+          <td data-label={t('status')}><FinanceStageBadge stage={financeStage(entry,files.some((file)=>file.kind==='invoice'))} direction={entry.direction}/>{!!entry.reserved_amount&&<p className="mt-1 text-xs text-amber-800">{v2('chequeReservedShort')}</p>}{!!entry.credit_amount&&<p className="mt-1 text-xs text-emerald-700">{v2('credit')}: {money(entry.credit_amount)}</p>}</td>
           <td className="hidden xl:table-cell">{demo?<span className="text-xs text-muted-foreground">{v2('fileCount',{count:files.length})}</span>:<button type="button" onClick={(event)=>{trigger.current=event.currentTarget;setSelection({id:entry.id,tab:'documents'});}} aria-label={v2('filesFor',{party:entry.partyName})} className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2 text-xs hover:bg-slate-100 ${files.length?'text-[#56758b]':'text-slate-400'}`}><Paperclip className="size-3.5" aria-hidden="true"/>{files.length||'—'}</button>}</td>
           {!demo&&<td className="finance-action-cell text-right"><button type="button" onClick={(event)=>{trigger.current=event.currentTarget;setSelection({id:entry.id,tab:'movement'});}} className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-[#e2eaf0] bg-white px-3 text-xs font-medium text-[#3b647e] hover:border-primary/40 hover:bg-blue-50">{v2('manage')}<ArrowRight className="size-3.5" aria-hidden="true"/></button></td>}
         </tr>;

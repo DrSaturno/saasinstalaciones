@@ -2976,6 +2976,9 @@
       "payment_order": "Ordem de pagamento"
     },
     "errors": {
+        "ownerApproves": "Os pagamentos são aprovados pelo dono da empresa, em «Aprovar pagamentos».",
+        "orderNotFinished": "A ordem de serviço ainda não foi finalizada: não é possível aprovar o pagamento.",
+        "invoiceRequiredToPay": "Não é possível pagar: falta a nota fiscal do fornecedor.",
       "denied": "Acesso negado",
       "supplierData": "Revise os dados do fornecedor",
       "supplierSave": "Não foi possível salvar o fornecedor",
@@ -3266,6 +3269,8 @@
     "close": "Fechar"
   },
   "FinanceV2": {
+      "approvals": "Aprovar pagamentos",
+      "help": "Como funciona?",
     "module": "Finanças",
     "summary": "Resumo",
     "payments": "Pagamentos",
@@ -3535,5 +3540,520 @@
     "chequeRemaining": "Falta aplicar {amount}.",
     "chequeExcess": "Você aplicou {amount} a mais. Revise os valores de cada serviço.",
     "chequeConfirm": "Confirma esta alteração? Verifique o status e a data: confirmar crédito ou débito registra o movimento no caixa."
-  }
+  },
+    "FinanceApproval": {
+      "demoInvoiceHint": "Você está na demo: para simular o instalador, envie a nota fiscal pela aba Documentos.",
+      "title": "Aprovar pagamentos",
+      "hint": "Tudo o que aguarda sua aprovação nesta semana, separado por região. Revise cada valor, corrija se precisar e aprove. Ao aprovar, cada instalador recebe o aviso para enviar a nota fiscal.",
+      "howItWorks": "Como funciona?",
+      "ownerOnlyNotice": "Só o dono da empresa pode aprovar pagamentos. Você pode ver a lista, mas não aprovar nem alterar valores.",
+      "zones": {
+        "amba": "AMBA",
+        "interior": "Interior",
+        "general": "Despesas fixas e outras"
+      },
+      "zoneHelp": {
+        "amba": "Trabalhos na Capital e na Grande Buenos Aires. São pagos às segundas-feiras.",
+        "interior": "Trabalhos no restante do país. São pagos às terças-feiras.",
+        "general": "Despesas que não são de uma ordem de serviço: aluguel, salários, serviços. São aprovadas, mas não precisam de nota fiscal."
+      },
+      "paysMonday": "Paga-se na segunda-feira {date}",
+      "paysTuesday": "Paga-se na terça-feira {date}",
+      "selectedOf": "{selected} de {total} selecionados",
+      "nothingToApprove": "Não há pagamentos aguardando sua aprovação",
+      "nothingToApproveHint": "Quando uma ordem de serviço for finalizada ou uma despesa for lançada, ela aparecerá aqui.",
+      "unselectAll": "Desmarcar todos",
+      "selectAll": "Selecionar todos",
+      "subtotal": "Subtotal",
+      "select": "Selecionar",
+      "party": "A quem se paga",
+      "order": "Ordem e local",
+      "concept": "Descrição",
+      "amount": "Valor a pagar",
+      "amountHelp": "Valor sem imposto. Você pode corrigi-lo antes de aprovar: se vem de uma ordem, é corrigido também na ordem de serviço; se é uma despesa fixa ou avulsa, vale só para este pagamento.",
+      "selectRow": "Selecionar o pagamento de {party}",
+      "amountFor": "Valor para {party}",
+      "wasAmount": "Antes: {amount}",
+      "invalidAmount": "Valor inválido",
+      "categories": {
+        "installation": "Instalação",
+        "coordination": "Coordenação",
+        "logistics": "Logística",
+        "fixed": "Despesa fixa",
+        "payroll": "Salário",
+        "variable": "Despesa variável",
+        "service": "Serviço",
+        "motorcycle": "Moto",
+        "travel": "Diárias de viagem",
+        "daily": "Despesa diária",
+        "other": "Outro"
+      },
+      "notFinishedTitle": "{count, plural, one {# pagamento de uma ordem não finalizada} other {# pagamentos de ordens não finalizadas}}",
+      "notFinishedHint": "Ainda não podem ser aprovados: aparecerão acima quando a ordem for finalizada.",
+      "awaitingInvoiceTitle": "{count, plural, one {# pagamento aprovado aguarda nota fiscal} other {# pagamentos aprovados aguardam nota fiscal}}",
+      "awaitingInvoiceHint": "Você já aprovou. Poderão ser pagos quando cada fornecedor enviar a nota fiscal.",
+      "confirmMessage": "Você vai aprovar {count, plural, one {# pagamento} other {# pagamentos}}. AMBA: {amba}. Interior: {interior}. Despesas fixas e outras: {general}. Cada instalador receberá o aviso para enviar a nota fiscal.",
+      "confirmApprove": "Sim, aprovar",
+      "selectedSummary": "{count, plural, one {# pagamento selecionado} other {# pagamentos selecionados}}",
+      "approving": "Aprovando…",
+      "approveSelected": "{count, plural, one {Aprovar # pagamento} other {Aprovar # pagamentos}}",
+      "approvedToast": "{count, plural, one {Pagamento aprovado} other {# pagamentos aprovados}}. Quem precisa faturar foi avisado.",
+      "errors": {
+        "denied": "Você não tem permissão para isso.",
+        "ownerOnly": "Só o dono da empresa pode aprovar pagamentos.",
+        "invalidData": "Revise os valores: devem ser maiores que zero e ter até duas casas decimais.",
+        "orderNotFinished": "Um dos pagamentos é de uma ordem ainda não finalizada. Nenhum foi aprovado.",
+        "notReviewable": "Um dos pagamentos não está mais em revisão. Atualize a página e tente de novo.",
+        "amountLocked": "Um valor não pode ser alterado porque esse pagamento já tem nota fiscal ou pagamentos registrados.",
+        "amountNotEditable": "Este valor vem do sistema anterior e não pode ser alterado. Anule e lance de novo com o valor correto.",
+        "amountSourceChanged": "A ordem mudou enquanto você aprovava. Atualize a página e tente de novo.",
+        "invalidAmount": "Há um valor inválido.",
+        "save": "Não foi possível aprovar. Tente de novo.",
+        "reasonRequired": "Escreva o motivo (entre 3 e 300 caracteres).",
+        "invoiceHasPayments": "Essa nota fiscal já tem pagamentos registrados e não pode ser devolvida."
+      },
+      "whatIsThis": "O que é isto?",
+      "stages": {
+        "payable": {
+          "review": "Em revisão",
+          "awaitingInvoice": "Aprovado · falta nota fiscal",
+          "ready": "Pronto para pagar",
+          "settled": "Quitado",
+          "void": "Anulado"
+        },
+        "receivable": {
+          "review": "Em revisão",
+          "awaitingInvoice": "Aprovado",
+          "ready": "Pronto para receber",
+          "settled": "Quitado",
+          "void": "Anulado"
+        }
+      },
+      "stageHelp": {
+        "payable": {
+          "review": "Aguarda o dono aprovar e confirmar o valor. Ainda não pode ser pago.",
+          "awaitingInvoice": "O dono já aprovou. Falta o fornecedor enviar a nota fiscal: até lá não pode ser pago.",
+          "ready": "Aprovado e com tudo o que é necessário. Já é possível registrar o pagamento.",
+          "settled": "Pago por completo. Não há nada pendente.",
+          "void": "Foi anulado e não conta em nenhum total."
+        },
+        "receivable": {
+          "review": "Falta revisar o valor antes de considerá-lo correto.",
+          "awaitingInvoice": "Aprovado.",
+          "ready": "Aprovado: é possível registrar o recebimento quando o dinheiro entrar.",
+          "settled": "Recebido por completo e com nota fiscal emitida.",
+          "void": "Foi anulado e não conta em nenhum total."
+        }
+      },
+      "stageFilterHelp": "Filtre pela etapa de cada pagamento ou recebimento. Passe o mouse sobre uma etiqueta de estado para ver o que significa.",
+      "kindPayment": "Pagamento",
+      "kindCollection": "Recebimento",
+      "kindColumn": "Tipo",
+      "kindPaymentOut": "Pagamento · sai",
+      "kindCollectionIn": "Recebimento · entra",
+      "amountToConfirm": "Valor a confirmar",
+      "approvedAmount": "Valor aprovado",
+      "payDay": "Dia de pagamento",
+      "dueDay": "Vencimento",
+      "payDayHelp": "AMBA é pago às segundas e Interior às terças. Se a nota fiscal chegar depois desse dia, o pagamento passa para o seguinte.",
+      "supplierInvoice": "Nota fiscal do fornecedor",
+      "supplierInvoiceHelp": "Sem esta nota fiscal o pagamento não pode ser registrado. Deve ser pelo valor aprovado, sem imposto.",
+      "invoiceAfterApproval": "O fornecedor poderá enviá-la quando o dono aprovar este pagamento.",
+      "invoicePendingFieldTeam": "Ainda não enviou. Ele mesmo envia pelo perfil, em «Para faturar». Já recebeu o aviso.",
+      "invoicePendingSupplier": "Ainda não foi anexada. Anexe na aba Documentos ou registre em Notas fiscais.",
+      "openInvoice": "Ver",
+      "invoiceReturned": "Nota fiscal devolvida. O fornecedor recebeu o aviso para enviar de novo.",
+      "returnReason": "Por que você está devolvendo? (mostramos ao fornecedor)",
+      "returnInvoice": "Devolver nota fiscal",
+      "needsOwnerApproval": "Este pagamento aguarda a aprovação do dono da empresa, que confirma o valor.",
+      "goToApprovals": "Ir para Aprovar pagamentos",
+      "blockedNoInvoiceFieldTeam": "Ainda não é possível pagar: falta a nota fiscal. O instalador ou coordenador envia pelo perfil; quando enviar, você poderá registrar o pagamento aqui.",
+      "blockedNoInvoiceSupplier": "Ainda não é possível pagar: falta a nota fiscal do fornecedor. Anexe na aba Documentos.",
+      "collectedWithoutInvoice": "O dinheiro já entrou, mas o recebimento só é fechado quando você registrar a nota fiscal emitida ao cliente.",
+      "registerIssuedInvoice": "Registrar a nota fiscal",
+      "proofNotAttached": "Não foi possível anexar o comprovante: envie pela aba Documentos.",
+      "proofAttached": "O comprovante foi anexado.",
+      "proofPending": "Falta anexar o comprovante: você pode enviar pela aba Documentos.",
+      "paymentProof": "Comprovante de pagamento (opcional agora)",
+      "collectionProof": "Comprovante de crédito (opcional agora)",
+      "proofHelp": "O comprovante da transferência ou do depósito. Se não tiver em mãos, registre o movimento assim mesmo e envie depois em Documentos.",
+      "orUseUploadedProof": "Ou usar um comprovante já enviado",
+      "movementHelp": {
+        "realized": "Dinheiro que já entrou ou saiu de verdade, na data indicada.",
+        "planned": "Ainda não foi pago nem recebido: é o esperado para essa data, conforme o vencimento.",
+        "chequePending": "Há um cheque entregue ou recebido que ainda não foi debitado nem creditado."
+      },
+      "awaitingInvoiceCount": "{count, plural, =0 {Nenhum aguarda nota fiscal} one {# aguarda nota fiscal} other {# aguardam nota fiscal}}",
+      "approvePayments": "Aprovar pagamentos",
+      "newExpense": "Nova despesa",
+      "newExpenseHint": "Escolha o tipo de despesa e preencha só o que for pedido.",
+      "alerts": {
+        "toApprove": "Pagamentos para aprovar",
+        "toApproveHelp": "Ordens finalizadas e despesas que aguardam a aprovação do dono.",
+        "awaitingInvoice": "Aprovados que aguardam nota fiscal",
+        "awaitingInvoiceHelp": "Já estão aprovados, mas não podem ser pagos até o fornecedor enviar a nota fiscal.",
+        "readyToPay": "Prontos para pagar",
+        "readyToPayHelp": "Aprovados e com nota fiscal. Abra cada um para registrar o pagamento e anexar o comprovante.",
+        "reviewCollectionsHelp": "Recebimentos que ainda não foram revisados.",
+        "collectedNoInvoice": "Recebidos sem nota fiscal emitida",
+        "collectedNoInvoiceHelp": "O dinheiro já entrou, mas o recebimento só é fechado ao registrar a nota fiscal ao cliente.",
+        "missingProofs": "Movimentos sem comprovante",
+        "missingProofsHelp": "Pagamentos ou recebimentos já registrados sem comprovante anexado. Abra cada um e envie em Documentos.",
+        "differencesHelp": "O valor da ordem mudou depois de registrar a nota fiscal. É preciso revisar a diferença."
+      },
+      "forecastHelp": "O que já está aprovado e com nota fiscal para o próximo dia de pagamento de cada região. O que aguarda nota fiscal aparece separado e não entra no total.",
+      "readyToPayShort": "{count, plural, =0 {Nada pronto para pagar} one {# pagamento pronto} other {# pagamentos prontos}}",
+      "awaitingInvoiceShort": "{count, plural, one {# aguarda nota fiscal} other {# aguardam nota fiscal}} · {amount}",
+      "noneAwaitingInvoice": "Nenhum aguarda nota fiscal",
+      "forecastFootnote": "AMBA é pago às segundas e Interior às terças. Um pagamento sem nota fiscal a tempo passa para a semana seguinte.",
+      "attentionHelp": "Toque em cada linha para ver quais são. Cada uma abre o pagamento, o recebimento ou a ordem de serviço.",
+      "openOrder": "Abrir a ordem de serviço",
+      "seeAllCount": "Ver os {count}",
+      "seeAll": "Ver todos"
+    },
+    "FinanceInsights": {
+      "title": "Números do negócio",
+      "titleHelp": "Todos os valores são sem imposto. «Caixa» é dinheiro que já entrou ou saiu; «resultado» é o faturável menos o custo, tenha sido recebido ou não.",
+      "currency": "Moeda",
+      "cashFlowMonth": "Caixa do mês",
+      "cashFlowHelp": "O que entrou menos o que saiu neste mês, contando só movimentos já registrados.",
+      "income": "Entrou",
+      "expense": "Saiu",
+      "vsPreviousMonth": "Em relação ao mês anterior",
+      "accumulatedProfit": "Lucro acumulado",
+      "accumulatedHelp": "Tudo o que se cobra dos clientes menos tudo o que custa (instaladores, coordenação, despesas fixas e outras), tenha sido recebido ou pago ou não.",
+      "billable": "A receber de clientes",
+      "costs": "Custos",
+      "marginGeneral": "Lucro geral",
+      "receivables": "Os clientes nos devem",
+      "agingHelp": "O que falta receber, conforme o tempo de atraso.",
+      "aging": {
+        "current": "Em dia",
+        "days30": "Vencido até 30 dias",
+        "days60": "Vencido de 31 a 60 dias",
+        "older": "Vencido há mais de 60 dias",
+        "undated": "Sem data de vencimento"
+      },
+      "fixedMonth": "Despesas fixas e salários do mês",
+      "fixedHelp": "As despesas fixas e os salários deste mês: quanto somam, quanto já foi pago e quanto falta.",
+      "fixedRemaining": "Falta pagar",
+      "fixedTotal": "{count, plural, one {Total · # despesa} other {Total · # despesas}}",
+      "fixedPaid": "Já pago",
+      "weeklyForecast": "Previsão de caixa · próximas 4 semanas",
+      "weeklyHelp": "O que se espera receber e pagar a cada semana conforme os vencimentos. O vencido e ainda pendente conta na semana atual.",
+      "week": "Semana",
+      "toCollect": "A receber",
+      "toPay": "A pagar",
+      "balance": "Saldo",
+      "thisWeek": "Esta semana ·",
+      "weekOf": "Semana de",
+      "profitBy": "Lucro por",
+      "profitHelp": "Para cada projeto ou cliente: o que se cobra menos o custo das ordens. A porcentagem é o lucro sobre o valor cobrado.",
+      "projects": "Projeto",
+      "clients": "Cliente",
+      "project": "Projeto",
+      "client": "Cliente",
+      "profit": "Lucro",
+      "margin": "% de lucro",
+      "noProfitRows": "Ainda não há valores lançados.",
+      "profitFootnote": "As despesas fixas e gerais não são rateadas entre projetos: são descontadas no lucro geral."
+    },
+    "FinanceExpense": {
+      "errors": {
+        "denied": "Você não tem permissão para isso.",
+        "data": "Revise os dados: falta algo ou há um valor inválido.",
+        "save": "Não foi possível salvar a despesa. Tente de novo."
+      },
+      "typeQuestion": "Que tipo de despesa é?",
+      "types": {
+        "fixed": {
+          "title": "Despesa fixa mensal",
+          "hint": "Repete todo mês: aluguel, internet, assinaturas."
+        },
+        "payroll": {
+          "title": "Salário",
+          "hint": "O que se paga todo mês a uma pessoa da equipe."
+        },
+        "oneoff": {
+          "title": "Despesa pontual",
+          "hint": "Uma única vez: uma compra, um frete, um conserto."
+        }
+      },
+      "conceptLabel": {
+        "fixed": "O que é?",
+        "payroll": "Descrição",
+        "oneoff": "O que é?"
+      },
+      "conceptPlaceholder": {
+        "fixed": "Ex.: Aluguel do escritório",
+        "payroll": "Ex.: Salário da administração",
+        "oneoff": "Ex.: Compra de ferramentas"
+      },
+      "payeeLabel": {
+        "fixed": "A quem se paga (opcional)",
+        "payroll": "Funcionário",
+        "oneoff": "Fornecedor ou a quem se paga"
+      },
+      "payeePlaceholder": {
+        "fixed": "Ex.: Imobiliária",
+        "payroll": "Nome e sobrenome",
+        "oneoff": "Nome ou razão social"
+      },
+      "payeeOptionalHelp": "Se deixar vazio, usamos o nome da despesa. Se já existir alguém com esse nome, usa-se o mesmo.",
+      "category": "Categoria",
+      "categories": {
+        "variable": "Despesa variável",
+        "service": "Serviço",
+        "logistics": "Logística",
+        "motorcycle": "Moto",
+        "travel": "Diárias de viagem",
+        "daily": "Despesa diária",
+        "other": "Outro"
+      },
+      "amount": "Valor",
+      "monthlyAmount": "Valor por mês",
+      "amountHelp": "Sem imposto e sempre positivo.",
+      "currency": "Moeda",
+      "dueOn": "Data de pagamento",
+      "dueDay": "Dia do mês em que se paga",
+      "dueDayHelp": "Se o mês não tiver esse dia (por exemplo o 31), usa-se o último dia do mês.",
+      "startMonth": "A partir de que mês",
+      "afterSave": {
+        "fixed": "Fica em Despesas fixas e é gerada sozinha todo mês. A cada mês aguarda a aprovação do dono; não precisa de nota fiscal.",
+        "payroll": "Fica em Despesas fixas e é gerada sozinha todo mês. A cada mês aguarda a aprovação do dono; não precisa de nota fiscal.",
+        "oneoff": "Fica em Pagamentos, em revisão, até o dono aprovar. Se for um serviço ou logística, também será preciso a nota fiscal para pagar."
+      },
+      "saving": "Salvando…",
+      "save": "Salvar despesa",
+      "savedOneOff": "Despesa lançada. Aguarda a aprovação do dono.",
+      "savedRecurring": "Despesa fixa lançada. A deste mês já aguarda a aprovação do dono.",
+      "monthGenerated": "Despesas do mês geradas.",
+      "generateMonth": "Gerar despesas de {month}",
+      "generateMonthHelp": "Cria, para esse mês, o pagamento de cada despesa fixa e salário que ainda não o tenha. Não duplica os que já existem.",
+      "newExpense": "Nova despesa",
+      "newExpenseHint": "Escolha o tipo de despesa e preencha só o que for pedido."
+    },
+    "InstallerBilling": {
+      "title": "Para faturar",
+      "description": "Estes trabalhos já foram aprovados. Envie sua nota fiscal para que possamos pagar.",
+      "pickJobs": "Escolha os trabalhos que sua nota fiscal cobre",
+      "totalToInvoice": "{count, plural, =0 {Escolha pelo menos um trabalho} one {Sua nota fiscal por # trabalho deve ser de} other {Sua nota fiscal por # trabalhos deve ser de}}",
+      "withoutTax": "Valor sem imposto",
+      "invoiceNumber": "Número da nota fiscal",
+      "invoiceNumberPlaceholder": "Ex.: 000123",
+      "issuedOn": "Data da nota fiscal",
+      "invoiceAmount": "Valor da nota fiscal (sem imposto)",
+      "file": "Arquivo da nota fiscal",
+      "fileFormats": "PDF ou foto (JPG, PNG, WEBP), até 10 MB.",
+      "sending": "Enviando…",
+      "send": "Enviar nota fiscal",
+      "sent": "Nota fiscal enviada. Avisamos quando o pagamento sair.",
+      "waitingPayment": "Aguardando o pagamento",
+      "noOrder": "Sem ordem",
+      "invoiceSent": "Nota fiscal {number} enviada",
+      "noInvoiceNeeded": "Não precisa de nota fiscal",
+      "payDay": "Dia de pagamento previsto: {date}",
+      "errors": {
+        "denied": "Você não tem permissão para isso.",
+        "file": "Revise o arquivo: deve ser PDF ou foto e ter menos de 10 MB.",
+        "upload": "Não foi possível enviar o arquivo. Tente de novo.",
+        "data": "Revise os dados da nota fiscal.",
+        "amountMismatch": "O valor da nota fiscal não coincide com o aprovado.",
+        "notBillable": "Algum dos trabalhos não está mais disponível para faturar. Atualize a página.",
+        "numberRequired": "Escreva o número da nota fiscal.",
+        "issueDate": "A data da nota fiscal não pode ser futura.",
+        "currencyMismatch": "Escolha trabalhos de uma só moeda por nota fiscal.",
+        "numberTaken": "Você já enviou uma nota fiscal com esse número.",
+        "save": "Não foi possível enviar a nota fiscal. Tente de novo.",
+        "pickSameCurrency": "Escolha pelo menos um trabalho, todos da mesma moeda.",
+        "amountMismatchExact": "O valor da nota fiscal deve ser exatamente {amount} (sem imposto)."
+      }
+    },
+    "FinanceEmails": {
+      "paymentApproved": {
+        "subject": "Seu pagamento de {amount} foi aprovado: envie sua nota fiscal",
+        "heading": "Seu pagamento foi aprovado",
+        "body": "Foi aprovado um pagamento de {amount}. Para que possamos pagar, envie sua nota fiscal por esse valor (sem imposto) pelo seu perfil.",
+        "bodyOrder": "Foi aprovado o pagamento de {amount} pela ordem {order}. Para que possamos pagar, envie sua nota fiscal por esse valor (sem imposto) pelo seu perfil.",
+        "cta": "Enviar minha nota fiscal",
+        "footnote": "Sem a nota fiscal enviada no app não é possível fazer o pagamento. Não é preciso enviá-la por outro meio."
+      },
+      "weeklyDigest": {
+        "subject": "{count, plural, =0 {Pagamentos da semana} one {Você tem # pagamento para aprovar nesta semana} other {Você tem # pagamentos para aprovar nesta semana}}",
+        "eyebrow": "Finanças",
+        "heading": "Pagamentos da semana",
+        "introPending": "{count, plural, one {Há # pagamento aguardando sua aprovação.} other {Há # pagamentos aguardando sua aprovação.}} Abaixo estão separados por região, com o subtotal de cada uma.",
+        "introNothing": "Não há pagamentos novos para aprovar. Abaixo está o que já ficou aprovado para esta semana.",
+        "toApprove": "Para aprovar",
+        "amba": "AMBA · segunda-feira",
+        "interior": "Interior · terça-feira",
+        "general": "Despesas fixas e outras",
+        "subtotal": "Subtotal",
+        "none": "Não há nada para aprovar.",
+        "notFinished": "{count, plural, one {Há mais # pagamento de uma ordem ainda não finalizada: aparecerá quando for finalizada.} other {Há mais # pagamentos de ordens ainda não finalizadas: aparecerão quando forem finalizadas.}}",
+        "whatIsPaid": "O que se paga",
+        "ready": "Pronto para pagar",
+        "awaitingInvoice": "Aguarda nota fiscal",
+        "generalReady": "Despesas fixas e outras aprovadas",
+        "cta": "Revisar e aprovar",
+        "footnote": "Este e-mail apenas avisa. A aprovação é feita dentro da plataforma, com seu usuário."
+      },
+      "invoiceReminder": {
+        "subject": "Falta sua nota fiscal para podermos pagar",
+        "heading": "Falta sua nota fiscal",
+        "body": "{count, plural, one {Você tem # pagamento aprovado que aguarda sua nota fiscal.} other {Você tem # pagamentos aprovados que aguardam sua nota fiscal.}} Até que você a envie não podemos pagar.",
+        "cta": "Enviar minha nota fiscal",
+        "footnote": "O envio é feito pelo seu perfil, em «Para faturar». Não é preciso enviá-la por outro meio."
+      }
+    },
+    "FinanceHelpPage": {
+      "title": "Como funciona Finanças?",
+      "intro": "O caminho de um pagamento, passo a passo, e o que significa cada estado. Todos os valores são sem imposto.",
+      "stepsTitle": "O caminho de um pagamento a um instalador ou coordenador",
+      "who": {
+        "operations": "Operações",
+        "system": "Automático",
+        "owner": "Dono",
+        "supplier": "Instalador ou coordenador",
+        "finance": "Finanças"
+      },
+      "steps": {
+        "order": {
+          "title": "Operações fecha a ordem de serviço",
+          "body": "O valor pago ao instalador é lançado na ordem. Quando a ordem é finalizada, o pagamento aparece em Finanças «Em revisão»."
+        },
+        "sunday": {
+          "title": "No domingo de madrugada chega o aviso",
+          "body": "O dono recebe um e-mail com tudo o que há para aprovar, separado em AMBA e Interior, e quanto se paga na segunda e na terça. O e-mail só avisa: leva à tela «Aprovar pagamentos»."
+        },
+        "approve": {
+          "title": "O dono aprova e confirma os valores",
+          "body": "Em «Aprovar pagamentos» ele revisa cada valor, corrige se precisar e aprova todos juntos. Se alterar um valor, ele também é corrigido na ordem e o valor anterior fica guardado."
+        },
+        "notify": {
+          "title": "O instalador recebe o aviso",
+          "body": "Assim que é aprovado, o instalador ou coordenador recebe o aviso (no app, no celular e por e-mail) de que precisa enviar a nota fiscal. O pagamento fica «Aprovado · falta nota fiscal»."
+        },
+        "invoice": {
+          "title": "O instalador envia a nota fiscal",
+          "body": "Pelo perfil, em «Para faturar», escolhe os trabalhos aprovados e envia a nota fiscal. O valor deve ser exatamente o aprovado. Uma nota pode cobrir várias ordens. O pagamento passa a «Pronto para pagar»."
+        },
+        "pay": {
+          "title": "Finanças paga",
+          "body": "AMBA é pago às segundas e Interior às terças. No detalhe do pagamento vê-se a nota fiscal e registra-se o pagamento por transferência ou dinheiro. Sem nota fiscal, o botão não aparece."
+        },
+        "proof": {
+          "title": "Anexa-se o comprovante",
+          "body": "No mesmo passo, ou depois em Documentos, envia-se o comprovante da transferência. O pagamento fica «Quitado» e a ordem aparece como paga para o instalador."
+        }
+      },
+      "lateInvoice": "Se o instalador não enviar a nota fiscal a tempo, esse pagamento não entra na segunda ou terça daquela semana: passa para a seguinte e ele recebe um lembrete. Sem nota fiscal não se paga.",
+      "statesTitle": "O que significa cada estado",
+      "states": {
+        "review": {
+          "name": "Em revisão",
+          "meaning": "Aguarda a aprovação do dono. Ainda não pode ser pago."
+        },
+        "awaitingInvoice": {
+          "name": "Aprovado · falta nota fiscal",
+          "meaning": "O dono aprovou. Falta o fornecedor enviar a nota fiscal."
+        },
+        "ready": {
+          "name": "Pronto para pagar",
+          "meaning": "Aprovado e com nota fiscal (ou não precisa, como uma despesa fixa). Já é possível registrar o pagamento."
+        },
+        "settled": {
+          "name": "Quitado",
+          "meaning": "Pago ou recebido por completo."
+        },
+        "void": {
+          "name": "Anulado",
+          "meaning": "Foi cancelado e não conta em nenhum total."
+        },
+        "planned": {
+          "name": "Previsto",
+          "meaning": "Na lista de movimentos: ainda não ocorreu. É o que se espera pagar ou receber nessa data."
+        },
+        "realized": {
+          "name": "Realizado",
+          "meaning": "Na lista de movimentos: dinheiro que já entrou ou saiu de verdade."
+        },
+        "chequePending": {
+          "name": "Cheque pendente",
+          "meaning": "Há um cheque entregue ou recebido que ainda não foi debitado nem creditado."
+        }
+      },
+      "questionsTitle": "Dúvidas frequentes",
+      "questions": {
+        "noInvoice": {
+          "q": "Por que não consigo registrar um pagamento?",
+          "a": "Quase sempre porque falta a nota fiscal do fornecedor. No detalhe do pagamento dá para ver se ele já enviou. Se está «Em revisão», falta a aprovação do dono."
+        },
+        "changeAmount": {
+          "q": "Como altero o valor de um pagamento?",
+          "a": "Quem altera é o dono, em «Aprovar pagamentos», antes de aprovar. Depois que o instalador enviou a nota fiscal não é mais possível: é preciso devolver a nota primeiro."
+        },
+        "fixedExpense": {
+          "q": "As despesas fixas precisam de nota fiscal?",
+          "a": "Não. Uma despesa fixa ou um salário só precisa da aprovação do dono. São lançados uma vez em «Nova despesa» e se repetem sozinhos todo mês."
+        },
+        "collection": {
+          "q": "Por que um recebimento não fica quitado se o dinheiro já entrou?",
+          "a": "Porque um recebimento não é fechado sem a nota fiscal emitida ao cliente. Registre a nota em Recebimentos e ele se fecha sozinho."
+        },
+        "proof": {
+          "q": "Aparece que há movimentos sem comprovante. O que faço?",
+          "a": "No Resumo, toque em «Movimentos sem comprovante»: abre-se a lista. Entre em cada um e envie o comprovante pela aba Documentos; ele fica vinculado a esse pagamento."
+        },
+        "amba": {
+          "q": "Como se decide se um trabalho é AMBA ou Interior?",
+          "a": "Pela província e pela cidade do local. Capital e Grande Buenos Aires são AMBA; o restante, Interior. Se um local ficou mal classificado, corrija a cidade em Operações."
+        }
+      },
+      "shortcutsTitle": "Atalhos",
+      "shortcuts": {
+        "approvals": "Aprovar pagamentos",
+        "payments": "Pagamentos",
+        "expenses": "Despesas fixas",
+        "collections": "Recebimentos"
+      }
+    },
+    "FinanceDigest": {
+      "title": "Aviso semanal por e-mail",
+      "summary": "Chega {day} às {hour} (horário do Brasil)",
+      "summaryOff": "Desativado: nenhum e-mail é enviado",
+      "configure": "Configurar e ver o e-mail",
+      "hide": "Fechar",
+      "hint": "É o e-mail que avisa o dono o que há para aprovar, separado em região metropolitana e interior, com o que se paga na segunda e na terça. Só avisa e traz o link: a aprovação é feita aqui dentro, com o seu usuário. Escolha em que dia e a que horas prefere recebê-lo.",
+      "enabled": "Enviar o aviso semanal",
+      "weekday": "Dia da semana",
+      "hour": "Hora",
+      "hourHelp": "Horário local da empresa. O e-mail sai dentro dessa hora; se nesse dia não houver nada para aprovar nem pagar, não é enviado.",
+      "email": "Endereço de destino",
+      "emailHelp": "Se ficar vazio, chega ao e-mail da sua conta. Pode colocar outro, por exemplo o geral da empresa.",
+      "emailPlaceholder": "O da sua conta",
+      "save": "Salvar",
+      "saving": "Salvando…",
+      "saved": "Pronto, o aviso foi configurado.",
+      "unsaved": "Há alterações sem salvar",
+      "showPreview": "Ver como o e-mail chega",
+      "hidePreview": "Ocultar o e-mail",
+      "sendTest": "Enviar um teste para mim",
+      "testSent": "Enviamos o e-mail de teste para o endereço da sua conta.",
+      "previewNote": "É assim que ficaria hoje, com o que está em aberto agora. É uma prévia: nada é enviado.",
+      "subjectLabel": "Assunto:",
+      "previewTitle": "Prévia do e-mail semanal",
+      "previewCompany": "Sua empresa",
+      "testPrefix": "TESTE",
+      "errors": {
+        "ownerOnly": "Somente o dono da empresa pode configurar o aviso.",
+        "invalid": "Revise os dados: o dia, a hora e o e-mail precisam ser válidos.",
+        "save": "Não foi possível concluir. Tente novamente.",
+        "noOrigin": "Falta configurar o endereço público da aplicação (APP_URL).",
+        "emailNotConfigured": "O envio de e-mails ainda não está configurado neste ambiente.",
+        "noAddress": "Sua conta não tem um e-mail válido para receber o teste.",
+        "sendFailed": "Não foi possível enviar o e-mail de teste. Tente novamente.",
+        "demo": "Na demo nenhum e-mail é enviado: use «Ver como o e-mail chega»."
+      }
+    }
 }

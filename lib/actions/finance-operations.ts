@@ -115,10 +115,14 @@ export async function createFinanceEntry(formData: FormData): Promise<Result> {
     if (error || !order) return { error: t("orderMissing") };
     if (order.currency !== data.currency) return { error: t("currencyMismatch") };
     if (data.direction === "payable") {
-      const { data: site } = await context.supabase.from("sites").select("zone")
+      const { data: site } = await context.supabase.from("sites").select("zone,state,city")
         .eq("company_id", context.user.companyId!).eq("id", order.site_id).maybeSingle();
       if (!site) return { error: t("orderMissing") };
-      const actualZone = site.zone === "AMBA" ? "amba" : "interior";
+      // Misma clasificación que usan los sincronizadores: provincia + ciudad.
+      const { data: classified } = await context.supabase.rpc("finance_classify_zone", {
+        p_state: site.state ?? "", p_city: site.city ?? "", p_zone: site.zone ?? "",
+      });
+      const actualZone = classified === "amba" ? "amba" : "interior";
       if (zone && zone !== actualZone) return { error: t("zoneMismatch") };
       zone = actualZone;
     }
@@ -156,6 +160,8 @@ export async function changeFinanceEntryStatus(id: string, status: "approved" | 
     .update({ status, updated_by: context.user.id })
     .eq("id", id).eq("company_id", context.user.companyId!)
     .select("id,order_id").maybeSingle();
+  if (error?.message.includes("approval_owner_only")) return { error: t("ownerApproves") };
+  if (error?.message.includes("order_completion_required")) return { error: t("orderNotFinished") };
   if (error || !data) return { error: t("statusChange") };
   revalidatePath("/finance/operations");
   revalidatePath("/finance", "layout");
@@ -204,6 +210,7 @@ export async function registerFinanceTransaction(formData: FormData): Promise<Re
         ...(parsed.data.proofDocumentId ? {proof_document_id: parsed.data.proofDocumentId} : {})}],
     },
   });
+  if (error?.message.includes("invoice_required_to_pay")) return { error: t("invoiceRequiredToPay") };
   if (error) return { error: t("transactionSave") };
   revalidatePath("/finance/operations");
   revalidatePath("/finance/expenses");
@@ -372,6 +379,29 @@ export async function uploadFinanceDocument(formData: FormData): Promise<Result>
       ((kind === "bank_credit" || kind === "payment_order") && entry.direction !== "receivable")) {
     return { error: t("documentKind") };
   }
+  // Si el pago o cobro ya está registrado y le falta comprobante, este archivo
+  // ES su comprobante: se ata al movimiento (y a todo su lote o cheque). Antes
+  // quedaba suelto en la obligación y el Resumen seguía avisando «sin comprobante».
+  if (kind === "transfer_proof" || kind === "bank_credit") {
+    const { data: unproven } = await context.supabase.from("finance_transactions")
+      .select("id,batch_id,cheque_id").eq("company_id", context.user.companyId!).eq("entry_id", entryId)
+      .is("proof_document_id", null).order("created_at", { ascending: false }).limit(1);
+    const tx = unproven?.[0];
+    if (tx) {
+      const { error: linkError, data: linked } = await context.supabase.rpc("finance_attach_operation_proof", {
+        p_operation: tx.batch_id ?? tx.cheque_id ?? tx.id,
+        p_type: tx.batch_id ? "batch" : tx.cheque_id ? "cheque" : "transaction",
+        p_path: path, p_name: file.name.slice(0, 255), p_mime: file.type, p_size: file.size,
+      });
+      if (linkError || !linked) {
+        await context.supabase.storage.from("finance-private").remove([path]);
+        return { error: t("documentLink") };
+      }
+      revalidatePath("/finance", "layout");
+      if (entry.order_id) revalidatePath(`/finance/orders/${entry.order_id}`);
+      return { error: null };
+    }
+  }
   const { error: insertError } = await context.supabase.from("finance_documents").insert({
     company_id: context.user.companyId!, entry_id: entryId, kind,
     storage_path: path, file_name: file.name.slice(0, 255), mime_type: file.type,
@@ -391,10 +421,15 @@ export async function attachFinanceTransactionProof(formData: FormData): Promise
   const context = await financeContext();
   if (!context) return { error: t("denied") };
   const transactionId = String(formData.get("transactionId") ?? "");
-  if(!z.string().uuid().safeParse(transactionId).success)return {error:t('fileData')};
-  const { data: tx } = await context.supabase.from("finance_transactions")
-    .select("id,entry_id,proof_document_id").eq("id", transactionId)
-    .eq("company_id", context.user.companyId!).maybeSingle();
+  const batchId = String(formData.get("operationType") ?? "") === "batch" ? String(formData.get("operationId") ?? "") : "";
+  const targetEntry = String(formData.get("entryId") ?? "");
+  const byBatch = !transactionId && z.string().uuid().safeParse(batchId).success && z.string().uuid().safeParse(targetEntry).success;
+  if(!byBatch&&!z.string().uuid().safeParse(transactionId).success)return {error:t('fileData')};
+  const lookup = context.supabase.from("finance_transactions")
+    .select("id,entry_id,proof_document_id").eq("company_id", context.user.companyId!);
+  const { data: tx } = byBatch
+    ? await lookup.eq("batch_id", batchId).eq("entry_id", targetEntry).maybeSingle()
+    : await lookup.eq("id", transactionId).maybeSingle();
   if (!tx || tx.proof_document_id) return { error: t("transactionState") };
   const { data: entry } = await context.supabase.from("finance_entries")
     .select("direction,order_id,supplier_id").eq("id", tx.entry_id)

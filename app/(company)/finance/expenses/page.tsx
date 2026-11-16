@@ -5,9 +5,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { financeBusinessDate } from "@/lib/domain/finance-business-date";
 import { countryTimezone } from "@/lib/domain/availability";
-import { FinanceEntryForm } from "@/components/company/finance-entry-form";
-import { FinanceSupplierForm } from "@/components/company/finance-supplier-form";
-import { FinanceExpenseTemplateForm } from "@/components/company/finance-expense-template-form";
+import { FinanceGenerateMonthButton, FinanceNewExpense } from "@/components/company/finance-new-expense";
 import { FinanceExpenseTemplateList } from "@/components/company/finance-expense-template-list";
 import { FinanceOperationsTable } from "@/components/company/finance-operations-table";
 
@@ -16,8 +14,8 @@ export default async function FinanceExpensesPage({ searchParams }: {
 }) {
   const user = await getCurrentUser();
   if (user?.role !== "company_manager" || !user.companyId || !user.canManageFinance) redirect("/dashboard");
-  const [t, params, supabase] = await Promise.all([
-    getTranslations("FinanceOperations"), searchParams, createClient(),
+  const [t, expense, params, supabase] = await Promise.all([
+    getTranslations("FinanceOperations"), getTranslations("FinanceExpense"), searchParams, createClient(),
   ]);
   const { data: company } = await supabase.from("companies").select("country")
     .eq("id", user.companyId).maybeSingle();
@@ -84,9 +82,14 @@ export default async function FinanceExpensesPage({ searchParams }: {
       <div className="rounded-xl border bg-white p-4"><p className="text-xs text-muted-foreground">{t("expenseMonth")}</p><p className="mt-2 font-mono text-2xl font-semibold">{entries.length}</p></div>
       <div className="rounded-xl border bg-white p-4"><p className="text-xs text-muted-foreground">{t("openExpenseBalance")}</p><p className="mt-2 font-mono text-xl font-semibold">{new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(entries.filter((entry) => entry.currency === "ARS").reduce((sum, entry) => sum + entry.open_amount, 0))}</p></div>
     </div>
-    <FinanceSupplierForm installers={[]} />
-    <FinanceEntryForm suppliers={suppliers} clients={clientsResult.data ?? []} expenseMode />
-    <FinanceExpenseTemplateForm suppliers={suppliers} month={month} />
+    <section className="finance-card space-y-4 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div><h2 className="text-base font-semibold">{expense("newExpense")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{expense("newExpenseHint")}</p></div>
+        <FinanceGenerateMonthButton month={month} />
+      </div>
+      <FinanceNewExpense suppliers={suppliers} today={today} />
+    </section>
     <FinanceExpenseTemplateList templates={templatesResult.data ?? []} supplierNames={Object.fromEntries(supplierNames)} />
     <FinanceOperationsTable entries={visible} documents={[...(documents ?? []), ...linkedInvoiceDocuments]} filters={params} today={today} filterAction="/finance/expenses" />
   </main>;

@@ -8,7 +8,7 @@ import { Dialog,DialogContent,DialogTitle } from "@/components/ui/dialog";
 export function FinancePreviewShell({children,screen,onReset,onClickCapture}:{children:React.ReactNode;screen:string;onReset:()=>void;onClickCapture:React.MouseEventHandler<HTMLDivElement>}) {
   const t=useTranslations('FinanceV2'),common=useTranslations('Common');
   const [open,setOpen]=useState(false);
-  const label=['summary','payments','collections','cheques','queries'].includes(screen)?screen:screen==='cash'?'cashHistory':screen==='expenses'?'fixedTemplates':screen==='invoices'?'manageInvoices':'queryCategories.suppliers';
+  const label=['summary','approvals','payments','collections','cheques','queries','help'].includes(screen)?screen:screen==='cash'?'cashHistory':screen==='expenses'?'fixedTemplates':screen==='invoices'?'manageInvoices':'queryCategories.suppliers';
   return <div className="finance-workspace finance-preview-layout" onClickCapture={onClickCapture}>
     <aside className="finance-preview-sidebar">
       <div className="flex h-[72px] items-center gap-3 border-b border-[#e5ecf1] px-5"><div className="grid size-9 place-items-center rounded-xl bg-primary text-white"><Layers2 className="size-5" aria-hidden="true"/></div><p className="text-[17px] font-bold tracking-tight">{common('brand')}</p></div>

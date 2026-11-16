@@ -110,7 +110,10 @@ describe("Finance PostgreSQL invariants and tenant policies",()=>{
     await db.query("insert into finance_expense_templates(id,company_id,supplier_id,category,description,amount,currency,due_day,starts_on,created_by) values($1,$2,$3,'fixed','Synthetic salary',1000,'ARS',31,$4,$5)",[id(41),company,id(40),month,finance]);
     await db.query('select finance_generate_expense_month($1)',[month]);
     await db.query("select finance_generate_expense_month(($1::date+interval '1 month')::date)",[month]);
-    await db.query("update finance_entries set status='approved',updated_by=$2 where template_id=$1",[id(41),finance]);
+    // Aprobar un pago es del dueño (D11); Finanzas sigue registrando el pago.
+    await actAs(owner);
+    await db.query("update finance_entries set status='approved',updated_by=$2 where template_id=$1",[id(41),owner]);
+    await actAs(finance);
     const current=(await db.query<{id:string}>('select id from finance_entries where template_id=$1 and period_month=$2',[id(41),month])).rows[0].id;
     await db.query('select finance_register_payment_batch($1,$2)',[id(42),{method:'cash',amount:200,occurred_on:month,allocations:[{entry_id:current,amount:200}]}]);
     await db.query('update finance_expense_templates set amount=1200,due_day=30 where id=$1',[id(41)]);

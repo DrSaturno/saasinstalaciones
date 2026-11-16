@@ -98,3 +98,13 @@ Lista para recorrer en el preview:
 - Bajar el PDF de una OT y el resumen.
 - Entrar como subcuenta sin permiso de Finanzas: ve precios de OTs y no ve `/finance`.
 - Mirar todo en el celular.
+
+## Bug abierto — zona AMBA mal mapeada (detectado 04-11-2026)
+
+`finance_sync_order` (y `finance_sync_helper`) calculan la zona de un pago a instalador con `sites.zone = 'AMBA'`, pero la plataforma guarda `AR-BA-AMBA` / `AR-CBA`. Resultado: **todo pago a instalador queda como «interior»**; en Demo, 20 de 20 pagos, aunque 61 de 72 sitios son AMBA. Efecto: el día de pago (`finance_payment_rules`, `finance_schedule_on_completion`) usa siempre la regla de interior.
+
+**A hacer apenas se pueda:**
+1. Nueva migración que redefina `finance_sync_order` y `finance_sync_helper` para mapear `AR-BA-AMBA → 'amba'` y el resto → `'interior'`.
+2. Recalcular `zone` y `due_on` de los pagos existentes que no tengan movimientos ni cheques pendientes.
+3. Aplicarla en Demo, correr pgTAP de Finanzas y agregar una prueba que cubra un sitio AMBA.
+4. Producción: va junto con las otras 4 migraciones de Finanzas; no hace falta migración aparte.

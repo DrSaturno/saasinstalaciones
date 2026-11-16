@@ -12,8 +12,8 @@ export default async function FinanceCashPage({ searchParams }: {
 }) {
   const user = await getCurrentUser();
   if (user?.role !== "company_manager" || !user.companyId || !user.canManageFinance) redirect("/dashboard");
-  const [t, params, supabase] = await Promise.all([
-    getTranslations("FinanceOperations"), searchParams, createClient(),
+  const [t, flow, params, supabase] = await Promise.all([
+    getTranslations("FinanceOperations"), getTranslations("FinanceApproval"), searchParams, createClient(),
   ]);
   const { data: company } = await supabase.from("companies").select("country")
     .eq("id", user.companyId).maybeSingle();
@@ -62,20 +62,20 @@ export default async function FinanceCashPage({ searchParams }: {
     <form className="flex flex-wrap items-end gap-3 rounded-xl border bg-white p-4 text-sm">
       <label>{t("expenseMonth")}<input type="month" name="month" defaultValue={month} className="mt-1 block rounded-md border p-2" /></label>
       <label>{t("direction")}<select name="direction" defaultValue={params.direction ?? ""} className="mt-1 block rounded-md border p-2">
-        <option value="">{t("allDirections")}</option><option value="payable">{t("payable")}</option>
-        <option value="receivable">{t("receivable")}</option></select></label>
+        <option value="">{t("allDirections")}</option><option value="payable">{flow("kindPaymentOut")}</option>
+        <option value="receivable">{flow("kindCollectionIn")}</option></select></label>
       <button className="rounded-md border px-4 py-2">{t("filter")}</button>
     </form>
     <p className="text-xs text-muted-foreground">{t("cashCount", { count: count ?? 0 })}</p>
     <section className="overflow-x-auto rounded-xl border bg-white"><table className="w-full min-w-[760px] text-left text-sm">
       <thead className="border-b bg-muted/30 text-xs text-muted-foreground"><tr>
-        <th className="p-3">{t("actualDate")}</th><th className="p-3">{t("direction")}</th>
+        <th className="p-3">{t("actualDate")}</th><th className="p-3">{flow("kindColumn")}</th>
         <th className="p-3">{t("party")}</th><th className="p-3">{t("orderNumber")}</th>
         <th className="p-3">{t("paymentMethod")}</th><th className="p-3">{t("paymentReference")}</th>
         <th className="p-3">{t("proof")}</th><th className="p-3 text-right">{t("amount")}</th></tr></thead>
       <tbody className="divide-y">{(movements ?? []).map((row) => <tr key={row.id}>
         <td className="p-3 font-mono text-xs">{row.settled_on}</td>
-        <td className="p-3">{t(row.direction as "payable" | "receivable")}</td>
+        <td className="p-3"><span className={`inline-flex whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold ${row.direction === "payable" ? "bg-orange-50 text-orange-700" : "bg-emerald-50 text-emerald-700"}`}>{flow(row.direction === "payable" ? "kindPaymentOut" : "kindCollectionIn")}</span></td>
         <td className="p-3">{parties.get(row.supplier_id ?? row.client_id ?? "") ?? "—"}</td>
         <td className="p-3 font-mono">{row.order_id && orders.has(row.order_id)
           ? <Link href={`/finance/orders/${row.order_id}`} className="text-primary hover:underline">{orders.get(row.order_id)}</Link>
@@ -85,7 +85,7 @@ export default async function FinanceCashPage({ searchParams }: {
         <td className="p-3 text-xs">{row.proof_document_id
           ? <a href={`/api/finance/documents/${row.proof_document_id}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{t("openProof")}</a>
           : <><span>{t("noDocument")}</span><FinanceTransactionProof transactionId={row.id} entryId={row.entry_id} operationId={row.batch_id??row.cheque_id??undefined} operationType={row.batch_id?"batch":row.cheque_id?"cheque":undefined}/></>}</td>
-        <td className="p-3 text-right font-mono font-semibold">{row.direction === "payable" ? "−" : "+"}{money(row.amount, row.currency)}</td>
+        <td className={`p-3 text-right font-mono font-semibold ${row.direction === "payable" ? "text-orange-700" : "text-emerald-700"}`}>{row.direction === "payable" ? "− " : "+ "}{money(row.amount, row.currency)}</td>
       </tr>)}</tbody></table>
       {(movements ?? []).length === 0 && <p className="p-8 text-center text-sm text-muted-foreground">{t("emptyCashLedger")}</p>}
     </section>

@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
@@ -50,4 +51,28 @@ export async function requirePlatformAdmin(): Promise<
   }
 
   return { admin: createAdminClient(), userId: user.id };
+}
+
+/**
+ * Guardia de las tareas programadas (cron). No hay sesión: quien llama es el
+ * planificador de Vercel, que manda `Authorization: Bearer <CRON_SECRET>`.
+ *
+ * Mismo cuidado que `requirePlatformAdmin`: el cliente service_role sólo se
+ * entrega después de comprobar el secreto, y la comparación es en tiempo
+ * constante. Sin secreto configurado (o demasiado corto) la ruta queda cerrada:
+ * un despliegue al que le falta la variable no expone nada.
+ */
+export function requireCronSecret(request: Request):
+  | { admin: ReturnType<typeof createAdminClient>; error?: never }
+  | { admin?: never; error: NextResponse } {
+  const secret = process.env.CRON_SECRET?.trim();
+  if (!secret || secret.length < 16) {
+    return { error: NextResponse.json({ error: "cron_not_configured" }, { status: 503 }) };
+  }
+  const given = Buffer.from(request.headers.get("authorization") ?? "");
+  const expected = Buffer.from(`Bearer ${secret}`);
+  if (given.length !== expected.length || !timingSafeEqual(given, expected)) {
+    return { error: NextResponse.json({ error: "unauthorized" }, { status: 401 }) };
+  }
+  return { admin: createAdminClient() };
 }

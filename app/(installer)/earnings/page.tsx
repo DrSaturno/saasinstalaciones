@@ -3,7 +3,10 @@ import { getTranslations } from "next-intl/server";
 import { EarningsFilters } from "@/components/installer/earnings-filters";
 import { EarningsList } from "@/components/installer/earnings-list";
 import { EarningsSummary } from "@/components/installer/earnings-summary";
-import { getCurrentUser } from "@/lib/auth";
+import { BillingSection } from "@/components/installer/billing-section";
+import { getCurrentUser, operationalTimezone } from "@/lib/auth";
+import { financeBusinessDate } from "@/lib/domain/finance-business-date";
+import { groupBilling, parseBilling } from "@/lib/domain/installer-billing";
 import { fetchInstallerEarnings } from "@/lib/data/installer-finance";
 import { createClient } from "@/lib/supabase/server";
 import type { PaymentStatus } from "@/types/database";
@@ -47,7 +50,14 @@ export default async function InstallerFinancePage({
   };
 
   const supabase = await createClient();
-  const data = await fetchInstallerEarnings(supabase, user.id, filters);
+  // Lo aprobado para facturar sale de una función que sólo devuelve lo propio
+  // (FLX-24): el instalador nunca consulta las tablas de Finanzas.
+  const [data, billing] = await Promise.all([
+    fetchInstallerEarnings(supabase, user.id, filters),
+    supabase.rpc("finance_my_billing"),
+  ]);
+  const billingGroups = groupBilling(parseBilling(billing.data));
+  const today = financeBusinessDate(new Date(), operationalTimezone(user));
 
   return (
     <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-5">
@@ -57,6 +67,7 @@ export default async function InstallerFinancePage({
         <p className="mt-1 text-sm text-white/70">{t("description")}</p>
       </div>
 
+      <BillingSection groups={billingGroups} today={today} />
       <EarningsSummary totals={data.totals} />
       <EarningsFilters
         companies={data.companies}

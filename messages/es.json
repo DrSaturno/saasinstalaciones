@@ -2976,6 +2976,9 @@
       "payment_order": "Orden de pago"
     },
     "errors": {
+        "ownerApproves": "Los pagos los aprueba el dueño de la empresa, desde «Aprobar pagos».",
+        "orderNotFinished": "La orden de trabajo todavía no está finalizada: no se puede aprobar su pago.",
+        "invoiceRequiredToPay": "No se puede pagar: falta la factura del proveedor.",
       "denied": "Acceso denegado",
       "supplierData": "Revisá los datos del proveedor",
       "supplierSave": "No se pudo guardar el proveedor",
@@ -3266,6 +3269,8 @@
     "close": "Cerrar"
   },
   "FinanceV2": {
+      "approvals": "Aprobar pagos",
+      "help": "¿Cómo funciona?",
     "module": "Finanzas",
     "summary": "Resumen",
     "payments": "Pagos",
@@ -3535,5 +3540,520 @@
     "chequeRemaining": "Falta aplicar {amount}.",
     "chequeExcess": "Aplicaste {amount} de más. Revisá los importes de cada trabajo.",
     "chequeConfirm": "¿Confirmás este cambio? Verificá el estado y la fecha: confirmar acreditación o débito registra el movimiento en caja."
-  }
+  },
+    "FinanceApproval": {
+      "demoInvoiceHint": "Estás en la demo: para simular al instalador, subí la factura desde la pestaña Documentos.",
+      "title": "Aprobar pagos",
+      "hint": "Todo lo que espera tu aprobación esta semana, separado por zona. Revisá cada importe, corregilo si hace falta y aprobá. Al aprobar, cada instalador recibe el aviso para cargar su factura.",
+      "howItWorks": "¿Cómo funciona?",
+      "ownerOnlyNotice": "Sólo el dueño de la empresa puede aprobar pagos. Podés ver la lista, pero no aprobar ni cambiar importes.",
+      "zones": {
+        "amba": "AMBA",
+        "interior": "Interior",
+        "general": "Gastos fijos y otros"
+      },
+      "zoneHelp": {
+        "amba": "Trabajos en Capital y Gran Buenos Aires. Se pagan los lunes.",
+        "interior": "Trabajos en el resto del país. Se pagan los martes.",
+        "general": "Gastos que no son de una orden de trabajo: alquiler, sueldos, servicios. Se aprueban, pero no necesitan factura."
+      },
+      "paysMonday": "Se paga el lunes {date}",
+      "paysTuesday": "Se paga el martes {date}",
+      "selectedOf": "{selected} de {total} seleccionados",
+      "nothingToApprove": "No hay pagos esperando tu aprobación",
+      "nothingToApproveHint": "Cuando una orden de trabajo se finalice o se cargue un gasto, va a aparecer acá.",
+      "unselectAll": "Quitar todos",
+      "selectAll": "Seleccionar todos",
+      "subtotal": "Subtotal",
+      "select": "Seleccionar",
+      "party": "A quién se le paga",
+      "order": "Orden y local",
+      "concept": "Concepto",
+      "amount": "Importe a pagar",
+      "amountHelp": "Importe sin IVA. Podés corregirlo antes de aprobar: si viene de una orden, se corrige también en la orden de trabajo; si es un gasto fijo o puntual, vale sólo para este pago.",
+      "selectRow": "Seleccionar el pago de {party}",
+      "amountFor": "Importe para {party}",
+      "wasAmount": "Antes: {amount}",
+      "invalidAmount": "Importe inválido",
+      "categories": {
+        "installation": "Instalación",
+        "coordination": "Coordinación",
+        "logistics": "Logística",
+        "fixed": "Gasto fijo",
+        "payroll": "Sueldo",
+        "variable": "Gasto variable",
+        "service": "Servicio",
+        "motorcycle": "Moto",
+        "travel": "Viáticos",
+        "daily": "Gasto diario",
+        "other": "Otro"
+      },
+      "notFinishedTitle": "{count, plural, one {# pago de una orden sin terminar} other {# pagos de órdenes sin terminar}}",
+      "notFinishedHint": "Todavía no se pueden aprobar: van a aparecer arriba cuando la orden esté finalizada.",
+      "awaitingInvoiceTitle": "{count, plural, one {# pago aprobado espera factura} other {# pagos aprobados esperan factura}}",
+      "awaitingInvoiceHint": "Ya los aprobaste. Se van a poder pagar cuando cada proveedor cargue su factura.",
+      "confirmMessage": "Vas a aprobar {count, plural, one {# pago} other {# pagos}}. AMBA: {amba}. Interior: {interior}. Gastos fijos y otros: {general}. Cada instalador va a recibir el aviso para cargar su factura.",
+      "confirmApprove": "Sí, aprobar",
+      "selectedSummary": "{count, plural, one {# pago seleccionado} other {# pagos seleccionados}}",
+      "approving": "Aprobando…",
+      "approveSelected": "{count, plural, one {Aprobar # pago} other {Aprobar # pagos}}",
+      "approvedToast": "{count, plural, one {Pago aprobado} other {# pagos aprobados}}. Se avisó a quien tiene que facturar.",
+      "errors": {
+        "denied": "No tenés permiso para esto.",
+        "ownerOnly": "Sólo el dueño de la empresa puede aprobar pagos.",
+        "invalidData": "Revisá los importes: tienen que ser mayores a cero y con hasta dos decimales.",
+        "orderNotFinished": "Uno de los pagos es de una orden que todavía no está finalizada. No se aprobó ninguno.",
+        "notReviewable": "Uno de los pagos ya no está en revisión. Actualizá la página y volvé a intentar.",
+        "amountLocked": "Un importe no se puede cambiar porque ese pago ya tiene factura o pagos registrados.",
+        "amountNotEditable": "Este importe viene del sistema anterior y no se puede cambiar. Anulalo y cargalo de nuevo con el valor correcto.",
+        "amountSourceChanged": "La orden cambió mientras aprobabas. Actualizá la página y volvé a intentar.",
+        "invalidAmount": "Hay un importe inválido.",
+        "save": "No se pudo aprobar. Volvé a intentar.",
+        "reasonRequired": "Escribí el motivo (entre 3 y 300 caracteres).",
+        "invoiceHasPayments": "Esa factura ya tiene pagos registrados y no se puede devolver."
+      },
+      "whatIsThis": "¿Qué es esto?",
+      "stages": {
+        "payable": {
+          "review": "En revisión",
+          "awaitingInvoice": "Aprobado · falta factura",
+          "ready": "Listo para pagar",
+          "settled": "Saldado",
+          "void": "Anulado"
+        },
+        "receivable": {
+          "review": "En revisión",
+          "awaitingInvoice": "Aprobado",
+          "ready": "Listo para cobrar",
+          "settled": "Saldado",
+          "void": "Anulado"
+        }
+      },
+      "stageHelp": {
+        "payable": {
+          "review": "Espera que el dueño lo apruebe y confirme el importe. Todavía no se puede pagar.",
+          "awaitingInvoice": "El dueño ya lo aprobó. Falta que el proveedor cargue su factura: hasta entonces no se puede pagar.",
+          "ready": "Aprobado y con todo lo necesario. Ya se puede registrar el pago.",
+          "settled": "Pagado por completo. No queda nada pendiente.",
+          "void": "Se anuló y no cuenta en ningún total."
+        },
+        "receivable": {
+          "review": "Falta revisar el importe antes de darlo por bueno.",
+          "awaitingInvoice": "Aprobado.",
+          "ready": "Aprobado: se puede registrar el cobro cuando entre el dinero.",
+          "settled": "Cobrado por completo y con factura emitida.",
+          "void": "Se anuló y no cuenta en ningún total."
+        }
+      },
+      "stageFilterHelp": "Filtrá por la etapa en que está cada pago o cobro. Pasá el mouse por una etiqueta de estado para ver qué significa.",
+      "kindPayment": "Pago",
+      "kindCollection": "Cobro",
+      "kindColumn": "Tipo",
+      "kindPaymentOut": "Pago · sale",
+      "kindCollectionIn": "Cobro · entra",
+      "amountToConfirm": "Importe a confirmar",
+      "approvedAmount": "Importe aprobado",
+      "payDay": "Día de pago",
+      "dueDay": "Vencimiento",
+      "payDayHelp": "AMBA se paga los lunes e Interior los martes. Si la factura llega después de ese día, el pago pasa al siguiente.",
+      "supplierInvoice": "Factura del proveedor",
+      "supplierInvoiceHelp": "Sin esta factura el pago no se puede registrar. Tiene que ser por el importe aprobado, sin IVA.",
+      "invoiceAfterApproval": "El proveedor la va a poder cargar cuando el dueño apruebe este pago.",
+      "invoicePendingFieldTeam": "Todavía no la cargó. La sube él mismo desde su perfil, en «Para facturar». Ya recibió el aviso.",
+      "invoicePendingSupplier": "Todavía no está cargada. Adjuntala en la pestaña Documentos o registrala en Facturas.",
+      "openInvoice": "Ver",
+      "invoiceReturned": "Factura devuelta. El proveedor recibió el aviso para cargarla de nuevo.",
+      "returnReason": "¿Por qué la devolvés? (se lo mostramos al proveedor)",
+      "returnInvoice": "Devolver factura",
+      "needsOwnerApproval": "Este pago espera la aprobación del dueño de la empresa, que confirma el importe.",
+      "goToApprovals": "Ir a Aprobar pagos",
+      "blockedNoInvoiceFieldTeam": "No se puede pagar todavía: falta la factura. El instalador o coordinador la carga desde su perfil; cuando la suba, vas a poder registrar el pago acá.",
+      "blockedNoInvoiceSupplier": "No se puede pagar todavía: falta la factura del proveedor. Adjuntala en la pestaña Documentos.",
+      "collectedWithoutInvoice": "El dinero ya entró, pero el cobro no se cierra hasta que registres la factura que le emitiste al cliente.",
+      "registerIssuedInvoice": "Registrar la factura",
+      "proofNotAttached": "El comprobante no se pudo adjuntar: subilo desde la pestaña Documentos.",
+      "proofAttached": "El comprobante quedó adjunto.",
+      "proofPending": "Falta adjuntar el comprobante: podés subirlo desde la pestaña Documentos.",
+      "paymentProof": "Comprobante de pago (opcional ahora)",
+      "collectionProof": "Comprobante de acreditación (opcional ahora)",
+      "proofHelp": "La constancia de la transferencia o del depósito. Si no la tenés a mano, registrá el movimiento igual y subila después desde Documentos.",
+      "orUseUploadedProof": "O usar un comprobante que ya subiste",
+      "movementHelp": {
+        "realized": "Dinero que ya entró o salió de verdad, en la fecha indicada.",
+        "planned": "Todavía no se pagó ni se cobró: es lo que se espera para esa fecha, según el vencimiento.",
+        "chequePending": "Hay un cheque entregado o recibido que todavía no se debitó ni se acreditó."
+      },
+      "awaitingInvoiceCount": "{count, plural, =0 {Ninguno espera factura} one {# espera factura} other {# esperan factura}}",
+      "approvePayments": "Aprobar pagos",
+      "newExpense": "Nuevo gasto",
+      "newExpenseHint": "Elegí qué tipo de gasto es y completá sólo lo que te pide.",
+      "alerts": {
+        "toApprove": "Pagos para aprobar",
+        "toApproveHelp": "Órdenes terminadas y gastos que esperan la aprobación del dueño.",
+        "awaitingInvoice": "Aprobados que esperan factura",
+        "awaitingInvoiceHelp": "Ya están aprobados, pero no se pueden pagar hasta que el proveedor cargue su factura.",
+        "readyToPay": "Listos para pagar",
+        "readyToPayHelp": "Aprobados y con factura. Abrí cada uno para registrar el pago y adjuntar el comprobante.",
+        "reviewCollectionsHelp": "Cobros que todavía no se revisaron.",
+        "collectedNoInvoice": "Cobrados sin factura emitida",
+        "collectedNoInvoiceHelp": "El dinero ya entró, pero el cobro no se cierra hasta registrar la factura al cliente.",
+        "missingProofs": "Movimientos sin comprobante",
+        "missingProofsHelp": "Pagos o cobros ya registrados a los que les falta adjuntar la constancia. Abrí cada uno y subila desde Documentos.",
+        "differencesHelp": "El importe de la orden cambió después de registrar la factura. Hay que revisar la diferencia."
+      },
+      "forecastHelp": "Lo que ya está aprobado y con factura para el próximo día de pago de cada zona. Lo que espera factura se muestra aparte y no entra en el total.",
+      "readyToPayShort": "{count, plural, =0 {Nada listo para pagar} one {# pago listo} other {# pagos listos}}",
+      "awaitingInvoiceShort": "{count, plural, one {# espera factura} other {# esperan factura}} · {amount}",
+      "noneAwaitingInvoice": "Ninguno espera factura",
+      "forecastFootnote": "AMBA se paga los lunes e Interior los martes. Un pago sin factura a tiempo pasa a la semana siguiente.",
+      "attentionHelp": "Tocá cada línea para ver cuáles son. Cada una abre el pago, el cobro o la orden de trabajo.",
+      "openOrder": "Abrir la orden de trabajo",
+      "seeAllCount": "Ver los {count}",
+      "seeAll": "Ver todos"
+    },
+    "FinanceInsights": {
+      "title": "Números del negocio",
+      "titleHelp": "Todos los importes son sin IVA. «Caja» es dinero que ya entró o salió; «resultado» es lo facturable menos lo que cuesta, se haya cobrado o no.",
+      "currency": "Moneda",
+      "cashFlowMonth": "Caja del mes",
+      "cashFlowHelp": "Lo que entró menos lo que salió este mes, contando sólo movimientos ya registrados.",
+      "income": "Entró",
+      "expense": "Salió",
+      "vsPreviousMonth": "Contra el mes anterior",
+      "accumulatedProfit": "Beneficio acumulado",
+      "accumulatedHelp": "Todo lo que se le cobra a los clientes menos todo lo que cuesta (instaladores, coordinación, gastos fijos y otros), sin importar si ya se cobró o se pagó.",
+      "billable": "A cobrar a clientes",
+      "costs": "Costos",
+      "marginGeneral": "Beneficio general",
+      "receivables": "Nos deben los clientes",
+      "agingHelp": "Lo que falta cobrar, según cuánto hace que venció.",
+      "aging": {
+        "current": "Al día",
+        "days30": "Vencido hasta 30 días",
+        "days60": "Vencido 31 a 60 días",
+        "older": "Vencido más de 60 días",
+        "undated": "Sin fecha de vencimiento"
+      },
+      "fixedMonth": "Gastos fijos y sueldos del mes",
+      "fixedHelp": "Los gastos fijos y sueldos de este mes: cuánto suman, cuánto ya se pagó y cuánto falta.",
+      "fixedRemaining": "Falta pagar",
+      "fixedTotal": "{count, plural, one {Total · # gasto} other {Total · # gastos}}",
+      "fixedPaid": "Ya pagado",
+      "weeklyForecast": "Previsión de caja · próximas 4 semanas",
+      "weeklyHelp": "Lo que se espera cobrar y pagar cada semana según los vencimientos. Lo vencido y todavía pendiente se cuenta en la semana actual.",
+      "week": "Semana",
+      "toCollect": "A cobrar",
+      "toPay": "A pagar",
+      "balance": "Saldo",
+      "thisWeek": "Esta semana ·",
+      "weekOf": "Semana del",
+      "profitBy": "Ganancia por",
+      "profitHelp": "Para cada proyecto o cliente: lo que se le cobra menos lo que cuestan sus órdenes. El porcentaje es la ganancia sobre lo cobrado.",
+      "projects": "Proyecto",
+      "clients": "Cliente",
+      "project": "Proyecto",
+      "client": "Cliente",
+      "profit": "Ganancia",
+      "margin": "% beneficio",
+      "noProfitRows": "Todavía no hay importes cargados.",
+      "profitFootnote": "Los gastos fijos y generales no se reparten entre proyectos: se descuentan en el beneficio general."
+    },
+    "FinanceExpense": {
+      "errors": {
+        "denied": "No tenés permiso para esto.",
+        "data": "Revisá los datos: falta algo o hay un valor inválido.",
+        "save": "No se pudo guardar el gasto. Volvé a intentar."
+      },
+      "typeQuestion": "¿Qué tipo de gasto es?",
+      "types": {
+        "fixed": {
+          "title": "Gasto fijo mensual",
+          "hint": "Se repite todos los meses: alquiler, internet, abonos."
+        },
+        "payroll": {
+          "title": "Sueldo",
+          "hint": "Lo que se le paga todos los meses a una persona del equipo."
+        },
+        "oneoff": {
+          "title": "Gasto puntual",
+          "hint": "Una sola vez: una compra, un flete, un arreglo."
+        }
+      },
+      "conceptLabel": {
+        "fixed": "¿Qué es?",
+        "payroll": "Concepto",
+        "oneoff": "¿Qué es?"
+      },
+      "conceptPlaceholder": {
+        "fixed": "Ej.: Alquiler de la oficina",
+        "payroll": "Ej.: Sueldo de administración",
+        "oneoff": "Ej.: Compra de herramientas"
+      },
+      "payeeLabel": {
+        "fixed": "A quién se le paga (opcional)",
+        "payroll": "Empleado",
+        "oneoff": "Proveedor o a quién se le paga"
+      },
+      "payeePlaceholder": {
+        "fixed": "Ej.: Inmobiliaria",
+        "payroll": "Nombre y apellido",
+        "oneoff": "Nombre o razón social"
+      },
+      "payeeOptionalHelp": "Si lo dejás vacío, usamos el nombre del gasto. Si ya existe alguien con ese nombre, se usa el mismo.",
+      "category": "Categoría",
+      "categories": {
+        "variable": "Gasto variable",
+        "service": "Servicio",
+        "logistics": "Logística",
+        "motorcycle": "Moto",
+        "travel": "Viáticos",
+        "daily": "Gasto diario",
+        "other": "Otro"
+      },
+      "amount": "Importe",
+      "monthlyAmount": "Importe por mes",
+      "amountHelp": "Sin IVA y siempre en positivo.",
+      "currency": "Moneda",
+      "dueOn": "Fecha de pago",
+      "dueDay": "Día del mes en que se paga",
+      "dueDayHelp": "Si el mes no tiene ese día (por ejemplo el 31), se usa el último día del mes.",
+      "startMonth": "Desde qué mes",
+      "afterSave": {
+        "fixed": "Queda en Gastos fijos y se genera solo todos los meses. Cada mes espera la aprobación del dueño; no necesita factura.",
+        "payroll": "Queda en Gastos fijos y se genera solo todos los meses. Cada mes espera la aprobación del dueño; no necesita factura.",
+        "oneoff": "Queda en Pagos, en revisión, hasta que el dueño lo apruebe. Si es un servicio o logística, además va a hacer falta la factura para pagarlo."
+      },
+      "saving": "Guardando…",
+      "save": "Guardar gasto",
+      "savedOneOff": "Gasto cargado. Espera la aprobación del dueño.",
+      "savedRecurring": "Gasto fijo cargado. El de este mes ya espera la aprobación del dueño.",
+      "monthGenerated": "Gastos del mes generados.",
+      "generateMonth": "Generar gastos de {month}",
+      "generateMonthHelp": "Crea, para ese mes, el pago de cada gasto fijo y sueldo que todavía no lo tenga. No duplica los que ya existen.",
+      "newExpense": "Nuevo gasto",
+      "newExpenseHint": "Elegí qué tipo de gasto es y completá sólo lo que te pide."
+    },
+    "InstallerBilling": {
+      "title": "Para facturar",
+      "description": "Estos trabajos ya fueron aprobados. Cargá tu factura para que podamos pagarte.",
+      "pickJobs": "Elegí los trabajos que cubre tu factura",
+      "totalToInvoice": "{count, plural, =0 {Elegí al menos un trabajo} one {Tu factura por # trabajo tiene que ser de} other {Tu factura por # trabajos tiene que ser de}}",
+      "withoutTax": "Importe sin IVA",
+      "invoiceNumber": "Número de factura",
+      "invoiceNumberPlaceholder": "Ej.: C 0001-00000042",
+      "issuedOn": "Fecha de la factura",
+      "invoiceAmount": "Importe de la factura (sin IVA)",
+      "file": "Archivo de la factura",
+      "fileFormats": "PDF o foto (JPG, PNG, WEBP), hasta 10 MB.",
+      "sending": "Enviando…",
+      "send": "Enviar factura",
+      "sent": "Factura enviada. Te avisamos cuando esté el pago.",
+      "waitingPayment": "Esperando el pago",
+      "noOrder": "Sin orden",
+      "invoiceSent": "Factura {number} enviada",
+      "noInvoiceNeeded": "No necesita factura",
+      "payDay": "Día de pago previsto: {date}",
+      "errors": {
+        "denied": "No tenés permiso para esto.",
+        "file": "Revisá el archivo: tiene que ser PDF o foto y pesar menos de 10 MB.",
+        "upload": "No se pudo subir el archivo. Volvé a intentar.",
+        "data": "Revisá los datos de la factura.",
+        "amountMismatch": "El importe de la factura no coincide con lo aprobado.",
+        "notBillable": "Alguno de los trabajos ya no está para facturar. Actualizá la página.",
+        "numberRequired": "Escribí el número de la factura.",
+        "issueDate": "La fecha de la factura no puede ser futura.",
+        "currencyMismatch": "Elegí trabajos de una sola moneda por factura.",
+        "numberTaken": "Ya cargaste una factura con ese número.",
+        "save": "No se pudo enviar la factura. Volvé a intentar.",
+        "pickSameCurrency": "Elegí al menos un trabajo, todos de la misma moneda.",
+        "amountMismatchExact": "El importe de la factura tiene que ser exactamente {amount} (sin IVA)."
+      }
+    },
+    "FinanceEmails": {
+      "paymentApproved": {
+        "subject": "Tu pago de {amount} fue aprobado: cargá tu factura",
+        "heading": "Tu pago fue aprobado",
+        "body": "Se aprobó un pago de {amount}. Para que podamos pagarte, cargá tu factura por ese importe (sin IVA) desde tu perfil.",
+        "bodyOrder": "Se aprobó el pago de {amount} por la orden {order}. Para que podamos pagarte, cargá tu factura por ese importe (sin IVA) desde tu perfil.",
+        "cta": "Cargar mi factura",
+        "footnote": "Sin la factura cargada en la app no se puede hacer el pago. No hace falta enviarla por otro medio."
+      },
+      "weeklyDigest": {
+        "subject": "{count, plural, =0 {Pagos de la semana} one {Tenés # pago para aprobar esta semana} other {Tenés # pagos para aprobar esta semana}}",
+        "eyebrow": "Finanzas",
+        "heading": "Pagos de la semana",
+        "introPending": "{count, plural, one {Hay # pago esperando tu aprobación.} other {Hay # pagos esperando tu aprobación.}} Abajo están separados por zona, con el subtotal de cada una.",
+        "introNothing": "No hay pagos nuevos para aprobar. Abajo está lo que ya quedó aprobado para esta semana.",
+        "toApprove": "Para aprobar",
+        "amba": "AMBA · lunes",
+        "interior": "Interior · martes",
+        "general": "Gastos fijos y otros",
+        "subtotal": "Subtotal",
+        "none": "No hay nada para aprobar.",
+        "notFinished": "{count, plural, one {Hay # pago más de una orden que todavía no está terminada: va a aparecer cuando se finalice.} other {Hay # pagos más de órdenes que todavía no están terminadas: van a aparecer cuando se finalicen.}}",
+        "whatIsPaid": "Qué se paga",
+        "ready": "Listo para pagar",
+        "awaitingInvoice": "Espera factura",
+        "generalReady": "Gastos fijos y otros aprobados",
+        "cta": "Revisar y aprobar",
+        "footnote": "Este correo sólo avisa. La aprobación se hace dentro de la plataforma, con tu usuario."
+      },
+      "invoiceReminder": {
+        "subject": "Falta tu factura para poder pagarte",
+        "heading": "Falta tu factura",
+        "body": "{count, plural, one {Tenés # pago aprobado que espera tu factura.} other {Tenés # pagos aprobados que esperan tu factura.}} Hasta que la cargues no lo podemos pagar.",
+        "cta": "Cargar mi factura",
+        "footnote": "Se carga desde tu perfil, en «Para facturar». No hace falta enviarla por otro medio."
+      }
+    },
+    "FinanceHelpPage": {
+      "title": "¿Cómo funciona Finanzas?",
+      "intro": "El recorrido de un pago, paso a paso, y qué significa cada estado. Todos los importes son sin IVA.",
+      "stepsTitle": "El camino de un pago a un instalador o coordinador",
+      "who": {
+        "operations": "Operaciones",
+        "system": "Automático",
+        "owner": "Dueño",
+        "supplier": "Instalador o coordinador",
+        "finance": "Finanzas"
+      },
+      "steps": {
+        "order": {
+          "title": "Operaciones cierra la orden de trabajo",
+          "body": "El importe que se le paga al instalador se carga en la orden. Cuando la orden queda finalizada, su pago aparece en Finanzas «En revisión»."
+        },
+        "sunday": {
+          "title": "El domingo a la madrugada llega el aviso",
+          "body": "El dueño recibe un correo con todo lo que hay para aprobar, separado en AMBA e Interior, y cuánto se paga el lunes y el martes. El correo sólo avisa: lleva a la pantalla «Aprobar pagos»."
+        },
+        "approve": {
+          "title": "El dueño aprueba y confirma los importes",
+          "body": "En «Aprobar pagos» revisa cada importe, lo corrige si hace falta y aprueba todos juntos. Si cambia un importe, se corrige también en la orden y queda guardado el valor anterior."
+        },
+        "notify": {
+          "title": "El instalador recibe el aviso",
+          "body": "Apenas se aprueba, al instalador o coordinador le llega el aviso (en la app, en el celular y por correo) de que tiene que cargar su factura. El pago queda «Aprobado · falta factura»."
+        },
+        "invoice": {
+          "title": "El instalador carga su factura",
+          "body": "Desde su perfil, en «Para facturar», elige los trabajos aprobados y sube la factura. El importe tiene que ser exactamente el aprobado. Una factura puede cubrir varias órdenes. El pago pasa a «Listo para pagar»."
+        },
+        "pay": {
+          "title": "Finanzas paga",
+          "body": "AMBA se paga los lunes e Interior los martes. En el detalle del pago se ve la factura y se registra el pago por transferencia o efectivo. Sin factura, el botón no aparece."
+        },
+        "proof": {
+          "title": "Se adjunta el comprobante",
+          "body": "En el mismo paso, o después desde Documentos, se sube la constancia de la transferencia. El pago queda «Saldado» y la orden figura como pagada para el instalador."
+        }
+      },
+      "lateInvoice": "Si el instalador no carga la factura a tiempo, ese pago no entra en el lunes o martes de esa semana: pasa a la siguiente y recibe un recordatorio. Sin factura no se paga.",
+      "statesTitle": "Qué significa cada estado",
+      "states": {
+        "review": {
+          "name": "En revisión",
+          "meaning": "Espera la aprobación del dueño. Todavía no se puede pagar."
+        },
+        "awaitingInvoice": {
+          "name": "Aprobado · falta factura",
+          "meaning": "El dueño lo aprobó. Falta que el proveedor cargue su factura."
+        },
+        "ready": {
+          "name": "Listo para pagar",
+          "meaning": "Aprobado y con factura (o no la necesita, como un gasto fijo). Ya se puede registrar el pago."
+        },
+        "settled": {
+          "name": "Saldado",
+          "meaning": "Pagado o cobrado por completo."
+        },
+        "void": {
+          "name": "Anulado",
+          "meaning": "Se dio de baja y no cuenta en ningún total."
+        },
+        "planned": {
+          "name": "Previsto",
+          "meaning": "En la lista de movimientos: todavía no ocurrió. Es lo que se espera pagar o cobrar en esa fecha."
+        },
+        "realized": {
+          "name": "Realizado",
+          "meaning": "En la lista de movimientos: dinero que ya entró o salió de verdad."
+        },
+        "chequePending": {
+          "name": "Cheque pendiente",
+          "meaning": "Hay un cheque entregado o recibido que todavía no se debitó ni se acreditó."
+        }
+      },
+      "questionsTitle": "Dudas frecuentes",
+      "questions": {
+        "noInvoice": {
+          "q": "¿Por qué no puedo registrar un pago?",
+          "a": "Casi siempre porque falta la factura del proveedor. En el detalle del pago se ve si ya la cargó. Si está «En revisión», falta la aprobación del dueño."
+        },
+        "changeAmount": {
+          "q": "¿Cómo cambio el importe de un pago?",
+          "a": "Lo cambia el dueño en «Aprobar pagos», antes de aprobar. Después de que el instalador cargó la factura ya no se puede: hay que devolverle la factura primero."
+        },
+        "fixedExpense": {
+          "q": "¿Los gastos fijos necesitan factura?",
+          "a": "No. Un gasto fijo o un sueldo sólo necesita la aprobación del dueño. Se cargan una vez en «Nuevo gasto» y se repiten solos cada mes."
+        },
+        "collection": {
+          "q": "¿Por qué un cobro no queda saldado si el dinero ya entró?",
+          "a": "Porque un cobro no se cierra sin la factura emitida al cliente. Registrá la factura en Cobros y se cierra solo."
+        },
+        "proof": {
+          "q": "Me dice que hay movimientos sin comprobante. ¿Qué hago?",
+          "a": "En el Resumen, tocá «Movimientos sin comprobante»: se abre la lista. Entrá a cada uno y subí la constancia desde la pestaña Documentos; queda atada a ese pago."
+        },
+        "amba": {
+          "q": "¿Cómo se decide si un trabajo es AMBA o Interior?",
+          "a": "Por la provincia y la ciudad del local. Capital y Gran Buenos Aires son AMBA; el resto, Interior. Si un local quedó mal clasificado, corregí su ciudad en Operaciones."
+        }
+      },
+      "shortcutsTitle": "Accesos rápidos",
+      "shortcuts": {
+        "approvals": "Aprobar pagos",
+        "payments": "Pagos",
+        "expenses": "Gastos fijos",
+        "collections": "Cobros"
+      }
+    },
+    "FinanceDigest": {
+      "title": "Aviso semanal por correo",
+      "summary": "Llega los {day} a las {hour} (hora de Argentina)",
+      "summaryOff": "Desactivado: no se envía ningún correo",
+      "configure": "Configurar y ver el correo",
+      "hide": "Cerrar",
+      "hint": "Es el correo que le avisa al dueño qué hay para aprobar, separado en AMBA e interior, con lo que se paga el lunes y el martes. Sólo avisa y trae el enlace: la aprobación se hace acá adentro, con tu usuario. Elegí qué día y a qué hora preferís recibirlo.",
+      "enabled": "Enviar el aviso semanal",
+      "weekday": "Día de la semana",
+      "hour": "Hora",
+      "hourHelp": "Hora de Argentina. El correo sale dentro de esa hora; si ese día no hay nada para aprobar ni pagar, no se envía.",
+      "email": "Casilla donde llega",
+      "emailHelp": "Si la dejás vacía llega a la casilla de tu cuenta. Podés poner otra, por ejemplo la general de la empresa.",
+      "emailPlaceholder": "La de tu cuenta",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "saved": "Listo, el aviso quedó configurado.",
+      "unsaved": "Hay cambios sin guardar",
+      "showPreview": "Ver cómo llega el correo",
+      "hidePreview": "Ocultar el correo",
+      "sendTest": "Enviarme una prueba",
+      "testSent": "Te mandamos el correo de prueba a la casilla de tu cuenta.",
+      "previewNote": "Así se vería hoy, con lo que hay abierto ahora. Es una vista previa: no se envía nada.",
+      "subjectLabel": "Asunto:",
+      "previewTitle": "Vista previa del correo semanal",
+      "previewCompany": "Tu empresa",
+      "testPrefix": "PRUEBA",
+      "errors": {
+        "ownerOnly": "Sólo el dueño de la empresa puede configurar el aviso.",
+        "invalid": "Revisá los datos: el día, la hora y la casilla de correo tienen que ser válidos.",
+        "save": "No se pudo completar. Volvé a intentar.",
+        "noOrigin": "Falta configurar la dirección pública de la aplicación (APP_URL).",
+        "emailNotConfigured": "El envío de correos todavía no está configurado en este entorno.",
+        "noAddress": "Tu cuenta no tiene una casilla de correo válida para recibir la prueba.",
+        "sendFailed": "No se pudo enviar el correo de prueba. Volvé a intentar.",
+        "demo": "En la demo no se envían correos: usá «Ver cómo llega el correo»."
+      }
+    }
 }

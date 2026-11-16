@@ -11,6 +11,9 @@ export async function createFinanceTestDatabase({advanced=false}={}) {
     "supabase/migrations/20261027084638_finance_cash_foundation.sql",
     "supabase/migrations/20261027084640_finance_module_v2_release.sql",
     "supabase/migrations/20261027084642_finance_operations_integration_release.sql",
+    "supabase/migrations/20261113000000_finance_finalized_at_and_zones.sql",
+    "supabase/migrations/20261113000001_finance_weekly_approval_flow.sql",
+    "supabase/migrations/20261113000002_finance_editable_amounts_and_digest_schedule.sql",
   ];
   if(advanced)files.splice(2,0,'test/fixtures/finance-advanced-base.sql');
   for (const file of files) {

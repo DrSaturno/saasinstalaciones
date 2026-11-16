@@ -1730,6 +1730,9 @@ export type Database = {
           status: string
           storage_path: string | null
           supplier_id: string | null
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
           amount: number
@@ -1748,6 +1751,9 @@ export type Database = {
           status?: string
           storage_path?: string | null
           supplier_id?: string | null
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
           amount?: number
@@ -1766,6 +1772,9 @@ export type Database = {
           status?: string
           storage_path?: string | null
           supplier_id?: string | null
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: [
           {
@@ -1841,18 +1850,33 @@ export type Database = {
         Row: {
           amba_weekday: number
           company_id: string
+          digest_email: string | null
+          digest_enabled: boolean
+          digest_hour: number
+          digest_last_sent_at: string | null
+          digest_weekday: number
           interior_weekday: number
           updated_at: string
         }
         Insert: {
           amba_weekday?: number
           company_id: string
+          digest_email?: string | null
+          digest_enabled?: boolean
+          digest_hour?: number
+          digest_last_sent_at?: string | null
+          digest_weekday?: number
           interior_weekday?: number
           updated_at?: string
         }
         Update: {
           amba_weekday?: number
           company_id?: string
+          digest_email?: string | null
+          digest_enabled?: boolean
+          digest_hour?: number
+          digest_last_sent_at?: string | null
+          digest_weekday?: number
           interior_weekday?: number
           updated_at?: string
         }
@@ -5922,6 +5946,52 @@ export type Database = {
           p_storage_path: string
         }
         Returns: string
+      }
+      finance_approve_payables: { Args: { p_items: Json }; Returns: Json }
+      finance_classify_zone: {
+        Args: { p_city: string; p_state: string; p_zone: string }
+        Returns: string
+      }
+      finance_emit_invoice_reminders: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          company_name: string
+          email: string | null
+          full_name: string
+          installer_id: string
+          locale: string
+          pending_count: number
+        }[]
+      }
+      finance_digest_preview: { Args: Record<PropertyKey, never>; Returns: Json }
+      finance_mark_digest_sent: { Args: { p_company: string }; Returns: undefined }
+      finance_my_billing: { Args: Record<PropertyKey, never>; Returns: Json }
+      finance_reject_supplier_invoice: {
+        Args: { p_invoice: string; p_reason: string }
+        Returns: undefined
+      }
+      finance_submit_my_invoice: {
+        Args: {
+          p_amount: number
+          p_company_id: string
+          p_entry_ids: string[]
+          p_file_name: string
+          p_id: string
+          p_invoice_number: string
+          p_issued_on: string
+          p_storage_path: string
+        }
+        Returns: string
+      }
+      finance_weekly_digest: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          company_id: string
+          company_name: string
+          locale: string
+          payload: Json
+          recipient: string
+        }[]
       }
       finance_register_payment_batch: {
         Args: { p_data: Json; p_id: string }

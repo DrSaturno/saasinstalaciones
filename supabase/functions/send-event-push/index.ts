@@ -17,6 +17,7 @@ const EVENTS = [
   "update_received",
   "announcement",
   "blocker_reported",
+  "payment_approved",
 ] as const;
 type EventName = (typeof EVENTS)[number];
 
@@ -130,6 +131,13 @@ Deno.serve(async (request) => {
       const { data } = await admin.from("announcements").select("id").eq("id", eventInput.resourceId).eq("company_id", caller.company_id).maybeSingle();
       return Boolean(data);
     }
+    if (eventInput.event === "payment_approved") {
+      // Lo dispara el dueño al aprobar un pago. resourceId es la obligación de
+      // Finanzas; se verifica que sea de la empresa de quien llama.
+      if (caller.role !== "company_manager" || !caller.company_id) return false;
+      const { data } = await admin.from("finance_entries").select("id").eq("id", eventInput.resourceId).eq("company_id", caller.company_id).maybeSingle();
+      return Boolean(data);
+    }
     return false;
   };
 
@@ -235,6 +243,8 @@ function notificationFilter(input: Input): { type: string; data: Record<string, 
   // coordina: si nadie interviene, el instalador se queda parado en el sitio.
   // Por eso suena el teléfono en vez de esperar a que alguien abra la app.
   if (input.event === "blocker_reported") return { type: "blocker_reported", data: { update_id: input.resourceId } };
+  // Aprobado el pago, el proveedor tiene que cargar su factura para cobrar.
+  if (input.event === "payment_approved") return { type: "payment_approved", data: { entry_id: input.resourceId } };
   return { type: "update_received", data: { update_id: input.resourceId } };
 }
 
