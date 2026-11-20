@@ -9,13 +9,34 @@ let instance:Promise<PGlite>|undefined;
 async function seed() {
   const db=await createFinanceTestDatabase();
   await db.query("insert into companies(id,name) values($1,'Empresa de demostración')",[company]);
-  await db.query("insert into profiles(id,company_id,role,full_name,is_owner) values($1,$2,'company_manager','Finanzas Demo',true),($3,null,'installer','Equipo Demo',false)",[user,company,installer]);
-  await db.query('insert into company_installers(company_id,installer_id) values($1,$2)',[company,installer]);
+  // Instaladores ficticios, para que la demostración se lea como una operación real.
+  const team:[string,string][]=[[installer,'Martín Ríos'],[id(40),'Lucía Paredes'],[id(41),'Diego Sosa'],[id(42),'Cuadrilla Cuyo']];
+  await db.query("insert into profiles(id,company_id,role,full_name,is_owner) values($1,$2,'company_manager','Finanzas Demo',true)",[user,company]);
+  for(const [teamId,name] of team){
+    await db.query("insert into profiles(id,company_id,role,full_name,is_owner) values($1,null,'installer',$2,false)",[teamId,name]);
+    await db.query('insert into company_installers(company_id,installer_id) values($1,$2)',[company,teamId]);
+  }
   await db.query("insert into clients(id,company_id,name) values($1,$2,'Cliente Horizonte Demo')",[client,company]);
   await db.query("insert into projects(id,company_id,client_id,name) values($1,$2,$3,'Renovación de sucursales Demo')",[project,company,client]);
-  await db.query("insert into sites(id,company_id,name,zone,city,state) values($1,$2,'Sucursal Centro Demo','AMBA','Lanús','Buenos Aires'),($3,$2,'Sucursal Córdoba Demo','Interior','Córdoba','Córdoba')",[site,company,id(9)]);
+  await db.query("insert into sites(id,company_id,name,zone,city,state) values($1,$2,'Sucursal Centro Demo','AMBA','Lanús','Buenos Aires'),($3,$2,'Sucursal Córdoba Demo','Interior','Córdoba','Córdoba'),($4,$2,'Sucursal Palermo Demo','AMBA','Palermo','Ciudad Autónoma de Buenos Aires'),($5,$2,'Sucursal Quilmes Demo','AMBA','Quilmes','Buenos Aires'),($6,$2,'Sucursal Rosario Demo','Interior','Rosario','Santa Fe'),($7,$2,'Sucursal Mendoza Demo','Interior','Mendoza','Mendoza')",[site,company,id(9),id(50),id(51),id(52),id(53)]);
   await db.query("select set_config('request.jwt.claim.sub',$1,false)",[user]);
-  await db.query("insert into work_orders(id,company_id,project_id,site_id,order_number,title,amount,installer_amount,assigned_installer_id,status,finalized_at) values($1,$2,$3,$4,'OT90001','Instalación de cartelería Demo',600000,180000,$5,'finalizada',now()),($6,$2,$3,$4,'OT90002','Montaje de exhibidores Demo',400000,120000,$5,'finalizada',now()),($7,$2,$3,$8,'OT90003','Cartelería sucursal Córdoba Demo',500000,150000,$5,'finalizada',now())",[id(10),company,project,site,installer,id(11),id(12),id(9)]);
+  // [id, número, título, importe del cliente, importe del instalador, instalador, estado, local]
+  const orders:[number,string,string,number,number,string,string,string][]=[
+    [10,'OT90001','Instalación de cartelería Demo',600000,180000,installer,'finalizada',site],
+    [11,'OT90002','Montaje de exhibidores Demo',400000,120000,installer,'finalizada',site],
+    [12,'OT90003','Cartelería sucursal Córdoba Demo',500000,150000,id(41),'finalizada',id(9)],
+    [103,'OT90004','Gráfica de vidriera Palermo Demo',350000,95000,id(40),'finalizada',id(50)],
+    [104,'OT90005','Vinilo de piso Quilmes Demo',280000,72000,id(40),'finalizada',id(51)],
+    [105,'OT90006','Tótem exterior Rosario Demo',720000,210000,id(41),'finalizada',id(52)],
+    [106,'OT90007','Señalética Mendoza Demo',460000,138000,id(42),'finalizada',id(53)],
+    [107,'OT90008','Cartelería Lanús (retoque) Demo',390000,110000,installer,'finalizada',site],
+    // Todavía sin terminar: no aparecen para pagar hasta que Operaciones las finalice.
+    [108,'OT90009','Mural interior Córdoba Demo',540000,160000,id(41),'en_proceso',id(9)],
+    [109,'OT90010','Gráfica de heladeras Quilmes Demo',300000,85000,id(40),'planificada',id(51)],
+  ];
+  for(const [n,number,title,amount,installerAmount,assigned,status,siteId] of orders){
+    await db.query("insert into work_orders(id,company_id,project_id,site_id,order_number,title,amount,installer_amount,assigned_installer_id,status,finalized_at) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,case when $10='finalizada' then now() end)",[id(n),company,project,siteId,number,title,amount,installerAmount,assigned,status]);
+  }
   await db.query("insert into finance_suppliers(id,company_id,name,kind) values($1,$2,'Servicios de oficina Demo','service'),($3,$2,'Sueldo Persona Demo','employee')",[vendor,company,id(8)]);
   await db.exec('set role authenticated');
   await db.query("insert into finance_entries(id,company_id,direction,supplier_id,category,description,amount,currency,due_on,created_by) values($1,$2,'payable',$3,'fixed','Alquiler oficina Demo',250000,'ARS',current_date+7,$4)",[id(20),company,vendor,user]);
@@ -28,6 +49,8 @@ async function seed() {
     await db.query("insert into finance_documents(company_id,entry_id,kind,storage_path,file_name,mime_type,size_bytes,uploaded_by) values($1,$2,'invoice',$3,'factura-equipo-demo.pdf','application/pdf',100,$4)",[company,entry.id,`${company}/development/${entry.id}`,user]);
     await db.query("update finance_entries set status='approved',updated_by=$2 where id=$1",[entry.id,user]);
   }
+  // OT90008: aprobada pero sin factura todavía, para mostrar la etapa «falta factura».
+  await db.query("update finance_entries set status='approved',updated_by=$2 where direction='payable' and order_id=$1",[id(107),user]);
   const receivables=await db.query<{id:string;amount:string}>("select id,amount from finance_entries where direction='receivable' order by id");
   await db.query("select finance_register_invoice($1,$2,'issued',$3,'FC-DEMO-001',current_date,current_date,$6,'ARS',$4,'factura-cliente-demo.pdf',$5)",[id(30),company,client,`${company}/invoices/${id(30)}`,receivables.rows.map((e)=>({entry_id:e.id,amount:Number(e.amount)})),receivables.rows.reduce((sum,e)=>sum+Number(e.amount),0)]);
   return db;
@@ -49,7 +72,7 @@ export async function financeDevelopmentState(){
     clients:await rows(db,'select id,name from clients'),orders:await rows(db,'select id,order_number,title,project_id,site_id,status from work_orders'),projects:await rows(db,'select id,name,client_id from projects'),sites:await rows(db,'select id,name from sites'),
     transactions:await rows(db,'select * from finance_transactions order by created_at'),cheques:await rows(db,'select * from finance_cheques'),allocations:await rows(db,'select * from finance_cheque_allocations'),
     documents:await rows(db,'select id,entry_id,kind,file_name from finance_documents'),invoiceAllocations:await rows(db,'select * from finance_invoice_allocations'),invoices:await rows(db,'select id,invoice_number,amount,status from finance_invoices'),events:await rows(db,'select * from finance_cheque_events'),
-    people:[{id:installer,name:'Equipo Demo',roles:['installer']}],
+    people:[[installer,'Martín Ríos'],[id(40),'Lucía Paredes'],[id(41),'Diego Sosa'],[id(42),'Cuadrilla Cuyo']].map(([personId,name])=>({id:personId,name,roles:['installer']})),
   };
   return {data:assembleFinanceWorkspace(source),templates:await rows<Database['public']['Tables']['finance_expense_templates']['Row']>(db,'select * from finance_expense_templates')};
 }

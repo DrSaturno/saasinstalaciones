@@ -2928,7 +2928,7 @@
     "importedReview": "A conciliar",
     "documentType": "Tipo de documento",
     "attach": "Anexar",
-    "approve": "Aprovar com nota",
+    "approve": "Aprovar recebimento",
     "registerPayment": "Registrar pagamento",
     "registerCollection": "Registrar recebimento",
     "actualDate": "Data do pagamento / recebimento",
@@ -3543,6 +3543,7 @@
   },
     "FinanceApproval": {
       "hiddenNotFinished": "{count, plural, one {Há 1 pagamento de uma ordem que ainda não foi concluída: não aparece aqui.} other {Há # pagamentos de ordens que ainda não foram concluídas: não aparecem aqui.}} Eles aparecem para aprovar quando a ordem é finalizada em Operações.",
+      "hiddenNotFinishedCollections": "{count, plural, one {Há 1 recebimento de uma ordem que ainda não foi concluída: não aparece aqui.} other {Há # recebimentos de ordens que ainda não foram concluídas: não aparecem aqui.}} Eles aparecem quando a ordem é finalizada em Operações.",
       "demoInvoiceHint": "Você está na demo: para simular o instalador, envie a nota fiscal pela aba Documentos.",
       "title": "Aprovar pagamentos",
       "hint": "Tudo o que aguarda sua aprovação nesta semana, separado por região. Revise cada valor, corrija se precisar e aprove. Ao aprovar, cada instalador recebe o aviso para enviar a nota fiscal.",

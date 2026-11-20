@@ -31,16 +31,18 @@ export function financeStage(
 }
 
 /**
- * Un pago de una OT que todavía no se terminó: no está para que el dueño lo
- * decida ni para pagarse, así que no se muestra en Pagos ni se puede aprobar.
- * Aparece solo cuando la orden se finaliza en Operaciones. El anticipo es la
- * excepción: se aprueba y se paga antes de terminar el trabajo.
+ * Un pago o un cobro de una OT que todavía no se terminó: no está para que el
+ * dueño lo decida ni para pagarse o cobrarse, así que no se muestra en Pagos ni
+ * en Cobros, y no se puede aprobar. Aparece solo cuando la orden se finaliza en
+ * Operaciones. El anticipo es la excepción: se aprueba y se paga antes de
+ * terminar el trabajo. Lo que ya está aprobado o saldado se ve siempre: tiene
+ * historia de plata y no se puede esconder.
  */
 export function financeWaitsForOrder(
   entry: { direction: string; status: string; order_id: string | null; installment?: string | null },
   finishedOrderIds: ReadonlySet<string>,
 ): boolean {
-  return entry.direction === "payable" && entry.status === "review" && !!entry.order_id
+  return (entry.direction === "payable" || entry.direction === "receivable") && entry.status === "review" && !!entry.order_id
     && entry.installment !== "advance" && !finishedOrderIds.has(entry.order_id);
 }
 

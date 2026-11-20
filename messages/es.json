@@ -2928,7 +2928,7 @@
     "importedReview": "Por conciliar",
     "documentType": "Tipo de documento",
     "attach": "Adjuntar",
-    "approve": "Aprobar con factura",
+    "approve": "Aprobar cobro",
     "registerPayment": "Registrar pago",
     "registerCollection": "Registrar cobro",
     "actualDate": "Fecha del pago / cobro",
@@ -3543,6 +3543,7 @@
   },
     "FinanceApproval": {
       "hiddenNotFinished": "{count, plural, one {Hay 1 pago de una orden que todavía no se terminó: no se muestra acá.} other {Hay # pagos de órdenes que todavía no se terminaron: no se muestran acá.}} Aparecen para aprobar cuando la orden se finaliza en Operaciones.",
+      "hiddenNotFinishedCollections": "{count, plural, one {Hay 1 cobro de una orden que todavía no se terminó: no se muestra acá.} other {Hay # cobros de órdenes que todavía no se terminaron: no se muestran acá.}} Aparecen cuando la orden se finaliza en Operaciones.",
       "demoInvoiceHint": "Estás en la demo: para simular al instalador, subí la factura desde la pestaña Documentos.",
       "title": "Aprobar pagos",
       "hint": "Todo lo que espera tu aprobación esta semana, separado por zona. Revisá cada importe, corregilo si hace falta y aprobá. Al aprobar, cada instalador recibe el aviso para cargar su factura.",

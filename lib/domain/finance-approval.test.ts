@@ -39,7 +39,10 @@ describe("etapa visible de un pago", () => {
     expect(financeWaitsForOrder({ ...pay, installment: "advance" }, finished)).toBe(false);
     expect(financeWaitsForOrder({ ...pay, order_id: null }, finished)).toBe(false);
     expect(financeWaitsForOrder({ ...pay, status: "approved" }, finished)).toBe(false);
-    expect(financeWaitsForOrder({ ...pay, direction: "receivable" }, finished)).toBe(false);
+    expect(financeWaitsForOrder({ ...pay, direction: "receivable" }, finished)).toBe(true);
+    expect(financeWaitsForOrder({ ...pay, direction: "receivable", order_id: "ot-terminada" }, finished)).toBe(false);
+    expect(financeWaitsForOrder({ ...pay, direction: "receivable", status: "approved" }, finished)).toBe(false);
+    expect(financeWaitsForOrder({ ...pay, direction: "other" }, finished)).toBe(false);
   });
 });
 
